@@ -6,9 +6,13 @@ from rich.console import Console
 console = Console()
 WORKING_DIR = os.getcwd()
 console.log(f"Working directory: {WORKING_DIR}")
+MOD_SAVE_PATH = os.path.join(WORKING_DIR, "FS22_MapTemplate")
 
 DATA_DIR = os.path.join(WORKING_DIR, "data")
 TEMPLATE_ARCHIVE = os.path.join(DATA_DIR, "map-template.zip")
+
+MAP_SIZE = (2048, 2048)
+console.log(f"Map size: {MAP_SIZE}")
 
 if not os.path.isfile(TEMPLATE_ARCHIVE):
     raise FileNotFoundError(
@@ -27,3 +31,17 @@ else:
 
 shutil.unpack_archive(TEMPLATE_ARCHIVE, OUTPUT_DIR)
 console.log("Template archive unpacked.")
+
+weights_dir = os.path.join(OUTPUT_DIR, "maps", "map", "data")
+weights_files = [
+    os.path.join(weights_dir, f) for f in os.listdir(weights_dir) if f.endswith("_weight.png")
+]
+console.log(f"Fetched {len(weights_files)} weight files.")
+
+# ! DEBUG SECTION
+game_mod_path = "C:\\Users\\iwatk\\OneDrive\\Documents\\My Games\\FarmingSimulator2022\\mods\\FS22_MapTemplate.zip"
+try:
+    os.remove(game_mod_path)
+    console.log(f"Removed old mod file: {game_mod_path}")
+except FileNotFoundError:
+    pass
