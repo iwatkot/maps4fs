@@ -2,7 +2,19 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python script",
+            "name": "Windows Script",
+            "type": "python",
+            "request": "launch",
+            "program": "src/main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder};${PYTHONPATH}",
+                "LOG_LEVEL": "DEBUG",
+            }
+        },
+                {
+            "name": "Linux / Mac Script",
             "type": "python",
             "request": "launch",
             "program": "src/main.py",

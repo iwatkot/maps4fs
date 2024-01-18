@@ -1,1 +1,1 @@
-print("Hello world!")
+import src.globals as g
