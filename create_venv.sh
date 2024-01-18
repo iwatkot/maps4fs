@@ -20,7 +20,13 @@ else
 fi
 
 $python_executable -m venv .venv && \
-source .venv/bin/activate && \
+
+if [[ "$OSTYPE" == "msys"* ]]; then
+    echo "Windows OS detected..."
+    .venv/Scripts/activate
+else 
+    source .venv/bin/activate
+fi
 
 echo "Requirements will be installed..." && \
 pip3 install -r requirements.txt && \
