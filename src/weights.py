@@ -1,4 +1,5 @@
 import os
+import random
 import re
 
 import cv2
@@ -11,15 +12,6 @@ weights_files = [
 g.console.log(f"Fetched {len(weights_files)} weight files.")
 
 
-class Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-
 class Texture:
     def __init__(self, name: str):
         self.name = name
@@ -29,7 +21,7 @@ class Texture:
 
     def _get_paths(self):
         pattern = re.compile(rf"{self.name}\d{{2}}_weight")
-        paths = [path for path in g.weights_files if pattern.search(path)]
+        paths = [path for path in weights_files if pattern.search(path)]
         if not paths:
             raise FileNotFoundError(f"Texture not found: {self.name}")
         self.paths = paths
@@ -42,8 +34,11 @@ class Texture:
         if len(unique_shapes) > 1:
             raise ValueError(f"Texture {self.name} has multiple shapes: {unique_shapes}")
 
+    def get_random_path(self):
+        return random.choice(self.paths)
 
-class Textures(metaclass=Singleton):
+
+class Textures(metaclass=g.Singleton):
     g.console.log("Loading texture weight files...")
     animalMud = Texture("animalMud")
     asphalt = Texture("asphalt")

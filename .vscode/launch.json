@@ -5,7 +5,7 @@
             "name": "Windows Script",
             "type": "python",
             "request": "launch",
-            "program": "src/maps.py",
+            "program": "src/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "env": {

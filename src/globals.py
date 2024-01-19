@@ -33,10 +33,20 @@ shutil.unpack_archive(TEMPLATE_ARCHIVE, OUTPUT_DIR)
 console.log("Template archive unpacked.")
 
 weights_dir = os.path.join(OUTPUT_DIR, "maps", "map", "data")
-weights_files = [
-    os.path.join(weights_dir, f) for f in os.listdir(weights_dir) if f.endswith("_weight.png")
-]
-console.log(f"Fetched {len(weights_files)} weight files.")
+# weights_files = [
+#     os.path.join(weights_dir, f) for f in os.listdir(weights_dir) if f.endswith("_weight.png")
+# ]
+# console.log(f"Fetched {len(weights_files)} weight files.")
+
+
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
 
 # ! DEBUG SECTION
 game_mod_path = "C:\\Users\\iwatk\\OneDrive\\Documents\\My Games\\FarmingSimulator2022\\mods\\FS22_MapTemplate.zip"
