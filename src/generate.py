@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+from typing import Callable, Generator
 
 import cv2
 import numpy as np
@@ -8,7 +9,6 @@ import osmnx as ox
 import pandas as pd
 import shapely
 from rich.console import Console
-from shapely.geometry import LineString
 
 console = Console()
 WORKING_DIR = os.getcwd()
@@ -141,39 +141,39 @@ class Map(metaclass=Singleton):
             raw_y = self.minimum_y - y
         return self.height - int(raw_y * self.width_coef)
 
-    def _to_np(self, geometry: shapely.geometry.polygon.Polygon):
+    def _to_np(self, geometry: shapely.geometry.polygon.Polygon, *args) -> np.ndarray:
         xs, ys = geometry.exterior.coords.xy
         xs = [int(self.get_relative_x(x)) for x in xs.tolist()]
         ys = [int(self.get_relative_y(y)) for y in ys.tolist()]
         pairs = list(zip(xs, ys))
         return np.array(pairs, dtype=np.int32).reshape((-1, 1, 2))
 
-    def _to_polygon(self, obj: pd.core.series.Series):
+    def _to_polygon(self, obj: pd.core.series.Series, width: int | None) -> np.ndarray | None:
         geometry = obj["geometry"]
         geometry_type = geometry.geom_type
         converter = self._converters(geometry_type)
         if not converter:
             console.log(f"Geometry type {geometry_type} not supported.")
             return
-        return converter(geometry)
+        return converter(geometry, width)
 
-    def _linestring(self, geometry: shapely.geometry.linestring.LineString):
-        # line = LineString(zip(xs, ys))
-        # linestring = obj["geometry"]
-        polygon = geometry.buffer(4)
+    def _linestring(self, geometry: shapely.geometry.linestring.LineString, width: int | None):
+        polygon = geometry.buffer(width)
         return self._to_np(polygon)
 
-    def _converters(self, geom_type: str):
+    def _converters(self, geom_type: str) -> Callable[[shapely.geometry, int | None], np.ndarray]:
         converters = {"Polygon": self._to_np, "LineString": self._linestring}
         return converters.get(geom_type)
 
-    def elements(self, tags: dict[str, str | list[str]], width: int | None):
+    def polygons(
+        self, tags: dict[str, str | list[str]], width: int | None
+    ) -> Generator[np.ndarray, None, None]:
         objects = ox.features_from_bbox(*self.bbox, tags=tags)
         objects_utm = ox.project_gdf(objects, to_latlong=False)
         console.log(f"Fetched {len(objects_utm)} elements for tags: {tags}.")
 
         for index, obj in objects_utm.iterrows():
-            polygon = self._to_polygon(obj)
+            polygon = self._to_polygon(obj, width)
             if polygon is None:
                 continue
             yield polygon
@@ -181,11 +181,11 @@ class Map(metaclass=Singleton):
     def draw(self) -> None:
         for layer in self.layers:
             img = cv2.imread(layer.path, cv2.IMREAD_UNCHANGED)
-            for polygon in self.elements(layer.tags, layer.width):
+            for polygon in self.polygons(layer.tags, layer.width):
                 cv2.fillPoly(img, [polygon], color=255)
             cv2.imwrite(layer.path, img)
             console.log(f"Texture {layer.path} saved.")
 
-    def _prepare_mod(self):
+    def _prepare_mod(self) -> None:
         shutil.make_archive(MOD_SAVE_PATH, "zip", OUTPUT_DIR)
         console.log(f"Archive created: {MOD_SAVE_PATH}.")
