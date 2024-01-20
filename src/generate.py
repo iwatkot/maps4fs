@@ -1,12 +1,16 @@
+import gzip
 import os
 import re
 import shutil
+import warnings
 from typing import Callable, Generator
 
 import cv2
 import numpy as np
 import osmnx as ox
 import pandas as pd
+import rasterio
+import requests
 import shapely
 from rich.console import Console
 
@@ -24,11 +28,34 @@ if not os.path.isfile(TEMPLATE_ARCHIVE):
     )
 
 OUTPUT_DIR = os.path.join(WORKING_DIR, "output")
+if not os.path.isdir(OUTPUT_DIR):
+    os.mkdir(OUTPUT_DIR)
+    console.log("Output directory created.")
+else:
+    console.log("Output directory already exists and will be deleted.")
+    shutil.rmtree(OUTPUT_DIR)
+    os.mkdir(OUTPUT_DIR)
+
+shutil.unpack_archive(TEMPLATE_ARCHIVE, OUTPUT_DIR)
+console.log("Template archive unpacked.")
+
 WEIGHTS_DIR = os.path.join(OUTPUT_DIR, "maps", "map", "data")
 WEIGHTS_FILES = [
     os.path.join(WEIGHTS_DIR, f) for f in os.listdir(WEIGHTS_DIR) if f.endswith("_weight.png")
 ]
 console.log(f"Fetched {len(WEIGHTS_FILES)} weight files.")
+
+GZ_DIR = os.path.join(WORKING_DIR, "temp", "gz")
+HGT_DIR = os.path.join(WORKING_DIR, "temp", "hgt")
+if not os.path.isdir(GZ_DIR):
+    os.makedirs(GZ_DIR)
+if not os.path.isdir(HGT_DIR):
+    os.makedirs(HGT_DIR)
+
+SRTM = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
+BLUR_SEED = (5, 5)
+BLUR_SIGMA = 5
+MAP_DEM_PATH = os.path.join(WEIGHTS_DIR, "map_dem.png")
 
 
 class Singleton(type):
@@ -41,16 +68,16 @@ class Singleton(type):
 
 
 class Map(metaclass=Singleton):
-    def __init__(self, coordinates: tuple[float, float], distance: int):
-        self._load_data()
+    def __init__(self, coordinates: tuple[float, float], distance: int, save_dem: bool = True):
         console.log(f"Fetching map data for coordinates: {coordinates}...")
         self.coordinates = coordinates
         self.distance = distance
         self.bbox = ox.utils_geo.bbox_from_point(self.coordinates, dist=self.distance)
-        self._get_parameters()
+        self._read_parameters()
         self._locate_map()
         self.draw()
-        self._prepare_mod()
+        if save_dem:
+            self.save_dem()
 
     class Layer:
         def __init__(self, name: str, tags: dict[str, str | list[str]], width: int = None):
@@ -87,33 +114,25 @@ class Map(metaclass=Singleton):
     def layers(self):
         asphalt = self.Layer("asphalt", {"highway": ["motorway", "trunk", "primary"]}, width=8)
         concrete = self.Layer("concrete", {"building": True})
-        dirt = self.Layer("dirt", {"highway": ["unclassified", "residential"]}, width=2)
-        forestGround = self.Layer("forestGround", {"natural": "wood"})
+        dirtDark = self.Layer("dirtDark", {"highway": ["unclassified", "residential", "track"]}, width=2)
+        grassDirt = self.Layer("grassDirt", {"natural": ["wood", "tree_row"]}, width=2)
         grass = self.Layer("grass", {"natural": "grassland"})
-        gravel = self.Layer("gravel", {"highway": ["secondary", "tertiary"]}, width=4)
+        forestGround = self.Layer("forestGround", {"landuse": "farmland"})
+        gravel = self.Layer("gravel", {"highway": ["secondary", "tertiary", "road"]}, width=4)
         waterPuddle = self.Layer("waterPuddle", {"natural": "water"})
-        return [asphalt, concrete, dirt, forestGround, grass, gravel, waterPuddle]
+        return [asphalt, concrete, dirtDark, forestGround, grass, grassDirt, gravel, waterPuddle]
 
-    def _load_data(self):
-        if not os.path.isdir(OUTPUT_DIR):
-            os.mkdir(OUTPUT_DIR)
-            console.log("Output directory created.")
-        else:
-            console.log("Output directory already exists and will be deleted.")
-            shutil.rmtree(OUTPUT_DIR)
-            os.mkdir(OUTPUT_DIR)
-
-        shutil.unpack_archive(TEMPLATE_ARCHIVE, OUTPUT_DIR)
-        console.log("Template archive unpacked.")
-
-    def _get_parameters(self):
+    def _read_parameters(self):
         north, south, east, west = ox.utils_geo.bbox_from_point(
             self.coordinates, dist=self.distance, project_utm=True
         )
-        self.minimum_x = west
-        self.minimum_y = south
+        # Parameters of the map in UTM format (meters).
+        self.minimum_x = min(west, east)
+        self.minimum_y = min(south, north)
+        self.maximum_x = max(west, east)
+        self.maximum_y = max(south, north)
         console.log(f"Map minimum coordinates (XxY): {self.minimum_x} x {self.minimum_y}.")
-        console.log(f"Map maximum coordinates (XxY): {east} x {north}.")
+        console.log(f"Map maximum coordinates (XxY): {self.maximum_x} x {self.maximum_y}.")
 
         self.height = abs(north - south)
         self.width = abs(east - west)
@@ -171,7 +190,9 @@ class Map(metaclass=Singleton):
         self, tags: dict[str, str | list[str]], width: int | None
     ) -> Generator[np.ndarray, None, None]:
         try:
-            objects = ox.features_from_bbox(*self.bbox, tags=tags)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                objects = ox.features_from_bbox(*self.bbox, tags=tags)
         except Exception as e:
             console.log(f"Error fetching objects for tags: {tags}.")
             console.log(e)
@@ -193,6 +214,69 @@ class Map(metaclass=Singleton):
             cv2.imwrite(layer.path, img)
             console.log(f"Texture {layer.path} saved.")
 
-    def _prepare_mod(self) -> None:
+    def pack_mod(self) -> None:
         shutil.make_archive(MOD_SAVE_PATH, "zip", OUTPUT_DIR)
         console.log(f"Archive created: {MOD_SAVE_PATH}.")
+        return MOD_SAVE_PATH
+
+    def _tile_info(self, lat: float, lon: float) -> tuple[str, str]:
+        latitude_band = f"N{int(lat):02d}"
+        tile_name = f"N{int(lat):02d}E{int(lon):03d}"
+        return latitude_band, tile_name
+
+    def _download_tile(self) -> str:
+        latitude_band, tile_name = self._tile_info(*self.coordinates)
+        console.log(f"Downloading tile {tile_name} from latitude band {latitude_band}...")
+
+        url = SRTM.format(latitude_band=latitude_band, tile_name=tile_name)
+        console.log(f"Trying to get response from {url}...")
+
+        response = requests.get(url, stream=True)
+        compressed_save_path = os.path.join(GZ_DIR, f"{tile_name}.hgt.gz")
+
+        if response.status_code == 200:
+            console.log(f"Response received. Saving to {compressed_save_path}...")
+            with open(compressed_save_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            console.log("Compressed tile successfully downloaded.")
+        else:
+            console.log(f"Response was failed with status code {response.status_code}.")
+            return
+
+        decompressed_file_path = os.path.join(WORKING_DIR, "temp", "hgt", f"{tile_name}.hgt")
+        with gzip.open(compressed_save_path, "rb") as f_in:
+            with open(decompressed_file_path, "wb") as f_out:
+                shutil.copyfileobj(f_in, f_out)
+        console.log(f"Tile decompressed to {decompressed_file_path}.")
+        return decompressed_file_path
+
+    def save_dem(self):
+        north, south, east, west = ox.utils_geo.bbox_from_point(
+            self.coordinates, dist=self.distance
+        )
+        max_y, min_y = max(north, south), min(north, south)
+        max_x, min_x = max(east, west), min(east, west)
+
+        tile_path = self._download_tile()
+        with rasterio.open(tile_path) as src:
+            window = rasterio.windows.from_bounds(min_x, min_y, max_x, max_y, src.transform)
+            data = src.read(1, window=window)
+        normalized_data = ((data - data.min()) / (data.max() - data.min()) * 255 * 64).astype(
+            "uint16"
+        )
+        console.log(
+            f"DEM data was normalized to {normalized_data.min()} - {normalized_data.max()}."
+        )
+        dem_output_resolution = (self.distance + 1, self.distance + 1)
+        resampled_data = cv2.resize(
+            normalized_data, dem_output_resolution, interpolation=cv2.INTER_LINEAR
+        )
+        console.log(
+            f"DEM data was resampled. Shape: {resampled_data.shape}, dtype: {resampled_data.dtype}. "
+            f"Min: {resampled_data.min()}, max: {resampled_data.max()}."
+        )
+
+        blurred_data = cv2.GaussianBlur(resampled_data, BLUR_SEED, BLUR_SIGMA)
+        cv2.imwrite(MAP_DEM_PATH, blurred_data)
+        console.log(f"DEM data was blurred and saved to {MAP_DEM_PATH}.")
