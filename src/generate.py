@@ -1,4 +1,5 @@
 import gzip
+import json
 import os
 import re
 import shutil
@@ -40,10 +41,6 @@ shutil.unpack_archive(TEMPLATE_ARCHIVE, OUTPUT_DIR)
 console.log("Template archive unpacked.")
 
 WEIGHTS_DIR = os.path.join(OUTPUT_DIR, "maps", "map", "data")
-WEIGHTS_FILES = [
-    os.path.join(WEIGHTS_DIR, f) for f in os.listdir(WEIGHTS_DIR) if f.endswith("_weight.png")
-]
-console.log(f"Fetched {len(WEIGHTS_FILES)} weight files.")
 
 GZ_DIR = os.path.join(WORKING_DIR, "temp", "gz")
 HGT_DIR = os.path.join(WORKING_DIR, "temp", "hgt")
@@ -57,6 +54,8 @@ BLUR_SEED = (5, 5)
 BLUR_SIGMA = 5
 MAP_DEM_PATH = os.path.join(WEIGHTS_DIR, "map_dem.png")
 
+TEXTURES_JSON = os.path.join(WORKING_DIR, "textures.json")
+
 
 class Singleton(type):
     _instances = {}
@@ -69,15 +68,47 @@ class Singleton(type):
 
 class Map(metaclass=Singleton):
     def __init__(self, coordinates: tuple[float, float], distance: int, save_dem: bool = True):
-        console.log(f"Fetching map data for coordinates: {coordinates}...")
         self.coordinates = coordinates
         self.distance = distance
+        self._prepare_weights()
+
+        console.log(f"Fetching map data for coordinates: {coordinates}...")
         self.bbox = ox.utils_geo.bbox_from_point(self.coordinates, dist=self.distance)
         self._read_parameters()
         self._locate_map()
         self.draw()
         if save_dem:
             self.save_dem()
+
+    def _prepare_weights(self):
+        textures = json.load(open(TEXTURES_JSON, "r"))
+        console.log(f"Loaded {len(textures)} textures from {TEXTURES_JSON}.")
+        for texture_name, layer_numbers in textures.items():
+            self._generate_weights(texture_name, layer_numbers)
+        console.log(f"Generated weights for {len(textures)} textures.")
+
+        global weight_files
+        weight_files = [
+            os.path.join(WEIGHTS_DIR, f)
+            for f in os.listdir(WEIGHTS_DIR)
+            if f.endswith("_weight.png")
+        ]
+        console.log(f"Fetched {len(weight_files)} weight files.")
+
+    def _generate_weights(self, texture_name: str, layer_numbers: int) -> None:
+        size = self.distance * 2
+        postfix = "_weight.png"
+        if layer_numbers == 0:
+            filepaths = [os.path.join(WEIGHTS_DIR, texture_name + postfix)]
+        else:
+            filepaths = [
+                os.path.join(WEIGHTS_DIR, texture_name + str(i).zfill(2) + postfix)
+                for i in range(1, layer_numbers + 1)
+            ]
+
+        for filepath in filepaths:
+            img = np.zeros((size, size), dtype=np.uint8)
+            cv2.imwrite(filepath, img)
 
     class Layer:
         def __init__(self, name: str, tags: dict[str, str | list[str]], width: int = None):
@@ -93,7 +124,7 @@ class Map(metaclass=Singleton):
                 self.paths = [os.path.join(WEIGHTS_DIR, "waterPuddle_weight.png")]
                 return
             pattern = re.compile(rf"{self.name}\d{{2}}_weight")
-            paths = [path for path in WEIGHTS_FILES if pattern.search(path)]
+            paths = [path for path in weight_files if pattern.search(path)]
             if not paths:
                 raise FileNotFoundError(f"Texture not found: {self.name}")
             self.paths = paths
@@ -114,7 +145,9 @@ class Map(metaclass=Singleton):
     def layers(self):
         asphalt = self.Layer("asphalt", {"highway": ["motorway", "trunk", "primary"]}, width=8)
         concrete = self.Layer("concrete", {"building": True})
-        dirtDark = self.Layer("dirtDark", {"highway": ["unclassified", "residential", "track"]}, width=2)
+        dirtDark = self.Layer(
+            "dirtDark", {"highway": ["unclassified", "residential", "track"]}, width=2
+        )
         grassDirt = self.Layer("grassDirt", {"natural": ["wood", "tree_row"]}, width=2)
         grass = self.Layer("grass", {"natural": "grassland"})
         forestGround = self.Layer("forestGround", {"landuse": "farmland"})
