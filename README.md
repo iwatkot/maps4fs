@@ -1,1 +1,1 @@
-<a href="https://codeclimate.com/github/iwatkot/maps4fs/maintainability"><img src="https://api.codeclimate.com/v1/badges/b922fd0a7188d37e61de/maintainability" /></a>
+[![Maintainability](https://api.codeclimate.com/v1/badges/b922fd0a7188d37e61de/maintainability)](https://codeclimate.com/github/iwatkot/maps4fs/maintainability) ● [![Test Coverage](https://api.codeclimate.com/v1/badges/b922fd0a7188d37e61de/test_coverage)](https://codeclimate.com/github/iwatkot/maps4fs/test_coverage)
