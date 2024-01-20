@@ -48,6 +48,7 @@ class Map(metaclass=Singleton):
         self.distance = distance
         self.bbox = ox.utils_geo.bbox_from_point(self.coordinates, dist=self.distance)
         self._get_parameters()
+        self._locate_map()
         self.draw()
         self._prepare_mod()
 
@@ -114,11 +115,6 @@ class Map(metaclass=Singleton):
         console.log(f"Map minimum coordinates (XxY): {self.minimum_x} x {self.minimum_y}.")
         console.log(f"Map maximum coordinates (XxY): {east} x {north}.")
 
-        self.easting = self.minimum_x < 500000
-        self.northing = self.minimum_y < 10000000
-        console.log(f"Map is in {'east' if self.easting else 'west'} of central meridian.")
-        console.log(f"Map is in {'north' if self.northing else 'south'} hemisphere.")
-
         self.height = abs(north - south)
         self.width = abs(east - west)
         console.log(f"Map dimensions (HxW): {self.height} x {self.width}.")
@@ -126,6 +122,12 @@ class Map(metaclass=Singleton):
         self.height_coef = self.height / (self.distance * 2)
         self.width_coef = self.width / (self.distance * 2)
         console.log(f"Map coefficients (HxW): {self.height_coef} x {self.width_coef}.")
+
+    def _locate_map(self):
+        self.easting = self.minimum_x < 500000
+        self.northing = self.minimum_y < 10000000
+        console.log(f"Map is in {'east' if self.easting else 'west'} of central meridian.")
+        console.log(f"Map is in {'north' if self.northing else 'south'} hemisphere.")
 
     def get_relative_x(self, x: float) -> int:
         if self.easting:
@@ -168,7 +170,12 @@ class Map(metaclass=Singleton):
     def polygons(
         self, tags: dict[str, str | list[str]], width: int | None
     ) -> Generator[np.ndarray, None, None]:
-        objects = ox.features_from_bbox(*self.bbox, tags=tags)
+        try:
+            objects = ox.features_from_bbox(*self.bbox, tags=tags)
+        except Exception as e:
+            console.log(f"Error fetching objects for tags: {tags}.")
+            console.log(e)
+            return
         objects_utm = ox.project_gdf(objects, to_latlong=False)
         console.log(f"Fetched {len(objects_utm)} elements for tags: {tags}.")
 
