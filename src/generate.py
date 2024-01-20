@@ -3,8 +3,10 @@ import json
 import os
 import re
 import shutil
+import time
 import warnings
-from typing import Callable, Generator
+import xml.etree.ElementTree as ET
+from typing import Any, Callable, Generator
 
 import cv2
 import numpy as np
@@ -53,8 +55,29 @@ SRTM = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{til
 BLUR_SEED = (5, 5)
 BLUR_SIGMA = 5
 MAP_DEM_PATH = os.path.join(WEIGHTS_DIR, "map_dem.png")
+MAP_XML_PATH = os.path.join(OUTPUT_DIR, "maps", "map", "map.xml")
 
 TEXTURES_JSON = os.path.join(WORKING_DIR, "textures.json")
+
+
+def timeit(func: Callable[Any, Any]) -> Callable[Any, Any]:
+    """Decorator to measure function execution time.
+
+    Args:
+        func (Callable[Any, Any]): Function to measure execution time.
+
+    Returns:
+        Callable[Any, Any]: Function wrapper.
+    """
+
+    def wrapper(*args, **kwargs) -> Any:
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        console.log(f"Execution time of {func.__name__}: {end_time - start_time} seconds")
+        return result
+
+    return wrapper
 
 
 class Singleton(type):
@@ -70,6 +93,7 @@ class Map(metaclass=Singleton):
     def __init__(self, coordinates: tuple[float, float], distance: int, save_dem: bool = True):
         self.coordinates = coordinates
         self.distance = distance
+        self._set_map_size()
         self._prepare_weights()
 
         console.log(f"Fetching map data for coordinates: {coordinates}...")
@@ -80,6 +104,17 @@ class Map(metaclass=Singleton):
         if save_dem:
             self.save_dem()
 
+    def _set_map_size(self):
+        tree = ET.parse(MAP_XML_PATH)
+        console.log(f"Map XML file loaded from: {MAP_XML_PATH}.")
+        root = tree.getroot()
+        for map_elem in root.iter("map"):
+            map_elem.set("width", str(self.distance * 2))
+            map_elem.set("height", str(self.distance * 2))
+        tree.write(MAP_XML_PATH)
+        console.log(f"Map XML file saved to: {MAP_XML_PATH}.")
+
+    @timeit
     def _prepare_weights(self):
         textures = json.load(open(TEXTURES_JSON, "r"))
         console.log(f"Loaded {len(textures)} textures from {TEXTURES_JSON}.")
@@ -95,6 +130,7 @@ class Map(metaclass=Singleton):
         ]
         console.log(f"Fetched {len(weight_files)} weight files.")
 
+    @timeit
     def _generate_weights(self, texture_name: str, layer_numbers: int) -> None:
         size = self.distance * 2
         postfix = "_weight.png"
