@@ -9,6 +9,7 @@ Generate map templates for the Farming Simulator from real places.<br>
   <a href="#Features">Features</a> •
   <a href="#Supported-objects">Supported objects</a> •
   <a href="#How-To-Run">How-To-Run</a>
+  <a href="#Bugs-and-feature-requests">Bugs and feature requests</a>
 </p>
 
 ## Overview
@@ -20,10 +21,10 @@ So, if you're new to map making, here's a quick overview of the process:
 4. Now you can start creating your map (adding roads, fields, buildings, etc.).
 
 ## Features
-- [x] Allows to enter a location by lat and lon (e.g. from Google Maps).
-- [x] Allows to select a size of the map (2x2, 4x4, 8x8 km, 16x16 km).
-- [x] Generates a map template (check the list of supported objects in [this section](#supported-objects)).
-- [x] Generates a height map.
+- Allows to enter a location by lat and lon (e.g. from Google Maps).
+- Allows to select a size of the map (2x2, 4x4, 8x8 km, 16x16 km).
+- Generates a map template (check the list of supported objects in [this section](#supported-objects)).
+- Generates a height map.
 
 ## Supported objects
 The project is based on the [OpenStreetMap](https://www.openstreetmap.org/) data. So, refer to [this page](https://wiki.openstreetmap.org/wiki/Map_Features) to understand the list below.
@@ -40,10 +41,11 @@ The list will be updated as the project develops.
 
 ## How-To-Run
 **Option 1 (recommended):**<br>
-Using Telegram bot (not available yet).<br>
+Using Telegram bot (not available yet). Told you, this project is in the early stage of development.
+<br>
 
 **Option 2:**<br>
-Launch the project locally.
+Launch the project locally following these steps (or watch the [video tutorial](https://youtu.be/OUzCO7SWKyA)):
 
 1. Navigate to the [releases](https://github.com/iwatkot/maps4fs/releases) page and download the latest version of the tool. If you are familiar with Git, you can clone the repository instead.
 2. Unzip the archive.
@@ -59,5 +61,5 @@ Launch the project locally.
 10. The map will be saved in the `output` folder in the tool's folder. You can open `output/maps/map/map.i3d` in the Giants Editor to check if everything is ok. If you need to run the script again, start with step 4. The script will delete the previous map and generate a new one.
 11. Now you can copy the `output` folder somewhere and start creating your map in the Giants Editor.
 
-### Video tutorial
-[![Video tutorial](https://img.youtube.com/vi/9Z3Z4Z3Z4Z4/maxresdefault.jpg)](https://youtu.be/9Z3Z4Z3Z4Z4)
+## Bugs and feature requests
+If you find a bug or have an idea for a new feature, please create an issue [here](https://github.com/iwatkot/maps4fs/issues) or contact me directly on [Telegram](https://t.me/iwatkot).
