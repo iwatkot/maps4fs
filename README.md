@@ -1,8 +1,9 @@
-[![Maintainability](https://api.codeclimate.com/v1/badges/b922fd0a7188d37e61de/maintainability)](https://codeclimate.com/github/iwatkot/maps4fs/maintainability) 
 
-![](https://i.postimg.cc/y6cq19b5/maps4fs.png)
-# MAPS4FS
-Generate map templates for the Farming Simulator from real places.<br>
+
+<div align="center" markdown>
+<img src="https://i.postimg.cc/y6cq19b5/maps4fs.png">
+
+# Generate map templates for the Farming Simulator from real places
 ⚠️ This project is in the early stage of development. Be ready to face bugs and crashes. ⚠️
 
 <p align="center">
@@ -12,6 +13,11 @@ Generate map templates for the Farming Simulator from real places.<br>
   <a href="#How-To-Run">How-To-Run</a> •
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a>
 </p>
+
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/iwatkot/maps4fs)
+[![Maintainability](https://api.codeclimate.com/v1/badges/b922fd0a7188d37e61de/maintainability)](https://codeclimate.com/github/iwatkot/maps4fs/maintainability) 
+
+</div>
 
 ## Overview
 The main goal of this project is to generate map templates, based on real-world data, for the Farming Simulator. It's important to mention that **templates are not maps**. They are just a starting point for creating a map. This tool just uses built-in textures to highlight different types of terrain and buildings with correct shapes and scales and to generate a height map. The rest of the work is up to you. So if you thought that you could just run this tool and get a playable map, then I'm sorry to disappoint you. But if you are a map maker, then this tool will save you a lot of time.<br>
