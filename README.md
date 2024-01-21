@@ -1,7 +1,5 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/b922fd0a7188d37e61de/maintainability)](https://codeclimate.com/github/iwatkot/maps4fs/maintainability) 
 
-![Poster](https://github-production-user-asset-6210df.s3.amazonaws.com/118521851/298312598-70b04ddf-da8e-4280-9f3c-b15dbcf5c48b.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20240120%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20240120T233416Z&X-Amz-Expires=300&X-Amz-Signature=a712485dec3168f6555640a12ebd824f705ed3f9b45d9435c9137e207d72f269&X-Amz-SignedHeaders=host&actor_id=118521851&key_id=0&repo_id=745100563)
-
 # MAPS4FS
 Generate map templates for the Farming Simulator from real places.<br>
 ⚠️ This project is in the early stage of development. Be ready to face bugs and crashes. ⚠️
