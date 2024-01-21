@@ -1,8 +1,6 @@
 {
     "files.exclude": {
         "**/__pycache__": true,
-        "build": true,
-        "supervisely.egg-info": true
     },
     "python.defaultInterpreterPath": ".venv/bin/python",
     "editor.formatOnSave": true,

@@ -1,1 +1,65 @@
-[![Maintainability](https://api.codeclimate.com/v1/badges/b922fd0a7188d37e61de/maintainability)](https://codeclimate.com/github/iwatkot/maps4fs/maintainability) [![Test Coverage](https://api.codeclimate.com/v1/badges/b922fd0a7188d37e61de/test_coverage)](https://codeclimate.com/github/iwatkot/maps4fs/test_coverage)
+[![Maintainability](https://api.codeclimate.com/v1/badges/b922fd0a7188d37e61de/maintainability)](https://codeclimate.com/github/iwatkot/maps4fs/maintainability) 
+
+![Poster](https://github-production-user-asset-6210df.s3.amazonaws.com/118521851/298312598-70b04ddf-da8e-4280-9f3c-b15dbcf5c48b.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20240120%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20240120T233416Z&X-Amz-Expires=300&X-Amz-Signature=a712485dec3168f6555640a12ebd824f705ed3f9b45d9435c9137e207d72f269&X-Amz-SignedHeaders=host&actor_id=118521851&key_id=0&repo_id=745100563)
+
+# MAPS4FS
+Generate map templates for the Farming Simulator from real places.<br>
+⚠️ This project is in the early stage of development. Be ready to face bugs and crashes. ⚠️
+
+<p align="center">
+  <a href="#Overview">Overview</a> •
+  <a href="#Features">Features</a> •
+  <a href="#Supported-objects">Supported objects</a> •
+  <a href="#How-To-Run">How-To-Run</a>
+</p>
+
+## Overview
+The main goal of this project is to generate map templates, based on real-world data, for the Farming Simulator. It's important to mention that **templates are not maps**. They are just a starting point for creating a map. This tool just uses built-in textures to highlight different types of terrain and buildings with correct shapes and scales and to generate a height map. The rest of the work is up to you. So if you thought that you could just run this tool and get a playable map, then I'm sorry to disappoint you. But if you are a map maker, then this tool will save you a lot of time.<br>
+So, if you're new to map making, here's a quick overview of the process:
+1. Generate a map template using this tool.
+2. Download the Giants Editor.
+3. Open the map template in the Giants Editor.
+4. Now you can start creating your map (adding roads, fields, buildings, etc.).
+
+## Features
+- [x] Allows to enter a location by lat and lon (e.g. from Google Maps).
+- [x] Allows to select a size of the map (2x2, 4x4, 8x8 km, 16x16 km).
+- [x] Generates a map template (check the list of supported objects in [this section](#supported-objects)).
+- [x] Generates a height map.
+
+## Supported objects
+The project is based on the [OpenStreetMap](https://www.openstreetmap.org/) data. So, refer to [this page](https://wiki.openstreetmap.org/wiki/Map_Features) to understand the list below.
+- "building": True
+- "highway": ["motorway", "trunk", "primary"]
+- "highway": ["secondary", "tertiary", "road"]
+- "highway": ["unclassified", "residential", "track"]
+- "natural": "grassland"
+- "landuse": "farmland"
+- "natural": "water"
+- "natural": ["wood", "tree_row"]
+
+The list will be updated as the project develops.
+
+## How-To-Run
+**Option 1 (recommended):**<br>
+Using Telegram bot (not available yet).<br>
+
+**Option 2:**<br>
+Launch the project locally.
+
+1. Navigate to the [releases](https://github.com/iwatkot/maps4fs/releases) page and download the latest version of the tool. If you are familiar with Git, you can clone the repository instead.
+2. Unzip the archive.
+3. Install [Python 3.12](https://www.python.org/downloads/release/python-3120/) for your OS.
+4. Launch the script to create a virtual environment, install dependencies and run the tool:
+    - Windows: right-click on the `run.ps1` and select **Run with PowerShell** (if an error occurs, run `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` in PowerShell)
+    - Linux / Mac: execute the `sh create_venv.sh` in a terminal in the tool's folder (this one will work on Windows too, if you have bash installed)
+5. Minimalistic GUI will appear.
+6. Copy lat and lon from Google Maps and paste them into the corresponding fields. To do this, right-click on someplace on the map and click on the coordinates which look like this: `52.520008, 13.404954`. The first number is the latitude, the second one is the longitude. This point will be the center of the map.
+7. Select the size of the map (2048, 4096, 8192 or 16384 meters). The bigger the map, the longer it takes to generate it. Warning: to open huge maps in Giants Editor, you need a powerful PC. I don't recommend generating maps bigger than 8192 meters. By the way, the default map sizes in the Farming Simulator are 2048x2048 meters.
+8. Click on the **Generate** button.
+9. Wait until the map is generated. It may take a while.
+10. The map will be saved in the `output` folder in the tool's folder. You can open `output/maps/map/map.i3d` in the Giants Editor to check if everything is ok. If you need to run the script again, start with step 4. The script will delete the previous map and generate a new one.
+11. Now you can copy the `output` folder somewhere and start creating your map in the Giants Editor.
+
+### Video tutorial
+[![Video tutorial](https://img.youtube.com/vi/9Z3Z4Z3Z4Z4/maxresdefault.jpg)](https://youtu.be/9Z3Z4Z3Z4Z4)

@@ -32,15 +32,14 @@ root.geometry("300x150")
 lat_label = tk.Label(root, text="Latitude:")
 lat_label.grid(row=0, column=0)
 lat_entry = tk.Entry(root)
-lat_entry.insert(0, "58.5209")
+lat_entry.insert(0, "58.47998897231331")
 lat_entry.grid(row=0, column=1)
 
 lon_label = tk.Label(root, text="Longitude:")
 lon_label.grid(row=1, column=0)
 lon_entry = tk.Entry(root)
-lon_entry.insert(0, "31.2775")
+lon_entry.insert(0, "30.812820183016072")
 lon_entry.grid(row=1, column=1)
-
 
 size_label = tk.Label(root, text="Map size:")
 size_label.grid(row=2, column=0)
