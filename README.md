@@ -1,5 +1,6 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/b922fd0a7188d37e61de/maintainability)](https://codeclimate.com/github/iwatkot/maps4fs/maintainability) 
 
+![](https://i.postimg.cc/y6cq19b5/maps4fs.png)
 # MAPS4FS
 Generate map templates for the Farming Simulator from real places.<br>
 ⚠️ This project is in the early stage of development. Be ready to face bugs and crashes. ⚠️
@@ -8,7 +9,7 @@ Generate map templates for the Farming Simulator from real places.<br>
   <a href="#Overview">Overview</a> •
   <a href="#Features">Features</a> •
   <a href="#Supported-objects">Supported objects</a> •
-  <a href="#How-To-Run">How-To-Run</a>
+  <a href="#How-To-Run">How-To-Run</a> •
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a>
 </p>
 
@@ -52,7 +53,7 @@ Launch the project locally following these steps (or watch the [video tutorial](
 3. Install [Python 3.12](https://www.python.org/downloads/release/python-3120/) for your OS.
 4. Launch the script to create a virtual environment, install dependencies and run the tool:
     - Windows: right-click on the `run.ps1` and select **Run with PowerShell** (if an error occurs, run `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` in PowerShell)
-    - Linux / Mac: execute the `sh create_venv.sh` in a terminal in the tool's folder (this one will work on Windows too, if you have bash installed)
+    - Linux / Mac: execute the `sh run.sh` in a terminal in the tool's folder (this one will work on Windows too, if you have bash installed)
 5. Minimalistic GUI will appear.
 6. Copy lat and lon from Google Maps and paste them into the corresponding fields. To do this, right-click on someplace on the map and click on the coordinates which look like this: `52.520008, 13.404954`. The first number is the latitude, the second one is the longitude. This point will be the center of the map.
 7. Select the size of the map (2048, 4096, 8192 or 16384 meters). The bigger the map, the longer it takes to generate it. Warning: to open huge maps in Giants Editor, you need a powerful PC. I don't recommend generating maps bigger than 8192 meters. By the way, the default map sizes in the Farming Simulator are 2048x2048 meters.
