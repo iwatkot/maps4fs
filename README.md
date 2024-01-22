@@ -45,7 +45,8 @@ The project is based on the [OpenStreetMap](https://www.openstreetmap.org/) data
 - "highway": ["unclassified", "residential", "track"]
 - "natural": "grassland"
 - "landuse": "farmland"
-- "natural": "water"
+- "natural": ["water"]
+- "waterway": True
 - "natural": ["wood", "tree_row"]
 
 The list will be updated as the project develops.
@@ -67,13 +68,16 @@ Launch the project locally following these steps (or watch the [video tutorial](
 5. Minimalistic GUI will appear.
 6. Copy lat and lon from Google Maps and paste them into the corresponding fields. To do this, right-click on someplace on the map and click on the coordinates which look like this: `52.520008, 13.404954`. The first number is the latitude, the second one is the longitude. This point will be the center of the map.
 7. Select the size of the map (2048, 4096, 8192 or 16384 meters). The bigger the map, the longer it takes to generate it. Warning: to open huge maps in Giants Editor, you need a powerful PC. I don't recommend generating maps bigger than 8192 meters. By the way, the default map sizes in the Farming Simulator are 2048x2048 meters.
-8. Click on the **Generate** button.
-9. Wait until the map is generated. It may take a while.
-10. The map will be saved in the `output` folder in the tool's folder. You can open `output/maps/map/map.i3d` in the Giants Editor to check if everything is ok. If you need to run the script again, start with step 4. The script will delete the previous map and generate a new one.
-11. Now you can copy the `output` folder somewhere and start creating your map in the Giants Editor.
+9. Check the advanced settings if you want to change something. I **strongly recommend changing the `max_height` value** to which suits the map better. For more plain-like maps, set it to lower values (e.g. 200). For mountainous maps, set it to higher values (e.g. 800).
+10. Click on the **Generate** button.
+11. Wait until the map is generated. It may take a while.
+12. The map will be saved in the `output` folder in the tool's folder. You can open `output/maps/map/map.i3d` in the Giants Editor to check if everything is ok. If you need to run the script again, start with step 4. The script will delete the previous map and generate a new one.
+13. Now you can copy the `output` folder somewhere and start creating your map in the Giants Editor.
 
 ## Settings
-TODO
+Advanced settings are available in the tool's UI under the **Advanced Settings** tab. Here's the list of them:
+- `max_height` - the maximum height of the map. The default value is 400. Select smaller values for plain-like maps and bigger values for mountainous maps. You may need to experiment with this value to get the desired result.
+- `blur_seed` - the seed for the blur algorithm. The default value is 5, which means 5 meters. The bigger the value, the smoother the map will be. The smaller the value, the more detailed the map will be. Keep in mind that for some regions, where terrain is bumpy, disabling the blur algorithm may lead to a very rough map. So, I recommend leaving this value as it is.
 
 ## Bugs and feature requests
 If you find a bug or have an idea for a new feature, please create an issue [here](https://github.com/iwatkot/maps4fs/issues) or contact me directly on [Telegram](https://t.me/iwatkot).
