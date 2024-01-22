@@ -3,8 +3,11 @@ import time
 import tkinter as tk
 from tkinter import ttk
 
+from rich.console import Console
+
 import generate
 
+logger = Console()
 working_directory = os.getcwd()
 output_directory = os.path.join(working_directory, "output")
 
@@ -21,7 +24,7 @@ def start():
 
     result_label.config(text="Generating...")
     root.update()
-    generate.Map(working_directory, (lat, lon), distance, dem_settings)
+    generate.Map(working_directory, (lat, lon), distance, dem_settings, logger)
     result_label.config(text="Saved in:")
     path_label.config(text=f"{output_directory}")
     for i in range(5, 0, -1):
