@@ -1,0 +1,3 @@
+opencv-python==4.9.0.80
+osmnx==1.8.1
+rasterio==1.3.9

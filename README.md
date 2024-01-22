@@ -1,5 +1,5 @@
 <div align="center" markdown>
-<img src="https://i.postimg.cc/y6cq19b5/maps4fs.png">
+<img src="https://i.postimg.cc/N0Hvm4p4/maps4fs-poster.png">
 
 # Generate map templates for the Farming Simulator from real places
 ⚠️ This project is in the early stage of development. Be ready to face bugs and crashes. ⚠️
