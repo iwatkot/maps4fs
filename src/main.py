@@ -1,8 +1,15 @@
+import configparser
 import os
 import time
 import tkinter as tk
 
 import generate
+
+config = configparser.ConfigParser()
+config.read("config.ini")
+blur_seed = int(config.get("DEM_Settings", "blur_seed"))
+max_height = int(config.get("DEM_Settings", "max_height"))
+dem_settings = {"blur_seed": blur_seed, "max_height": max_height}
 
 
 def start():
@@ -12,7 +19,7 @@ def start():
     distance = int(size / 2)
     result_label.config(text="Generating...")
     root.update()
-    generate.Map((lat, lon), distance)
+    generate.Map((lat, lon), distance, dem_settings)
     result_label.config(text="Saved in:")
     path_label.config(text=f"{generate.OUTPUT_DIR}")
     for i in range(5, 0, -1):
@@ -32,13 +39,13 @@ root.geometry("300x150")
 lat_label = tk.Label(root, text="Latitude:")
 lat_label.grid(row=0, column=0)
 lat_entry = tk.Entry(root)
-lat_entry.insert(0, "58.47998897231331")
+lat_entry.insert(0, "")
 lat_entry.grid(row=0, column=1)
 
 lon_label = tk.Label(root, text="Longitude:")
 lon_label.grid(row=1, column=0)
 lon_entry = tk.Entry(root)
-lon_entry.insert(0, "30.812820183016072")
+lon_entry.insert(0, "")
 lon_entry.grid(row=1, column=1)
 
 size_label = tk.Label(root, text="Map size:")

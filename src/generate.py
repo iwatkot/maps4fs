@@ -52,8 +52,6 @@ if not os.path.isdir(HGT_DIR):
     os.makedirs(HGT_DIR)
 
 SRTM = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
-BLUR_SEED = (5, 5)
-BLUR_SIGMA = 5
 MAP_DEM_PATH = os.path.join(WEIGHTS_DIR, "map_dem.png")
 MAP_XML_PATH = os.path.join(OUTPUT_DIR, "maps", "map", "map.xml")
 
@@ -90,9 +88,12 @@ class Singleton(type):
 
 
 class Map(metaclass=Singleton):
-    def __init__(self, coordinates: tuple[float, float], distance: int, save_dem: bool = True):
+    def __init__(
+        self, coordinates: tuple[float, float], distance: int, dem_settings: dict[str, int]
+    ):
         self.coordinates = coordinates
         self.distance = distance
+        self.dem_settings = dem_settings
         self._set_map_size()
         self._prepare_weights()
 
@@ -101,8 +102,7 @@ class Map(metaclass=Singleton):
         self._read_parameters()
         self._locate_map()
         self.draw()
-        if save_dem:
-            self.save_dem()
+        self.save_dem()
 
     def _set_map_size(self):
         tree = ET.parse(MAP_XML_PATH)
@@ -188,7 +188,7 @@ class Map(metaclass=Singleton):
         grass = self.Layer("grass", {"natural": "grassland"})
         forestGround = self.Layer("forestGround", {"landuse": "farmland"})
         gravel = self.Layer("gravel", {"highway": ["secondary", "tertiary", "road"]}, width=4)
-        waterPuddle = self.Layer("waterPuddle", {"natural": "water"})
+        waterPuddle = self.Layer("waterPuddle", {"natural": "water", "waterway": True}, width=10)
         return [asphalt, concrete, dirtDark, forestGround, grass, grassDirt, gravel, waterPuddle]
 
     def _read_parameters(self):
@@ -331,9 +331,17 @@ class Map(metaclass=Singleton):
         with rasterio.open(tile_path) as src:
             window = rasterio.windows.from_bounds(min_x, min_y, max_x, max_y, src.transform)
             data = src.read(1, window=window)
-        normalized_data = ((data - data.min()) / (data.max() - data.min()) * 255 * 64).astype(
-            "uint16"
+        max_dev = data.max() - data.min()
+        max_height = self.dem_settings["max_height"]
+        scaling_factor = max_dev / max_height if max_dev > max_height else 1
+        adjusted_max_height = int(65535 * scaling_factor)
+        console.log(
+            f"Maximum deviation: {max_dev}. Scaling factor: {scaling_factor}. "
+            f"Adjusted max height: {adjusted_max_height}."
         )
+        normalized_data = (
+            (data - data.min()) / (data.max() - data.min()) * adjusted_max_height
+        ).astype("uint16")
         console.log(
             f"DEM data was normalized to {normalized_data.min()} - {normalized_data.max()}."
         )
@@ -346,6 +354,7 @@ class Map(metaclass=Singleton):
             f"Min: {resampled_data.min()}, max: {resampled_data.max()}."
         )
 
-        blurred_data = cv2.GaussianBlur(resampled_data, BLUR_SEED, BLUR_SIGMA)
+        blur_seed = self.dem_settings["blur_seed"]
+        blurred_data = cv2.GaussianBlur(resampled_data, (blur_seed, blur_seed), 0)
         cv2.imwrite(MAP_DEM_PATH, blurred_data)
         console.log(f"DEM data was blurred and saved to {MAP_DEM_PATH}.")

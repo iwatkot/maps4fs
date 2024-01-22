@@ -7,19 +7,23 @@
 ⚠️ This project is in the early stage of development. Be ready to face bugs and crashes. ⚠️
 
 <p align="center">
-  <a href="#Overview">Overview</a> •
-  <a href="#Features">Features</a> •
-  <a href="#Supported-objects">Supported objects</a> •
-  <a href="#How-To-Run">How-To-Run</a> •
+  <a href="#Overview">Overview</a> • 
+  <a href="#Features">Features</a> • 
+  <a href="#Supported-objects">Supported objects</a> • 
+  <a href="#How-To-Run">How-To-Run</a> • 
+  <a href="Settings">Settings</a> • 
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a>
 </p>
 
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/iwatkot/maps4fs)
+![GitHub downloads](https://img.shields.io/github/downloads/iwatkot/maps4fs/total)
+![GitHub issues](https://img.shields.io/github/issues/iwatkot/maps4fs)
 [![Maintainability](https://api.codeclimate.com/v1/badges/b922fd0a7188d37e61de/maintainability)](https://codeclimate.com/github/iwatkot/maps4fs/maintainability) 
 
 </div>
 
 ## Overview
+The core idea is coming from the awesome [maps4cim](https://github.com/klamann/maps4cim) project.<br>
 The main goal of this project is to generate map templates, based on real-world data, for the Farming Simulator. It's important to mention that **templates are not maps**. They are just a starting point for creating a map. This tool just uses built-in textures to highlight different types of terrain and buildings with correct shapes and scales and to generate a height map. The rest of the work is up to you. So if you thought that you could just run this tool and get a playable map, then I'm sorry to disappoint you. But if you are a map maker, then this tool will save you a lot of time.<br>
 So, if you're new to map making, here's a quick overview of the process:
 1. Generate a map template using this tool.
@@ -67,6 +71,9 @@ Launch the project locally following these steps (or watch the [video tutorial](
 9. Wait until the map is generated. It may take a while.
 10. The map will be saved in the `output` folder in the tool's folder. You can open `output/maps/map/map.i3d` in the Giants Editor to check if everything is ok. If you need to run the script again, start with step 4. The script will delete the previous map and generate a new one.
 11. Now you can copy the `output` folder somewhere and start creating your map in the Giants Editor.
+
+## Settings
+TODO
 
 ## Bugs and feature requests
 If you find a bug or have an idea for a new feature, please create an issue [here](https://github.com/iwatkot/maps4fs/issues) or contact me directly on [Telegram](https://t.me/iwatkot).
