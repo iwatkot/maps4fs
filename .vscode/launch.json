@@ -13,7 +13,7 @@
                 "LOG_LEVEL": "DEBUG",
             }
         },
-                {
+        {
             "name": "Linux / Mac Script",
             "type": "python",
             "request": "launch",
@@ -22,6 +22,18 @@
             "justMyCode": true,
             "env": {
                 "PYTHONPATH": "${workspaceFolder}:${PYTHONPATH}",
+                "LOG_LEVEL": "DEBUG",
+            }
+        },
+        {
+            "name": "Windows Bot",
+            "type": "python",
+            "request": "launch",
+            "program": "src/bot.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder};${PYTHONPATH}",
                 "LOG_LEVEL": "DEBUG",
             }
         }
