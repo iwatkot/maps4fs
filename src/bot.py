@@ -1,13 +1,10 @@
+import asyncio
 import os
 
-from aiogram import Bot, Dispatcher, executor, types
-from aiogram.dispatcher.filters import Text
-from aiogram.types import (
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    KeyboardButton,
-    ReplyKeyboardMarkup,
-)
+from aiogram import Bot, Dispatcher, F, types
+from aiogram.enums import ParseMode
+from aiogram.filters import CommandStart
+from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 from dotenv import load_dotenv
 
 from bot_templates import Buttons, Messages
@@ -16,68 +13,62 @@ from logger import Logger
 load_dotenv("bot.env")
 token = os.getenv("BOT_TOKEN")
 
-logger = Logger(__name__)
-bot = Bot(token=token)
-dp = Dispatcher(bot=bot)
+logger = Logger("bot")
+dp = Dispatcher()
 
 
-@dp.message_handler(commands=["start"])
+@dp.message(CommandStart())
 async def start(message: types.Message) -> None:
     await log_event(message)
 
-    reply_markup = await keyboard(Buttons.MAIN_MENU.value)
+    kb = await keyboard(Buttons.MAIN_MENU.value)
 
-    await bot.send_message(message.from_user.id, Messages.START.value, reply_markup=reply_markup)
+    await message.answer(Messages.START.value, reply_markup=kb.as_markup())
 
 
-@dp.message_handler(Text(equals=Buttons.GITHUB.value))
+@dp.message(F.text == Buttons.GITHUB.value)
 async def button_github(message: types.Message) -> None:
     await log_event(message)
 
-    reply_markup = await keyboard(Buttons.MAIN_MENU.value)
+    kb = await keyboard(Buttons.MAIN_MENU.value)
 
-    await bot.send_message(
-        message.from_user.id,
+    await message.answer(
         Messages.GITHUB.value,
-        reply_markup=reply_markup,
+        reply_markup=kb.as_markup(),
         disable_web_page_preview=True,
-        parse_mode=types.ParseMode.MARKDOWN,
     )
 
 
-@dp.message_handler(Text(equals=Buttons.COFFEE.value))
+@dp.message(F.text == Buttons.COFFEE.value)
 async def button_coffee(message: types.Message) -> None:
     await log_event(message)
 
-    reply_markup = await keyboard(Buttons.MAIN_MENU.value)
+    kb = await keyboard(Buttons.MAIN_MENU.value)
 
-    await bot.send_message(
-        message.from_user.id,
+    await message.answer(
         Messages.COFFEE.value,
-        reply_markup=reply_markup,
+        reply_markup=kb.as_markup(),
         disable_web_page_preview=True,
-        parse_mode=types.ParseMode.MARKDOWN,
     )
 
 
 async def keyboard(
     buttons: list[str] | dict[str, str]
-) -> ReplyKeyboardMarkup | InlineKeyboardMarkup:
+) -> ReplyKeyboardBuilder | InlineKeyboardBuilder:
     if isinstance(buttons, list):
-        keyboard = ReplyKeyboardMarkup(
-            resize_keyboard=True,
-        )
+        builder = ReplyKeyboardBuilder()
         for button in buttons:
-            keyboard.add(KeyboardButton(button))
+            builder.button(text=button)
+        builder.adjust(1, 2)
 
-    elif isinstance(buttons, dict):
-        keyboard = InlineKeyboardMarkup(
-            row_width=2,
-        )
-        for callback_data, text in buttons.items():
-            keyboard.add(InlineKeyboardButton(callback_data=callback_data, text=text))
+    # elif isinstance(buttons, dict):
+    #     keyboard = InlineKeyboardMarkup(
+    #         row_width=2,
+    #     )
+    #     for callback_data, text in buttons.items():
+    #         keyboard.add(InlineKeyboardButton(callback_data=callback_data, text=text))
 
-    return keyboard
+    return builder
 
 
 async def log_event(data: types.Message | types.CallbackQuery) -> None:
@@ -91,5 +82,10 @@ async def log_event(data: types.Message | types.CallbackQuery) -> None:
         )
 
 
+async def main() -> None:
+    bot = Bot(token, parse_mode=ParseMode.MARKDOWN_V2)
+    await dp.start_polling(bot)
+
+
 if __name__ == "__main__":
-    executor.start_polling(dp)
+    asyncio.run(main())

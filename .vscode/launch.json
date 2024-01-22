@@ -26,14 +26,14 @@
             }
         },
         {
-            "name": "Windows Bot",
+            "name": "Linux / Mac  Bot",
             "type": "python",
             "request": "launch",
             "program": "src/bot.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "env": {
-                "PYTHONPATH": "${workspaceFolder};${PYTHONPATH}",
+                "PYTHONPATH": "${workspaceFolder}:${PYTHONPATH}",
                 "LOG_LEVEL": "DEBUG",
             }
         }
