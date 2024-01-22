@@ -6,6 +6,7 @@ import shutil
 import time
 import warnings
 import xml.etree.ElementTree as ET
+from collections import namedtuple
 from typing import Any, Callable, Generator
 
 import cv2
@@ -16,6 +17,16 @@ import rasterio
 import requests
 import shapely
 from rich.console import Console
+
+MAP_SIZES = ["2048", "4096", "8192", "16384"]
+MAX_HEIGHTS = {
+    "200": "For plains",
+    "400": "For hills",
+    "600": "For large hills",
+    "800": "For mountains",
+}
+
+DemSettings = namedtuple("DemSettings", ["blur_seed", "max_height"])
 
 console = Console()
 WORKING_DIR = os.getcwd()
@@ -88,9 +99,7 @@ class Singleton(type):
 
 
 class Map(metaclass=Singleton):
-    def __init__(
-        self, coordinates: tuple[float, float], distance: int, dem_settings: dict[str, int]
-    ):
+    def __init__(self, coordinates: tuple[float, float], distance: int, dem_settings: DemSettings):
         self.coordinates = coordinates
         self.distance = distance
         self.dem_settings = dem_settings
@@ -332,8 +341,8 @@ class Map(metaclass=Singleton):
             window = rasterio.windows.from_bounds(min_x, min_y, max_x, max_y, src.transform)
             data = src.read(1, window=window)
         max_dev = data.max() - data.min()
-        max_height = self.dem_settings["max_height"]
-        scaling_factor = max_dev / max_height if max_dev > max_height else 1
+        max_height = self.dem_settings.max_height
+        scaling_factor = max_dev / max_height if max_dev < max_height else 1
         adjusted_max_height = int(65535 * scaling_factor)
         console.log(
             f"Maximum deviation: {max_dev}. Scaling factor: {scaling_factor}. "
@@ -354,7 +363,7 @@ class Map(metaclass=Singleton):
             f"Min: {resampled_data.min()}, max: {resampled_data.max()}."
         )
 
-        blur_seed = self.dem_settings["blur_seed"]
+        blur_seed = self.dem_settings.blur_seed
         blurred_data = cv2.GaussianBlur(resampled_data, (blur_seed, blur_seed), 0)
         cv2.imwrite(MAP_DEM_PATH, blurred_data)
         console.log(f"DEM data was blurred and saved to {MAP_DEM_PATH}.")

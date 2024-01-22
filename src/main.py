@@ -1,15 +1,9 @@
-import configparser
 import os
 import time
 import tkinter as tk
+from tkinter import ttk
 
 import generate
-
-config = configparser.ConfigParser()
-config.read("config.ini")
-blur_seed = int(config.get("DEM_Settings", "blur_seed"))
-max_height = int(config.get("DEM_Settings", "max_height"))
-dem_settings = {"blur_seed": blur_seed, "max_height": max_height}
 
 
 def start():
@@ -17,6 +11,11 @@ def start():
     lon = float(lon_entry.get())
     size = int(size_var.get())
     distance = int(size / 2)
+
+    blur_seed = int(blur_seed_entry.get())
+    max_height = int(max_height_var.get())
+    dem_settings = generate.DemSettings(blur_seed, max_height)
+
     result_label.config(text="Generating...")
     root.update()
     generate.Map((lat, lon), distance, dem_settings)
@@ -34,7 +33,7 @@ def open_output_dir(event):
 
 
 root = tk.Tk()
-root.geometry("300x150")
+root.geometry("300x300")
 
 lat_label = tk.Label(root, text="Latitude:")
 lat_label.grid(row=0, column=0)
@@ -52,8 +51,7 @@ size_label = tk.Label(root, text="Map size:")
 size_label.grid(row=2, column=0)
 size_var = tk.StringVar(root)
 size_var.set("2048")
-size_options = ["2048", "4096", "8192", "16384"]
-size_menu = tk.OptionMenu(root, size_var, *size_options)
+size_menu = tk.OptionMenu(root, size_var, *generate.MAP_SIZES)
 size_menu.grid(row=2, column=1)
 
 button = tk.Button(root, text="Generate map", command=start)
@@ -68,5 +66,24 @@ path_label.bind("<Button-1>", open_output_dir)
 
 close_time_label = tk.Label(root, text="")
 close_time_label.grid(row=5, column=0)
+
+separator = ttk.Separator(root, orient="horizontal")
+separator.grid(row=6, column=0, columnspan=2, sticky="ew")
+
+advanced_options = tk.Label(root, text="Advanced options")
+advanced_options.grid(row=7, column=0, columnspan=2)
+
+blur_seed_label = tk.Label(root, text="Blur seed:")
+blur_seed_label.grid(row=8, column=0)
+blur_seed_entry = tk.Entry(root)
+blur_seed_entry.insert(0, "5")
+blur_seed_entry.grid(row=8, column=1)
+
+max_height_label = tk.Label(root, text="Max height:")
+max_height_label.grid(row=9, column=0)
+max_height_var = tk.StringVar(root)
+max_height_var.set("400")
+max_height_menu = tk.OptionMenu(root, max_height_var, *list(generate.MAX_HEIGHTS.keys()))
+max_height_menu.grid(row=9, column=1)
 
 root.mainloop()
