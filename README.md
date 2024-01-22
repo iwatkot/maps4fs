@@ -1,5 +1,3 @@
-
-
 <div align="center" markdown>
 <img src="https://i.postimg.cc/y6cq19b5/maps4fs.png">
 
@@ -73,6 +71,12 @@ Launch the project locally following these steps (or watch the [video tutorial](
 11. Wait until the map is generated. It may take a while.
 12. The map will be saved in the `output` folder in the tool's folder. You can open `output/maps/map/map.i3d` in the Giants Editor to check if everything is ok. If you need to run the script again, start with step 4. The script will delete the previous map and generate a new one.
 13. Now you can copy the `output` folder somewhere and start creating your map in the Giants Editor.
+
+**Option 3:**<br>
+Using command line (not available yet). I'll add this on demand.
+
+**Option 4:**<br>
+Using the web version (not available yet). I'll add this on demand. But at the moment, I just don't want to host it by myself. But it's not a problem to add a simple web app.
 
 ## Settings
 Advanced settings are available in the tool's UI under the **Advanced Settings** tab. Here's the list of them:

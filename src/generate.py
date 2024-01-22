@@ -33,6 +33,44 @@ DemSettings = namedtuple("DemSettings", ["blur_seed", "max_height"])
 
 
 class Map:
+    """Class which represents a map instance. It's using to generate map from coordinates.
+    It's using OSM data to generate textures and SRTM data to generate DEM.
+
+    Args:
+        working_directory (str): Path to working directory.
+        coordinates (tuple[float, float]): Coordinates of the map center.
+        distance (int): Distance from the map center to the map edge.
+        dem_settings (DemSettings): Settings for DEM generation.
+        logger (Any): Logger instance.
+        name (str, optional): Name of the map instance. Defaults to None. Used for multiple instances.
+
+    Attributes:
+        working_directory (str): Path to working directory.
+        coordinates (tuple[float, float]): Coordinates of the map center.
+        distance (int): Distance from the map center to the map edge.
+        dem_settings (DemSettings): Settings for DEM generation.
+        logger (Any): Logger instance.
+        bbox (tuple[float, float, float, float]): Bounding box of the map.
+        minimum_x (float): Minimum X coordinate of the map in UTM format.
+        minimum_y (float): Minimum Y coordinate of the map in UTM format.
+        maximum_x (float): Maximum X coordinate of the map in UTM format.
+        maximum_y (float): Maximum Y coordinate of the map in UTM format.
+        height (float): Height of the map in meters.
+        width (float): Width of the map in meters.
+        height_coef (float): Height coefficient (meters per pixel).
+        width_coef (float): Width coefficient (meters per pixel).
+        easting (bool): True if map is in east hemisphere, False otherwise.
+        northing (bool): True if map is in north hemisphere, False otherwise.
+        output_dir (str): Path to output directory.
+        gz_dir (str): Path to gz directory.
+        hgt_dir (str): Path to hgt directory.
+        data_dir (str): Path to data directory.
+        weights_dir (str): Path to weights directory.
+        map_xml_path (str): Path to map.xml file.
+        map_dem_path (str): Path to map_dem.png file.
+        layers (list[Layer]): List of layers with textures and tags from textures.json.
+    """
+
     def __init__(
         self,
         working_directory: str,
@@ -56,9 +94,19 @@ class Map:
         self._read_parameters()
         self._locate_map()
         self.draw()
-        self.save_dem()
+        self.dem()
 
     def _prepare_dirs(self, name: str | None) -> None:
+        """Defines directories for map generation and creates some of them.
+        Unpacks template archive to output directory.
+        Following directories are used by the instance:
+            - output (where template will be unpacked and weights edited)
+            - output/{name} (if name is provided for multiple instances)
+            - temp (contains gz and hgt directories)
+            - temp/gz (where SRTM files will be downloaded)
+            - temp/hgt (where SRTM files will be extracted)
+            - data (contains map-template.zip)
+        """
         self.working_directory = os.getcwd()
         self.logger.log(f"Working directory: {self.working_directory}")
 
@@ -89,6 +137,7 @@ class Map:
         self.logger.log(f"Map XML file: {self.map_xml_path}, DEM file: {self.map_dem_path}")
 
     def _set_map_size(self):
+        """Edits map.xml file to set correct map size."""
         tree = ET.parse(self.map_xml_path)
         self.logger.log(f"Map XML file loaded from: {self.map_xml_path}.")
         root = tree.getroot()
@@ -99,6 +148,7 @@ class Map:
         self.logger.log(f"Map XML file saved to: {self.map_xml_path}.")
 
     def _prepare_weights(self):
+        """Prepares weights for textures from textures.json."""
         textures_path = os.path.join(self.working_directory, "textures.json")
         textures = json.load(open(textures_path, "r"))
         self.logger.log(f"Loaded {len(textures)} textures from {textures_path}.")
@@ -115,6 +165,12 @@ class Map:
         self.logger.log(f"Fetched {len(weight_files)} weight files.")
 
     def _generate_weights(self, texture_name: str, layer_numbers: int) -> None:
+        """Generates weight files for textures. Each file is a numpy array of zeros and dtype uint8 (0-255).
+
+        Args:
+            texture_name (str): Name of the texture.
+            layer_numbers (int): Number of layers in the texture.
+        """
         size = self.distance * 2
         postfix = "_weight.png"
         if layer_numbers == 0:
@@ -130,6 +186,22 @@ class Map:
             cv2.imwrite(filepath, img)
 
     class Layer:
+        """Class which represents a layer with textures and tags from textures.json.
+        It's using to obtain data from OSM using tags and make changes into corresponding textures.
+
+        Args:
+            name (str): Name of the layer.
+            tags (dict[str, str | list[str]]): Dictionary of tags to search for.
+            width (int | None): Width of the polygon in meters (only for LineString).
+
+        Attributes:
+            name (str): Name of the layer.
+            tags (dict[str, str | list[str]]): Dictionary of tags to search for.
+            width (int | None): Width of the polygon in meters (only for LineString).
+            paths (list[str]): List of paths to textures of the layer.
+            path (str): Path to the first texture of the layer.
+        """
+
         def __init__(self, name: str, tags: dict[str, str | list[str]], width: int = None):
             self.name = name
             self.tags = tags
@@ -138,6 +210,11 @@ class Map:
             self._check_shapes()
 
         def _get_paths(self):
+            """Gets paths to textures of the layer.
+
+            Raises:
+                FileNotFoundError: If texture is not found.
+            """
             if self.name == "waterPuddle":
                 self.paths = [os.path.join(weights_dir, "waterPuddle_weight.png")]
                 return
@@ -147,7 +224,12 @@ class Map:
                 raise FileNotFoundError(f"Texture not found: {self.name}")
             self.paths = paths
 
-        def _check_shapes(self):
+        def _check_shapes(self) -> None:
+            """Checks if all textures of the layer have the same shape.
+
+            Raises:
+                ValueError: If textures have different shapes.
+            """
             unique_shapes = set()
             for path in self.paths:
                 img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
@@ -156,11 +238,21 @@ class Map:
                 raise ValueError(f"Texture {self.name} has multiple shapes: {unique_shapes}")
 
         @property
-        def path(self):
+        def path(self) -> str:
+            """Returns path to the first texture of the layer.
+
+            Returns:
+                str: Path to the texture.
+            """
             return self.paths[0]
 
     @property
-    def layers(self):
+    def layers(self) -> list[Layer]:
+        """Returns list of layers with textures and tags from textures.json.
+
+        Returns:
+            list[Layer]: List of layers.
+        """
         asphalt = self.Layer("asphalt", {"highway": ["motorway", "trunk", "primary"]}, width=8)
         concrete = self.Layer("concrete", {"building": True})
         dirtDark = self.Layer(
@@ -173,7 +265,12 @@ class Map:
         waterPuddle = self.Layer("waterPuddle", {"natural": "water", "waterway": True}, width=10)
         return [asphalt, concrete, dirtDark, forestGround, grass, grassDirt, gravel, waterPuddle]
 
-    def _read_parameters(self):
+    def _read_parameters(self) -> None:
+        """Reads map parameters from OSM data, such as:
+        - minimum and maximum coordinates in UTM format
+        - map dimensions in meters
+        - map coefficients (meters per pixel)
+        """
         north, south, east, west = ox.utils_geo.bbox_from_point(
             self.coordinates, dist=self.distance, project_utm=True
         )
@@ -193,13 +290,22 @@ class Map:
         self.width_coef = self.width / (self.distance * 2)
         self.logger.log(f"Map coefficients (HxW): {self.height_coef} x {self.width_coef}.")
 
-    def _locate_map(self):
+    def _locate_map(self) -> None:
+        """Checks if map is in east or west hemisphere and in north or south hemisphere."""
         self.easting = self.minimum_x < 500000
         self.northing = self.minimum_y < 10000000
         self.logger.log(f"Map is in {'east' if self.easting else 'west'} of central meridian.")
         self.logger.log(f"Map is in {'north' if self.northing else 'south'} hemisphere.")
 
     def get_relative_x(self, x: float) -> int:
+        """Converts UTM X coordinate to relative X coordinate in map image.
+
+        Args:
+            x (float): UTM X coordinate.
+
+        Returns:
+            int: Relative X coordinate in map image.
+        """
         if self.easting:
             raw_x = x - self.minimum_x
         else:
@@ -207,6 +313,14 @@ class Map:
         return int(raw_x * self.height_coef)
 
     def get_relative_y(self, y: float) -> int:
+        """Converts UTM Y coordinate to relative Y coordinate in map image.
+
+        Args:
+            y (float): UTM Y coordinate.
+
+        Returns:
+            int: Relative Y coordinate in map image.
+        """
         if self.northing:
             raw_y = y - self.minimum_y
         else:
@@ -214,6 +328,16 @@ class Map:
         return self.height - int(raw_y * self.width_coef)
 
     def _to_np(self, geometry: shapely.geometry.polygon.Polygon, *args) -> np.ndarray:
+        """Converts Polygon geometry to numpy array of polygon points.
+
+        Args:
+            geometry (shapely.geometry.polygon.Polygon): Polygon geometry.
+            *args: Additional arguments:
+                - width (int | None): Width of the polygon in meters.
+
+        Returns:
+            np.ndarray: Numpy array of polygon points.
+        """
         xs, ys = geometry.exterior.coords.xy
         xs = [int(self.get_relative_x(x)) for x in xs.tolist()]
         ys = [int(self.get_relative_y(y)) for y in ys.tolist()]
@@ -221,6 +345,15 @@ class Map:
         return np.array(pairs, dtype=np.int32).reshape((-1, 1, 2))
 
     def _to_polygon(self, obj: pd.core.series.Series, width: int | None) -> np.ndarray | None:
+        """Converts OSM object to numpy array of polygon points.
+
+        Args:
+            obj (pd.core.series.Series): OSM object.
+            width (int | None): Width of the polygon in meters.
+
+        Returns:
+            np.ndarray | None: Numpy array of polygon points.
+        """
         geometry = obj["geometry"]
         geometry_type = geometry.geom_type
         converter = self._converters(geometry_type)
@@ -229,17 +362,45 @@ class Map:
             return
         return converter(geometry, width)
 
-    def _linestring(self, geometry: shapely.geometry.linestring.LineString, width: int | None):
+    def _linestring(
+        self, geometry: shapely.geometry.linestring.LineString, width: int | None
+    ) -> np.ndarray:
+        """Converts LineString geometry to numpy array of polygon points.
+
+        Args:
+            geometry (shapely.geometry.linestring.LineString): LineString geometry.
+            width (int | None): Width of the polygon in meters.
+
+        Returns:
+            np.ndarray: Numpy array of polygon points.
+        """
         polygon = geometry.buffer(width)
         return self._to_np(polygon)
 
     def _converters(self, geom_type: str) -> Callable[[shapely.geometry, int | None], np.ndarray]:
+        """Returns a converter function for a given geometry type.
+
+        Args:
+            geom_type (str): Geometry type.
+
+        Returns:
+            Callable[[shapely.geometry, int | None], np.ndarray]: Converter function.
+        """
         converters = {"Polygon": self._to_np, "LineString": self._linestring}
         return converters.get(geom_type)
 
     def polygons(
         self, tags: dict[str, str | list[str]], width: int | None
     ) -> Generator[np.ndarray, None, None]:
+        """Generator which yields numpy arrays of polygons from OSM data.
+
+        Args:
+            tags (dict[str, str | list[str]]): Dictionary of tags to search for.
+            width (int | None): Width of the polygon in meters (only for LineString).
+
+        Yields:
+            Generator[np.ndarray, None, None]: Numpy array of polygon points.
+        """
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", DeprecationWarning)
@@ -258,6 +419,7 @@ class Map:
             yield polygon
 
     def draw(self) -> None:
+        """Iterates over layers and fills them with polygons from OSM data."""
         for layer in self.layers:
             img = cv2.imread(layer.path, cv2.IMREAD_UNCHANGED)
             for polygon in self.polygons(layer.tags, layer.width):
@@ -265,17 +427,26 @@ class Map:
             cv2.imwrite(layer.path, img)
             self.logger.log(f"Texture {layer.path} saved.")
 
-    # def pack_mod(self) -> None:
-    #     shutil.make_archive(MOD_SAVE_PATH, "zip", OUTPUT_DIR)
-    #     self.logger.log(f"Archive created: {MOD_SAVE_PATH}.")
-    #     return MOD_SAVE_PATH
-
     def _tile_info(self, lat: float, lon: float) -> tuple[str, str]:
+        """Returns latitude band and tile name for SRTM tile from coordinates.
+
+        Args:
+            lat (float): Latitude.
+            lon (float): Longitude.
+
+        Returns:
+            tuple[str, str]: Latitude band and tile name.
+        """
         latitude_band = f"N{int(lat):02d}"
         tile_name = f"N{int(lat):02d}E{int(lon):03d}"
         return latitude_band, tile_name
 
     def _download_tile(self) -> str:
+        """Downloads SRTM tile from Amazon S3 using coordinates and decompresses it.
+
+        Returns:
+            str: Path to decompressed tile.
+        """
         latitude_band, tile_name = self._tile_info(*self.coordinates)
         self.logger.log(f"Downloading tile {tile_name} from latitude band {latitude_band}...")
 
@@ -308,7 +479,8 @@ class Map:
         self.logger.log(f"Tile decompressed to {decompressed_file_path}.")
         return decompressed_file_path
 
-    def save_dem(self):
+    def dem(self) -> None:
+        """Reads SRTM file, crops it to map size, normalizes and blurs it, saves to map directory."""
         north, south, east, west = ox.utils_geo.bbox_from_point(
             self.coordinates, dist=self.distance
         )
@@ -319,6 +491,32 @@ class Map:
         with rasterio.open(tile_path) as src:
             window = rasterio.windows.from_bounds(min_x, min_y, max_x, max_y, src.transform)
             data = src.read(1, window=window)
+
+        normalized_data = self._normalize_dem(data)
+
+        dem_output_resolution = (self.distance + 1, self.distance + 1)
+        resampled_data = cv2.resize(
+            normalized_data, dem_output_resolution, interpolation=cv2.INTER_LINEAR
+        )
+        self.logger.log(
+            f"DEM data was resampled. Shape: {resampled_data.shape}, dtype: {resampled_data.dtype}. "
+            f"Min: {resampled_data.min()}, max: {resampled_data.max()}."
+        )
+
+        blur_seed = self.dem_settings.blur_seed
+        blurred_data = cv2.GaussianBlur(resampled_data, (blur_seed, blur_seed), 0)
+        cv2.imwrite(self.map_dem_path, blurred_data)
+        self.logger.log(f"DEM data was blurred and saved to {self.map_dem_path}.")
+
+    def _normalize_dem(self, data: np.ndarray) -> np.ndarray:
+        """Normalize DEM data to 16-bit unsigned integer using max height from settings.
+
+        Args:
+            data (np.ndarray): DEM data from SRTM file after cropping.
+
+        Returns:
+            np.ndarray: Normalized DEM data.
+        """
         max_dev = data.max() - data.min()
         max_height = self.dem_settings.max_height
         scaling_factor = max_dev / max_height if max_dev < max_height else 1
@@ -333,16 +531,4 @@ class Map:
         self.logger.log(
             f"DEM data was normalized to {normalized_data.min()} - {normalized_data.max()}."
         )
-        dem_output_resolution = (self.distance + 1, self.distance + 1)
-        resampled_data = cv2.resize(
-            normalized_data, dem_output_resolution, interpolation=cv2.INTER_LINEAR
-        )
-        self.logger.log(
-            f"DEM data was resampled. Shape: {resampled_data.shape}, dtype: {resampled_data.dtype}. "
-            f"Min: {resampled_data.min()}, max: {resampled_data.max()}."
-        )
-
-        blur_seed = self.dem_settings.blur_seed
-        blurred_data = cv2.GaussianBlur(resampled_data, (blur_seed, blur_seed), 0)
-        cv2.imwrite(self.map_dem_path, blurred_data)
-        self.logger.log(f"DEM data was blurred and saved to {self.map_dem_path}.")
+        return normalized_data

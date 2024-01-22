@@ -12,7 +12,8 @@ working_directory = os.getcwd()
 output_directory = os.path.join(working_directory, "output")
 
 
-def start():
+def start() -> None:
+    """Reads the input from the GUI and starts the map generation."""
     lat = float(lat_entry.get())
     lon = float(lon_entry.get())
     size = int(size_var.get())
@@ -34,7 +35,8 @@ def start():
     root.destroy()
 
 
-def open_output_dir(event):
+def open_output_dir(event: tk.Event) -> None:
+    """Open the output directory in the file explorer."""
     os.startfile(output_directory)
 
 
