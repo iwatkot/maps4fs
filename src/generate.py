@@ -29,44 +29,7 @@ MAX_HEIGHTS = {
 DemSettings = namedtuple("DemSettings", ["blur_seed", "max_height"])
 
 console = Console()
-WORKING_DIR = os.getcwd()
-console.log(f"Working directory: {WORKING_DIR}")
-MOD_SAVE_PATH = os.path.join(WORKING_DIR, "FS22_MapTemplate")
-
-DATA_DIR = os.path.join(WORKING_DIR, "data")
-TEMPLATE_ARCHIVE = os.path.join(DATA_DIR, "map-template.zip")
-
-if not os.path.isfile(TEMPLATE_ARCHIVE):
-    raise FileNotFoundError(
-        f"Template archive not found: {TEMPLATE_ARCHIVE}. Please clone the repository again."
-    )
-
-OUTPUT_DIR = os.path.join(WORKING_DIR, "output")
-if not os.path.isdir(OUTPUT_DIR):
-    os.mkdir(OUTPUT_DIR)
-    console.log("Output directory created.")
-else:
-    console.log("Output directory already exists and will be deleted.")
-    shutil.rmtree(OUTPUT_DIR)
-    os.mkdir(OUTPUT_DIR)
-
-shutil.unpack_archive(TEMPLATE_ARCHIVE, OUTPUT_DIR)
-console.log("Template archive unpacked.")
-
-WEIGHTS_DIR = os.path.join(OUTPUT_DIR, "maps", "map", "data")
-
-GZ_DIR = os.path.join(WORKING_DIR, "temp", "gz")
-HGT_DIR = os.path.join(WORKING_DIR, "temp", "hgt")
-if not os.path.isdir(GZ_DIR):
-    os.makedirs(GZ_DIR)
-if not os.path.isdir(HGT_DIR):
-    os.makedirs(HGT_DIR)
-
 SRTM = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
-MAP_DEM_PATH = os.path.join(WEIGHTS_DIR, "map_dem.png")
-MAP_XML_PATH = os.path.join(OUTPUT_DIR, "maps", "map", "map.xml")
-
-TEXTURES_JSON = os.path.join(WORKING_DIR, "textures.json")
 
 
 def timeit(func: Callable[Any, Any]) -> Callable[Any, Any]:
@@ -89,20 +52,20 @@ def timeit(func: Callable[Any, Any]) -> Callable[Any, Any]:
     return wrapper
 
 
-class Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-
-class Map(metaclass=Singleton):
-    def __init__(self, coordinates: tuple[float, float], distance: int, dem_settings: DemSettings):
+class Map:
+    def __init__(
+        self,
+        working_directory: str,
+        coordinates: tuple[float, float],
+        distance: int,
+        dem_settings: DemSettings,
+        name: str = None,
+    ):
+        self.working_directory = working_directory
         self.coordinates = coordinates
         self.distance = distance
         self.dem_settings = dem_settings
+        self._prepare_dirs(name)
         self._set_map_size()
         self._prepare_weights()
 
@@ -113,28 +76,59 @@ class Map(metaclass=Singleton):
         self.draw()
         self.save_dem()
 
+    def _prepare_dirs(self, name: str | None) -> None:
+        self.working_directory = os.getcwd()
+        console.log(f"Working directory: {self.working_directory}")
+
+        self.output_dir = os.path.join(self.working_directory, "output")
+        if name:
+            self.output_dir = os.path.join(self.output_dir, name)
+        os.makedirs(self.output_dir, exist_ok=True)
+        console.log(f"Output directory created: {self.output_dir}")
+
+        tmp_dir = os.path.join(self.working_directory, "temp")
+        self.gz_dir = os.path.join(tmp_dir, "gz")
+        self.hgt_dir = os.path.join(tmp_dir, "hgt")
+        os.makedirs(self.gz_dir, exist_ok=True)
+        os.makedirs(self.hgt_dir, exist_ok=True)
+        console.log(f"Temporary directories created: {self.gz_dir}, {self.hgt_dir}")
+
+        self.data_dir = os.path.join(self.working_directory, "data")
+        template_archive = os.path.join(self.data_dir, "map-template.zip")
+        shutil.unpack_archive(template_archive, self.output_dir)
+        console.log(f"Template archive unpacked to {self.output_dir}")
+
+        global weights_dir
+        weights_dir = os.path.join(self.output_dir, "maps", "map", "data")
+        self.weights_dir = weights_dir
+        console.log(f"Weights directory: {self.weights_dir}")
+        self.map_xml_path = os.path.join(self.output_dir, "maps", "map", "map.xml")
+        self.map_dem_path = os.path.join(self.weights_dir, "map_dem.png")
+        console.log(f"Map XML file: {self.map_xml_path}, DEM file: {self.map_dem_path}")
+
     def _set_map_size(self):
-        tree = ET.parse(MAP_XML_PATH)
-        console.log(f"Map XML file loaded from: {MAP_XML_PATH}.")
+        tree = ET.parse(self.map_xml_path)
+        console.log(f"Map XML file loaded from: {self.map_xml_path}.")
         root = tree.getroot()
         for map_elem in root.iter("map"):
             map_elem.set("width", str(self.distance * 2))
             map_elem.set("height", str(self.distance * 2))
-        tree.write(MAP_XML_PATH)
-        console.log(f"Map XML file saved to: {MAP_XML_PATH}.")
+        tree.write(self.map_xml_path)
+        console.log(f"Map XML file saved to: {self.map_xml_path}.")
 
     @timeit
     def _prepare_weights(self):
-        textures = json.load(open(TEXTURES_JSON, "r"))
-        console.log(f"Loaded {len(textures)} textures from {TEXTURES_JSON}.")
+        textures_path = os.path.join(self.working_directory, "textures.json")
+        textures = json.load(open(textures_path, "r"))
+        console.log(f"Loaded {len(textures)} textures from {textures_path}.")
         for texture_name, layer_numbers in textures.items():
             self._generate_weights(texture_name, layer_numbers)
         console.log(f"Generated weights for {len(textures)} textures.")
 
         global weight_files
         weight_files = [
-            os.path.join(WEIGHTS_DIR, f)
-            for f in os.listdir(WEIGHTS_DIR)
+            os.path.join(self.weights_dir, f)
+            for f in os.listdir(self.weights_dir)
             if f.endswith("_weight.png")
         ]
         console.log(f"Fetched {len(weight_files)} weight files.")
@@ -144,10 +138,10 @@ class Map(metaclass=Singleton):
         size = self.distance * 2
         postfix = "_weight.png"
         if layer_numbers == 0:
-            filepaths = [os.path.join(WEIGHTS_DIR, texture_name + postfix)]
+            filepaths = [os.path.join(self.weights_dir, texture_name + postfix)]
         else:
             filepaths = [
-                os.path.join(WEIGHTS_DIR, texture_name + str(i).zfill(2) + postfix)
+                os.path.join(self.weights_dir, texture_name + str(i).zfill(2) + postfix)
                 for i in range(1, layer_numbers + 1)
             ]
 
@@ -166,7 +160,7 @@ class Map(metaclass=Singleton):
 
         def _get_paths(self):
             if self.name == "waterPuddle":
-                self.paths = [os.path.join(WEIGHTS_DIR, "waterPuddle_weight.png")]
+                self.paths = [os.path.join(weights_dir, "waterPuddle_weight.png")]
                 return
             pattern = re.compile(rf"{self.name}\d{{2}}_weight")
             paths = [path for path in weight_files if pattern.search(path)]
@@ -292,10 +286,10 @@ class Map(metaclass=Singleton):
             cv2.imwrite(layer.path, img)
             console.log(f"Texture {layer.path} saved.")
 
-    def pack_mod(self) -> None:
-        shutil.make_archive(MOD_SAVE_PATH, "zip", OUTPUT_DIR)
-        console.log(f"Archive created: {MOD_SAVE_PATH}.")
-        return MOD_SAVE_PATH
+    # def pack_mod(self) -> None:
+    #     shutil.make_archive(MOD_SAVE_PATH, "zip", OUTPUT_DIR)
+    #     console.log(f"Archive created: {MOD_SAVE_PATH}.")
+    #     return MOD_SAVE_PATH
 
     def _tile_info(self, lat: float, lon: float) -> tuple[str, str]:
         latitude_band = f"N{int(lat):02d}"
@@ -306,23 +300,29 @@ class Map(metaclass=Singleton):
         latitude_band, tile_name = self._tile_info(*self.coordinates)
         console.log(f"Downloading tile {tile_name} from latitude band {latitude_band}...")
 
-        url = SRTM.format(latitude_band=latitude_band, tile_name=tile_name)
-        console.log(f"Trying to get response from {url}...")
-
-        response = requests.get(url, stream=True)
-        compressed_save_path = os.path.join(GZ_DIR, f"{tile_name}.hgt.gz")
-
-        if response.status_code == 200:
-            console.log(f"Response received. Saving to {compressed_save_path}...")
-            with open(compressed_save_path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
-            console.log("Compressed tile successfully downloaded.")
+        compressed_save_path = os.path.join(self.gz_dir, f"{tile_name}.hgt.gz")
+        if os.path.isfile(compressed_save_path):
+            console.log(
+                f"Compressed tile already exists: {compressed_save_path}, skipping download."
+            )
         else:
-            console.log(f"Response was failed with status code {response.status_code}.")
-            return
+            console.log(f"Compressed tile {tile_name} does not exist, downloading...")
+            url = SRTM.format(latitude_band=latitude_band, tile_name=tile_name)
+            console.log(f"Trying to get response from {url}...")
+            console.log("Compressed tile does not exist, downloading...")
+            response = requests.get(url, stream=True)
 
-        decompressed_file_path = os.path.join(WORKING_DIR, "temp", "hgt", f"{tile_name}.hgt")
+            if response.status_code == 200:
+                console.log(f"Response received. Saving to {compressed_save_path}...")
+                with open(compressed_save_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                console.log("Compressed tile successfully downloaded.")
+            else:
+                console.log(f"Response was failed with status code {response.status_code}.")
+                return
+
+        decompressed_file_path = os.path.join(self.hgt_dir, f"{tile_name}.hgt")
         with gzip.open(compressed_save_path, "rb") as f_in:
             with open(decompressed_file_path, "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
@@ -365,5 +365,5 @@ class Map(metaclass=Singleton):
 
         blur_seed = self.dem_settings.blur_seed
         blurred_data = cv2.GaussianBlur(resampled_data, (blur_seed, blur_seed), 0)
-        cv2.imwrite(MAP_DEM_PATH, blurred_data)
-        console.log(f"DEM data was blurred and saved to {MAP_DEM_PATH}.")
+        cv2.imwrite(self.map_dem_path, blurred_data)
+        console.log(f"DEM data was blurred and saved to {self.map_dem_path}.")

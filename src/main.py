@@ -5,6 +5,9 @@ from tkinter import ttk
 
 import generate
 
+working_directory = os.getcwd()
+output_directory = os.path.join(working_directory, "output")
+
 
 def start():
     lat = float(lat_entry.get())
@@ -18,9 +21,9 @@ def start():
 
     result_label.config(text="Generating...")
     root.update()
-    generate.Map((lat, lon), distance, dem_settings)
+    generate.Map(working_directory, (lat, lon), distance, dem_settings)
     result_label.config(text="Saved in:")
-    path_label.config(text=f"{generate.OUTPUT_DIR}")
+    path_label.config(text=f"{output_directory}")
     for i in range(5, 0, -1):
         close_time_label.config(text=f"Closing in {i} seconds...")
         root.update()
@@ -29,7 +32,7 @@ def start():
 
 
 def open_output_dir(event):
-    os.startfile(generate.OUTPUT_DIR)
+    os.startfile(output_directory)
 
 
 root = tk.Tk()
