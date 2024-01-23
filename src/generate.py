@@ -567,6 +567,11 @@ class Map:
         return normalized_data
 
     def pack(self) -> str:
+        """Packs map directory to zip archive.
+
+        Returns:
+            str: Path to the archive.
+        """
         archives_dir = os.path.join(self.working_directory, "archives")
         os.makedirs(archives_dir, exist_ok=True)
         archive_name = self.name if self.name else "map"
@@ -577,7 +582,12 @@ class Map:
         self.logger.log(f"Map packed to {archive_path}.")
         return archive_path
 
-    def preview(self) -> list[str]:
+    def preview(self) -> str:
+        """Merges layers into one image and saves it to previews directory.
+
+        Returns:
+            str: Path to the preview.
+        """
         preview_size = (2048, 2048)
         images = [
             cv2.resize(cv2.imread(layer.path, cv2.IMREAD_UNCHANGED), preview_size)

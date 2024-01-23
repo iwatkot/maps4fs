@@ -2,6 +2,8 @@ from enum import Enum
 
 
 class Messages(Enum):
+    """Messages, which are used in the bot."""
+
     START = (
         "Hello, I'm a bot that can generate map templates for Farming Simulator.\n\n"
         "To get started, use the menu below."
@@ -43,6 +45,8 @@ class Messages(Enum):
 
 
 class Buttons(Enum):
+    """Buttons, which are used in the bot menu."""
+
     GENERATE = "🗺️ Generate new map"
     GITHUB = "🐙 Open on GitHub"
     COFFEE = "☕ Buy me a coffee"

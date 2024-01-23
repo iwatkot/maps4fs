@@ -28,6 +28,21 @@ sessions = {}
 
 
 class Session:
+    """Represents a session of map generation. Stores all the necessary data.
+
+    Args:
+        telegram_id (int): Telegram ID of the user.
+        coordinates (tuple[float, float]): Coordinates of the center of the map.
+
+    Attributes:
+        telegram_id (int): Telegram ID of the user.
+        timestamp (int): Timestamp of the session creation.
+        name (str): Name of the session.
+        coordinates (tuple[float, float]): Coordinates of the center of the map.
+        distance (int): Distance from the center of the map to the edge.
+        dem_settings (generate.DemSettings): DEM settings.
+    """
+
     def __init__(self, telegram_id: int, coordinates: tuple[float, float]):
         self.telegram_id = telegram_id
         self.timestamp = int(datetime.now().timestamp())
@@ -36,7 +51,12 @@ class Session:
         self.distance = None
         self.dem_settings = None
 
-    def run(self):
+    def run(self) -> tuple[str, str]:
+        """Runs the session and returns paths to the preview and the archive.
+
+        Returns:
+            tuple[str, str]: Paths to the preview and the archive.
+        """
         gm = generate.Map(
             working_directory, self.coordinates, self.distance, self.dem_settings, logger, self.name
         )
@@ -47,6 +67,11 @@ class Session:
 
 @dp.message_handler(commands=["start"])
 async def start(message: types.Message) -> None:
+    """Handles the /start command.
+
+    Args:
+        message (types.Message): Message, which triggered the handler.
+    """
     await log_event(message)
 
     await bot.send_message(
@@ -58,6 +83,11 @@ async def start(message: types.Message) -> None:
 
 @dp.message_handler(Text(equals=Buttons.GITHUB.value))
 async def button_github(message: types.Message) -> None:
+    """Handles the GitHub button.
+
+    Args:
+        message (types.Message): Message, which triggered the handler.
+    """
     await log_event(message)
 
     await bot.send_message(
@@ -70,6 +100,11 @@ async def button_github(message: types.Message) -> None:
 
 @dp.message_handler(Text(equals=Buttons.COFFEE.value))
 async def button_coffee(message: types.Message) -> None:
+    """Handles the Buy me a coffee button.
+
+    Args:
+        message (types.Message): Message, which triggered the handler.
+    """
     await log_event(message)
 
     await bot.send_message(
@@ -82,6 +117,11 @@ async def button_coffee(message: types.Message) -> None:
 
 @dp.message_handler(Text(equals=Buttons.GENERATE.value))
 async def button_generate(message: types.Message) -> None:
+    """Handles the Generate button, registers the coordinates handler.
+
+    Args:
+        message (types.Message): Message, which triggered the handler.
+    """
     await log_event(message)
 
     dp.register_message_handler(coordinates)
@@ -97,6 +137,11 @@ async def button_generate(message: types.Message) -> None:
 
 @dp.message_handler(Text(equals=Buttons.CANCEL.value))
 async def cancel_button(message: types.Message) -> None:
+    """Handles the Cancel button, returns to the main menu.
+
+    Args:
+        message (types.Message): Message, which triggered the handler.
+    """
     await log_event(message)
 
     await bot.send_message(
@@ -107,6 +152,12 @@ async def cancel_button(message: types.Message) -> None:
 
 
 async def coordinates(message: types.Message) -> None:
+    """Handles the coordinates input, can be accessed only as a next step after the Generate button.
+    Checks if the coordinates are correct and creates inline buttons for map sizes.
+
+    Args:
+        message (types.Message): Message, which triggered the handler.
+    """
     await log_event(message)
 
     if message.text == Buttons.CANCEL.value:
@@ -151,6 +202,11 @@ async def coordinates(message: types.Message) -> None:
 
 @dp.callback_query_handler(text_contains="map")
 async def map_size_callback(callback_query: types.CallbackQuery) -> None:
+    """Handles the callback from the map size inline buttons, creates inline buttons for max heights.
+
+    Args:
+        callback_query (types.CallbackQuery): Callback, which triggered the handler.
+    """
     await log_event(callback_query)
 
     map_size = int(callback_query.data.rsplit("_", 1)[-1])
@@ -173,6 +229,12 @@ async def map_size_callback(callback_query: types.CallbackQuery) -> None:
 
 @dp.callback_query_handler(text_contains="max_height_")
 async def max_height_callback(callback_query: types.CallbackQuery) -> None:
+    """Handles the callback from the max height inline buttons, starts the generation process.
+    Sends the preview and the archive.
+
+    Args:
+        callback_query (types.CallbackQuery): Callback, which triggered the handler.
+    """
     await log_event(callback_query)
 
     max_height = int(callback_query.data.rsplit("_", 1)[-1])
@@ -206,6 +268,16 @@ async def max_height_callback(callback_query: types.CallbackQuery) -> None:
 async def keyboard(
     buttons: list[str] | dict[str, str]
 ) -> ReplyKeyboardMarkup | InlineKeyboardMarkup:
+    """Creates a keyboard with buttons depending on the input.
+    If the input is a list, creates a ReplyKeyboardMarkup.
+    If the input is a dict, creates an InlineKeyboardMarkup, where keys are callback_data and values are text.
+
+    Args:
+        buttons (list[str] | dict[str, str]): List or dict of buttons.
+
+    Returns:
+        ReplyKeyboardMarkup | InlineKeyboardMarkup: Keyboard with buttons.
+    """
     if isinstance(buttons, list):
         keyboard = ReplyKeyboardMarkup(
             resize_keyboard=True,
@@ -224,6 +296,11 @@ async def keyboard(
 
 
 async def log_event(data: types.Message | types.CallbackQuery) -> None:
+    """Logs the event.
+
+    Args:
+        data (types.Message | types.CallbackQuery): Data, which triggered the handler.
+    """
     try:
         logger.debug(
             f"Message from {data.from_user.username} with telegram ID {data.from_user.id}: {data.text}"
