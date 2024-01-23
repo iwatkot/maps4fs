@@ -193,7 +193,8 @@ async def coordinates(message: types.Message) -> None:
     sizes = generate.MAP_SIZES
     indicators = ["🟢", "🟢", "🟡", "🔴"]
     buttons = {}
-    for size, indicator in zip(sizes, indicators):
+    # * Slice sizes because VPS can not handle large images.
+    for size, indicator in zip(sizes[:2], indicators[:2]):
         buttons[f"map_size_{size}"] = f"{indicator} {size} x {size} meters"
 
     dp.message_handlers.unregister(coordinates)
