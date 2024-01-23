@@ -3,16 +3,42 @@ from enum import Enum
 
 class Messages(Enum):
     START = (
-        "Hello, I'm a bot that can generate map templates for Farming Simulator\.\n\n"
-        "To get started, use the menu below\."
+        "Hello, I'm a bot that can generate map templates for Farming Simulator.\n\n"
+        "To get started, use the menu below."
     )
-    MENU_CHANGED = "You're in the {section} section now."
     GITHUB = (
-        "Feel free to contribute to the [project on GitHub](https://github.com/iwatkot/maps4fs)\."
+        "Feel free to contribute to the [project on GitHub](https://github.com/iwatkot/maps4fs)."
     )
     COFFEE = (
-        "If you like my work, you can [buy me a coffee](https://www.buymeacoffee.com/iwatkot0)\."
+        "If you like my work, you can [buy me a coffee](https://www.buymeacoffee.com/iwatkot0)."
     )
+
+    CANCELLED = "The operation has been cancelled."
+
+    ENTER_COORDINATES = (
+        "Enter the coordinates of the center of the map\."
+        "The coordinates are latitude and longitude separated by a comma\.\n\n"
+        "For example: `52\.520008, 13\.404954`\n\n"
+        "You can obtain them by right\-clicking on the map in [Google Maps](https://www.google.com/maps)\."
+    )
+    WRONG_COORDINATES = (
+        "Please enter the coordinates in the correct format\.\n\n"
+        "For example: `52\.520008, 13\.404954`\n\n"
+    )
+
+    SELECT_MAP_SIZE = (
+        "Select the size of the map.\n\n"
+        "🟢 work fine on most devices.\n"
+        "🟡 require a decent device.\n"
+        "🔴 require a powerful device and not recommended.\n\n"
+    )
+
+    SELECT_MAX_HEIGHT = (
+        "Select the maximum height of the map.\n"
+        "It's recommended to use smaller values for flatlands and larger values for mountains."
+    )
+
+    GENERATION_STARTED = "Map generation has been started. It may take a while."
 
 
 class Buttons(Enum):

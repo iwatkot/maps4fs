@@ -19,10 +19,11 @@ import shapely
 # region constants
 MAP_SIZES = ["2048", "4096", "8192", "16384"]
 MAX_HEIGHTS = {
-    "200": "For plains",
-    "400": "For hills",
-    "600": "For large hills",
-    "800": "For mountains",
+    "100": "🍀 For flatlands",
+    "200": "🍀 For plains",
+    "400": "🗻 For hills",
+    "600": "⛰️ For large hills",
+    "800": "🏔️ For mountains",
 }
 SRTM = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
 # endregion
@@ -85,6 +86,7 @@ class Map:
         self.distance = distance
         self.dem_settings = dem_settings
         self.logger = logger
+        self.name = name
         self._prepare_dirs(name)
         self._set_map_size()
         self._prepare_weights()
@@ -193,6 +195,7 @@ class Map:
             name (str): Name of the layer.
             tags (dict[str, str | list[str]]): Dictionary of tags to search for.
             width (int | None): Width of the polygon in meters (only for LineString).
+            color (tuple[int, int, int]): Color of the layer (only for waterPuddle).
 
         Attributes:
             name (str): Name of the layer.
@@ -202,10 +205,17 @@ class Map:
             path (str): Path to the first texture of the layer.
         """
 
-        def __init__(self, name: str, tags: dict[str, str | list[str]], width: int = None):
+        def __init__(
+            self,
+            name: str,
+            tags: dict[str, str | list[str]],
+            width: int = None,
+            color: tuple[int, int, int] = None,
+        ):
             self.name = name
             self.tags = tags
             self.width = width
+            self.color = color if color else (255, 255, 255)
             self._get_paths()
             self._check_shapes()
 
@@ -253,16 +263,27 @@ class Map:
         Returns:
             list[Layer]: List of layers.
         """
-        asphalt = self.Layer("asphalt", {"highway": ["motorway", "trunk", "primary"]}, width=8)
-        concrete = self.Layer("concrete", {"building": True})
-        dirtDark = self.Layer(
-            "dirtDark", {"highway": ["unclassified", "residential", "track"]}, width=2
+        asphalt = self.Layer(
+            "asphalt", {"highway": ["motorway", "trunk", "primary"]}, width=8, color=(70, 70, 70)
         )
-        grassDirt = self.Layer("grassDirt", {"natural": ["wood", "tree_row"]}, width=2)
-        grass = self.Layer("grass", {"natural": "grassland"})
-        forestGround = self.Layer("forestGround", {"landuse": "farmland"})
-        gravel = self.Layer("gravel", {"highway": ["secondary", "tertiary", "road"]}, width=4)
-        waterPuddle = self.Layer("waterPuddle", {"natural": "water", "waterway": True}, width=10)
+        concrete = self.Layer("concrete", {"building": True}, width=8, color=(130, 130, 130))
+        dirtDark = self.Layer(
+            "dirtDark",
+            {"highway": ["unclassified", "residential", "track"]},
+            width=2,
+            color=(101, 67, 33),
+        )
+        grassDirt = self.Layer(
+            "grassDirt", {"natural": ["wood", "tree_row"]}, width=2, color=(124, 252, 0)
+        )
+        grass = self.Layer("grass", {"natural": "grassland"}, color=(34, 255, 34))
+        forestGround = self.Layer("forestGround", {"landuse": "farmland"}, color=(85, 107, 47))
+        gravel = self.Layer(
+            "gravel", {"highway": ["secondary", "tertiary", "road"]}, width=4, color=(210, 180, 140)
+        )
+        waterPuddle = self.Layer(
+            "waterPuddle", {"natural": "water", "waterway": True}, width=10, color=(100, 100, 255)
+        )
         return [asphalt, concrete, dirtDark, forestGround, grass, grassDirt, gravel, waterPuddle]
 
     def _read_parameters(self) -> None:
@@ -532,3 +553,36 @@ class Map:
             f"DEM data was normalized to {normalized_data.min()} - {normalized_data.max()}."
         )
         return normalized_data
+
+    def pack(self) -> str:
+        archives_dir = os.path.join(self.working_directory, "archives")
+        os.makedirs(archives_dir, exist_ok=True)
+        archive_name = self.name if self.name else "map"
+        archive_name += ".zip"
+        archive_path = os.path.join(archives_dir, archive_name)
+        self.logger.log(f"Packing map to {archive_path}...")
+        shutil.make_archive(archive_path[:-4], "zip", self.output_dir)
+        self.logger.log(f"Map packed to {archive_path}.")
+        return archive_path
+
+    def preview(self) -> list[str]:
+        images = [cv2.imread(layer.path, cv2.IMREAD_UNCHANGED) for layer in self.layers]
+        if self.distance > 2048:
+            images = [cv2.resize(img, (4096, 4096), interpolation=cv2.INTER_AREA) for img in images]
+        colors = [layer.color for layer in self.layers]
+        color_images = [
+            cv2.cvtColor(img, cv2.COLOR_GRAY2BGR) * np.array(color, dtype=np.uint8)
+            for img, color in zip(images, colors)
+        ]
+        merged = np.sum(color_images, axis=0, dtype=np.uint8)
+        self.logger.log(
+            f"Merged layers into one image. Shape: {merged.shape}, dtype: {merged.dtype}."
+        )
+        previews_dir = os.path.join(self.working_directory, "previews")
+        os.makedirs(previews_dir, exist_ok=True)
+        preview_name = self.name if self.name else "preview"
+        preview_name += ".png"
+        preview_path = os.path.join(previews_dir, preview_name)
+        cv2.imwrite(preview_path, merged)
+        self.logger.log(f"Preview saved to {preview_path}.")
+        return preview_path

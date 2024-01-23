@@ -5,3 +5,5 @@ cache/
 temp/
 bot.env
 logs/
+archives/
+previews/
