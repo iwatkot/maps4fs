@@ -463,38 +463,47 @@ class Map:
         return latitude_band, tile_name
 
     def _download_tile(self) -> str:
-        """Downloads SRTM tile from Amazon S3 using coordinates and decompresses it.
+        """Downloads SRTM tile from Amazon S3 using coordinates.
+
+        Returns:
+            str: Path to compressed tile.
+        """
+        latitude_band, tile_name = self._tile_info(*self.coordinates)
+        compressed_file_path = os.path.join(self.gz_dir, f"{tile_name}.hgt.gz")
+        url = SRTM.format(latitude_band=latitude_band, tile_name=tile_name)
+        self.logger.log(f"Trying to get response from {url}...")
+        response = requests.get(url, stream=True)
+
+        if response.status_code == 200:
+            self.logger.log(f"Response received. Saving to {compressed_file_path}...")
+            with open(compressed_file_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            self.logger.log("Compressed tile successfully downloaded.")
+        else:
+            self.logger.log(f"Response was failed with status code {response.status_code}.")
+            return
+
+        return compressed_file_path
+
+    def _srtm_tile(self) -> str:
+        """Determines SRTM tile name from coordinates downloads it if necessary, and decompresses it.
 
         Returns:
             str: Path to decompressed tile.
         """
         latitude_band, tile_name = self._tile_info(*self.coordinates)
-        self.logger.log(f"Downloading tile {tile_name} from latitude band {latitude_band}...")
-
-        compressed_save_path = os.path.join(self.gz_dir, f"{tile_name}.hgt.gz")
-        if os.path.isfile(compressed_save_path):
-            self.logger.log(
-                f"Compressed tile already exists: {compressed_save_path}, skipping download."
-            )
-        else:
-            self.logger.log(f"Compressed tile {tile_name} does not exist, downloading...")
-            url = SRTM.format(latitude_band=latitude_band, tile_name=tile_name)
-            self.logger.log(f"Trying to get response from {url}...")
-            self.logger.log("Compressed tile does not exist, downloading...")
-            response = requests.get(url, stream=True)
-
-            if response.status_code == 200:
-                self.logger.log(f"Response received. Saving to {compressed_save_path}...")
-                with open(compressed_save_path, "wb") as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        f.write(chunk)
-                self.logger.log("Compressed tile successfully downloaded.")
-            else:
-                self.logger.log(f"Response was failed with status code {response.status_code}.")
-                return
+        self.logger.log(f"SRTM tile name {tile_name} from latitude band {latitude_band}.")
 
         decompressed_file_path = os.path.join(self.hgt_dir, f"{tile_name}.hgt")
-        with gzip.open(compressed_save_path, "rb") as f_in:
+        if os.path.isfile(decompressed_file_path):
+            self.logger.log(
+                f"Decompressed tile already exists: {decompressed_file_path}, skipping download."
+            )
+            return decompressed_file_path
+
+        compressed_file_path = self._download_tile()
+        with gzip.open(compressed_file_path, "rb") as f_in:
             with open(decompressed_file_path, "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
         self.logger.log(f"Tile decompressed to {decompressed_file_path}.")
@@ -508,7 +517,7 @@ class Map:
         max_y, min_y = max(north, south), min(north, south)
         max_x, min_x = max(east, west), min(east, west)
 
-        tile_path = self._download_tile()
+        tile_path = self._srtm_tile()
         with rasterio.open(tile_path) as src:
             window = rasterio.windows.from_bounds(min_x, min_y, max_x, max_y, src.transform)
             data = src.read(1, window=window)
