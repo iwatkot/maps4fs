@@ -15,8 +15,13 @@ import generate
 from bot_templates import Buttons, Messages
 from logger import Logger
 
+logger = Logger(__name__)
 working_directory = os.getcwd()
+logger.info(f"Working directory: {working_directory}")
 env_path = os.path.join(working_directory, "bot.env")
+logger.info(f"Environment file: {env_path}")
+if not os.path.exists(env_path):
+    raise FileNotFoundError(f"Environment file not found: {env_path}")
 load_dotenv(env_path)
 token = os.getenv("BOT_TOKEN")
 
