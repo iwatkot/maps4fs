@@ -383,13 +383,16 @@ class Map:
             return
         return converter(geometry, width)
 
-    def _linestring(
-        self, geometry: shapely.geometry.linestring.LineString, width: int | None
+    def _sequence(
+        self,
+        geometry: shapely.geometry.linestring.LineString | shapely.geometry.point.Point,
+        width: int | None,
     ) -> np.ndarray:
-        """Converts LineString geometry to numpy array of polygon points.
+        """Converts LineString or Point geometry to numpy array of polygon points.
 
         Args:
-            geometry (shapely.geometry.linestring.LineString): LineString geometry.
+            geometry (shapely.geometry.linestring.LineString | shapely.geometry.point.Point):
+                LineString or Point geometry.
             width (int | None): Width of the polygon in meters.
 
         Returns:
@@ -407,7 +410,7 @@ class Map:
         Returns:
             Callable[[shapely.geometry, int | None], np.ndarray]: Converter function.
         """
-        converters = {"Polygon": self._to_np, "LineString": self._linestring}
+        converters = {"Polygon": self._to_np, "LineString": self._sequence, "Point": self._sequence}
         return converters.get(geom_type)
 
     def polygons(
