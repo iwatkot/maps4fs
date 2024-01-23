@@ -1,0 +1,17 @@
+.git/
+.venv/
+.vscode/
+archives/
+cache/
+logs/
+output/
+previews/
+src/main.py
+temp/
+.flake8
+.gitignore
+LICENSE.md
+README.md
+requirements.txt
+run.ps1
+run.sh
