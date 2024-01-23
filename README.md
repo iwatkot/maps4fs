@@ -50,8 +50,14 @@ The list will be updated as the project develops.
 
 ## How-To-Run
 **Option 1 (recommended):**<br>
-Using Telegram bot (not available yet). Told you, this project is in the early stage of development.
+Using Telegram bot [@maps4fs](https://t.me/maps4fsbot).<br>
+Note: due to CPU and RAM limitations of the hosting, only 2x2 and 4x4 km maps are available. If you need bigger maps, use the [local version](#option-2).<br>
+ℹ️ By the way, since I don't want to spend a lot of money on hosting, the bot may be unavailable from time to time or even be shut down. If you want to support this project, you can donate using [Buy me a coffee](https://www.buymeacoffee.com/iwatkot0).
+
+![Telegram bot](https://i.postimg.cc/tJZC3YHg/Kapture-2024-01-24-at-02-19-03.gif)
 <br>
+
+Using it is easy and doesn't require any guides. Enjoy!
 
 **Option 2:**<br>
 Launch the project locally following these steps (or watch the [video tutorial](https://youtu.be/OUzCO7SWKyA)):
@@ -83,4 +89,5 @@ Advanced settings are available in the tool's UI under the **Advanced Settings**
 - `blur_seed` - the seed for the blur algorithm. The default value is 5, which means 5 meters. The bigger the value, the smoother the map will be. The smaller the value, the more detailed the map will be. Keep in mind that for some regions, where terrain is bumpy, disabling the blur algorithm may lead to a very rough map. So, I recommend leaving this value as it is.
 
 ## Bugs and feature requests
-If you find a bug or have an idea for a new feature, please create an issue [here](https://github.com/iwatkot/maps4fs/issues) or contact me directly on [Telegram](https://t.me/iwatkot).
+If you find a bug or have an idea for a new feature, please create an issue [here](https://github.com/iwatkot/maps4fs/issues) or contact me directly on [Telegram](https://t.me/iwatkot).<br>
+ℹ️ Please, don't bother me if the Telegram bot is down. As I said before this is related to the hosting limitations, if you want you can always run the tool locally or support the project by donating, so maybe I'll be able to afford better hosting.
