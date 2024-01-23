@@ -24,3 +24,5 @@ jobs:
         context: .
         push: true
         tags: iwatkot/maps4fs:latest
+        build-args: |
+          BOT_TOKEN=${{ secrets.BOT_TOKEN }}

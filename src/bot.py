@@ -16,14 +16,14 @@ from bot_templates import Buttons, Messages
 from logger import Logger
 
 logger = Logger(__name__)
-parent_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-logger.info(f"Parent directory: {parent_directory}")
-env_path = os.path.join(parent_directory, "bot.env")
-logger.info(f"Environment file: {env_path}")
-if not os.path.exists(env_path):
-    raise FileNotFoundError(f"Environment file not found: {env_path}")
-load_dotenv(env_path)
+working_directory = os.getcwd()
+logger.info(f"Working directory: {working_directory}")
+env_path = os.path.join(working_directory, "bot.env")
+if os.path.exists(env_path):
+    load_dotenv(env_path)
 token = os.getenv("BOT_TOKEN")
+if not token:
+    raise RuntimeError("No token provided.")
 
 logger = Logger(__name__)
 bot = Bot(token=token)
@@ -63,7 +63,7 @@ class Session:
             tuple[str, str]: Paths to the preview and the archive.
         """
         gm = generate.Map(
-            parent_directory, self.coordinates, self.distance, self.dem_settings, logger, self.name
+            working_directory, self.coordinates, self.distance, self.dem_settings, logger, self.name
         )
         preview_path = gm.preview()
         archive_path = gm.pack()
