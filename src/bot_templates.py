@@ -39,6 +39,7 @@ class Messages(Enum):
     )
 
     GENERATION_STARTED = "Map generation has been started. It may take a while."
+    FILE_TOO_LARGE = "The map is too large to send it via Telegram. Please, lower the map size."
 
 
 class Buttons(Enum):

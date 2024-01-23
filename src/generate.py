@@ -195,7 +195,7 @@ class Map:
             name (str): Name of the layer.
             tags (dict[str, str | list[str]]): Dictionary of tags to search for.
             width (int | None): Width of the polygon in meters (only for LineString).
-            color (tuple[int, int, int]): Color of the layer (only for waterPuddle).
+            color (tuple[int, int, int]): Color of the layer in BGR format.
 
         Attributes:
             name (str): Name of the layer.
@@ -271,18 +271,18 @@ class Map:
             "dirtDark",
             {"highway": ["unclassified", "residential", "track"]},
             width=2,
-            color=(101, 67, 33),
+            color=(33, 67, 101),
         )
         grassDirt = self.Layer(
-            "grassDirt", {"natural": ["wood", "tree_row"]}, width=2, color=(124, 252, 0)
+            "grassDirt", {"natural": ["wood", "tree_row"]}, width=2, color=(0, 252, 124)
         )
         grass = self.Layer("grass", {"natural": "grassland"}, color=(34, 255, 34))
-        forestGround = self.Layer("forestGround", {"landuse": "farmland"}, color=(85, 107, 47))
+        forestGround = self.Layer("forestGround", {"landuse": "farmland"}, color=(47, 107, 85))
         gravel = self.Layer(
-            "gravel", {"highway": ["secondary", "tertiary", "road"]}, width=4, color=(210, 180, 140)
+            "gravel", {"highway": ["secondary", "tertiary", "road"]}, width=4, color=(140, 180, 210)
         )
         waterPuddle = self.Layer(
-            "waterPuddle", {"natural": "water", "waterway": True}, width=10, color=(100, 100, 255)
+            "waterPuddle", {"natural": "water", "waterway": True}, width=10, color=(255, 20, 20)
         )
         return [asphalt, concrete, dirtDark, forestGround, grass, grassDirt, gravel, waterPuddle]
 
@@ -566,14 +566,17 @@ class Map:
         return archive_path
 
     def preview(self) -> list[str]:
-        images = [cv2.imread(layer.path, cv2.IMREAD_UNCHANGED) for layer in self.layers]
-        if self.distance > 2048:
-            images = [cv2.resize(img, (4096, 4096), interpolation=cv2.INTER_AREA) for img in images]
-        colors = [layer.color for layer in self.layers]
-        color_images = [
-            cv2.cvtColor(img, cv2.COLOR_GRAY2BGR) * np.array(color, dtype=np.uint8)
-            for img, color in zip(images, colors)
+        preview_size = (2048, 2048)
+        images = [
+            cv2.resize(cv2.imread(layer.path, cv2.IMREAD_UNCHANGED), preview_size)
+            for layer in self.layers
         ]
+        colors = [layer.color for layer in self.layers]
+        color_images = []
+        for img, color in zip(images, colors):
+            color_img = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)
+            color_img[img > 0] = color
+            color_images.append(color_img)
         merged = np.sum(color_images, axis=0, dtype=np.uint8)
         self.logger.log(
             f"Merged layers into one image. Shape: {merged.shape}, dtype: {merged.dtype}."

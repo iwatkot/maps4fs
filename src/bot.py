@@ -192,7 +192,15 @@ async def max_height_callback(callback_query: types.CallbackQuery) -> None:
     archive = types.InputFile(result)
     picture = types.InputFile(preview)
     await bot.send_photo(callback_query.from_user.id, picture)
-    await bot.send_document(callback_query.from_user.id, archive)
+    try:
+        await bot.send_document(callback_query.from_user.id, archive)
+    except Exception as e:
+        logger.error(e)
+        await bot.send_message(
+            callback_query.from_user.id,
+            Messages.FILE_TOO_LARGE.value,
+            reply_markup=await keyboard(Buttons.MAIN_MENU.value),
+        )
 
 
 async def keyboard(
