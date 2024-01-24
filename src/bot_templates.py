@@ -9,10 +9,10 @@ class Messages(Enum):
         "To get started, use the menu below."
     )
     GITHUB = (
-        "Feel free to contribute to the [project on GitHub](https://github.com/iwatkot/maps4fs)."
+        "Feel free to contribute to the [project on GitHub](https://github.com/iwatkot/maps4fs)\."
     )
     COFFEE = (
-        "If you like my work, you can [buy me a coffee](https://www.buymeacoffee.com/iwatkot0)."
+        "If you like my work, you can [buy me a coffee](https://www.buymeacoffee.com/iwatkot0)\."
     )
 
     CANCELLED = "The operation has been cancelled."
