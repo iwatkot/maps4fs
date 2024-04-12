@@ -100,6 +100,7 @@ async def button_github(message: types.Message) -> None:
         Messages.GITHUB.value,
         reply_markup=await keyboard(Buttons.MAIN_MENU.value),
         disable_web_page_preview=True,
+        parse_mode=types.ParseMode.MARKDOWN_V2,
     )
 
 
@@ -117,6 +118,7 @@ async def button_coffee(message: types.Message) -> None:
         Messages.COFFEE.value,
         reply_markup=await keyboard(Buttons.MAIN_MENU.value),
         disable_web_page_preview=True,
+        parse_mode=types.ParseMode.MARKDOWN_V2,
     )
 
 
