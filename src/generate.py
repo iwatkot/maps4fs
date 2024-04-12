@@ -465,11 +465,11 @@ class Map:
         tile_name = f"N{int(lat):02d}E{int(lon):03d}"
         return latitude_band, tile_name
 
-    def _download_tile(self) -> str:
+    def _download_tile(self) -> str | None:
         """Downloads SRTM tile from Amazon S3 using coordinates.
 
         Returns:
-            str: Path to compressed tile.
+            str: Path to compressed tile or None if download failed.
         """
         latitude_band, tile_name = self._tile_info(*self.coordinates)
         compressed_file_path = os.path.join(self.gz_dir, f"{tile_name}.hgt.gz")
@@ -489,11 +489,11 @@ class Map:
 
         return compressed_file_path
 
-    def _srtm_tile(self) -> str:
+    def _srtm_tile(self) -> str | None:
         """Determines SRTM tile name from coordinates downloads it if necessary, and decompresses it.
 
         Returns:
-            str: Path to decompressed tile.
+            str: Path to decompressed tile or None if download failed.
         """
         latitude_band, tile_name = self._tile_info(*self.coordinates)
         self.logger.log(f"SRTM tile name {tile_name} from latitude band {latitude_band}.")
@@ -506,6 +506,9 @@ class Map:
             return decompressed_file_path
 
         compressed_file_path = self._download_tile()
+        if not compressed_file_path:
+            self.logger.log("Download from SRTM failed, DEM file will be filled with zeros.")
+            return
         with gzip.open(compressed_file_path, "rb") as f_in:
             with open(decompressed_file_path, "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
@@ -520,14 +523,22 @@ class Map:
         max_y, min_y = max(north, south), min(north, south)
         max_x, min_x = max(east, west), min(east, west)
 
+        dem_output_resolution = (self.distance + 1, self.distance + 1)
+
         tile_path = self._srtm_tile()
+        if not tile_path:
+            self.logger.log("Tile was not downloaded, DEM file will be filled with zeros.")
+            dem_data = np.zeros(dem_output_resolution, dtype="uint16")
+            cv2.imwrite(self.map_dem_path, dem_data)
+            self.logger.log(f"DEM data filled with zeros and saved to {self.map_dem_path}.")
+            return
+
         with rasterio.open(tile_path) as src:
             window = rasterio.windows.from_bounds(min_x, min_y, max_x, max_y, src.transform)
             data = src.read(1, window=window)
 
         normalized_data = self._normalize_dem(data)
 
-        dem_output_resolution = (self.distance + 1, self.distance + 1)
         resampled_data = cv2.resize(
             normalized_data, dem_output_resolution, interpolation=cv2.INTER_LINEAR
         )

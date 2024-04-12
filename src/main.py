@@ -25,7 +25,8 @@ def start() -> None:
 
     result_label.config(text="Generating...")
     root.update()
-    generate.Map(working_directory, (lat, lon), distance, dem_settings, logger)
+    gm = generate.Map(working_directory, (lat, lon), distance, dem_settings, logger)
+    gm.preview()
     result_label.config(text="Saved in:")
     path_label.config(text=f"{output_directory}")
     for i in range(5, 0, -1):
