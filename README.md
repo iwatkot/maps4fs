@@ -1,8 +1,6 @@
 <div align="center" markdown>
 <img src="https://i.postimg.cc/N0Hvm4p4/maps4fs-poster.png">
 
-⚠️ This project is in the early stage of development. Be ready to face bugs and crashes. ⚠️
-
 <p align="center">
   <a href="#Overview">Overview</a> • 
   <a href="#Features">Features</a> • 

@@ -14,6 +14,18 @@
             }
         },
         {
+            "name": "Windows Release Script",
+            "type": "python",
+            "request": "launch",
+            "program": "release.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder};${PYTHONPATH}",
+                "LOG_LEVEL": "DEBUG",
+            }
+        },
+        {
             "name": "Linux / Mac Script",
             "type": "python",
             "request": "launch",
