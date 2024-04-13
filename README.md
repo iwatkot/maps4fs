@@ -86,6 +86,25 @@ Advanced settings are available in the tool's UI under the **Advanced Settings**
 - `max_height` - the maximum height of the map. The default value is 400. Select smaller values for plain-like maps and bigger values for mountainous maps. You may need to experiment with this value to get the desired result.
 - `blur_seed` - the seed for the blur algorithm. The default value is 5, which means 5 meters. The bigger the value, the smoother the map will be. The smaller the value, the more detailed the map will be. Keep in mind that for some regions, where terrain is bumpy, disabling the blur algorithm may lead to a very rough map. So, I recommend leaving this value as it is.
 
+## Info sequence
+The script will also generate the `generation_info.json` file in the `output` folder. It contains the following keys: 
+"coordinates" - the coordinates of the map center which you entered,
+"bbox" - the bounding box of the map in lat and lon,
+"distance" - the size of the map in meters,
+"minimum_x" - the minimum x coordinate of the map (UTM projection),
+"minimum_y" - the minimum y coordinate of the map (UTM projection),
+"maximum_x" - the maximum x coordinate of the map (UTM projection),
+"maximum_y" - the maximum y coordinate of the map (UTM projection),
+"height" - the height of the map in meters (it won't be equal to the distance since the Earth is not flat, sorry flat-earthers),
+"width" - the width of the map in meters,
+"height_coef" - since we need a texture of exact size, the height of the map is multiplied by this coefficient,
+"width_coef" - same as above but for the width,
+"easting" - boolean, if true, the map is in the eastern hemisphere, if false, in the western,
+"northing" - boolean, if true, the map is in the northern hemisphere, if false, in the southern,
+"tile_name" - the name of the SRTM tile which was used to generate the height map, e.g. "N52E013"
+
+You can use this information to adjust some other sources of data to the map, e.g. textures, height maps, etc.
+
 ## Bugs and feature requests
 If you find a bug or have an idea for a new feature, please create an issue [here](https://github.com/iwatkot/maps4fs/issues) or contact me directly on [Telegram](https://t.me/iwatkot).<br>
 ℹ️ Please, don't bother me if the Telegram bot is down. As I said before this is related to the hosting limitations, if you want you can always run the tool locally or support the project by donating, so maybe I'll be able to afford better hosting.

@@ -65,6 +65,7 @@ class Session:
         gm = generate.Map(
             working_directory, self.coordinates, self.distance, self.dem_settings, logger, self.name
         )
+        gm.info_sequence()
         preview_path = gm.preview()
         archive_path = gm.pack()
         return preview_path, archive_path
