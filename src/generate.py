@@ -94,10 +94,53 @@ class Map:
 
         self.logger.log(f"Fetching map data for coordinates: {coordinates}...")
         self.bbox = ox.utils_geo.bbox_from_point(self.coordinates, dist=self.distance)
+        print(self.bbox)
         self._read_parameters()
         self._locate_map()
         self.draw()
         self.dem()
+
+    def info_sequence(self) -> None:
+        """Saves generation info to JSON file "generation_info.json".
+
+        Info sequence contains following attributes:
+            - coordinates
+            - bbox
+            - distance
+            - minimum_x
+            - minimum_y
+            - maximum_x
+            - maximum_y
+            - height
+            - width
+            - height_coef
+            - width_coef
+            - easting
+            - northing
+            - tile_name
+        """
+        useful_attributes = [
+            "coordinates",
+            "bbox",
+            "distance",
+            "minimum_x",
+            "minimum_y",
+            "maximum_x",
+            "maximum_y",
+            "height",
+            "width",
+            "height_coef",
+            "width_coef",
+            "easting",
+            "northing",
+            "tile_name",
+        ]
+        info_save_path = os.path.join(self.output_dir, "generation_info.json")
+        info_sequence = {attr: getattr(self, attr, None) for attr in useful_attributes}
+
+        with open(info_save_path, "w") as f:
+            json.dump(info_sequence, f, indent=4)
+        self.logger.log(f"Generation info saved to {info_save_path}.")
 
     def _prepare_dirs(self, name: str | None) -> None:
         """Defines directories for map generation and creates some of them.
@@ -472,6 +515,7 @@ class Map:
             tile_name = f"N{abs(tile_latitude):02d}E{abs(tile_longitude):03d}"
 
         self.logger.log(f"Detected tile name: {tile_name} for coordinates: lat {lat}, lon {lon}.")
+        self.tile_name = tile_name
         return latitude_band, tile_name
 
     def _download_tile(self) -> str | None:
