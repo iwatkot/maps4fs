@@ -87,21 +87,21 @@ Advanced settings are available in the tool's UI under the **Advanced Settings**
 - `blur_seed` - the seed for the blur algorithm. The default value is 5, which means 5 meters. The bigger the value, the smoother the map will be. The smaller the value, the more detailed the map will be. Keep in mind that for some regions, where terrain is bumpy, disabling the blur algorithm may lead to a very rough map. So, I recommend leaving this value as it is.
 
 ## Info sequence
-The script will also generate the `generation_info.json` file in the `output` folder. It contains the following keys: 
-"coordinates" - the coordinates of the map center which you entered,
-"bbox" - the bounding box of the map in lat and lon,
-"distance" - the size of the map in meters,
-"minimum_x" - the minimum x coordinate of the map (UTM projection),
-"minimum_y" - the minimum y coordinate of the map (UTM projection),
-"maximum_x" - the maximum x coordinate of the map (UTM projection),
-"maximum_y" - the maximum y coordinate of the map (UTM projection),
-"height" - the height of the map in meters (it won't be equal to the distance since the Earth is not flat, sorry flat-earthers),
-"width" - the width of the map in meters,
-"height_coef" - since we need a texture of exact size, the height of the map is multiplied by this coefficient,
-"width_coef" - same as above but for the width,
-"easting" - boolean, if true, the map is in the eastern hemisphere, if false, in the western,
-"northing" - boolean, if true, the map is in the northern hemisphere, if false, in the southern,
-"tile_name" - the name of the SRTM tile which was used to generate the height map, e.g. "N52E013"
+The script will also generate the `generation_info.json` file in the `output` folder. It contains the following keys: <br>
+`"coordinates"` - the coordinates of the map center which you entered,<br>
+`"bbox"` - the bounding box of the map in lat and lon,<br>
+`"distance"` - the size of the map in meters,<br>
+`"minimum_x"` - the minimum x coordinate of the map (UTM projection),<br>
+`"minimum_y"` - the minimum y coordinate of the map (UTM projection),<br>
+`"maximum_x"` - the maximum x coordinate of the map (UTM projection),<br>
+`"maximum_y"` - the maximum y coordinate of the map (UTM projection),<br>
+`"height"` - the height of the map in meters (it won't be equal to the distance since the Earth is not flat, sorry flat-earthers),<br>
+`"width"` - the width of the map in meters,<br>
+`"height_coef"` - since we need a texture of exact size, the height of the map is multiplied by this coefficient,<br>
+`"width_coef"` - same as above but for the width,<br>
+`"easting"` - boolean, if true, the map is in the eastern hemisphere, if false, in the western,<br>
+`"northing"` - boolean, if true, the map is in the northern hemisphere, if false, in the southern,<br>
+`"tile_name"` - the name of the SRTM tile which was used to generate the height map, e.g. "N52E013"<br>
 
 You can use this information to adjust some other sources of data to the map, e.g. textures, height maps, etc.
 
