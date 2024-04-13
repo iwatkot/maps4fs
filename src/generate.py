@@ -1,5 +1,6 @@
 import gzip
 import json
+import math
 import os
 import re
 import shutil
@@ -461,11 +462,16 @@ class Map:
         Returns:
             tuple[str, str]: Latitude band and tile name.
         """
-        latitude_band = f"N{int(lat):02d}"
+        tile_latitude = math.floor(lat)
+        tile_longitude = math.floor(lon)
+
+        latitude_band = f"N{abs(tile_latitude):02d}"
         if lon < 0:
-            tile_name = f"N{int(lat):02d}W{int(abs(lon)):03d}"
+            tile_name = f"N{abs(tile_latitude):02d}W{abs(abs(tile_longitude)):03d}"
         else:
-            tile_name = f"N{int(lat):02d}E{int(lon):03d}"
+            tile_name = f"N{abs(tile_latitude):02d}E{abs(tile_longitude):03d}"
+
+        self.logger.log(f"Detected tile name: {tile_name} for coordinates: lat {lat}, lon {lon}.")
         return latitude_band, tile_name
 
     def _download_tile(self) -> str | None:
