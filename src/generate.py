@@ -462,7 +462,10 @@ class Map:
             tuple[str, str]: Latitude band and tile name.
         """
         latitude_band = f"N{int(lat):02d}"
-        tile_name = f"N{int(lat):02d}E{int(lon):03d}"
+        if lon < 0:
+            tile_name = f"N{int(lat):02d}W{int(abs(lon)):03d}"
+        else:
+            tile_name = f"N{int(lat):02d}E{int(lon):03d}"
         return latitude_band, tile_name
 
     def _download_tile(self) -> str | None:
@@ -528,14 +531,27 @@ class Map:
         tile_path = self._srtm_tile()
         if not tile_path:
             self.logger.log("Tile was not downloaded, DEM file will be filled with zeros.")
-            dem_data = np.zeros(dem_output_resolution, dtype="uint16")
-            cv2.imwrite(self.map_dem_path, dem_data)
-            self.logger.log(f"DEM data filled with zeros and saved to {self.map_dem_path}.")
+            self._save_empty_dem(dem_output_resolution)
             return
 
         with rasterio.open(tile_path) as src:
+            self.logger.log(f"Opened tile, shape: {src.shape}, dtype: {src.dtypes[0]}.")
             window = rasterio.windows.from_bounds(min_x, min_y, max_x, max_y, src.transform)
+            self.logger.log(
+                f"Window parameters. Column offset: {window.col_off}, row offset: {window.row_off}, "
+                f"width: {window.width}, height: {window.height}."
+            )
             data = src.read(1, window=window)
+
+        if not data.size > 0:
+            self.logger.log("DEM data is empty, DEM file will be filled with zeros.")
+            self._save_empty_dem(dem_output_resolution)
+            return
+
+        self.logger.log(
+            f"DEM data was read from SRTM file. Shape: {data.shape}, dtype: {data.dtype}. "
+            f"Min: {data.min()}, max: {data.max()}."
+        )
 
         normalized_data = self._normalize_dem(data)
 
@@ -551,6 +567,12 @@ class Map:
         blurred_data = cv2.GaussianBlur(resampled_data, (blur_seed, blur_seed), 0)
         cv2.imwrite(self.map_dem_path, blurred_data)
         self.logger.log(f"DEM data was blurred and saved to {self.map_dem_path}.")
+
+    def _save_empty_dem(self, dem_output_resolution: tuple[int, int]) -> None:
+        """Saves empty DEM file filled with zeros."""
+        dem_data = np.zeros(dem_output_resolution, dtype="uint16")
+        cv2.imwrite(self.map_dem_path, dem_data)
+        self.logger.log(f"DEM data filled with zeros and saved to {self.map_dem_path}.")
 
     def _normalize_dem(self, data: np.ndarray) -> np.ndarray:
         """Normalize DEM data to 16-bit unsigned integer using max height from settings.
