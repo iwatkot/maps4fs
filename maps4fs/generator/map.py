@@ -26,9 +26,9 @@ class Map:
         os.makedirs(self.map_directory, exist_ok=True)
         if map_template:
             shutil.unpack_archive(map_template, self.map_directory)
-            self.logger.info(f"Map template {map_template} unpacked to {self.map_directory}")
+            self.logger.debug(f"Map template {map_template} unpacked to {self.map_directory}")
         else:
-            self.logger.info(
+            self.logger.warning(
                 "Map template not provided, if directory does not contain required files, "
                 "it may not work properly in Giants Editor."
             )

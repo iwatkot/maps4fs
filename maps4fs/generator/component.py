@@ -9,8 +9,8 @@ class Component:
         coordinates (tuple[float, float]): The latitude and longitude of the center of the map.
         distance (int): The distance from the center to the edge of the map.
         map_directory (str): The directory where the map files are stored.
-        logger (Any, optional): The logger to use. Must have at least a basic info() method.
-            If not provided, default logging will be used.
+        logger (Any, optional): The logger to use. Must have at least three basic methods: debug,
+            info, warning. If not provided, default logging will be used.
     """
 
     def __init__(
