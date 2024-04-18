@@ -34,7 +34,7 @@ class DEM(Component):
         **kwargs,
     ):
         super().__init__(coordinates, distance, map_directory, logger)
-        self._dem_path = os.path.join(self._map_directory, "maps", "map", "data", "map_dem.png")
+        self._dem_path = os.path.join(self.map_directory, "maps", "map", "data", "map_dem.png")
         self.temp_dir = "temp"
         self.hgt_dir = os.path.join(self.temp_dir, "hgt")
         self.gz_dir = os.path.join(self.temp_dir, "gz")
@@ -47,12 +47,12 @@ class DEM(Component):
     def process(self) -> None:
         """Reads SRTM file, crops it to map size, normalizes and blurs it, saves to map directory."""
         north, south, east, west = ox.utils_geo.bbox_from_point(
-            self._coordinates, dist=self._distance
+            self.coordinates, dist=self.distance
         )
         max_y, min_y = max(north, south), min(north, south)
         max_x, min_x = max(east, west), min(east, west)
 
-        dem_output_resolution = (self._distance + 1, self._distance + 1)
+        dem_output_resolution = (self.distance + 1, self.distance + 1)
 
         tile_path = self._srtm_tile()
         if not tile_path:
@@ -145,7 +145,7 @@ class DEM(Component):
         Returns:
             str: Path to decompressed tile or None if download failed.
         """
-        latitude_band, tile_name = self._tile_info(*self._coordinates)
+        latitude_band, tile_name = self._tile_info(*self.coordinates)
         self.logger.debug(f"SRTM tile name {tile_name} from latitude band {latitude_band}.")
 
         decompressed_file_path = os.path.join(self.hgt_dir, f"{tile_name}.hgt")

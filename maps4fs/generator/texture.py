@@ -83,8 +83,8 @@ class Texture(Component):
         **kwargs,
     ):
         super().__init__(coordinates, distance, map_directory, logger)
-        self._weights_dir = os.path.join(self._map_directory, "maps", "map", "data")
-        self._bbox = ox.utils_geo.bbox_from_point(self._coordinates, dist=self._distance)
+        self._weights_dir = os.path.join(self.map_directory, "maps", "map", "data")
+        self._bbox = ox.utils_geo.bbox_from_point(self.coordinates, dist=self.distance)
 
     def process(self):
         self._prepare_weights()
@@ -98,7 +98,7 @@ class Texture(Component):
         - map coefficients (meters per pixel)
         """
         north, south, east, west = ox.utils_geo.bbox_from_point(
-            self._coordinates, dist=self._distance, project_utm=True
+            self.coordinates, dist=self.distance, project_utm=True
         )
         # Parameters of the map in UTM format (meters).
         self.minimum_x = min(west, east)
@@ -112,8 +112,8 @@ class Texture(Component):
         self.width = abs(east - west)
         self.logger.info(f"Map dimensions (HxW): {self.height} x {self.width}.")
 
-        self.height_coef = self.height / (self._distance * 2)
-        self.width_coef = self.width / (self._distance * 2)
+        self.height_coef = self.height / (self.distance * 2)
+        self.width_coef = self.width / (self.distance * 2)
         self.logger.debug(f"Map coefficients (HxW): {self.height_coef} x {self.width_coef}.")
 
         self.easting = self.minimum_x < 500000
@@ -134,7 +134,7 @@ class Texture(Component):
             texture_name (str): Name of the texture.
             layer_numbers (int): Number of layers in the texture.
         """
-        size = self._distance * 2
+        size = self.distance * 2
         postfix = "_weight.png"
         if layer_numbers == 0:
             filepaths = [os.path.join(self._weights_dir, texture_name + postfix)]

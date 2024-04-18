@@ -25,7 +25,7 @@ class Config(Component):
         **kwargs,
     ):
         super().__init__(coordinates, distance, map_directory, logger)
-        self._map_xml_path = os.path.join(self._map_directory, "maps", "map", "map.xml")
+        self._map_xml_path = os.path.join(self.map_directory, "maps", "map", "map.xml")
 
     def process(self):
         self._set_map_size()
@@ -39,7 +39,7 @@ class Config(Component):
         self.logger.debug(f"Map XML file loaded from: {self._map_xml_path}.")
         root = tree.getroot()
         for map_elem in root.iter("map"):
-            width = height = str(self._distance * 2)
+            width = height = str(self.distance * 2)
             map_elem.set("width", width)
             map_elem.set("height", height)
             self.logger.debug(f"Map size set to {width}x{height} in Map XML file.")

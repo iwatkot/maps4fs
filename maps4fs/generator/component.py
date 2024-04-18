@@ -21,9 +21,9 @@ class Component:
         logger: Any = None,
         **kwargs,
     ):
-        self._coordinates = coordinates
-        self._distance = distance
-        self._map_directory = map_directory
+        self.coordinates = coordinates
+        self.distance = distance
+        self.map_directory = map_directory
 
         if not logger:
             logger = logging.getLogger(__name__)
