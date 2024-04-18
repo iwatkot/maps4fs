@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import warnings
@@ -85,11 +86,13 @@ class Texture(Component):
         super().__init__(coordinates, distance, map_directory, logger)
         self._weights_dir = os.path.join(self.map_directory, "maps", "map", "data")
         self._bbox = ox.utils_geo.bbox_from_point(self.coordinates, dist=self.distance)
+        self.info_save_path = os.path.join(self.map_directory, "generation_info.json")
 
     def process(self):
         self._prepare_weights()
         self._read_parameters()
         self.draw()
+        self.info_sequence()
 
     def _read_parameters(self) -> None:
         """Reads map parameters from OSM data, such as:
@@ -120,6 +123,45 @@ class Texture(Component):
         self.northing = self.minimum_y < 10000000
         self.logger.debug(f"Map is in {'east' if self.easting else 'west'} of central meridian.")
         self.logger.debug(f"Map is in {'north' if self.northing else 'south'} hemisphere.")
+
+    def info_sequence(self) -> None:
+        """Saves generation info to JSON file "generation_info.json".
+
+        Info sequence contains following attributes:
+            - coordinates
+            - bbox
+            - distance
+            - minimum_x
+            - minimum_y
+            - maximum_x
+            - maximum_y
+            - height
+            - width
+            - height_coef
+            - width_coef
+            - easting
+            - northing
+        """
+        useful_attributes = [
+            "coordinates",
+            "bbox",
+            "distance",
+            "minimum_x",
+            "minimum_y",
+            "maximum_x",
+            "maximum_y",
+            "height",
+            "width",
+            "height_coef",
+            "width_coef",
+            "easting",
+            "northing",
+        ]
+        info_sequence = {attr: getattr(self, attr, None) for attr in useful_attributes}
+
+        with open(self.info_save_path, "w") as f:
+            json.dump(info_sequence, f, indent=4)
+        self.logger.info(f"Generation info saved to {self.info_save_path}.")
 
     def _prepare_weights(self):
         self.logger.debug("Starting preparing weights...")

@@ -21,9 +21,6 @@ class Map:
         self.distance = distance
         self.map_directory = map_directory
 
-        self.blur_seed = blur_seed
-        self.max_height = max_height
-
         if not logger:
             logger = logging.getLogger(__name__)
         self.logger = logger
@@ -50,7 +47,6 @@ class Map:
                     self.distance,
                     self.map_directory,
                     self.logger,
-                    # map=self,
                     blur_seed=blur_seed,
                     max_height=max_height,
                 )
