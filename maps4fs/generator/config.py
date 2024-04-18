@@ -35,10 +35,12 @@ class Config(Component):
             self.logger.warning(f"Map XML file not found: {self._map_xml_path}.")
             return
         tree = ET.parse(self._map_xml_path)
-        self.logger.log(f"Map XML file loaded from: {self._map_xml_path}.")
+        self.logger.debug(f"Map XML file loaded from: {self._map_xml_path}.")
         root = tree.getroot()
         for map_elem in root.iter("map"):
-            map_elem.set("width", str(self._distance * 2))
-            map_elem.set("height", str(self._distance * 2))
+            width = height = str(self._distance * 2)
+            map_elem.set("width", width)
+            map_elem.set("height", height)
+            self.logger.debug(f"Map size set to {width}x{height} in Map XML file.")
         tree.write(self._map_xml_path)
-        self.logger.log(f"Map XML file saved to: {self._map_xml_path}.")
+        self.logger.debug(f"Map XML file saved to: {self._map_xml_path}.")

@@ -94,7 +94,6 @@ class Map:
 
         self.logger.log(f"Fetching map data for coordinates: {coordinates}...")
         self.bbox = ox.utils_geo.bbox_from_point(self.coordinates, dist=self.distance)
-        print(self.bbox)
         self._read_parameters()
         self._locate_map()
         self.draw()
