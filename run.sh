@@ -32,4 +32,5 @@ echo "Requirements will be installed..." && \
 pip3 install -r requirements.txt && \
 echo "Requirements have been successfully installed, VENV ready." && \
 
+export PYTHONPATH="${PWD}:${PYTHONPATH}"
 $python_executable maps4fs/ui.py
