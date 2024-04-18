@@ -17,6 +17,10 @@ import maps4fs as mfs
 logger = mfs.Logger(__name__)
 working_directory = os.getcwd()
 map_template = os.path.join(working_directory, "data", "map-template.zip")
+maps_directory = os.path.join(working_directory, "maps")
+archives_directory = os.path.join(working_directory, "archives")
+os.makedirs(maps_directory, exist_ok=True)
+os.makedirs(archives_directory, exist_ok=True)
 logger.info(f"Working directory: {working_directory}")
 env_path = os.path.join(working_directory, "bot.env")
 if os.path.exists(env_path):
@@ -50,7 +54,8 @@ class Session:
     def __init__(self, telegram_id: int, coordinates: tuple[float, float]):
         self.telegram_id = telegram_id
         self.timestamp = int(datetime.now().timestamp())
-        # self.name = f"{self.telegram_id}_{self.timestamp}"
+        self.name = f"{self.telegram_id}_{self.timestamp}"
+        self.map_directory = os.path.join(maps_directory, self.name)
         self.coordinates = coordinates
         self.distance = None
         self.max_height = None
@@ -65,13 +70,15 @@ class Session:
             self.coordinates,
             self.distance,
             self.map_directory,
-            5,
-            self.max_height,
+            blur_seed=5,
+            max_height=self.max_height,
             map_template=map_template,
+            logger=logger,
         )
         mp.generate()
         preview_path = mp.previews()[0]
-        archive_path = mp.pack()
+        archive_path = os.path.join(archives_directory, f"{self.name}.zip")
+        mp.pack(archive_path)
         return preview_path, archive_path
 
 

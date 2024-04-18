@@ -67,3 +67,9 @@ class Map:
 
     def previews(self) -> list[str]:
         return self.texture.previews()
+
+    def pack(self, archive_path: str) -> None:
+        shutil.make_archive(archive_path, "zip", self.map_directory)
+        self.logger.info(f"Map packed to {archive_path}.zip")
+        shutil.rmtree(self.map_directory)
+        self.logger.info(f"Map directory {self.map_directory} removed.")
