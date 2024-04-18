@@ -19,6 +19,7 @@ class Component:
         distance: int,
         map_directory: str,
         logger: Any = None,
+        **kwargs,
     ):
         self._coordinates = coordinates
         self._distance = distance

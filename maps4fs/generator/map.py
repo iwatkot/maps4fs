@@ -3,8 +3,6 @@ import os
 import shutil
 from typing import Any
 
-import osmnx as ox
-
 import maps4fs as mfs
 
 
@@ -23,6 +21,9 @@ class Map:
         self.distance = distance
         self.map_directory = map_directory
 
+        self.blur_seed = blur_seed
+        self.max_height = max_height
+
         if not logger:
             logger = logging.getLogger(__name__)
         self.logger = logger
@@ -37,48 +38,25 @@ class Map:
                 "it may not work properly in Giants Editor."
             )
 
-        self._read_parameters()
-        self._add_components()
+        self._add_components(blur_seed, max_height)
 
-    def _add_components(self):
+    def _add_components(self, blur_seed: int, max_height: int):
         self.logger.debug("Starting adding components...")
         active_components = []
         for component in mfs.generator.BaseComponents:
             active_components.append(
-                component(self.coordinates, self.distance, self.map_directory, self.logger)
+                component(
+                    self.coordinates,
+                    self.distance,
+                    self.map_directory,
+                    self.logger,
+                    # map=self,
+                    blur_seed=blur_seed,
+                    max_height=max_height,
+                )
             )
         self._components = active_components
         self.logger.debug(f"Added {len(self._components)} components.")
-
-    def _read_parameters(self) -> None:
-        """Reads map parameters from OSM data, such as:
-        - minimum and maximum coordinates in UTM format
-        - map dimensions in meters
-        - map coefficients (meters per pixel)
-        """
-        north, south, east, west = ox.utils_geo.bbox_from_point(
-            self.coordinates, dist=self.distance, project_utm=True
-        )
-        # Parameters of the map in UTM format (meters).
-        self.minimum_x = min(west, east)
-        self.minimum_y = min(south, north)
-        self.maximum_x = max(west, east)
-        self.maximum_y = max(south, north)
-        self.logger.debug(f"Map minimum coordinates (XxY): {self.minimum_x} x {self.minimum_y}.")
-        self.logger.debug(f"Map maximum coordinates (XxY): {self.maximum_x} x {self.maximum_y}.")
-
-        self.height = abs(north - south)
-        self.width = abs(east - west)
-        self.logger.info(f"Map dimensions (HxW): {self.height} x {self.width}.")
-
-        self.height_coef = self.height / (self.distance * 2)
-        self.width_coef = self.width / (self.distance * 2)
-        self.logger.debug(f"Map coefficients (HxW): {self.height_coef} x {self.width_coef}.")
-
-        self.easting = self.minimum_x < 500000
-        self.northing = self.minimum_y < 10000000
-        self.logger.debug(f"Map is in {'east' if self.easting else 'west'} of central meridian.")
-        self.logger.debug(f"Map is in {'north' if self.northing else 'south'} hemisphere.")
 
     def generate(self):
         for component in self._components:
@@ -108,6 +86,9 @@ class CConsole(Console):
         self.log(msg)
 
     def warning(self, msg):
+        self.log(msg)
+
+    def error(self, msg):
         self.log(msg)
 
 

@@ -22,6 +22,7 @@ class Config(Component):
         distance: int,
         map_directory: str,
         logger: Any = None,
+        **kwargs,
     ):
         super().__init__(coordinates, distance, map_directory, logger)
         self._map_xml_path = os.path.join(self._map_directory, "maps", "map", "map.xml")
