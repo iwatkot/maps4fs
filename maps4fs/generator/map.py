@@ -1,4 +1,3 @@
-import logging
 import os
 import shutil
 from typing import Any
@@ -22,7 +21,7 @@ class Map:
         self.map_directory = map_directory
 
         if not logger:
-            logger = logging.getLogger(__name__)
+            logger = mfs.Logger(__name__, to_stdout=True, to_file=False)
         self.logger = logger
         self.components = []
 
@@ -38,7 +37,7 @@ class Map:
 
         self._add_components(blur_seed, max_height)
 
-    def _add_components(self, blur_seed: int, max_height: int):
+    def _add_components(self, blur_seed: int, max_height: int) -> None:
         self.logger.debug("Starting adding components...")
         for component in mfs.generator.BaseComponents:
             active_component = component(
@@ -53,49 +52,18 @@ class Map:
             self.components.append(active_component)
         self.logger.debug(f"Added {len(self.components)} components.")
 
-    def generate(self):
-        for component in self.components:
-            component.process()
+    def generate(self) -> None:
+        try:
+            from tqdm import tqdm
 
-    def previews(self):
+            with tqdm(total=len(self.components), desc="Generating map...") as pbar:
+                for component in self.components:
+                    component.process()
+                    pbar.update(1)
+
+        except ImportError:
+            for component in self.components:
+                component.process()
+
+    def previews(self) -> list[str]:
         return self.texture.previews()
-
-
-# region debug
-cwd = os.getcwd()
-coordinates = (45.260215643628264, 19.808635347472343)
-distance = 2048
-map_directory = os.path.join(cwd, "output")
-map_template = os.path.join(cwd, "data", "map-template.zip")
-blur_seed = 5
-max_height = 800
-
-from rich.console import Console
-
-
-class CConsole(Console):
-    def __init__(self):
-        super().__init__()
-
-    def debug(self, msg):
-        self.log(msg)
-
-    def info(self, msg):
-        self.log(msg)
-
-    def warning(self, msg):
-        self.log(msg)
-
-    def error(self, msg):
-        self.log(msg)
-
-
-if __name__ == "__main__":
-    mp = Map(
-        coordinates, distance, map_directory, blur_seed, max_height, map_template, logger=CConsole()
-    )
-    mp.generate()
-    paths = mp.previews()
-    print(paths)
-
-# endregion

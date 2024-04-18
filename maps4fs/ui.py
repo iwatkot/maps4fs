@@ -3,33 +3,33 @@ import time
 import tkinter as tk
 from tkinter import ttk
 
-from rich.console import Console
+import maps4fs as mfs
 
-import generate
-
-logger = Console()
-working_directory = os.getcwd()
-output_directory = os.path.join(working_directory, "output")
+map_directory = os.path.join(os.getcwd(), "output")
+map_template = os.path.join(os.getcwd(), "data", "map-template.zip")
+if not os.path.isfile(map_template):
+    raise FileNotFoundError(f"Map template not found: {map_template}")
 
 
 def start() -> None:
     """Reads the input from the GUI and starts the map generation."""
-    lat = float(lat_entry.get())
-    lon = float(lon_entry.get())
+    lat_lon = lat_lon_entry.get().strip()
+    lat, lon = map(float, lat_lon.split(","))
     size = int(size_var.get())
     distance = int(size / 2)
 
     blur_seed = int(blur_seed_entry.get())
     max_height = int(max_height_var.get())
-    dem_settings = generate.DemSettings(blur_seed, max_height)
 
     result_label.config(text="Generating...")
     root.update()
-    gm = generate.Map(working_directory, (lat, lon), distance, dem_settings, logger)
-    gm.preview()
-    gm.info_sequence()
+
+    mp = mfs.Map((lat, lon), distance, map_directory, blur_seed, max_height, map_template)
+    mp.generate()
+    mp.previews()
+
     result_label.config(text="Saved in:")
-    path_label.config(text=f"{output_directory}")
+    path_label.config(text=f"{map_directory}")
     for i in range(5, 0, -1):
         close_time_label.config(text=f"Closing in {i} seconds...")
         root.update()
@@ -39,29 +39,23 @@ def start() -> None:
 
 def open_output_dir(event: tk.Event) -> None:
     """Open the output directory in the file explorer."""
-    os.startfile(output_directory)
+    os.startfile(map_directory)
 
 
 root = tk.Tk()
 root.geometry("300x300")
 
-lat_label = tk.Label(root, text="Latitude:")
-lat_label.grid(row=0, column=0)
-lat_entry = tk.Entry(root)
-lat_entry.insert(0, "")
-lat_entry.grid(row=0, column=1)
-
-lon_label = tk.Label(root, text="Longitude:")
-lon_label.grid(row=1, column=0)
-lon_entry = tk.Entry(root)
-lon_entry.insert(0, "")
-lon_entry.grid(row=1, column=1)
+lat_lon_label = tk.Label(root, text="Latitude and longitude:")
+lat_lon_label.grid(row=0, column=0)
+lat_lon_entry = tk.Entry(root)
+lat_lon_entry.insert(0, "45.2602, 19.8086")
+lat_lon_entry.grid(row=0, column=1)
 
 size_label = tk.Label(root, text="Map size:")
 size_label.grid(row=2, column=0)
 size_var = tk.StringVar(root)
 size_var.set("2048")
-size_menu = tk.OptionMenu(root, size_var, *generate.MAP_SIZES)
+size_menu = tk.OptionMenu(root, size_var, *mfs.globals.MAP_SIZES)
 size_menu.grid(row=2, column=1)
 
 button = tk.Button(root, text="Generate map", command=start)
@@ -93,7 +87,7 @@ max_height_label = tk.Label(root, text="Max height:")
 max_height_label.grid(row=9, column=0)
 max_height_var = tk.StringVar(root)
 max_height_var.set("400")
-max_height_menu = tk.OptionMenu(root, max_height_var, *list(generate.MAX_HEIGHTS.keys()))
+max_height_menu = tk.OptionMenu(root, max_height_var, *list(mfs.globals.MAX_HEIGHTS.keys()))
 max_height_menu.grid(row=9, column=1)
 
 root.mainloop()

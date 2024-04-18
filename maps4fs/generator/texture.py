@@ -404,10 +404,10 @@ class Texture(Component):
             color_img[img > 0] = color
             color_images.append(color_img)
         merged = np.sum(color_images, axis=0, dtype=np.uint8)
-        self.logger.log(
+        self.logger.debug(
             f"Merged layers into one image. Shape: {merged.shape}, dtype: {merged.dtype}."
         )
         preview_path = os.path.join(self.map_directory, "preview_osm.png")
         cv2.imwrite(preview_path, merged)
-        self.logger.log(f"Preview saved to {preview_path}.")
+        self.logger.info(f"Preview saved to {preview_path}.")
         return preview_path

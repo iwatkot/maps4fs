@@ -1,5 +1,6 @@
-import logging
 from typing import Any
+
+import maps4fs as mfs
 
 
 class Component:
@@ -26,7 +27,7 @@ class Component:
         self.map_directory = map_directory
 
         if not logger:
-            logger = logging.getLogger(__name__)
+            logger = mfs.Logger(__name__, to_stdout=True, to_file=False)
         self.logger = logger
 
     def process(self):
