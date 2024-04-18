@@ -24,6 +24,7 @@ class Map:
         if not logger:
             logger = logging.getLogger(__name__)
         self.logger = logger
+        self.components = []
 
         os.makedirs(self.map_directory, exist_ok=True)
         if map_template:
@@ -39,20 +40,18 @@ class Map:
 
     def _add_components(self, blur_seed: int, max_height: int):
         self.logger.debug("Starting adding components...")
-        active_components = []
         for component in mfs.generator.BaseComponents:
-            active_components.append(
-                component(
-                    self.coordinates,
-                    self.distance,
-                    self.map_directory,
-                    self.logger,
-                    blur_seed=blur_seed,
-                    max_height=max_height,
-                )
+            active_component = component(
+                self.coordinates,
+                self.distance,
+                self.map_directory,
+                self.logger,
+                blur_seed=blur_seed,
+                max_height=max_height,
             )
-        self._components = active_components
-        self.logger.debug(f"Added {len(self._components)} components.")
+            setattr(self, component.__name__.lower(), active_component)
+            self.components.append(active_component)
+        self.logger.debug(f"Added {len(self.components)} components.")
 
     def generate(self):
         for component in self._components:
