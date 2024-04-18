@@ -2,7 +2,7 @@ import os
 from typing import Any
 from xml.etree import ElementTree as ET
 
-from maps4fs import Component
+from maps4fs.generator import Component
 
 
 class Config(Component):
@@ -24,21 +24,21 @@ class Config(Component):
         logger: Any = None,
     ):
         super().__init__(coordinates, distance, map_directory, logger)
-        self.map_xml_path = os.path.join(self.map_directory, "maps", "map", "map.xml")
+        self._map_xml_path = os.path.join(self._map_directory, "maps", "map", "map.xml")
 
     def process(self):
         self._set_map_size()
 
     def _set_map_size(self):
         """Edits map.xml file to set correct map size."""
-        if not os.path.isfile(self.map_xml_path):
-            self.logger.warning(f"Map XML file not found: {self.map_xml_path}.")
+        if not os.path.isfile(self._map_xml_path):
+            self.logger.warning(f"Map XML file not found: {self._map_xml_path}.")
             return
-        tree = ET.parse(self.map_xml_path)
-        self.logger.log(f"Map XML file loaded from: {self.map_xml_path}.")
+        tree = ET.parse(self._map_xml_path)
+        self.logger.log(f"Map XML file loaded from: {self._map_xml_path}.")
         root = tree.getroot()
         for map_elem in root.iter("map"):
-            map_elem.set("width", str(self.distance * 2))
-            map_elem.set("height", str(self.distance * 2))
-        tree.write(self.map_xml_path)
-        self.logger.log(f"Map XML file saved to: {self.map_xml_path}.")
+            map_elem.set("width", str(self._distance * 2))
+            map_elem.set("height", str(self._distance * 2))
+        tree.write(self._map_xml_path)
+        self.logger.log(f"Map XML file saved to: {self._map_xml_path}.")
