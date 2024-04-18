@@ -375,3 +375,39 @@ class Texture(Component):
             if polygon is None:
                 continue
             yield polygon
+
+    def previews(self) -> list[str]:
+        """Invokes methods to generate previews. Returns list of paths to previews.
+
+        Returns:
+            list[str]: List of paths to previews.
+        """
+        preview_paths = []
+        preview_paths.append(self._osm_preview())
+        return preview_paths
+
+    def _osm_preview(self) -> str:
+        """Merges layers into one image and saves it into the png file.
+
+        Returns:
+            str: Path to the preview.
+        """
+        preview_size = (2048, 2048)
+        images = [
+            cv2.resize(cv2.imread(layer.path, cv2.IMREAD_UNCHANGED), preview_size)
+            for layer in self.layers
+        ]
+        colors = [layer.color for layer in self.layers]
+        color_images = []
+        for img, color in zip(images, colors):
+            color_img = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)
+            color_img[img > 0] = color
+            color_images.append(color_img)
+        merged = np.sum(color_images, axis=0, dtype=np.uint8)
+        self.logger.log(
+            f"Merged layers into one image. Shape: {merged.shape}, dtype: {merged.dtype}."
+        )
+        preview_path = os.path.join(self.map_directory, "preview_osm.png")
+        cv2.imwrite(preview_path, merged)
+        self.logger.log(f"Preview saved to {preview_path}.")
+        return preview_path

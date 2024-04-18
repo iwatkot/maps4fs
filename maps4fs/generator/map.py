@@ -54,8 +54,11 @@ class Map:
         self.logger.debug(f"Added {len(self.components)} components.")
 
     def generate(self):
-        for component in self._components:
+        for component in self.components:
             component.process()
+
+    def previews(self):
+        return self.texture.previews()
 
 
 # region debug
@@ -92,5 +95,7 @@ if __name__ == "__main__":
         coordinates, distance, map_directory, blur_seed, max_height, map_template, logger=CConsole()
     )
     mp.generate()
+    paths = mp.previews()
+    print(paths)
 
 # endregion
