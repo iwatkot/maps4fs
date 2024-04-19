@@ -20,12 +20,12 @@ class Messages(Enum):
     ENTER_COORDINATES = (
         "Enter the coordinates of the center of the map\."
         "The coordinates are latitude and longitude separated by a comma\.\n\n"
-        "For example: `52\.520008, 13\.404954`\n\n"
+        "For example: `45\.2602, 19\.8086`\n\n"
         "You can obtain them by right\-clicking on the map in [Google Maps](https://www.google.com/maps)\."
     )
     WRONG_COORDINATES = (
         "Please enter the coordinates in the correct format\.\n\n"
-        "For example: `52\.520008, 13\.404954`\n\n"
+        "For example: `45\.2602, 19\.8086`\n\n"
     )
 
     SELECT_MAP_SIZE = (

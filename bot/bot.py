@@ -9,14 +9,18 @@ from aiogram.types import (
     KeyboardButton,
     ReplyKeyboardMarkup,
 )
+from bot_templates import Buttons, Messages
 from dotenv import load_dotenv
 
-import generate
-from bot_templates import Buttons, Messages
-from logger import Logger
+import maps4fs as mfs
 
-logger = Logger(__name__)
+logger = mfs.Logger(__name__, level="DEBUG")
 working_directory = os.getcwd()
+map_template = os.path.join(working_directory, "data", "map-template.zip")
+maps_directory = os.path.join(working_directory, "maps")
+archives_directory = os.path.join(working_directory, "archives")
+os.makedirs(maps_directory, exist_ok=True)
+os.makedirs(archives_directory, exist_ok=True)
 logger.info(f"Working directory: {working_directory}")
 env_path = os.path.join(working_directory, "bot.env")
 if os.path.exists(env_path):
@@ -25,7 +29,6 @@ token = os.getenv("BOT_TOKEN")
 if not token:
     raise RuntimeError("No token provided.")
 
-logger = Logger(__name__)
 bot = Bot(token=token)
 dp = Dispatcher(bot=bot)
 
@@ -52,9 +55,10 @@ class Session:
         self.telegram_id = telegram_id
         self.timestamp = int(datetime.now().timestamp())
         self.name = f"{self.telegram_id}_{self.timestamp}"
+        self.map_directory = os.path.join(maps_directory, self.name)
         self.coordinates = coordinates
         self.distance = None
-        self.dem_settings = None
+        self.max_height = None
 
     def run(self) -> tuple[str, str]:
         """Runs the session and returns paths to the preview and the archive.
@@ -62,12 +66,18 @@ class Session:
         Returns:
             tuple[str, str]: Paths to the preview and the archive.
         """
-        gm = generate.Map(
-            working_directory, self.coordinates, self.distance, self.dem_settings, logger, self.name
+        mp = mfs.Map(
+            self.coordinates,
+            self.distance,
+            self.map_directory,
+            blur_seed=5,
+            max_height=self.max_height,
+            map_template=map_template,
+            logger=logger,
         )
-        gm.info_sequence()
-        preview_path = gm.preview()
-        archive_path = gm.pack()
+        mp.generate()
+        preview_path = mp.previews()[0]
+        archive_path = mp.pack(os.path.join(archives_directory, self.name))
         return preview_path, archive_path
 
 
@@ -193,7 +203,7 @@ async def coordinates(message: types.Message) -> None:
     telegram_id = message.from_user.id
     sessions[telegram_id] = Session(telegram_id, (latitude, longitude))
 
-    sizes = generate.MAP_SIZES
+    sizes = mfs.globals.MAP_SIZES
     indicators = ["🟢", "🟢", "🟡", "🔴"]
     buttons = {}
     # * Slice sizes because VPS can not handle large images.
@@ -224,7 +234,7 @@ async def map_size_callback(callback_query: types.CallbackQuery) -> None:
         return
     session.distance = int(map_size / 2)
 
-    heights = generate.MAX_HEIGHTS
+    heights = mfs.globals.MAX_HEIGHTS
     buttons = {}
     for height, description in heights.items():
         buttons[f"max_height_{height}"] = description
@@ -251,7 +261,7 @@ async def max_height_callback(callback_query: types.CallbackQuery) -> None:
     if not session:
         return
 
-    session.dem_settings = generate.DemSettings(5, max_height)
+    session.max_height = max_height
 
     await bot.send_message(
         callback_query.from_user.id,
