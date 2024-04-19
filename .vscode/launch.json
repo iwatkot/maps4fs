@@ -16,7 +16,7 @@
             "name": "Windows Script",
             "type": "python",
             "request": "launch",
-            "program": "src/main.py",
+            "program": "maps4fs/ui.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "env": {
@@ -40,7 +40,7 @@
             "name": "Linux / Mac Script",
             "type": "python",
             "request": "launch",
-            "program": "src/main.py",
+            "program": "maps4fs/ui.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "env": {
@@ -52,7 +52,7 @@
             "name": "Linux / Mac  Bot",
             "type": "python",
             "request": "launch",
-            "program": "src/bot.py",
+            "program": "bot/bot.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "env": {

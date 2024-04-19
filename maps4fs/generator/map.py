@@ -2,6 +2,8 @@ import os
 import shutil
 from typing import Any
 
+from tqdm import tqdm
+
 import maps4fs as mfs
 
 
@@ -53,23 +55,20 @@ class Map:
         self.logger.debug(f"Added {len(self.components)} components.")
 
     def generate(self) -> None:
-        try:
-            from tqdm import tqdm
-
-            with tqdm(total=len(self.components), desc="Generating map...") as pbar:
-                for component in self.components:
-                    component.process()
-                    pbar.update(1)
-
-        except ImportError:
+        with tqdm(total=len(self.components), desc="Generating map...") as pbar:
             for component in self.components:
-                component.process()
+                try:
+                    component.process()
+                except Exception as e:
+                    self.logger.error(
+                        f"Error processing component {component.__class__.__name__}: {e}"
+                    )
+                pbar.update(1)
 
     def previews(self) -> list[str]:
         return self.texture.previews()
 
-    def pack(self, archive_path: str) -> None:
-        shutil.make_archive(archive_path, "zip", self.map_directory)
-        self.logger.info(f"Map packed to {archive_path}.zip")
-        shutil.rmtree(self.map_directory)
-        self.logger.info(f"Map directory {self.map_directory} removed.")
+    def pack(self, archive_name: str) -> str:
+        archive_path = shutil.make_archive(archive_name, "zip", self.map_directory)
+        self.logger.info(f"Map packed to {archive_name}.zip")
+        return archive_path

@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 
 import maps4fs as mfs
 
-logger = mfs.Logger(__name__)
+logger = mfs.Logger(__name__, level="DEBUG")
 working_directory = os.getcwd()
 map_template = os.path.join(working_directory, "data", "map-template.zip")
 maps_directory = os.path.join(working_directory, "maps")
@@ -77,8 +77,7 @@ class Session:
         )
         mp.generate()
         preview_path = mp.previews()[0]
-        archive_path = os.path.join(archives_directory, f"{self.name}.zip")
-        mp.pack(archive_path)
+        archive_path = mp.pack(os.path.join(archives_directory, self.name))
         return preview_path, archive_path
 
 

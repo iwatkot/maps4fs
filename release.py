@@ -1,19 +1,18 @@
 import os
 import zipfile
 
-ARCHIVE_NAME = "maps4fs.zip"
+ARCHIVE_PATH = os.path.join("/Users/iwatkot/Downloads", "maps4fs.zip")
 
-release_directories = ["data", "src"]
+release_directories = ["data", "maps4fs"]
 release_files = [
     "requirements.txt",
     "run.ps1",
     "run.sh",
-    "textures.json",
 ]
 
 
-def main():
-    with zipfile.ZipFile(ARCHIVE_NAME, "w") as zf:
+def main() -> None:
+    with zipfile.ZipFile(ARCHIVE_PATH, "w") as zf:
         for directory in release_directories:
             for root, _, files in os.walk(directory):
                 for file in files:
@@ -22,7 +21,7 @@ def main():
         for file in release_files:
             zf.write(file)
 
-    print(f"Release archive created: {ARCHIVE_NAME}")
+    print(f"Release archive created: {ARCHIVE_PATH}")
 
 
 if __name__ == "__main__":
