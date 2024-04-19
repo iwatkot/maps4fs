@@ -14,4 +14,5 @@ COPY . .
 
 RUN pip install -r bot_requirements.txt
 
+ENV PYTHONPATH .:${PYTHONPATH}
 CMD ["python", "-u", "./bot/bot.py"]
