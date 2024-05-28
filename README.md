@@ -99,8 +99,6 @@ The script will also generate the `generation_info.json` file in the `output` fo
 `"width"` - the width of the map in meters,<br>
 `"height_coef"` - since we need a texture of exact size, the height of the map is multiplied by this coefficient,<br>
 `"width_coef"` - same as above but for the width,<br>
-`"easting"` - boolean, if true, the map is in the eastern hemisphere, if false, in the western,<br>
-`"northing"` - boolean, if true, the map is in the northern hemisphere, if false, in the southern,<br>
 `"tile_name"` - the name of the SRTM tile which was used to generate the height map, e.g. "N52E013"<br>
 
 You can use this information to adjust some other sources of data to the map, e.g. textures, height maps, etc.
