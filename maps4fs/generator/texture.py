@@ -264,10 +264,7 @@ class Texture(Component):
         Returns:
             int: Relative Y coordinate in map image.
         """
-        # if self.northing:
         raw_y = y - self.minimum_y
-        # else:
-        #     raw_y = self.minimum_y - y
         return self.height - int(raw_y * self.width_coef)
 
     def _to_np(self, geometry: shapely.geometry.polygon.Polygon, *args) -> np.ndarray:
