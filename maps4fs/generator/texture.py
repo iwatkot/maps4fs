@@ -119,11 +119,6 @@ class Texture(Component):
         self.width_coef = self.width / (self.distance * 2)
         self.logger.debug(f"Map coefficients (HxW): {self.height_coef} x {self.width_coef}.")
 
-        self.easting = self.minimum_x < 500000
-        self.northing = self.minimum_y < 10000000
-        self.logger.debug(f"Map is in {'east' if self.easting else 'west'} of central meridian.")
-        self.logger.debug(f"Map is in {'north' if self.northing else 'south'} hemisphere.")
-
     def info_sequence(self) -> None:
         """Saves generation info to JSON file "generation_info.json".
 
@@ -139,8 +134,6 @@ class Texture(Component):
             - width
             - height_coef
             - width_coef
-            - easting
-            - northing
         """
         useful_attributes = [
             "coordinates",
@@ -154,8 +147,6 @@ class Texture(Component):
             "width",
             "height_coef",
             "width_coef",
-            "easting",
-            "northing",
         ]
         info_sequence = {attr: getattr(self, attr, None) for attr in useful_attributes}
 
@@ -261,10 +252,7 @@ class Texture(Component):
         Returns:
             int: Relative X coordinate in map image.
         """
-        if self.easting:
-            raw_x = x - self.minimum_x
-        else:
-            raw_x = self.minimum_x - x
+        raw_x = x - self.minimum_x
         return int(raw_x * self.height_coef)
 
     def get_relative_y(self, y: float) -> int:
@@ -276,10 +264,7 @@ class Texture(Component):
         Returns:
             int: Relative Y coordinate in map image.
         """
-        if self.northing:
-            raw_y = y - self.minimum_y
-        else:
-            raw_y = self.minimum_y - y
+        raw_y = y - self.minimum_y
         return self.height - int(raw_y * self.width_coef)
 
     def _to_np(self, geometry: shapely.geometry.polygon.Polygon, *args) -> np.ndarray:
