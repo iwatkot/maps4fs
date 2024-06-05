@@ -52,11 +52,11 @@ class DEM(Component):
         self.logger.debug(
             f"Processing DEM. North: {north}, south: {south}, east: {east}, west: {west}."
         )
-        max_y, min_y = max(north, south), min(north, south)
-        max_x, min_x = max(east, west), min(east, west)
-        self.logger.debug(
-            f"Bounding box parameters. Min x: {min_x}, min y: {min_y}, max x: {max_x}, max y: {max_y}."
-        )
+        # max_y, min_y = max(north, south), min(north, south)
+        # max_x, min_x = max(east, west), min(east, west)
+        # self.logger.debug(
+        #     f"Bounding box parameters. Min x: {min_x}, min y: {min_y}, max x: {max_x}, max y: {max_y}."
+        # )
 
         dem_output_resolution = (self.distance + 1, self.distance + 1)
 
@@ -68,7 +68,7 @@ class DEM(Component):
 
         with rasterio.open(tile_path) as src:
             self.logger.debug(f"Opened tile, shape: {src.shape}, dtype: {src.dtypes[0]}.")
-            window = rasterio.windows.from_bounds(min_x, min_y, max_x, max_y, src.transform)
+            window = rasterio.windows.from_bounds(west, south, east, north, src.transform)
             self.logger.debug(
                 f"Window parameters. Column offset: {window.col_off}, row offset: {window.row_off}, "
                 f"width: {window.width}, height: {window.height}."
@@ -112,11 +112,11 @@ class DEM(Component):
         tile_latitude = math.floor(lat)
         tile_longitude = math.floor(lon)
 
-        latitude_band = f"N{abs(tile_latitude):02d}"
+        latitude_band = f"N{abs(tile_latitude):02d}" if lat >= 0 else f"S{abs(tile_latitude):02d}"
         if lon < 0:
-            tile_name = f"N{abs(tile_latitude):02d}W{abs(abs(tile_longitude)):03d}"
+            tile_name = f"{latitude_band}W{abs(tile_longitude):03d}"
         else:
-            tile_name = f"N{abs(tile_latitude):02d}E{abs(tile_longitude):03d}"
+            tile_name = f"{latitude_band}E{abs(tile_longitude):03d}"
 
         self.logger.debug(f"Detected tile name: {tile_name} for coordinates: lat {lat}, lon {lon}.")
         return latitude_band, tile_name
