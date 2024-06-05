@@ -52,11 +52,6 @@ class DEM(Component):
         self.logger.debug(
             f"Processing DEM. North: {north}, south: {south}, east: {east}, west: {west}."
         )
-        # max_y, min_y = max(north, south), min(north, south)
-        # max_x, min_x = max(east, west), min(east, west)
-        # self.logger.debug(
-        #     f"Bounding box parameters. Min x: {min_x}, min y: {min_y}, max x: {max_x}, max y: {max_y}."
-        # )
 
         dem_output_resolution = (self.distance + 1, self.distance + 1)
 
