@@ -49,8 +49,14 @@ class DEM(Component):
         north, south, east, west = ox.utils_geo.bbox_from_point(
             self.coordinates, dist=self.distance
         )
+        self.logger.debug(
+            f"Processing DEM. North: {north}, south: {south}, east: {east}, west: {west}."
+        )
         max_y, min_y = max(north, south), min(north, south)
         max_x, min_x = max(east, west), min(east, west)
+        self.logger.debug(
+            f"Bounding box parameters. Min x: {min_x}, min y: {min_y}, max x: {max_x}, max y: {max_y}."
+        )
 
         dem_output_resolution = (self.distance + 1, self.distance + 1)
 
@@ -168,8 +174,8 @@ class DEM(Component):
     def _save_empty_dem(self, dem_output_resolution: tuple[int, int]) -> None:
         """Saves empty DEM file filled with zeros."""
         dem_data = np.zeros(dem_output_resolution, dtype="uint16")
-        cv2.imwrite(self.map_dem_path, dem_data)
-        self.logger.warning(f"DEM data filled with zeros and saved to {self.map_dem_path}.")
+        cv2.imwrite(self._dem_path, dem_data)
+        self.logger.warning(f"DEM data filled with zeros and saved to {self._dem_path}.")
 
     def _normalize_dem(self, data: np.ndarray) -> np.ndarray:
         """Normalize DEM data to 16-bit unsigned integer using max height from settings.
