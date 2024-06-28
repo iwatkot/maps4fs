@@ -52,7 +52,7 @@ Using Telegram bot [@maps4fs](https://t.me/maps4fsbot).<br>
 Note: due to CPU and RAM limitations of the hosting, only 2x2 and 4x4 km maps are available. If you need bigger maps, use the [local version](#option-2).<br>
 ℹ️ By the way, since I don't want to spend a lot of money on hosting, the bot may be unavailable from time to time or even be shut down. If you want to support this project, you can donate using [Buy me a coffee](https://www.buymeacoffee.com/iwatkot0).
 
-![Telegram bot](https://i.postimg.cc/tJZC3YHg/Kapture-2024-01-24-at-02-19-03.gif)
+![Telegram bot](https://github.com/iwatkot/maps4fs/assets/118521851/ede69fe8-1a34-4ede-908f-52c9dc355ae4)
 <br>
 
 Using it is easy and doesn't require any guides. Enjoy!
