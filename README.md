@@ -1,5 +1,5 @@
 <div align="center" markdown>
-<img src="https://i.postimg.cc/N0Hvm4p4/maps4fs-poster.png">
+<img src="https://github.com/iwatkot/maps4fs/assets/118521851/ffd7f0a3-e317-4c3f-911f-2c2fb736fbfa">
 
 <p align="center">
   <a href="#Overview">Overview</a> • 
