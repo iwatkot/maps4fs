@@ -1,8 +1,8 @@
 name: Docker Image Bot
 
 on:
-  push:
-    branches: [ main ]
+  release:
+    types: [published]
 
 jobs:
   build:
