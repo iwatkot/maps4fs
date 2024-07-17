@@ -207,7 +207,7 @@ async def coordinates(message: types.Message) -> None:
     indicators = ["🟢", "🟢", "🟡", "🔴"]
     buttons = {}
     # * Slice sizes because VPS can not handle large images.
-    for size, indicator in zip(sizes[:2], indicators[:2]):
+    for size, indicator in zip(sizes, indicators):
         buttons[f"map_size_{size}"] = f"{indicator} {size} x {size} meters"
 
     dp.message_handlers.unregister(coordinates)
@@ -282,6 +282,12 @@ async def max_height_callback(callback_query: types.CallbackQuery) -> None:
             Messages.FILE_TOO_LARGE.value,
             reply_markup=await keyboard(Buttons.MAIN_MENU.value),
         )
+
+    try:
+        os.remove(preview)
+        os.remove(result)
+    except FileNotFoundError as e:
+        logger.error(e)
 
 
 async def keyboard(
