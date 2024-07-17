@@ -12,7 +12,7 @@ WORKDIR /usr/src/app
 
 COPY . .
 
-RUN pip install -r bot_requirements.txt
+RUN pip install -r docker/requirements_bot.txt
 
 ENV PYTHONPATH .:${PYTHONPATH}
 CMD ["python", "-u", "./bot/bot.py"]

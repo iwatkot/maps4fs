@@ -24,6 +24,6 @@ jobs:
         context: .
         push: true
         tags: iwatkot/maps4fsbot:latest
-        file: ./Dockerfile_bot
+        file: ./docker/Dockerfile_bot
         build-args: |
           BOT_TOKEN=${{ secrets.BOT_TOKEN }}
