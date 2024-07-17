@@ -347,7 +347,7 @@ class Texture(Component):
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", DeprecationWarning)
-                objects = ox.features_from_bbox(*self._bbox, tags=tags)
+                objects = ox.features_from_bbox(bbox=self._bbox, tags=tags)
         except Exception as e:
             self.logger.warning(f"Error fetching objects for tags: {tags}.")
             self.logger.warning(e)
