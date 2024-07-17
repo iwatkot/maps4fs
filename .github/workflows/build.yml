@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Docker Image Bot
 
 on:
   push:
@@ -23,6 +23,7 @@ jobs:
       with:
         context: .
         push: true
-        tags: iwatkot/maps4fs:latest
+        tags: iwatkot/maps4fsbot:latest
+        file: ./Dockerfile_bot
         build-args: |
           BOT_TOKEN=${{ secrets.BOT_TOKEN }}
