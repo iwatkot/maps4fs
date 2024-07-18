@@ -50,7 +50,7 @@ The list will be updated as the project develops.
 ### Option 1: Telegram bot
 🟢 Recommended for all users, you don't need to install anything.<br>
 Using Telegram bot [@maps4fs](https://t.me/maps4fsbot).<br>
-Note: due to CPU and RAM limitations of the hosting, only 2x2 and 4x4 km maps are available. If you need bigger maps, use the [Docker version](#option-2).<br>
+Note: due to CPU and RAM limitations of the hosting, only 2x2 and 4x4 km maps are available. If you need bigger maps, use the [Docker version](#option-2-docker-version).<br>
 
 ![Telegram bot](https://github.com/iwatkot/maps4fs/assets/118521851/ede69fe8-1a34-4ede-908f-52c9dc355ae4)
 <br>
