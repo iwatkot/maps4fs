@@ -30,6 +30,12 @@ If you don't know how to use Docker, navigate to the [Docker version](#option-2-
 
 ## Overview
 The core idea is coming from the awesome [maps4cim](https://github.com/klamann/maps4cim) project.<br>
+
+[![Video tutorial](https://github.com/user-attachments/assets/7df532d2-2909-4241-b4ca-d5b7dc4502e4](https://www.youtube.com/watch?v=ujwWKHVKsw8 "How to generate Farming Simulator 22 map from the real-world data")
+
+<i>Video tutorial: How to generate Farming Simulator 22 map from the real-world data.</i>
+
+
 The main goal of this project is to generate map templates, based on real-world data, for the Farming Simulator. It's important to mention that **templates are not maps**. They are just a starting point for creating a map. This tool just uses built-in textures to highlight different types of terrain and buildings with correct shapes and scales and to generate a height map. The rest of the work is up to you. So if you thought that you could just run this tool and get a playable map, then I'm sorry to disappoint you. But if you are a map maker, then this tool will save you a lot of time.<br>
 So, if you're new to map making, here's a quick overview of the process:
 1. Generate a map template using this tool.
