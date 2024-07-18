@@ -12,7 +12,7 @@
 </p>
 
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/iwatkot/maps4fs)
-![GitHub downloads](https://img.shields.io/github/downloads/iwatkot/maps4fs/total)
+[![Docker Pulls](https://img.shields.io/docker/pulls/iwatkot/maps4fs)](https://hub.docker.com/repository/docker/iwatkot/maps4fs/general)
 ![GitHub issues](https://img.shields.io/github/issues/iwatkot/maps4fs)
 [![Maintainability](https://api.codeclimate.com/v1/badges/b922fd0a7188d37e61de/maintainability)](https://codeclimate.com/github/iwatkot/maps4fs/maintainability) 
 
