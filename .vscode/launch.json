@@ -1,41 +1,6 @@
 {
     "version": "0.2.0",
     "configurations": [
-                {
-            "name": "Current File",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}${pathSeparator}${env:PYTHONPATH}"
-            }
-        },
-        {
-            "name": "Windows Script",
-            "type": "python",
-            "request": "launch",
-            "program": "maps4fs/ui.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder};${PYTHONPATH}",
-                "LOG_LEVEL": "DEBUG",
-            }
-        },
-        {
-            "name": "Windows Release Script",
-            "type": "python",
-            "request": "launch",
-            "program": "release.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder};${PYTHONPATH}",
-                "LOG_LEVEL": "DEBUG",
-            }
-        },
         {
             "name": "Linux / Mac Script",
             "type": "python",
@@ -48,6 +13,33 @@
                 "LOG_LEVEL": "DEBUG",
             }
         },
+        {
+            "name": "Streamlit: webui",
+            "type": "process",
+            "request": "launch",
+            "preLaunchTask": "Run Streamlit",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}:${PYTHONPATH}",
+                "LOG_LEVEL": "DEBUG",
+            }
+        },
+        {
+            "name": "Release Script",
+            "type": "python",
+            "request": "launch",
+            "program": "release.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder};${PYTHONPATH}",
+                "LOG_LEVEL": "DEBUG",
+            }
+        },
+
         {
             "name": "Linux / Mac  Bot",
             "type": "python",

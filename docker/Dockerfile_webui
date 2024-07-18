@@ -12,4 +12,4 @@ COPY . .
 RUN pip install -r docker/requirements_webui.txt
 
 ENV PYTHONPATH .:${PYTHONPATH}
-CMD ["python", "-u", "./webui/webui.py"]
+CMD ["streamlit", "run", "./webui/webui.py"]
