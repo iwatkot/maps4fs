@@ -11,5 +11,7 @@ COPY . .
 
 RUN pip install -r docker/requirements_webui.txt
 
+EXPOSE 8501
+
 ENV PYTHONPATH .:${PYTHONPATH}
 CMD ["streamlit", "run", "./webui/webui.py"]
