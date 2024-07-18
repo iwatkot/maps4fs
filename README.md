@@ -31,7 +31,7 @@ If you don't know how to use Docker, navigate to the [Docker version](#option-2-
 ## Overview
 The core idea is coming from the awesome [maps4cim](https://github.com/klamann/maps4cim) project.<br>
 
-<a href="https://www.youtube.com/watch?v=ujwWKHVKsw8" target="_blank"><img src="https://github.com/user-attachments/assets/7df532d2-2909-4241-b4ca-d5b7dc4502e4"/></a>
+<a href="https://www.youtube.com/watch?v=ujwWKHVKsw8" target="_blank"><img src="https://github.com/user-attachments/assets/6dbbbc71-d04f-40b2-9fba-81e5e4857407"/></a>
 <i>Video tutorial: How to generate a Farming Simulator 22 map from real-world data.</i>
 
 
