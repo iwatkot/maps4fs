@@ -2,6 +2,7 @@
 <img src="https://github.com/iwatkot/maps4fs/assets/118521851/ffd7f0a3-e317-4c3f-911f-2c2fb736fbfa">
 
 <p align="center">
+  <a href="#Quick-Start">Quick Start</a> •
   <a href="#Overview">Overview</a> • 
   <a href="#Features">Features</a> • 
   <a href="#Supported-objects">Supported objects</a> • 
@@ -16,6 +17,15 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/b922fd0a7188d37e61de/maintainability)](https://codeclimate.com/github/iwatkot/maps4fs/maintainability) 
 
 </div>
+
+## Quick Start
+For those, who don't want to read anything, here you go:<br>
+**Option 1:** launch the [@maps4fs](https://t.me/maps4fsbot) Telegram bot and generate a map template in a few clicks.<br>
+**Option 2:** run the Docker version in your browser. Launch the following command in your terminal:
+```bash
+docker run -d -p 8501:8501 iwatkot/maps4fs
+```
+And open [http://localhost:8501](http://localhost:8501) in your browser.
 
 ## Overview
 The core idea is coming from the awesome [maps4cim](https://github.com/klamann/maps4cim) project.<br>
