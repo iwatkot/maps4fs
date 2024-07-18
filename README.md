@@ -47,39 +47,54 @@ The project is based on the [OpenStreetMap](https://www.openstreetmap.org/) data
 The list will be updated as the project develops.
 
 ## How-To-Run
-**Option 1 (recommended):**<br>
+### Option 1: Telegram bot
+🟢 Recommended for all users, you don't need to install anything.<br>
 Using Telegram bot [@maps4fs](https://t.me/maps4fsbot).<br>
-Note: due to CPU and RAM limitations of the hosting, only 2x2 and 4x4 km maps are available. If you need bigger maps, use the [local version](#option-2).<br>
-ℹ️ By the way, since I don't want to spend a lot of money on hosting, the bot may be unavailable from time to time or even be shut down. If you want to support this project, you can donate using [Buy me a coffee](https://www.buymeacoffee.com/iwatkot0).
+Note: due to CPU and RAM limitations of the hosting, only 2x2 and 4x4 km maps are available. If you need bigger maps, use the [Docker version](#option-2).<br>
 
 ![Telegram bot](https://github.com/iwatkot/maps4fs/assets/118521851/ede69fe8-1a34-4ede-908f-52c9dc355ae4)
 <br>
 
 Using it is easy and doesn't require any guides. Enjoy!
 
-**Option 2:**<br>
-Launch the project locally following these steps (or watch the [video tutorial](https://youtu.be/OUzCO7SWKyA)):
+### Option 2: Docker version
+🟢 Recommended for users who need bigger maps, very simple installation.<br>
+You can launch the project with minimalistic UI in your browser using Docker. Follow these steps:
 
-1. Navigate to the [releases](https://github.com/iwatkot/maps4fs/releases) page and download the latest version of the tool. If you are familiar with Git, you can clone the repository instead.
-2. Unzip the archive.
-3. Install [Python 3.12](https://www.python.org/downloads/release/python-3120/) for your OS.
-4. Launch the script to create a virtual environment, install dependencies and run the tool:
+1. Install [Docker](https://docs.docker.com/get-docker/) for your OS.
+2. Run the following command in your terminal:
+```bash
+docker run -d -p 8501:8501 iwatkot/maps4fs
+```
+3. Open your browser and go to [http://localhost:8501](http://localhost:8501).
+4. Fill in the required fields and click on the `Generate` button.
+5. When the map is generated click on the `Download` button to get the map.
+
+![WebUI](https://github.com/user-attachments/assets/b80c458b-29ea-4790-a640-8fa3b5550610)
+
+### Option 3: local from the source
+🔴 Only for advanced users, who are familiar with Python.<br>
+Launch the project locally following these steps or watch the [video tutorial](https://youtu.be/OUzCO7SWKyA):
+
+<details>
+<summary>Instructions for local version (click to expand)</summary>
+*️⃣ This option is DEPRECATED, you will not find the zip archive in the releases anymore. You need to clone the repository and run the script manually.
+
+1. Clone the repository.
+2. Install [Python 3.12](https://www.python.org/downloads/release/python-3120/) for your OS.
+3. Launch the script to create a virtual environment, install dependencies and run the tool:
     - Windows: right-click on the `run.ps1` and select **Run with PowerShell** (if an error occurs, run `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` in PowerShell)
     - Linux / Mac: execute the `sh run.sh` in a terminal in the tool's folder (this one will work on Windows too, if you have bash installed)
-5. Minimalistic GUI will appear.
-6. Copy lat and lon from Google Maps and paste them into the corresponding fields. To do this, right-click on someplace on the map and click on the coordinates which look like this: `52.520008, 13.404954`. The first number is the latitude, the second one is the longitude. This point will be the center of the map.
-7. Select the size of the map (2048, 4096, 8192 or 16384 meters). The bigger the map, the longer it takes to generate it. Warning: to open huge maps in Giants Editor, you need a powerful PC. I don't recommend generating maps bigger than 8192 meters. By the way, the default map sizes in the Farming Simulator are 2048x2048 meters.
-9. Check the advanced settings if you want to change something. I **strongly recommend changing the `max_height` value** to which suits the map better. For more plain-like maps, set it to lower values (e.g. 200). For mountainous maps, set it to higher values (e.g. 800).
-10. Click on the **Generate** button.
-11. Wait until the map is generated. It may take a while.
-12. The map will be saved in the `output` folder in the tool's folder. You can open `output/maps/map/map.i3d` in the Giants Editor to check if everything is ok. If you need to run the script again, start with step 4. The script will delete the previous map and generate a new one.
-13. Now you can copy the `output` folder somewhere and start creating your map in the Giants Editor.
+4. Minimalistic GUI will appear.
+5. Copy lat and lon from Google Maps and paste them into the corresponding fields. To do this, right-click on someplace on the map and click on the coordinates which look like this: `52.520008, 13.404954`. The first number is the latitude, the second one is the longitude. This point will be the center of the map.
+6. Select the size of the map (2048, 4096, 8192 or 16384 meters). The bigger the map, the longer it takes to generate it. Warning: to open huge maps in Giants Editor, you need a powerful PC. I don't recommend generating maps bigger than 8192 meters. By the way, the default map sizes in the Farming Simulator are 2048x2048 meters.
+7. Check the advanced settings if you want to change something. I **strongly recommend changing the `max_height` value** to which suits the map better. For more plain-like maps, set it to lower values (e.g. 200). For mountainous maps, set it to higher values (e.g. 800).
+8. Click on the **Generate** button.
+9. Wait until the map is generated. It may take a while.
+10. The map will be saved in the `output` folder in the tool's folder. You can open `output/maps/map/map.i3d` in the Giants Editor to check if everything is ok. If you need to run the script again, start with step 4. The script will delete the previous map and generate a new one.
+11. Now you can copy the `output` folder somewhere and start creating your map in the Giants Editor.
 
-**Option 3:**<br>
-Using command line (not available yet). I'll add this on demand.
-
-**Option 4:**<br>
-Using the web version (not available yet). I'll add this on demand. But at the moment, I just don't want to host it by myself. But it's not a problem to add a simple web app.
+</details>
 
 ## Settings
 Advanced settings are available in the tool's UI under the **Advanced Settings** tab. Here's the list of them:
