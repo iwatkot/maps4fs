@@ -25,7 +25,8 @@ For those, who don't want to read anything, here you go:<br>
 ```bash
 docker run -d -p 8501:8501 iwatkot/maps4fs
 ```
-And open [http://localhost:8501](http://localhost:8501) in your browser.
+And open [http://localhost:8501](http://localhost:8501) in your browser.<br>
+If you don't know how to use Docker, navigate to the [Docker version](#option-2-docker-version), it's really simple.<br>
 
 ## Overview
 The core idea is coming from the awesome [maps4cim](https://github.com/klamann/maps4cim) project.<br>
