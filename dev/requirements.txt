@@ -7,3 +7,6 @@ tqdm
 streamlit
 mypy
 pylint
+types-tqdm
+pandas-stubs
+types-requests
