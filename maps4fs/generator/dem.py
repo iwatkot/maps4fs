@@ -10,9 +10,9 @@ import osmnx as ox
 import rasterio
 import requests
 
-import maps4fs.globals as g
 from maps4fs.generator import Component
 
+SRTM = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
 
 class DEM(Component):
     """Component for map settings and configuration.
@@ -124,7 +124,7 @@ class DEM(Component):
         """
         latitude_band, tile_name = self._tile_info(*self.coordinates)
         compressed_file_path = os.path.join(self.gz_dir, f"{tile_name}.hgt.gz")
-        url = g.SRTM.format(latitude_band=latitude_band, tile_name=tile_name)
+        url = SRTM.format(latitude_band=latitude_band, tile_name=tile_name)
         self.logger.debug(f"Trying to get response from {url}...")
         response = requests.get(url, stream=True)
 

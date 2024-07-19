@@ -10,9 +10,30 @@ import osmnx as ox
 import pandas as pd
 import shapely.geometry
 
-import maps4fs.globals as g
 from maps4fs.generator import Component
 
+# region constants
+TEXTURES = {
+    "animalMud": 4,
+    "asphalt": 4,
+    "cobbleStone": 4,
+    "concrete": 4,
+    "concreteRubble": 4,
+    "concreteTiles": 4,
+    "dirt": 4,
+    "dirtDark": 2,
+    "forestGround": 4,
+    "forestGroundLeaves": 4,
+    "grass": 4,
+    "grassDirt": 4,
+    "gravel": 4,
+    "groundBricks": 4,
+    "mountainRock": 4,
+    "mountainRockDark": 4,
+    "riverMud": 4,
+    "waterPuddle": 0,
+}
+# endregion
 
 class Texture(Component):
     class Layer:
@@ -156,9 +177,9 @@ class Texture(Component):
 
     def _prepare_weights(self):
         self.logger.debug("Starting preparing weights...")
-        for texture_name, layer_numbers in g.TEXTURES.items():
+        for texture_name, layer_numbers in TEXTURES.items():
             self._generate_weights(texture_name, layer_numbers)
-        self.logger.debug(f"Prepared weights for {len(g.TEXTURES)} textures.")
+        self.logger.debug(f"Prepared weights for {len(TEXTURES)} textures.")
 
     def _generate_weights(self, texture_name: str, layer_numbers: int) -> None:
         """Generates weight files for textures. Each file is a numpy array of zeros and dtype uint8 (0-255).

@@ -8,7 +8,7 @@ log_directory = os.path.join(os.getcwd(), "logs")
 os.makedirs(log_directory, exist_ok=True)
 
 
-class Logger(logging.getLoggerClass()):
+class Logger(logging.Logger):
     """Handles logging to the file and stroudt with timestamps."""
 
     def __init__(

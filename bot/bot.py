@@ -15,6 +15,16 @@ from dotenv import load_dotenv
 import maps4fs as mfs
 
 logger = mfs.Logger(__name__, level="DEBUG")
+
+MAP_SIZES = ["2048", "4096", "8192", "16384"]
+MAX_HEIGHTS = {
+    "100": "🍀 For flatlands",
+    "200": "🍀 For plains",
+    "400": "🗻 For hills",
+    "600": "⛰️ For large hills",
+    "800": "🏔️ For mountains",
+}
+
 working_directory = os.getcwd()
 map_template = os.path.join(working_directory, "data", "map-template.zip")
 maps_directory = os.path.join(working_directory, "maps")
@@ -23,6 +33,9 @@ os.makedirs(maps_directory, exist_ok=True)
 os.makedirs(archives_directory, exist_ok=True)
 logger.info(f"Working directory: {working_directory}")
 env_path = os.path.join(working_directory, "bot.env")
+
+
+
 if os.path.exists(env_path):
     load_dotenv(env_path)
 token = os.getenv("BOT_TOKEN")
@@ -203,7 +216,7 @@ async def coordinates(message: types.Message) -> None:
     telegram_id = message.from_user.id
     sessions[telegram_id] = Session(telegram_id, (latitude, longitude))
 
-    sizes = mfs.globals.MAP_SIZES
+    sizes = MAP_SIZES
     indicators = ["🟢", "🟢", "🟡", "🔴"]
     buttons = {}
     # * Slice sizes because VPS can not handle large images.
@@ -234,7 +247,7 @@ async def map_size_callback(callback_query: types.CallbackQuery) -> None:
         return
     session.distance = int(map_size / 2)
 
-    heights = mfs.globals.MAX_HEIGHTS
+    heights = MAX_HEIGHTS
     buttons = {}
     for height, description in heights.items():
         buttons[f"max_height_{height}"] = description
