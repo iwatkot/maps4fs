@@ -317,6 +317,7 @@ class Texture(Component):
         raw_y = y - self.minimum_y
         return self.height - int(raw_y * self.width_coef)
 
+    # pylint: disable=W0613
     def _to_np(self, geometry: shapely.geometry.polygon.Polygon, *args) -> np.ndarray:
         """Converts Polygon geometry to numpy array of polygon points.
 
