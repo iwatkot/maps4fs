@@ -1,8 +1,9 @@
+"""This module contains the base class for all map generation components."""
+
 from typing import Any
 
-import maps4fs as mfs
 
-
+# pylint: disable=R0801, R0903
 class Component:
     """Base class for all map generation components.
 
@@ -20,15 +21,17 @@ class Component:
         distance: int,
         map_directory: str,
         logger: Any = None,
-        **kwargs,
+        **kwargs,  # pylint: disable=W0613
     ):
         self.coordinates = coordinates
         self.distance = distance
         self.map_directory = map_directory
-
-        if not logger:
-            logger = mfs.Logger(__name__, to_stdout=True, to_file=False)
         self.logger = logger
 
-    def process(self):
+    def process(self) -> None:
+        """Launches the component processing. Must be implemented in the child class.
+
+        Raises:
+            NotImplementedError: If the method is not implemented in the child class.
+        """
         raise NotImplementedError

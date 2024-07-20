@@ -4,7 +4,8 @@ from typing import Any
 
 from tqdm import tqdm
 
-import maps4fs as mfs
+from maps4fs.generator import BaseComponents, Component
+from maps4fs.logger import Logger
 
 
 class Map:
@@ -23,9 +24,9 @@ class Map:
         self.map_directory = map_directory
 
         if not logger:
-            logger = mfs.Logger(__name__, to_stdout=True, to_file=False)
+            logger = Logger(__name__, to_stdout=True, to_file=False)
         self.logger = logger
-        self.components: list[mfs.generator.Component] = []
+        self.components: list[Component] = []
 
         os.makedirs(self.map_directory, exist_ok=True)
         if map_template:
@@ -41,7 +42,7 @@ class Map:
 
     def _add_components(self, blur_seed: int, max_height: int) -> None:
         self.logger.debug("Starting adding components...")
-        for component in mfs.generator.BaseComponents:
+        for component in BaseComponents:
             active_component = component(
                 self.coordinates,
                 self.distance,
