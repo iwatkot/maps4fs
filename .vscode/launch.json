@@ -28,18 +28,16 @@
             }
         },
         {
-            "name": "Release Script",
-            "type": "python",
+            "name": "Current File",
+            "type": "debugpy",
             "request": "launch",
-            "program": "release.py",
+            "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
             "env": {
-                "PYTHONPATH": "${workspaceFolder};${PYTHONPATH}",
-                "LOG_LEVEL": "DEBUG",
+              "PYTHONPATH": "${workspaceFolder}:${PYTHONPATH}"
             }
         },
-
         {
             "name": "Linux / Mac  Bot",
             "type": "python",

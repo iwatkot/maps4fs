@@ -147,8 +147,8 @@ class Texture(Component):
         self.minimum_y = min(south, north)
         self.maximum_x = max(west, east)
         self.maximum_y = max(south, north)
-        self.logger.degug("Map minimum coordinates (XxY): %s x %s.", self.minimum_x, self.minimum_y)
-        self.logger.degug("Map maximum coordinates (XxY): %s x %s.", self.maximum_x, self.maximum_y)
+        self.logger.debug("Map minimum coordinates (XxY): %s x %s.", self.minimum_x, self.minimum_y)
+        self.logger.debug("Map maximum coordinates (XxY): %s x %s.", self.maximum_x, self.maximum_y)
 
         self.height = abs(north - south)
         self.width = abs(east - west)
@@ -317,7 +317,7 @@ class Texture(Component):
         raw_y = y - self.minimum_y
         return self.height - int(raw_y * self.width_coef)
 
-    def _to_np(self, geometry: shapely.geometry.polygon.Polygon) -> np.ndarray:
+    def _to_np(self, geometry: shapely.geometry.polygon.Polygon, *args) -> np.ndarray:
         """Converts Polygon geometry to numpy array of polygon points.
 
         Args:

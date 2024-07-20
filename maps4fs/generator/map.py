@@ -58,6 +58,12 @@ class Map:
                 "it may not work properly in Giants Editor."
             )
 
+        # Blur seed should be positive and odd.
+        if blur_seed <= 0:
+            raise ValueError("Blur seed should be positive.")
+        if blur_seed % 2 == 0:
+            blur_seed += 1
+
         self._add_components(blur_seed, max_height)
 
     def _add_components(self, blur_seed: int, max_height: int) -> None:
@@ -87,6 +93,7 @@ class Map:
                         component.__class__.__name__,
                         e,
                     )
+                    raise e
                 pbar.update(1)
 
     def previews(self) -> list[str]:
