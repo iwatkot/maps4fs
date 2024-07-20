@@ -1,3 +1,5 @@
+"""This module contains Map class, which is used to generate map using all components."""
+
 import os
 import shutil
 from typing import Any
@@ -8,7 +10,20 @@ from maps4fs.generator import BaseComponents, Component
 from maps4fs.logger import Logger
 
 
+# pylint: disable=R0913
 class Map:
+    """Class used to generate map using all components.
+
+    Args:
+        coordinates (tuple[float, float]): Coordinates of the center of the map.
+        distance (int): Distance from the center of the map.
+        map_directory (str): Path to the directory where map files will be stored.
+        blur_seed (int): Seed used for blur effect.
+        max_height (int): Maximum height of the map.
+        map_template (str | None): Path to the map template. If not provided, default will be used.
+        logger (Any): Logger instance
+    """
+
     def __init__(
         self,
         coordinates: tuple[float, float],
@@ -31,7 +46,7 @@ class Map:
         os.makedirs(self.map_directory, exist_ok=True)
         if map_template:
             shutil.unpack_archive(map_template, self.map_directory)
-            self.logger.info(f"Map template {map_template} unpacked to {self.map_directory}")
+            self.logger.info("Map template unpacked to %s", self.map_directory)
         else:
             self.logger.warning(
                 "Map template not provided, if directory does not contain required files, "
@@ -53,23 +68,39 @@ class Map:
             )
             setattr(self, component.__name__.lower(), active_component)
             self.components.append(active_component)
-        self.logger.debug(f"Added {len(self.components)} components.")
+        self.logger.debug("Added %s components.", len(self.components))
 
     def generate(self) -> None:
+        """Launch map generation using all components."""
         with tqdm(total=len(self.components), desc="Generating map...") as pbar:
             for component in self.components:
                 try:
                     component.process()
-                except Exception as e:
+                except Exception as e:  # pylint: disable=W0718
                     self.logger.error(
-                        f"Error processing component {component.__class__.__name__}: {e}"
+                        "Error processing component %s: %s",
+                        component.__class__.__name__,
+                        e,
                     )
                 pbar.update(1)
 
     def previews(self) -> list[str]:
-        return self.texture.previews()  # type: ignore
+        """Get list of preview images.
+
+        Returns:
+            list[str]: List of preview images.
+        """
+        return self.texture.previews()  # type: ignore # pylint: disable=no-member
 
     def pack(self, archive_name: str) -> str:
+        """Pack map directory to zip archive.
+
+        Args:
+            archive_name (str): Name of the archive.
+
+        Returns:
+            str: Path to the archive.
+        """
         archive_path = shutil.make_archive(archive_name, "zip", self.map_directory)
-        self.logger.info(f"Map packed to {archive_name}.zip")
+        self.logger.info("Map packed to %s.zip", archive_name)
         return archive_path

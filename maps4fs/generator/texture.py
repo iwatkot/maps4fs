@@ -1,3 +1,5 @@
+"""Module with Texture class for generating textures for the map using OSM data."""
+
 import json
 import os
 import re
@@ -37,7 +39,19 @@ TEXTURES = {
 # endregion
 
 
+# pylint: disable=R0902
 class Texture(Component):
+    """Class which generates textures for the map using OSM data.
+
+    Attributes:
+        weights_dir (str): Path to the directory with weights.
+        name (str): Name of the texture.
+        tags (dict[str, str | list[str] | bool]): Dictionary of tags to search for.
+        width (int | None): Width of the polygon in meters (only for LineString).
+        color (tuple[int, int, int]): Color of the layer in BGR format.
+    """
+
+    # pylint: disable=R0903
     class Layer:
         """Class which represents a layer with textures and tags.
         It's using to obtain data from OSM using tags and make changes into corresponding textures.
@@ -54,6 +68,7 @@ class Texture(Component):
             width (int | None): Width of the polygon in meters (only for LineString).
         """
 
+        # pylint: disable=R0913
         def __init__(
             self,
             weights_dir: str,
@@ -117,13 +132,14 @@ class Texture(Component):
         self.draw()
         self.info_sequence()
 
+    # pylint: disable=W0201
     def _read_parameters(self) -> None:
         """Reads map parameters from OSM data, such as:
         - minimum and maximum coordinates in UTM format
         - map dimensions in meters
         - map coefficients (meters per pixel)
         """
-        north, south, east, west = ox.utils_geo.bbox_from_point(
+        north, south, east, west = ox.utils_geo.bbox_from_point(  # pylint: disable=W0632
             self.coordinates, dist=self.distance, project_utm=True
         )
         # Parameters of the map in UTM format (meters).
@@ -173,7 +189,7 @@ class Texture(Component):
         ]
         info_sequence = {attr: getattr(self, attr, None) for attr in useful_attributes}
 
-        with open(self.info_save_path, "w") as f:
+        with open(self.info_save_path, "w") as f:  # pylint: disable=W1514
             json.dump(info_sequence, f, indent=4)
         self.logger.info(f"Generation info saved to {self.info_save_path}.")
 
@@ -184,7 +200,8 @@ class Texture(Component):
         self.logger.debug(f"Prepared weights for {len(TEXTURES)} textures.")
 
     def _generate_weights(self, texture_name: str, layer_numbers: int) -> None:
-        """Generates weight files for textures. Each file is a numpy array of zeros and dtype uint8 (0-255).
+        """Generates weight files for textures. Each file is a numpy array of zeros and
+            dtype uint8 (0-255).
 
         Args:
             texture_name (str): Name of the texture.
@@ -202,7 +219,7 @@ class Texture(Component):
 
         for filepath in filepaths:
             img = np.zeros((size, size), dtype=np.uint8)
-            cv2.imwrite(filepath, img)
+            cv2.imwrite(filepath, img)  # pylint: disable=no-member
 
     @property
     def layers(self) -> list[Layer]:
@@ -221,14 +238,14 @@ class Texture(Component):
         concrete = self.Layer(
             self._weights_dir, "concrete", {"building": True}, width=8, color=(130, 130, 130)
         )
-        dirtDark = self.Layer(
+        dirt_dark = self.Layer(
             self._weights_dir,
             "dirtDark",
             {"highway": ["unclassified", "residential", "track"]},
             width=2,
             color=(33, 67, 101),
         )
-        grassDirt = self.Layer(
+        grass_dirt = self.Layer(
             self._weights_dir,
             "grassDirt",
             {"natural": ["wood", "tree_row"]},
@@ -238,7 +255,7 @@ class Texture(Component):
         grass = self.Layer(
             self._weights_dir, "grass", {"natural": "grassland"}, color=(34, 255, 34)
         )
-        forestGround = self.Layer(
+        forest_ground = self.Layer(
             self._weights_dir, "forestGround", {"landuse": "farmland"}, color=(47, 107, 85)
         )
         gravel = self.Layer(
@@ -248,15 +265,25 @@ class Texture(Component):
             width=4,
             color=(140, 180, 210),
         )
-        waterPuddle = self.Layer(
+        water_puddle = self.Layer(
             self._weights_dir,
             "waterPuddle",
             {"natural": "water", "waterway": True},
             width=10,
             color=(255, 20, 20),
         )
-        return [asphalt, concrete, dirtDark, forestGround, grass, grassDirt, gravel, waterPuddle]
+        return [
+            asphalt,
+            concrete,
+            dirt_dark,
+            forest_ground,
+            grass,
+            grass_dirt,
+            gravel,
+            water_puddle,
+        ]
 
+    # pylint: disable=no-member
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
         for layer in self.layers:
@@ -290,7 +317,7 @@ class Texture(Component):
         raw_y = y - self.minimum_y
         return self.height - int(raw_y * self.width_coef)
 
-    def _to_np(self, geometry: shapely.geometry.polygon.Polygon, *args) -> np.ndarray:
+    def _to_np(self, geometry: shapely.geometry.polygon.Polygon) -> np.ndarray:
         """Converts Polygon geometry to numpy array of polygon points.
 
         Args:
@@ -373,14 +400,14 @@ class Texture(Component):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", DeprecationWarning)
                 objects = ox.features_from_bbox(bbox=self._bbox, tags=tags)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=W0718
             self.logger.warning(f"Error fetching objects for tags: {tags}.")
             self.logger.warning(e)
             return
         objects_utm = ox.project_gdf(objects, to_latlong=False)
         self.logger.debug(f"Fetched {len(objects_utm)} elements for tags: {tags}.")
 
-        for index, obj in objects_utm.iterrows():
+        for _, obj in objects_utm.iterrows():
             polygon = self._to_polygon(obj, width)
             if polygon is None:
                 continue
@@ -396,6 +423,7 @@ class Texture(Component):
         preview_paths.append(self._osm_preview())
         return preview_paths
 
+    # pylint: disable=no-member
     def _osm_preview(self) -> str:
         """Merges layers into one image and saves it into the png file.
 
@@ -418,6 +446,6 @@ class Texture(Component):
             f"Merged layers into one image. Shape: {merged.shape}, dtype: {merged.dtype}."
         )
         preview_path = os.path.join(self.map_directory, "preview_osm.png")
-        cv2.imwrite(preview_path, merged)
+        cv2.imwrite(preview_path, merged)  # pylint: disable=no-member
         self.logger.info(f"Preview saved to {preview_path}.")
         return preview_path

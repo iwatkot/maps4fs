@@ -1,3 +1,5 @@
+"""This module contains the Config class for map settings and configuration."""
+
 import os
 from typing import Any
 from xml.etree import ElementTree as ET
@@ -5,6 +7,7 @@ from xml.etree import ElementTree as ET
 from maps4fs.generator import Component
 
 
+# pylint: disable=R0903
 class Config(Component):
     """Component for map settings and configuration.
 
