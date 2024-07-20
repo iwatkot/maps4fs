@@ -16,6 +16,7 @@ import maps4fs as mfs
 
 logger = mfs.Logger(__name__, level="DEBUG")
 
+# region constants
 MAP_SIZES = ["2048", "4096", "8192", "16384"]
 MAX_HEIGHTS = {
     "100": "🍀 For flatlands",
@@ -24,27 +25,32 @@ MAX_HEIGHTS = {
     "600": "⛰️ For large hills",
     "800": "🏔️ For mountains",
 }
+# endregion
 
+# region directories
 working_directory = os.getcwd()
 map_template = os.path.join(working_directory, "data", "map-template.zip")
 maps_directory = os.path.join(working_directory, "maps")
 archives_directory = os.path.join(working_directory, "archives")
+# endregion
+
 os.makedirs(maps_directory, exist_ok=True)
 os.makedirs(archives_directory, exist_ok=True)
 logger.info(f"Working directory: {working_directory}")
+
+# region environment variables
 env_path = os.path.join(working_directory, "bot.env")
-
-
-
 if os.path.exists(env_path):
     load_dotenv(env_path)
 token = os.getenv("BOT_TOKEN")
 if not token:
     raise RuntimeError("No token provided.")
+# endregion
 
 bot = Bot(token=token)
 dp = Dispatcher(bot=bot)
 
+# Simple dictionary to store sessions of map generation.
 sessions = {}
 
 
