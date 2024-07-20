@@ -15,7 +15,7 @@ class Map:
         map_directory: str,
         blur_seed: int,
         max_height: int,
-        map_template: str = None,
+        map_template: str | None = None,
         logger: Any = None,
     ):
         self.coordinates = coordinates
@@ -25,7 +25,7 @@ class Map:
         if not logger:
             logger = mfs.Logger(__name__, to_stdout=True, to_file=False)
         self.logger = logger
-        self.components = []
+        self.components: list[mfs.generator.Component] = []
 
         os.makedirs(self.map_directory, exist_ok=True)
         if map_template:
@@ -66,7 +66,7 @@ class Map:
                 pbar.update(1)
 
     def previews(self) -> list[str]:
-        return self.texture.previews()
+        return self.texture.previews()  # type: ignore
 
     def pack(self, archive_name: str) -> str:
         archive_path = shutil.make_archive(archive_name, "zip", self.map_directory)

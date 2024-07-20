@@ -2,13 +2,14 @@ import json
 import os
 import re
 import warnings
-from typing import Any, Callable, Generator
+from typing import Any, Callable, Generator, Optional
 
 import cv2
 import numpy as np
-import osmnx as ox
+import osmnx as ox  # type: ignore
 import pandas as pd
-import shapely.geometry
+import shapely.geometry  # type: ignore
+from shapely.geometry.base import BaseGeometry  # type: ignore
 
 from maps4fs.generator import Component
 
@@ -35,6 +36,7 @@ TEXTURES = {
 }
 # endregion
 
+
 class Texture(Component):
     class Layer:
         """Class which represents a layer with textures and tags.
@@ -56,9 +58,9 @@ class Texture(Component):
             self,
             weights_dir: str,
             name: str,
-            tags: dict[str, str | list[str]],
-            width: int = None,
-            color: tuple[int, int, int] = None,
+            tags: dict[str, str | list[str] | bool],
+            width: int | None = None,
+            color: tuple[int, int, int] | None = None,
         ):
             self.weights_dir = weights_dir
             self.name = name
@@ -260,7 +262,7 @@ class Texture(Component):
         for layer in self.layers:
             img = cv2.imread(layer.path, cv2.IMREAD_UNCHANGED)
             for polygon in self.polygons(layer.tags, layer.width):
-                cv2.fillPoly(img, [polygon], color=255)
+                cv2.fillPoly(img, [polygon], color=255)  # type: ignore
             cv2.imwrite(layer.path, img)
             self.logger.debug(f"Texture {layer.path} saved.")
 
@@ -320,7 +322,7 @@ class Texture(Component):
         converter = self._converters(geometry_type)
         if not converter:
             self.logger.warning(f"Geometry type {geometry_type} not supported.")
-            return
+            return None
         return converter(geometry, width)
 
     def _sequence(
@@ -341,7 +343,9 @@ class Texture(Component):
         polygon = geometry.buffer(width)
         return self._to_np(polygon)
 
-    def _converters(self, geom_type: str) -> Callable[[shapely.geometry, int | None], np.ndarray]:
+    def _converters(
+        self, geom_type: str
+    ) -> Optional[Callable[[BaseGeometry, Optional[int]], np.ndarray]]:
         """Returns a converter function for a given geometry type.
 
         Args:
@@ -351,10 +355,10 @@ class Texture(Component):
             Callable[[shapely.geometry, int | None], np.ndarray]: Converter function.
         """
         converters = {"Polygon": self._to_np, "LineString": self._sequence, "Point": self._sequence}
-        return converters.get(geom_type)
+        return converters.get(geom_type)  # type: ignore
 
     def polygons(
-        self, tags: dict[str, str | list[str]], width: int | None
+        self, tags: dict[str, str | list[str] | bool], width: int | None
     ) -> Generator[np.ndarray, None, None]:
         """Generator which yields numpy arrays of polygons from OSM data.
 

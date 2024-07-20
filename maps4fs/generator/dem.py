@@ -6,13 +6,14 @@ from typing import Any
 
 import cv2
 import numpy as np
-import osmnx as ox
-import rasterio
+import osmnx as ox  # type: ignore
+import rasterio  # type: ignore
 import requests
 
 from maps4fs.generator import Component
 
 SRTM = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
+
 
 class DEM(Component):
     """Component for map settings and configuration.
@@ -41,8 +42,8 @@ class DEM(Component):
         os.makedirs(self.hgt_dir, exist_ok=True)
         os.makedirs(self.gz_dir, exist_ok=True)
 
-        self._blur_seed = kwargs.get("blur_seed")
-        self._max_height = kwargs.get("max_height")
+        self._blur_seed: int = kwargs.get("blur_seed") or 5
+        self._max_height: int = kwargs.get("max_height") or 200
 
     def process(self) -> None:
         """Reads SRTM file, crops it to map size, normalizes and blurs it, saves to map directory."""
@@ -136,7 +137,7 @@ class DEM(Component):
             self.logger.debug("Compressed tile successfully downloaded.")
         else:
             self.logger.error(f"Response was failed with status code {response.status_code}.")
-            return
+            return None
 
         return compressed_file_path
 
@@ -159,7 +160,7 @@ class DEM(Component):
         compressed_file_path = self._download_tile()
         if not compressed_file_path:
             self.logger.error("Download from SRTM failed, DEM file will be filled with zeros.")
-            return
+            return None
         with gzip.open(compressed_file_path, "rb") as f_in:
             with open(decompressed_file_path, "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
