@@ -13,7 +13,7 @@ import pandas as pd
 import shapely.geometry  # type: ignore
 from shapely.geometry.base import BaseGeometry  # type: ignore
 
-from maps4fs.generator import Component
+from maps4fs.generator.component import Component
 
 # region constants
 TEXTURES = {
