@@ -36,7 +36,7 @@ archives_directory = os.path.join(working_directory, "archives")
 
 os.makedirs(maps_directory, exist_ok=True)
 os.makedirs(archives_directory, exist_ok=True)
-logger.info(f"Working directory: {working_directory}")
+logger.info("Working directory: %s", working_directory)
 
 # region environment variables
 env_path = os.path.join(working_directory, "bot.env")

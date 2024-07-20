@@ -1,3 +1,5 @@
+"""This module contains the Logger class for logging to the file and stdout."""
+
 import logging
 import os
 import sys
@@ -33,7 +35,12 @@ class Logger(logging.Logger):
         if to_file:
             self.addHandler(self.file_handler)
 
-    def log_file(self):
+    def log_file(self) -> str:
+        """Returns the path to the log file.
+
+        Returns:
+            str: The path to the log file.
+        """
         today = datetime.now().strftime("%Y-%m-%d")
         log_file = os.path.join(log_directory, f"{today}.txt")
         return log_file

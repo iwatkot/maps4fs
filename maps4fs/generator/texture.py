@@ -147,16 +147,16 @@ class Texture(Component):
         self.minimum_y = min(south, north)
         self.maximum_x = max(west, east)
         self.maximum_y = max(south, north)
-        self.logger.debug(f"Map minimum coordinates (XxY): {self.minimum_x} x {self.minimum_y}.")
-        self.logger.debug(f"Map maximum coordinates (XxY): {self.maximum_x} x {self.maximum_y}.")
+        self.logger.degug("Map minimum coordinates (XxY): %s x %s.", self.minimum_x, self.minimum_y)
+        self.logger.degug("Map maximum coordinates (XxY): %s x %s.", self.maximum_x, self.maximum_y)
 
         self.height = abs(north - south)
         self.width = abs(east - west)
-        self.logger.info(f"Map dimensions (HxW): {self.height} x {self.width}.")
+        self.logger.info("Map dimensions (HxW): %s x %s.", self.height, self.width)
 
         self.height_coef = self.height / (self.distance * 2)
         self.width_coef = self.width / (self.distance * 2)
-        self.logger.debug(f"Map coefficients (HxW): {self.height_coef} x {self.width_coef}.")
+        self.logger.debug("Map coefficients (HxW): %s x %s.", self.height_coef, self.width_coef)
 
     def info_sequence(self) -> None:
         """Saves generation info to JSON file "generation_info.json".
@@ -191,13 +191,13 @@ class Texture(Component):
 
         with open(self.info_save_path, "w") as f:  # pylint: disable=W1514
             json.dump(info_sequence, f, indent=4)
-        self.logger.info(f"Generation info saved to {self.info_save_path}.")
+        self.logger.info("Generation info saved to %s.", self.info_save_path)
 
     def _prepare_weights(self):
         self.logger.debug("Starting preparing weights...")
         for texture_name, layer_numbers in TEXTURES.items():
             self._generate_weights(texture_name, layer_numbers)
-        self.logger.debug(f"Prepared weights for {len(TEXTURES)} textures.")
+        self.logger.debug("Prepared weights for %s textures.", len(TEXTURES))
 
     def _generate_weights(self, texture_name: str, layer_numbers: int) -> None:
         """Generates weight files for textures. Each file is a numpy array of zeros and
@@ -291,7 +291,7 @@ class Texture(Component):
             for polygon in self.polygons(layer.tags, layer.width):
                 cv2.fillPoly(img, [polygon], color=255)  # type: ignore
             cv2.imwrite(layer.path, img)
-            self.logger.debug(f"Texture {layer.path} saved.")
+            self.logger.debug("Texture %s saved.", layer.path)
 
     def get_relative_x(self, x: float) -> int:
         """Converts UTM X coordinate to relative X coordinate in map image.
@@ -348,7 +348,7 @@ class Texture(Component):
         geometry_type = geometry.geom_type
         converter = self._converters(geometry_type)
         if not converter:
-            self.logger.warning(f"Geometry type {geometry_type} not supported.")
+            self.logger.warning("Geometry type %s not supported.", geometry_type)
             return None
         return converter(geometry, width)
 
@@ -401,11 +401,11 @@ class Texture(Component):
                 warnings.simplefilter("ignore", DeprecationWarning)
                 objects = ox.features_from_bbox(bbox=self._bbox, tags=tags)
         except Exception as e:  # pylint: disable=W0718
-            self.logger.warning(f"Error fetching objects for tags: {tags}.")
+            self.logger.warning("Error fetching objects for tags: %s.", tags)
             self.logger.warning(e)
             return
         objects_utm = ox.project_gdf(objects, to_latlong=False)
-        self.logger.debug(f"Fetched {len(objects_utm)} elements for tags: {tags}.")
+        self.logger.debug("Fetched %s elements for tags: %s.", len(objects_utm), tags)
 
         for _, obj in objects_utm.iterrows():
             polygon = self._to_polygon(obj, width)
@@ -447,5 +447,5 @@ class Texture(Component):
         )
         preview_path = os.path.join(self.map_directory, "preview_osm.png")
         cv2.imwrite(preview_path, merged)  # pylint: disable=no-member
-        self.logger.info(f"Preview saved to {preview_path}.")
+        self.logger.info("Preview saved to %s.", preview_path)
         return preview_path
