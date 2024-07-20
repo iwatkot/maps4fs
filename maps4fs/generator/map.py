@@ -6,8 +6,13 @@ from typing import Any
 
 from tqdm import tqdm
 
-from maps4fs.generator import BaseComponents, Component
+from maps4fs.generator.component import Component
+from maps4fs.generator.config import Config
+from maps4fs.generator.dem import DEM
+from maps4fs.generator.texture import Texture
 from maps4fs.logger import Logger
+
+BaseComponents = [Config, Texture, DEM]
 
 
 # pylint: disable=R0913

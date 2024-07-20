@@ -12,7 +12,7 @@ import osmnx as ox  # type: ignore
 import rasterio  # type: ignore
 import requests
 
-from maps4fs.generator import Component
+from maps4fs.generator.component import Component
 
 SRTM = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
 
