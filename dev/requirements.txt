@@ -1,0 +1,12 @@
+opencv-python
+osmnx
+rasterio
+python_dotenv
+aiogram==2.25.1
+tqdm
+streamlit
+mypy
+pylint
+types-tqdm
+pandas-stubs
+types-requests

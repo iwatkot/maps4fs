@@ -1,3 +1,5 @@
+"""This module contains the Config class for map settings and configuration."""
+
 import os
 from typing import Any
 from xml.etree import ElementTree as ET
@@ -5,6 +7,7 @@ from xml.etree import ElementTree as ET
 from maps4fs.generator import Component
 
 
+# pylint: disable=R0903
 class Config(Component):
     """Component for map settings and configuration.
 
@@ -33,15 +36,15 @@ class Config(Component):
     def _set_map_size(self):
         """Edits map.xml file to set correct map size."""
         if not os.path.isfile(self._map_xml_path):
-            self.logger.warning(f"Map XML file not found: {self._map_xml_path}.")
+            self.logger.warning("Map XML file not found: %s.", self._map_xml_path)
             return
         tree = ET.parse(self._map_xml_path)
-        self.logger.debug(f"Map XML file loaded from: {self._map_xml_path}.")
+        self.logger.debug("Map XML file loaded from: %s.", self._map_xml_path)
         root = tree.getroot()
         for map_elem in root.iter("map"):
             width = height = str(self.distance * 2)
             map_elem.set("width", width)
             map_elem.set("height", height)
-            self.logger.debug(f"Map size set to {width}x{height} in Map XML file.")
+            self.logger.debug("Map size set to %sx%s in Map XML file.", width, height)
         tree.write(self._map_xml_path)
-        self.logger.debug(f"Map XML file saved to: {self._map_xml_path}.")
+        self.logger.debug("Map XML file saved to: %s.", self._map_xml_path)

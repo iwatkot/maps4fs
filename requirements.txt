@@ -1,4 +1,0 @@
-opencv-python
-osmnx
-rasterio
-tqdm

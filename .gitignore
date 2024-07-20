@@ -10,3 +10,4 @@ previews/
 maps4fs.zip
 .DS_Store
 maps/
+.mypy_cache/

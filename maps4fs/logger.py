@@ -1,3 +1,5 @@
+"""This module contains the Logger class for logging to the file and stdout."""
+
 import logging
 import os
 import sys
@@ -8,7 +10,7 @@ log_directory = os.path.join(os.getcwd(), "logs")
 os.makedirs(log_directory, exist_ok=True)
 
 
-class Logger(logging.getLoggerClass()):
+class Logger(logging.Logger):
     """Handles logging to the file and stroudt with timestamps."""
 
     def __init__(
@@ -33,7 +35,12 @@ class Logger(logging.getLoggerClass()):
         if to_file:
             self.addHandler(self.file_handler)
 
-    def log_file(self):
+    def log_file(self) -> str:
+        """Returns the path to the log file.
+
+        Returns:
+            str: The path to the log file.
+        """
         today = datetime.now().strftime("%Y-%m-%d")
         log_file = os.path.join(log_directory, f"{today}.txt")
         return log_file
