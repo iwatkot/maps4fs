@@ -15,6 +15,7 @@ from maps4fs.generator import Component
 SRTM = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
 
 
+# pylint: disable=R0903
 class DEM(Component):
     """Component for map settings and configuration.
 
@@ -45,9 +46,10 @@ class DEM(Component):
         self._blur_seed: int = kwargs.get("blur_seed") or 5
         self._max_height: int = kwargs.get("max_height") or 200
 
+    # pylint: disable=no-member
     def process(self) -> None:
         """Reads SRTM file, crops it to map size, normalizes and blurs it, saves to map directory."""
-        north, south, east, west = ox.utils_geo.bbox_from_point(
+        north, south, east, west = ox.utils_geo.bbox_from_point(  # pylint: disable=W0632
             self.coordinates, dist=self.distance
         )
         self.logger.debug(
@@ -127,7 +129,7 @@ class DEM(Component):
         compressed_file_path = os.path.join(self.gz_dir, f"{tile_name}.hgt.gz")
         url = SRTM.format(latitude_band=latitude_band, tile_name=tile_name)
         self.logger.debug(f"Trying to get response from {url}...")
-        response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True, timeout=10)
 
         if response.status_code == 200:
             self.logger.debug(f"Response received. Saving to {compressed_file_path}...")
@@ -170,7 +172,7 @@ class DEM(Component):
     def _save_empty_dem(self, dem_output_resolution: tuple[int, int]) -> None:
         """Saves empty DEM file filled with zeros."""
         dem_data = np.zeros(dem_output_resolution, dtype="uint16")
-        cv2.imwrite(self._dem_path, dem_data)
+        cv2.imwrite(self._dem_path, dem_data)  # pylint: disable=no-member
         self.logger.warning(f"DEM data filled with zeros and saved to {self._dem_path}.")
 
     def _normalize_dem(self, data: np.ndarray) -> np.ndarray:
