@@ -22,7 +22,7 @@
 
 </div>
 
-🚨 Due to lack of donations, starting from 30.09.2024 the Telegram bot will be shut down.<br> 
+🚨 Due to lack of donations, starting from 30.09.2024 (or earlier) the Telegram bot will be shut down.<br> 
 The only available option would be a Docker version. Please, do not report that the bot is down.<br>
 
 ## Quick Start
