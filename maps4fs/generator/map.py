@@ -29,7 +29,7 @@ class Map:
         logger (Any): Logger instance
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=R0917
         self,
         coordinates: tuple[float, float],
         distance: int,

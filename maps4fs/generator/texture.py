@@ -69,7 +69,7 @@ class Texture(Component):
         """
 
         # pylint: disable=R0913
-        def __init__(
+        def __init__(  # pylint: disable=R0917
             self,
             weights_dir: str,
             name: str,
