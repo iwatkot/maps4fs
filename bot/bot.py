@@ -32,17 +32,26 @@ working_directory = os.getcwd()
 map_template = os.path.join(working_directory, "data", "map-template.zip")
 maps_directory = os.path.join(working_directory, "maps")
 archives_directory = os.path.join(working_directory, "archives")
+stats_directory = os.path.join(working_directory, "stats")
+stats_file = os.path.join(stats_directory, "stats.txt")
 # endregion
 
 os.makedirs(maps_directory, exist_ok=True)
 os.makedirs(archives_directory, exist_ok=True)
 logger.info("Working directory: %s", working_directory)
 
+os.makedirs(stats_directory, exist_ok=True)
+logger.info("Stats directory: %s", stats_directory)
+
 # region environment variables
 env_path = os.path.join(working_directory, "bot.env")
 if os.path.exists(env_path):
     load_dotenv(env_path)
 token = os.getenv("BOT_TOKEN")
+admin_id = os.getenv("ADMIN_ID")
+if admin_id:
+    admin_id = int(admin_id)
+logger.info("Admin ID: %s", admin_id)
 if not token:
     raise RuntimeError("No token provided.")
 # endregion
@@ -132,6 +141,43 @@ async def button_github(message: types.Message) -> None:
         disable_web_page_preview=True,
         parse_mode=types.ParseMode.MARKDOWN_V2,
     )
+
+
+@dp.message_handler(Text(equals=Buttons.STATISTICS.value))
+async def button_statistics(message: types.Message) -> None:
+    """Handles the Statistics button.
+
+    Args:
+        message (types.Message): Message, which triggered the handler.
+    """
+    await log_event(message)
+
+    try:
+        with open(stats_file, "r") as file:
+            lines = file.readlines()
+            stats = len(lines)
+    except FileNotFoundError:
+        stats = 0
+
+    await bot.send_message(
+        message.from_user.id,
+        Messages.STATISTICS.value.format(stats),
+        reply_markup=await keyboard(Buttons.MAIN_MENU.value),
+        parse_mode=types.ParseMode.MARKDOWN_V2,
+    )
+
+    if admin_id and admin_id == message.from_user.id:
+        logger.info("Admin requested stats.")
+        if not os.path.isfile(stats_file):
+            logger.info("No stats file found.")
+            return
+        # Send the stats file to the admin.
+        try:
+            admin_stats = types.InputFile(stats_file)
+            await bot.send_document(admin_id, admin_stats)
+            logger.info("Stats file sent to the admin.")
+        except Exception as e:
+            logger.error(f"Error during sending stats file to the admin: {repr(e)}")
 
 
 @dp.message_handler(Text(equals=Buttons.COFFEE.value))
@@ -288,14 +334,18 @@ async def max_height_callback(callback_query: types.CallbackQuery) -> None:
         reply_markup=await keyboard(Buttons.MAIN_MENU.value),
     )
 
-    preview, result = session.run()
+    try:
+        preview, result = session.run()
+    except Exception as e:
+        logger.error(f"Error during generation: {repr(e)}")
+        return
     archive = types.InputFile(result)
     picture = types.InputFile(preview)
     await bot.send_photo(callback_query.from_user.id, picture)
     try:
         await bot.send_document(callback_query.from_user.id, archive)
     except Exception as e:
-        logger.error(e)
+        logger.error(repr(e))
         await bot.send_message(
             callback_query.from_user.id,
             Messages.FILE_TOO_LARGE.value,
@@ -303,10 +353,51 @@ async def max_height_callback(callback_query: types.CallbackQuery) -> None:
         )
 
     try:
+        await save_stats(session, "success")
+        await notify_admin(session, "success")
+    except Exception as e:
+        logger.error(f"Error during saving stats and/or notifying admin: {repr(e)}")
+
+    try:
         os.remove(preview)
         os.remove(result)
     except FileNotFoundError as e:
         logger.error(e)
+
+
+async def save_stats(session: Session, status: str) -> None:
+    """Saves the stats of the session to text file.
+
+    Args:
+        session (Session): Session to save.
+        status (str): Result of the session.
+    """
+    entry = (
+        f"{session.timestamp} {session.telegram_id} {session.coordinates} "
+        f"{session.distance} {session.max_height}\n"
+    )
+    with open(stats_file, "a") as file:
+        file.write(entry)
+
+    logger.info("Stats saved for %s", session.name)
+
+
+async def notify_admin(session: Session, status: str) -> None:
+    """Notifies the admin about the session.
+
+    Args:
+        session (Session): Session to notify about.
+        status (str): Result of the session.
+    """
+    if not admin_id:
+        logger.info("No admin ID provided, skipping notification.")
+        return
+    await bot.send_message(
+        admin_id,
+        f"Session started by {session.telegram_id} at {session.timestamp}.",
+    )
+
+    logger.info("Admin notified about %s", session.name)
 
 
 async def keyboard(

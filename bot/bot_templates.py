@@ -43,6 +43,8 @@ class Messages(Enum):
     GENERATION_STARTED = "Map generation has been started. It may take a while."
     FILE_TOO_LARGE = "The map is too large to send it via Telegram. Please, lower the map size."
 
+    STATISTICS = "Recently was generated {} maps."
+
 
 class Buttons(Enum):
     """Buttons, which are used in the bot menu."""
@@ -50,6 +52,7 @@ class Buttons(Enum):
     GENERATE = "🗺️ Generate new map"
     GITHUB = "🐙 Open on GitHub"
     COFFEE = "☕ Buy me a coffee"
+    STATISTICS = "📊 Statistics"
 
     MAIN_MENU = [GENERATE, GITHUB, COFFEE]
     CANCEL = "❌ Cancel"
