@@ -54,5 +54,5 @@ class Buttons(Enum):
     COFFEE = "☕ Buy me a coffee"
     STATISTICS = "📊 Statistics"
 
-    MAIN_MENU = [GENERATE, GITHUB, COFFEE]
+    MAIN_MENU = [GENERATE, GITHUB, COFFEE, STATISTICS]
     CANCEL = "❌ Cancel"
