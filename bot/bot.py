@@ -104,7 +104,8 @@ class Session:
             logger=logger,
         )
         mp.generate()
-        preview_path = mp.previews()[0]
+        # preview_path = mp.previews()[0]
+        preview_path = None # Disabled to avoid Docker 137 error (OUT OF MEMORY).
         archive_path = mp.pack(os.path.join(archives_directory, self.name))
         return preview_path, archive_path
 
@@ -339,8 +340,8 @@ async def max_height_callback(callback_query: types.CallbackQuery) -> None:
         logger.error(f"Error during generation: {repr(e)}")
         return
     archive = types.InputFile(result)
-    picture = types.InputFile(preview)
-    await bot.send_photo(callback_query.from_user.id, picture)
+    # picture = types.InputFile(preview)
+    # await bot.send_photo(callback_query.from_user.id, picture)
     try:
         await bot.send_document(callback_query.from_user.id, archive)
     except Exception as e:
@@ -358,7 +359,7 @@ async def max_height_callback(callback_query: types.CallbackQuery) -> None:
         logger.error(f"Error during saving stats and/or notifying admin: {repr(e)}")
 
     try:
-        os.remove(preview)
+        # os.remove(preview)
         os.remove(result)
     except FileNotFoundError as e:
         logger.error(e)
