@@ -48,7 +48,7 @@ env_path = os.path.join(working_directory, "bot.env")
 if os.path.exists(env_path):
     load_dotenv(env_path)
 token = os.getenv("BOT_TOKEN")
-admin_id = os.getenv("ADMIN_ID")
+admin_id = os.getenv("TELEGRAM_ADMIN_ID")
 if admin_id:
     admin_id = int(admin_id)
 logger.info("Admin ID: %s", admin_id)
