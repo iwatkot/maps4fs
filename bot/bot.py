@@ -48,9 +48,7 @@ env_path = os.path.join(working_directory, "bot.env")
 if os.path.exists(env_path):
     load_dotenv(env_path)
 token = os.getenv("BOT_TOKEN")
-admin_id = os.getenv("TELEGRAM_ADMIN_ID")
-if admin_id:
-    admin_id = int(admin_id)
+admin_id = 96970002
 logger.info("Admin ID: %s", admin_id)
 if not token:
     raise RuntimeError("No token provided.")
