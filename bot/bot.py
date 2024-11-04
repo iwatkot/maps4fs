@@ -163,7 +163,6 @@ async def button_statistics(message: types.Message) -> None:
         message.from_user.id,
         Messages.STATISTICS.value.format(stats),
         reply_markup=await keyboard(Buttons.MAIN_MENU.value),
-        parse_mode=types.ParseMode.MARKDOWN_V2,
     )
 
     if admin_id and admin_id == message.from_user.id:
