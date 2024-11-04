@@ -143,6 +143,43 @@ async def button_github(message: types.Message) -> None:
     )
 
 
+@dp.message_handler(Text(equals=Buttons.STATISTICS.value))
+async def button_statistics(message: types.Message) -> None:
+    """Handles the Statistics button.
+
+    Args:
+        message (types.Message): Message, which triggered the handler.
+    """
+    await log_event(message)
+
+    try:
+        with open(stats_file, "r") as file:
+            lines = file.readlines()
+            stats = len(lines)
+    except FileNotFoundError:
+        stats = 0
+
+    await bot.send_message(
+        message.from_user.id,
+        Messages.STATISTICS.value.format(stats),
+        reply_markup=await keyboard(Buttons.MAIN_MENU.value),
+        parse_mode=types.ParseMode.MARKDOWN_V2,
+    )
+
+    if admin_id and admin_id == message.from_user.id:
+        logger.info("Admin requested stats.")
+        if not os.path.isfile(stats_file):
+            logger.info("No stats file found.")
+            return
+        # Send the stats file to the admin.
+        try:
+            admin_stats = types.InputFile(stats_file)
+            await bot.send_document(admin_id, admin_stats)
+            logger.info("Stats file sent to the admin.")
+        except Exception as e:
+            logger.error(f"Error during sending stats file to the admin: {repr(e)}")
+
+
 @dp.message_handler(Text(equals=Buttons.COFFEE.value))
 async def button_coffee(message: types.Message) -> None:
     """Handles the Buy me a coffee button.
