@@ -24,9 +24,6 @@
 
 Supported Games: Farming Simulator 22, will be updated for Farming Simulator 25 as soon, as map templates become available.
 
-🚨 Due to lack of donations, starting from 30.09.2024 (or earlier) the Telegram bot will be shut down.<br> 
-The only available option would be a Docker version. Please, do not report that the bot is down.<br>
-
 ## Quick Start
 For those, who don't want to read anything, here you go:<br>
 **Option 1:** launch the [@maps4fs](https://t.me/maps4fsbot) Telegram bot and generate a map template in a few clicks.<br>
