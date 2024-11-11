@@ -23,7 +23,10 @@
 
 </div>
 
-Supported Games: Farming Simulator 22, will be updated for Farming Simulator 25 as soon, as map templates become available.
+### Supported Games
+
+✅ Farming Simulator 22<br>
+🔃 Farming Simulator 25 (work in progress)<br>
 
 ## Quick Start
 For those, who don't want to read anything, here you go:<br>
