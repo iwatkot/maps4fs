@@ -1,5 +1,5 @@
 opencv-python
-osmnx
+osmnx<2.0.0
 rasterio
 python_dotenv
 aiogram==2.25.1
