@@ -74,7 +74,7 @@ def launch_process():
 st.write("Select the game for which you want to generate the map:")
 game_code_input = st.selectbox(
     "Game",
-    options=["FS22", "FS25"],
+    options=["FS22"],  # TODO: Return "FS25" when the Giants Editor v10 will be released.
     key="game_code",
     label_visibility="collapsed",
 )

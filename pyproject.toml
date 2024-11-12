@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "maps4fs"
+version = "0.6.0"
+description = "Generate map templates for Farming Simulator from real places."
+authors = [{name = "iwatkot", email = "iwatkot@gmail.com"}]
+license = {text = "MIT License"}
+readme = "README.md"
+keywords = ["farmingsimulator", "fs", "farmingsimulator22", "farmingsimulator25", "fs22", "fs25"]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pydantic>=2.0.0",
+    "requests>=2.0.0",
+    "httpx>=0.20.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/iwatkot/maps4fs"
+Repository = "https://github.com/iwatkot/maps4fs"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["maps4fs*"]
+exclude = ["dev*", "bot*", "*data", "*docker", "*webui"]
