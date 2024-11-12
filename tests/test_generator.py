@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 from random import choice, randint
@@ -7,7 +8,8 @@ import cv2
 
 from maps4fs import Map
 from maps4fs.generator.game import Game
-from maps4fs.generator.texture import TEXTURES
+
+# from maps4fs.generator.texture import TEXTURES
 
 working_directory = os.getcwd()
 
@@ -68,6 +70,19 @@ def map_directory() -> str:
     return directory
 
 
+def load_textures_schema(json_path: str) -> dict:
+    """Load textures schema from JSON file.
+
+    Args:
+        json_path (str): Path to the JSON file.
+
+    Returns:
+        dict: Loaded JSON file.
+    """
+    with open(json_path, "r") as file:
+        return json.load(file)
+
+
 def test_map():
     """Test Map generation for different cases."""
     for game_code in game_code_cases:
@@ -89,8 +104,13 @@ def test_map():
 
             map.generate()
 
+            layers_schema = load_textures_schema(game.texture_schema)
+
             textures_directory = os.path.join(directory, "maps/map/data")
-            for texture_name, numer_of_layers in TEXTURES.items():
+            for texture in layers_schema:
+                texture_name = texture["name"]
+                numer_of_layers = texture["count"]
+
                 if numer_of_layers == 0:
                     continue
                 for idx in range(1, numer_of_layers + 1):

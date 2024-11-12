@@ -7,7 +7,6 @@ import maps4fs as mfs
 
 working_directory = os.getcwd()
 archives_directory = os.path.join(working_directory, "archives")
-map_template = os.path.join(working_directory, "data", "map-template.zip")
 maps_directory = os.path.join(working_directory, "maps")
 os.makedirs(archives_directory, exist_ok=True)
 os.makedirs(maps_directory, exist_ok=True)
@@ -45,7 +44,7 @@ def launch_process():
         st.error("Invalid blur seed!")
         return
 
-    session_name = f"{time()}"
+    session_name = f"{int(time())}"
 
     st.success("Started map generation...")
     map_directory = os.path.join(maps_directory, session_name)

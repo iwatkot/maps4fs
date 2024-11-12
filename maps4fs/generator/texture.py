@@ -1,8 +1,9 @@
 """Module with Texture class for generating textures for the map using OSM data."""
 
+from __future__ import annotations
+
 import json
 import os
-import re
 import warnings
 from typing import Callable, Generator, Optional
 
@@ -16,26 +17,131 @@ from shapely.geometry.base import BaseGeometry  # type: ignore
 from maps4fs.generator.component import Component
 
 # region constants
-TEXTURES = {
-    "animalMud": 4,
-    "asphalt": 4,
-    "cobbleStone": 4,
-    "concrete": 4,
-    "concreteRubble": 4,
-    "concreteTiles": 4,
-    "dirt": 4,
-    "dirtDark": 2,
-    "forestGround": 4,
-    "forestGroundLeaves": 4,
-    "grass": 4,
-    "grassDirt": 4,
-    "gravel": 4,
-    "groundBricks": 4,
-    "mountainRock": 4,
-    "mountainRockDark": 4,
-    "riverMud": 4,
-    "waterPuddle": 0,
-}
+# texture = {
+#     "name": "concrete",
+#     "count": 4,
+#     "tags": {"building": True},
+#     "width": 8,
+#     "color": (130, 130, 130),
+# }
+
+# textures = [
+#     {
+#         "name": "animalMud",
+#         "count": 4,
+#     },
+#     {
+#         "name": "asphalt",
+#         "count": 4,
+#         "tags": {"highway": ["motorway", "trunk", "primary"]},
+#         "width": 8,
+#         "color": (70, 70, 70),
+#     },
+#     {
+#         "name": "cobbleStone",
+#         "count": 4,
+#     },
+#     {
+#         "name": "concrete",
+#         "count": 4,
+#         "tags": {"building": True},
+#         "width": 8,
+#         "color": (130, 130, 130),
+#     },
+#     {
+#         "name": "concreteRubble",
+#         "count": 4,
+#     },
+#     {
+#         "name": "concreteTiles",
+#         "count": 4,
+#     },
+#     {
+#         "name": "dirt",
+#         "count": 4,
+#     },
+#     {
+#         "name": "dirtDark",
+#         "count": 2,
+#         "tags": {"highway": ["unclassified", "residential", "track"]},
+#         "width": 2,
+#         "color": (33, 67, 101),
+#     },
+#     {
+#         "name": "forestGround",
+#         "count": 4,
+#         "tags": {"landuse": "farmland"},
+#         "color": (47, 107, 85),
+#     },
+#     {
+#         "name": "forestGroundLeaves",
+#         "count": 4,
+#     },
+#     {
+#         "name": "grass",
+#         "count": 4,
+#         "tags": {"natural": "grassland"},
+#         "color": (34, 255, 34),
+#     },
+#     {
+#         "name": "grassDirt",
+#         "count": 4,
+#         "tags": {"natural": ["wood", "tree_row"]},
+#         "width": 2,
+#         "color": (0, 252, 124),
+#     },
+#     {
+#         "name": "gravel",
+#         "count": 4,
+#         "tags": {"highway": ["secondary", "tertiary", "road"]},
+#         "width": 4,
+#         "color": (140, 180, 210),
+#     },
+#     {
+#         "name": "groundBricks",
+#         "count": 4,
+#     },
+#     {
+#         "name": "mountainRock",
+#         "count": 4,
+#     },
+#     {
+#         "name": "mountainRockDark",
+#         "count": 4,
+#     },
+#     {
+#         "name": "riverMud",
+#         "count": 4,
+#     },
+#     {
+#         "name": "waterPuddle",
+#         "count": 0,
+#         "tags": {"natural": "water", "waterway": True},
+#         "width": 10,
+#         "color": (255, 20, 20),
+#     },
+# ]
+
+# TEXTURES = {
+# ?     "animalMud": 4,
+# ?     "asphalt": 4,
+# ?     "cobbleStone": 4,
+# ?     "concrete": 4,
+#     "concreteRubble": 4,
+#     "concreteTiles": 4,
+#     "dirt": 4,
+#     "dirtDark": 2,
+#     "forestGround": 4,
+#     "forestGroundLeaves": 4,
+#     "grass": 4,
+#     "grassDirt": 4,
+#     "gravel": 4,
+#     "groundBricks": 4,
+#     "mountainRock": 4,
+#     "mountainRockDark": 4,
+#     "riverMud": 4,
+#     "waterPuddle": 0,
+# }
 # endregion
 
 
@@ -71,49 +177,72 @@ class Texture(Component):
         # pylint: disable=R0913
         def __init__(  # pylint: disable=R0917
             self,
-            weights_dir: str,
             name: str,
-            tags: dict[str, str | list[str] | bool],
+            count: int,
+            tags: dict[str, str | list[str] | bool] | None = None,
             width: int | None = None,
-            color: tuple[int, int, int] | None = None,
+            color: tuple[int, int, int] | list[int] | None = None,
         ):
-            self.weights_dir = weights_dir
             self.name = name
+            self.count = count
             self.tags = tags
             self.width = width
             self.color = color if color else (255, 255, 255)
-            self._get_paths()
 
-        def _get_paths(self):
-            """Gets paths to textures of the layer.
+        def to_json(self) -> dict[str, str | list[str] | bool]:  # type: ignore
+            """Returns dictionary with layer data.
 
-            Raises:
-                FileNotFoundError: If texture is not found.
+            Returns:
+                dict: Dictionary with layer data."""
+            data = {
+                "name": self.name,
+                "count": self.count,
+                "tags": self.tags,
+                "width": self.width,
+                "color": list(self.color),
+            }
+
+            data = {k: v for k, v in data.items() if v is not None}
+            return data  # type: ignore
+
+        @classmethod
+        def from_json(cls, data: dict[str, str | list[str] | bool]) -> Texture.Layer:
+            """Creates a new instance of the class from dictionary.
+
+            Args:
+                data (dict[str, str | list[str] | bool]): Dictionary with layer data.
+
+            Returns:
+                Layer: New instance of the class.
             """
-            if self.name == "waterPuddle":
-                self.paths = [os.path.join(self.weights_dir, "waterPuddle_weight.png")]
-                return
-            weight_files = [
-                os.path.join(self.weights_dir, f)
-                for f in os.listdir(self.weights_dir)
-                if f.endswith("_weight.png")
-            ]
-            pattern = re.compile(rf"{self.name}\d{{2}}_weight")
-            paths = [path for path in weight_files if pattern.search(path)]
-            if not paths:
-                raise FileNotFoundError(f"Texture not found: {self.name}")
-            self.paths = paths
+            return cls(**data)  # type: ignore
 
-        @property
-        def path(self) -> str:
+        def path(self, weights_directory: str) -> str:
             """Returns path to the first texture of the layer.
+
+            Arguments:
+                weights_directory (str): Path to the directory with weights.
 
             Returns:
                 str: Path to the texture.
             """
-            return self.paths[0]
+            if self.name == "waterPuddle":
+                return os.path.join(weights_directory, "waterPuddle_weight.png")
+            return os.path.join(weights_directory, f"{self.name}01_weight.png")
 
     def preprocess(self) -> None:
+        if not os.path.isfile(self.game.texture_schema):
+            raise FileNotFoundError(f"Texture layers schema not found: {self.game.texture_schema}")
+
+        try:
+            with open(self.game.texture_schema, "r", encoding="utf-8") as f:
+                layers_schema = json.load(f)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Error loading texture layers schema: {e}") from e
+
+        self.layers = [self.Layer.from_json(layer) for layer in layers_schema]
+        self.logger.info("Loaded %s layers.", len(self.layers))
+
         self._weights_dir = os.path.join(self.map_directory, "maps", "map", "data")
         self._bbox = ox.utils_geo.bbox_from_point(self.coordinates, dist=self.distance)
         self.info_save_path = os.path.join(self.map_directory, "generation_info.json")
@@ -186,10 +315,11 @@ class Texture(Component):
         self.logger.info("Generation info saved to %s.", self.info_save_path)
 
     def _prepare_weights(self):
-        self.logger.debug("Starting preparing weights...")
-        for texture_name, layer_numbers in TEXTURES.items():
-            self._generate_weights(texture_name, layer_numbers)
-        self.logger.debug("Prepared weights for %s textures.", len(TEXTURES))
+        self.logger.debug("Starting preparing weights from %s layers.", len(self.layers))
+
+        for layer in self.layers:
+            self._generate_weights(layer.name, layer.count)
+        self.logger.debug("Prepared weights for %s layers.", len(self.layers))
 
     def _generate_weights(self, texture_name: str, layer_numbers: int) -> None:
         """Generates weight files for textures. Each file is a numpy array of zeros and
@@ -220,69 +350,28 @@ class Texture(Component):
         Returns:
             list[Layer]: List of layers.
         """
-        asphalt = self.Layer(
-            self._weights_dir,
-            "asphalt",
-            {"highway": ["motorway", "trunk", "primary"]},
-            width=8,
-            color=(70, 70, 70),
-        )
-        concrete = self.Layer(
-            self._weights_dir, "concrete", {"building": True}, width=8, color=(130, 130, 130)
-        )
-        dirt_dark = self.Layer(
-            self._weights_dir,
-            "dirtDark",
-            {"highway": ["unclassified", "residential", "track"]},
-            width=2,
-            color=(33, 67, 101),
-        )
-        grass_dirt = self.Layer(
-            self._weights_dir,
-            "grassDirt",
-            {"natural": ["wood", "tree_row"]},
-            width=2,
-            color=(0, 252, 124),
-        )
-        grass = self.Layer(
-            self._weights_dir, "grass", {"natural": "grassland"}, color=(34, 255, 34)
-        )
-        forest_ground = self.Layer(
-            self._weights_dir, "forestGround", {"landuse": "farmland"}, color=(47, 107, 85)
-        )
-        gravel = self.Layer(
-            self._weights_dir,
-            "gravel",
-            {"highway": ["secondary", "tertiary", "road"]},
-            width=4,
-            color=(140, 180, 210),
-        )
-        water_puddle = self.Layer(
-            self._weights_dir,
-            "waterPuddle",
-            {"natural": "water", "waterway": True},
-            width=10,
-            color=(255, 20, 20),
-        )
-        return [
-            asphalt,
-            concrete,
-            dirt_dark,
-            forest_ground,
-            grass,
-            grass_dirt,
-            gravel,
-            water_puddle,
-        ]
+        return self._layers
+
+    @layers.setter
+    def layers(self, layers: list[Layer]) -> None:
+        """Sets list of layers with textures and tags.
+
+        Args:
+            layers (list[Layer]): List of layers.
+        """
+        self._layers = layers
 
     # pylint: disable=no-member
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
         for layer in self.layers:
-            img = cv2.imread(layer.path, cv2.IMREAD_UNCHANGED)
-            for polygon in self.polygons(layer.tags, layer.width):
+            layer_path = layer.path(self._weights_dir)
+            self.logger.debug("Drawing layer %s.", layer_path)
+
+            img = cv2.imread(layer_path, cv2.IMREAD_UNCHANGED)
+            for polygon in self.polygons(layer.tags, layer.width):  # type: ignore
                 cv2.fillPoly(img, [polygon], color=255)  # type: ignore
-            cv2.imwrite(layer.path, img)
+            cv2.imwrite(layer_path, img)
             self.logger.debug("Texture %s saved.", layer.path)
 
     def get_relative_x(self, x: float) -> int:
@@ -425,7 +514,9 @@ class Texture(Component):
         """
         preview_size = (2048, 2048)
         images = [
-            cv2.resize(cv2.imread(layer.path, cv2.IMREAD_UNCHANGED), preview_size)
+            cv2.resize(
+                cv2.imread(layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED), preview_size
+            )
             for layer in self.layers
         ]
         colors = [layer.color for layer in self.layers]

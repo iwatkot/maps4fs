@@ -30,6 +30,7 @@ class Game:
 
     code: str | None = None
     _map_template_path: str | None = None
+    _texture_schema: str | None = None
 
     components = [Config, Texture, DEM]
 
@@ -76,16 +77,62 @@ class Game:
             raise ValueError("Map template path not set.")
         return self._map_template_path
 
+    @property
+    def texture_schema(self) -> str:
+        """Returns the path to the texture layers schema file.
+
+        Raises:
+            ValueError: If the texture layers schema path is not set.
+
+        Returns:
+            str: The path to the texture layers schema file."""
+        if not self._texture_schema:
+            raise ValueError("Texture layers schema path not set.")
+        return self._texture_schema
+
+    def dem_file_path(self, map_directory: str) -> str:
+        """Returns the path to the DEM file.
+
+        Arguments:
+            map_directory (str): The path to the map directory.
+
+        Returns:
+            str: The path to the DEM file.
+        """
+        raise NotImplementedError
+
 
 class FS22(Game):
     """Class used to define the game version FS22."""
 
     code = "FS22"
-    _map_template_path = os.path.join(working_directory, "data", "map-template-fs22.zip")
+    _map_template_path = os.path.join(working_directory, "data", "fs22-map-template.zip")
+    _texture_schema = os.path.join(working_directory, "data", "fs22-texture-schema.json")
+
+    def dem_file_path(self, map_directory: str) -> str:
+        """Returns the path to the DEM file.
+
+        Arguments:
+            map_directory (str): The path to the map directory.
+
+        Returns:
+            str: The path to the DEM file."""
+        return os.path.join(map_directory, "maps", "map", "data", "map_dem.png")
 
 
 class FS25(Game):
     """Class used to define the game version FS25."""
 
     code = "FS25"
-    _map_template_path = os.path.join(working_directory, "data", "map-template-fs25.zip")
+    _map_template_path = os.path.join(working_directory, "data", "fs25-map-template.zip")
+    _texture_schema = os.path.join(working_directory, "data", "fs25-texture-schema.json")
+
+    def dem_file_path(self, map_directory: str) -> str:
+        """Returns the path to the DEM file.
+
+        Arguments:
+            map_directory (str): The path to the map directory.
+
+        Returns:
+            str: The path to the DEM file."""
+        return os.path.join(map_directory, "maps", "map", "data", "dem.png")

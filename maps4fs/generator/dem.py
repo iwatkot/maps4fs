@@ -29,7 +29,10 @@ class DEM(Component):
     """
 
     def preprocess(self) -> None:
-        self._dem_path = os.path.join(self.map_directory, "maps", "map", "data", "map_dem.png")
+        self._blur_seed: int = self.kwargs.get("blur_seed") or 5
+        self._max_height: int = self.kwargs.get("max_height") or 200
+
+        self._dem_path = self.game.dem_file_path(self.map_directory)
         self.temp_dir = "temp"
         self.hgt_dir = os.path.join(self.temp_dir, "hgt")
         self.gz_dir = os.path.join(self.temp_dir, "gz")

@@ -34,9 +34,7 @@ class Component:
         self.distance = distance
         self.map_directory = map_directory
         self.logger = logger
-
-        self._blur_seed: int = kwargs.get("blur_seed") or 5
-        self._max_height: int = kwargs.get("max_height") or 200
+        self.kwargs = kwargs
 
         self.preprocess()
 
