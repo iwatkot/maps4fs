@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Directories to be removed
-dirs=".mypy_cache .pytest_cache htmlcov dist"
+dirs=".mypy_cache .pytest_cache htmlcov dist archives cache logs maps temp"
 
 # Files to be removed
 files=".coverage"

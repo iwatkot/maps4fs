@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 from random import choice, randint
@@ -6,12 +7,12 @@ from time import time
 import cv2
 
 from maps4fs import Map
-from maps4fs.generator.texture import TEXTURES
+from maps4fs.generator.game import Game
+
+# from maps4fs.generator.texture import TEXTURES
 
 working_directory = os.getcwd()
-map_template = os.path.join(working_directory, "data/map-template.zip")
-if not os.path.isfile(map_template):
-    raise FileNotFoundError(f"Map template not found at {map_template}")
+
 base_directory = os.path.join(working_directory, "tests/data")
 if os.path.isdir(base_directory):
     shutil.rmtree(base_directory)
@@ -25,6 +26,8 @@ coordinates_cases = [
     (58.52085065306593, 31.27771396353221),
     (35.25541295723034, 139.04857855524995),
 ]
+
+game_code_cases = ["FS22"]
 
 
 def random_distance() -> int:
@@ -67,52 +70,72 @@ def map_directory() -> str:
     return directory
 
 
+def load_textures_schema(json_path: str) -> dict:
+    """Load textures schema from JSON file.
+
+    Args:
+        json_path (str): Path to the JSON file.
+
+    Returns:
+        dict: Loaded JSON file.
+    """
+    with open(json_path, "r") as file:
+        return json.load(file)
+
+
 def test_map():
     """Test Map generation for different cases."""
-    for coordinates in coordinates_cases:
-        distance = random_distance()
-        blur_seed = random_blur_seed()
-        max_height = random_max_height()
-        directory = map_directory()
+    for game_code in game_code_cases:
+        game = Game.from_code(game_code)
+        for coordinates in coordinates_cases:
+            distance = random_distance()
+            blur_seed = random_blur_seed()
+            max_height = random_max_height()
+            directory = map_directory()
 
-        map = Map(
-            coordinates=coordinates,
-            distance=distance,
-            map_directory=directory,
-            blur_seed=blur_seed,
-            max_height=max_height,
-            map_template=map_template,
-        )
+            map = Map(
+                game=game,
+                coordinates=coordinates,
+                distance=distance,
+                map_directory=directory,
+                blur_seed=blur_seed,
+                max_height=max_height,
+            )
 
-        map.generate()
+            map.generate()
 
-        textures_directory = os.path.join(directory, "maps/map/data")
-        for texture_name, numer_of_layers in TEXTURES.items():
-            if numer_of_layers == 0:
-                continue
-            for idx in range(1, numer_of_layers + 1):
-                texture_path = os.path.join(
-                    textures_directory, f"{texture_name}{str(idx).zfill(2)}_weight.png"
-                )
-                assert os.path.isfile(texture_path), f"Texture not found: {texture_path}"
-                img = cv2.imread(texture_path)
-                assert img is not None, f"Texture could not be read: {texture_path}"
-                assert img.shape == (
-                    distance * 2,
-                    distance * 2,
-                    3,
-                ), f"Texture shape mismatch: {img.shape} != {(distance * 2, distance * 2, 3)}"
-                assert img.dtype == "uint8", f"Texture dtype mismatch: {img.dtype} != uint8"
+            layers_schema = load_textures_schema(game.texture_schema)
 
-        dem_file = os.path.join(textures_directory, "map_dem.png")
-        assert os.path.isfile(dem_file), f"DEM file not found: {dem_file}"
-        img = cv2.imread(dem_file, cv2.IMREAD_UNCHANGED)
-        assert img is not None, f"DEM could not be read: {dem_file}"
-        assert img.shape == (
-            distance + 1,
-            distance + 1,
-        ), f"DEM shape mismatch: {img.shape} != {(distance + 1, distance + 1)}"
-        assert img.dtype == "uint16", f"DEM dtype mismatch: {img.dtype} != uint16"
+            textures_directory = os.path.join(directory, "maps/map/data")
+            for texture in layers_schema:
+                texture_name = texture["name"]
+                numer_of_layers = texture["count"]
+
+                if numer_of_layers == 0:
+                    continue
+                for idx in range(1, numer_of_layers + 1):
+                    texture_path = os.path.join(
+                        textures_directory, f"{texture_name}{str(idx).zfill(2)}_weight.png"
+                    )
+                    assert os.path.isfile(texture_path), f"Texture not found: {texture_path}"
+                    img = cv2.imread(texture_path)
+                    assert img is not None, f"Texture could not be read: {texture_path}"
+                    assert img.shape == (
+                        distance * 2,
+                        distance * 2,
+                        3,
+                    ), f"Texture shape mismatch: {img.shape} != {(distance * 2, distance * 2, 3)}"
+                    assert img.dtype == "uint8", f"Texture dtype mismatch: {img.dtype} != uint8"
+
+            dem_file = os.path.join(textures_directory, "map_dem.png")
+            assert os.path.isfile(dem_file), f"DEM file not found: {dem_file}"
+            img = cv2.imread(dem_file, cv2.IMREAD_UNCHANGED)
+            assert img is not None, f"DEM could not be read: {dem_file}"
+            assert img.shape == (
+                distance + 1,
+                distance + 1,
+            ), f"DEM shape mismatch: {img.shape} != {(distance + 1, distance + 1)}"
+            assert img.dtype == "uint16", f"DEM dtype mismatch: {img.dtype} != uint16"
 
 
 def test_map_preview():
@@ -122,14 +145,17 @@ def test_map_preview():
     blur_seed = random_blur_seed()
     max_height = random_max_height()
 
+    game_code = choice(game_code_cases)
+    game = Game.from_code(game_code)
+
     directory = map_directory()
     map = Map(
+        game=game,
         coordinates=case,
         distance=distance,
         map_directory=directory,
         blur_seed=blur_seed,
         max_height=max_height,
-        map_template=map_template,
     )
     map.generate()
     previews_paths = map.previews()
@@ -152,14 +178,17 @@ def test_map_pack():
     blur_seed = random_blur_seed()
     max_height = random_max_height()
 
+    game_code = choice(game_code_cases)
+    game = Game.from_code(game_code)
+
     directory = map_directory()
     map = Map(
+        game=game,
         coordinates=case,
         distance=distance,
         map_directory=directory,
         blur_seed=blur_seed,
         max_height=max_height,
-        map_template=map_template,
     )
     map.generate()
     archive_name = os.path.join(base_directory, "archive")

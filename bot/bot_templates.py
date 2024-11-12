@@ -17,6 +17,8 @@ class Messages(Enum):
 
     CANCELLED = "The operation has been cancelled."
 
+    CHOOSE_GAME = "Choose the game for which you want to generate a map."
+
     ENTER_COORDINATES = (
         "Enter the coordinates of the center of the map\."
         "The coordinates are latitude and longitude separated by a comma\.\n\n"

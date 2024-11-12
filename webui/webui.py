@@ -7,7 +7,6 @@ import maps4fs as mfs
 
 working_directory = os.getcwd()
 archives_directory = os.path.join(working_directory, "archives")
-map_template = os.path.join(working_directory, "data", "map-template.zip")
 maps_directory = os.path.join(working_directory, "maps")
 os.makedirs(archives_directory, exist_ok=True)
 os.makedirs(maps_directory, exist_ok=True)
@@ -19,6 +18,8 @@ if "generated" not in st.session_state:
 
 
 def launch_process():
+    game = mfs.Game.from_code(game_code_input)
+
     try:
         lat, lon = map(float, lat_lon_input.split(","))
     except ValueError:
@@ -43,19 +44,19 @@ def launch_process():
         st.error("Invalid blur seed!")
         return
 
-    session_name = f"{time()}"
+    session_name = f"{int(time())}"
 
     st.success("Started map generation...")
     map_directory = os.path.join(maps_directory, session_name)
     os.makedirs(map_directory, exist_ok=True)
 
     mp = mfs.Map(
+        game,
         coordinates,
         distance,
         map_directory,
         blur_seed=blur_seed,
         max_height=max_height,
-        map_template=map_template,
         logger=logger,
     )
     mp.generate()
@@ -70,6 +71,14 @@ def launch_process():
 
 
 # UI Elements
+st.write("Select the game for which you want to generate the map:")
+game_code_input = st.selectbox(
+    "Game",
+    options=["FS22"],  # TODO: Return "FS25" when the Giants Editor v10 will be released.
+    key="game_code",
+    label_visibility="collapsed",
+)
+
 st.write("Enter latitude and longitude of the center point of the map:")
 lat_lon_input = st.text_input(
     "Latitude and Longitude", "45.2602, 19.8086", key="lat_lon", label_visibility="collapsed"
