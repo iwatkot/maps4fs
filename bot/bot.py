@@ -17,6 +17,10 @@ import maps4fs as mfs
 logger = mfs.Logger(__name__, level="DEBUG")
 
 # region constants
+GAME_CODES = {
+    "FS22": "Farming Simulator 22",
+    "FS25": "Farming Simulator 25",
+}
 MAP_SIZES = ["2048", "4096", "8192", "16384"]
 MAX_HEIGHTS = {
     "100": "🍀 For flatlands",
@@ -29,7 +33,6 @@ MAX_HEIGHTS = {
 
 # region directories
 working_directory = os.getcwd()
-map_template = os.path.join(working_directory, "data", "map-template.zip")
 maps_directory = os.path.join(working_directory, "maps")
 archives_directory = os.path.join(working_directory, "archives")
 stats_directory = os.path.join(working_directory, "stats")
@@ -77,12 +80,13 @@ class Session:
         dem_settings (generate.DemSettings): DEM settings.
     """
 
-    def __init__(self, telegram_id: int, coordinates: tuple[float, float]):
+    def __init__(self, telegram_id: int, game_code: str):
         self.telegram_id = telegram_id
         self.timestamp = int(datetime.now().timestamp())
         self.name = f"{self.telegram_id}_{self.timestamp}"
         self.map_directory = os.path.join(maps_directory, self.name)
-        self.coordinates = coordinates
+        self.game = mfs.Game.from_code(game_code)
+        self.coordinates = None
         self.distance = None
         self.max_height = None
 
@@ -93,17 +97,17 @@ class Session:
             tuple[str, str]: Paths to the preview and the archive.
         """
         mp = mfs.Map(
+            self.game,
             self.coordinates,
             self.distance,
             self.map_directory,
             blur_seed=5,
             max_height=self.max_height,
-            map_template=map_template,
             logger=logger,
         )
         mp.generate()
         # preview_path = mp.previews()[0]
-        preview_path = None # Disabled to avoid Docker 137 error (OUT OF MEMORY).
+        preview_path = None  # Disabled to avoid Docker 137 error (OUT OF MEMORY).
         archive_path = mp.pack(os.path.join(archives_directory, self.name))
         return preview_path, archive_path
 
@@ -198,12 +202,37 @@ async def button_coffee(message: types.Message) -> None:
 
 @dp.message_handler(Text(equals=Buttons.GENERATE.value))
 async def button_generate(message: types.Message) -> None:
-    """Handles the Generate button, registers the coordinates handler.
+    """Handles the Generate button, creates inline buttons for the game selection.
 
     Args:
         message (types.Message): Message, which triggered the handler.
     """
     await log_event(message)
+
+    buttons = {}
+    for game_code, game_name in GAME_CODES.items():
+        buttons[f"game_code_{game_code}"] = game_name
+
+    await bot.send_message(
+        message.from_user.id,
+        Messages.CHOOSE_GAME.value,
+        reply_markup=await keyboard(buttons),
+    )
+
+
+@dp.callback_query_handler(text_contains="game_code_")
+async def game_choose(message: types.Message) -> None:
+    """Handles the catch of the game selection, registers the coordinates handler.
+
+    Args:
+        message (types.Message): Message, which triggered the handler.
+    """
+    await log_event(message)
+
+    game_code = message.data.rsplit("_", 1)[-1]
+
+    session = Session(message.from_user.id, game_code)
+    sessions[message.from_user.id] = session
 
     dp.register_message_handler(coordinates)
 
@@ -263,8 +292,10 @@ async def coordinates(message: types.Message) -> None:
         )
         return
 
-    telegram_id = message.from_user.id
-    sessions[telegram_id] = Session(telegram_id, (latitude, longitude))
+    session = sessions.get(message.from_user.id)
+    if not session:
+        return
+    session.coordinates = (latitude, longitude)
 
     sizes = MAP_SIZES
     indicators = ["🟢", "🟢", "🟡", "🔴"]
