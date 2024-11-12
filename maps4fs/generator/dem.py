@@ -50,7 +50,14 @@ class DEM(Component):
             f"Processing DEM. North: {north}, south: {south}, east: {east}, west: {west}."
         )
 
-        dem_output_resolution = (self.distance + 1, self.distance + 1)
+        dem_output_size = self.distance * self.game.dem_multipliyer + 1
+        self.logger.debug(
+            "DEM multiplier is %s, DEM output size is %s.",
+            self.game.dem_multipliyer,
+            dem_output_size,
+        )
+        dem_output_resolution = (dem_output_size, dem_output_size)
+        self.logger.debug("DEM output resolution: %s.", dem_output_resolution)
 
         tile_path = self._srtm_tile()
         if not tile_path:

@@ -29,6 +29,7 @@ class Game:
     """
 
     code: str | None = None
+    dem_multipliyer: int = 1
     _map_template_path: str | None = None
     _texture_schema: str | None = None
 
@@ -124,6 +125,7 @@ class FS25(Game):
     """Class used to define the game version FS25."""
 
     code = "FS25"
+    dem_multipliyer: int = 2
     _map_template_path = os.path.join(working_directory, "data", "fs25-map-template.zip")
     _texture_schema = os.path.join(working_directory, "data", "fs25-texture-schema.json")
 
