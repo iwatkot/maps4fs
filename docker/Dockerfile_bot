@@ -12,6 +12,7 @@ WORKDIR /usr/src/app
 
 COPY data /usr/src/app/data
 COPY bot /usr/src/app/bot
+COPY docker /usr/src/app/docker
 
 RUN pip install -r docker/requirements_bot.txt
 
