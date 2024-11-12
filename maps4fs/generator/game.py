@@ -1,4 +1,4 @@
-"""This module contains the Game class and its subclasses. Game class is used to define 
+"""This module contains the Game class and its subclasses. Game class is used to define
 different versions of the game for which the map is generated. Each game has its own map
 template file and specific settings for map generation."""
 
