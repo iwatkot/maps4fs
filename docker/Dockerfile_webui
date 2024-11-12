@@ -7,7 +7,8 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /usr/src/app
 
-COPY . .
+COPY data /usr/src/app/data
+COPY webui /usr/src/app/webui
 
 RUN pip install -r docker/requirements_webui.txt
 

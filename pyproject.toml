@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "maps4fs"
-version = "0.6.0"
+version = "0.6.1"
 description = "Generate map templates for Farming Simulator from real places."
 authors = [{name = "iwatkot", email = "iwatkot@gmail.com"}]
 license = {text = "MIT License"}
@@ -17,9 +17,11 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "pydantic>=2.0.0",
-    "requests>=2.0.0",
-    "httpx>=0.20.0",
+    "opencv-python",
+    "osmnx<2.0.0",
+    "rasterio",
+    "python_dotenv",
+    "tqdm",
 ]
 
 [project.urls]

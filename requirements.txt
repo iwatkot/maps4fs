@@ -1,0 +1,6 @@
+opencv-python
+osmnx<2.0.0
+rasterio
+python_dotenv
+tqdm
+streamlit
