@@ -4,7 +4,7 @@ import json
 import os
 import re
 import warnings
-from typing import Any, Callable, Generator, Optional
+from typing import Callable, Generator, Optional
 
 import cv2
 import numpy as np
@@ -113,15 +113,7 @@ class Texture(Component):
             """
             return self.paths[0]
 
-    def __init__(
-        self,
-        coordinates: tuple[float, float],
-        distance: int,
-        map_directory: str,
-        logger: Any = None,
-        **kwargs,
-    ):
-        super().__init__(coordinates, distance, map_directory, logger)
+    def preprocess(self) -> None:
         self._weights_dir = os.path.join(self.map_directory, "maps", "map", "data")
         self._bbox = ox.utils_geo.bbox_from_point(self.coordinates, dist=self.distance)
         self.info_save_path = os.path.join(self.map_directory, "generation_info.json")

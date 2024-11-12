@@ -1,6 +1,11 @@
 """This module contains the base class for all map generation components."""
 
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from maps4fs.generator.game import Game
 
 
 # pylint: disable=R0801, R0903
@@ -17,16 +22,31 @@ class Component:
 
     def __init__(
         self,
+        game: Game,
         coordinates: tuple[float, float],
         distance: int,
         map_directory: str,
         logger: Any = None,
-        **kwargs,  # pylint: disable=W0613
+        **kwargs,  # pylint: disable=W0613, R0913, R0917
     ):
+        self.game = game
         self.coordinates = coordinates
         self.distance = distance
         self.map_directory = map_directory
         self.logger = logger
+
+        self._blur_seed: int = kwargs.get("blur_seed") or 5
+        self._max_height: int = kwargs.get("max_height") or 200
+
+        self.preprocess()
+
+    def preprocess(self) -> None:
+        """Prepares the component for processing. Must be implemented in the child class.
+
+        Raises:
+            NotImplementedError: If the method is not implemented in the child class.
+        """
+        raise NotImplementedError
 
     def process(self) -> None:
         """Launches the component processing. Must be implemented in the child class.

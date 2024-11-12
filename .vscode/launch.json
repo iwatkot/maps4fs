@@ -2,18 +2,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Linux / Mac Script",
-            "type": "python",
-            "request": "launch",
-            "program": "maps4fs/ui.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}:${PYTHONPATH}",
-                "LOG_LEVEL": "DEBUG",
-            }
-        },
-        {
             "name": "Streamlit: webui",
             "type": "process",
             "request": "launch",

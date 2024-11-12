@@ -4,7 +4,6 @@ import gzip
 import math
 import os
 import shutil
-from typing import Any
 
 import cv2
 import numpy as np
@@ -29,24 +28,13 @@ class DEM(Component):
             info, warning. If not provided, default logging will be used.
     """
 
-    def __init__(
-        self,
-        coordinates: tuple[float, float],
-        distance: int,
-        map_directory: str,
-        logger: Any = None,
-        **kwargs,
-    ):
-        super().__init__(coordinates, distance, map_directory, logger)
+    def preprocess(self) -> None:
         self._dem_path = os.path.join(self.map_directory, "maps", "map", "data", "map_dem.png")
         self.temp_dir = "temp"
         self.hgt_dir = os.path.join(self.temp_dir, "hgt")
         self.gz_dir = os.path.join(self.temp_dir, "gz")
         os.makedirs(self.hgt_dir, exist_ok=True)
         os.makedirs(self.gz_dir, exist_ok=True)
-
-        self._blur_seed: int = kwargs.get("blur_seed") or 5
-        self._max_height: int = kwargs.get("max_height") or 200
 
     # pylint: disable=no-member
     def process(self) -> None:

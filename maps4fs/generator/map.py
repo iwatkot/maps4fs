@@ -6,13 +6,8 @@ from typing import Any
 
 from tqdm import tqdm
 
-from maps4fs.generator.component import Component
-from maps4fs.generator.config import Config
-from maps4fs.generator.dem import DEM
-from maps4fs.generator.texture import Texture
+from maps4fs.generator.game import Game
 from maps4fs.logger import Logger
-
-BaseComponents = [Config, Texture, DEM]
 
 
 # pylint: disable=R0913
@@ -20,25 +15,26 @@ class Map:
     """Class used to generate map using all components.
 
     Args:
+        game (Type[Game]): Game for which the map is generated.
         coordinates (tuple[float, float]): Coordinates of the center of the map.
         distance (int): Distance from the center of the map.
         map_directory (str): Path to the directory where map files will be stored.
         blur_seed (int): Seed used for blur effect.
         max_height (int): Maximum height of the map.
-        map_template (str | None): Path to the map template. If not provided, default will be used.
         logger (Any): Logger instance
     """
 
     def __init__(  # pylint: disable=R0917
         self,
+        game: Game,
         coordinates: tuple[float, float],
         distance: int,
         map_directory: str,
         blur_seed: int,
         max_height: int,
-        map_template: str | None = None,
         logger: Any = None,
     ):
+        self.game = game
         self.coordinates = coordinates
         self.distance = distance
         self.map_directory = map_directory
@@ -46,17 +42,16 @@ class Map:
         if not logger:
             logger = Logger(__name__, to_stdout=True, to_file=False)
         self.logger = logger
-        self.components: list[Component] = []
+        self.logger.debug("Game was set to %s", game.code)
 
         os.makedirs(self.map_directory, exist_ok=True)
-        if map_template:
-            shutil.unpack_archive(map_template, self.map_directory)
+        self.logger.debug("Map directory created: %s", self.map_directory)
+
+        try:
+            shutil.unpack_archive(game.template_path, self.map_directory)
             self.logger.info("Map template unpacked to %s", self.map_directory)
-        else:
-            self.logger.warning(
-                "Map template not provided, if directory does not contain required files, "
-                "it may not work properly in Giants Editor."
-            )
+        except Exception as e:
+            raise RuntimeError(f"Can not unpack map template due to error: {e}") from e
 
         # Blur seed should be positive and odd.
         if blur_seed <= 0:
@@ -64,27 +59,22 @@ class Map:
         if blur_seed % 2 == 0:
             blur_seed += 1
 
-        self._add_components(blur_seed, max_height)
-
-    def _add_components(self, blur_seed: int, max_height: int) -> None:
-        self.logger.debug("Starting adding components...")
-        for component in BaseComponents:
-            active_component = component(
-                self.coordinates,
-                self.distance,
-                self.map_directory,
-                self.logger,
-                blur_seed=blur_seed,
-                max_height=max_height,
-            )
-            setattr(self, component.__name__.lower(), active_component)
-            self.components.append(active_component)
-        self.logger.debug("Added %s components.", len(self.components))
+        self.blur_seed = blur_seed
+        self.max_height = max_height
 
     def generate(self) -> None:
         """Launch map generation using all components."""
-        with tqdm(total=len(self.components), desc="Generating map...") as pbar:
-            for component in self.components:
+        with tqdm(total=len(self.game.components), desc="Generating map...") as pbar:
+            for game_component in self.game.components:
+                component = game_component(
+                    self.game,
+                    self.coordinates,
+                    self.distance,
+                    self.map_directory,
+                    self.logger,
+                    blur_seed=self.blur_seed,
+                    max_height=self.max_height,
+                )
                 try:
                     component.process()
                 except Exception as e:  # pylint: disable=W0718
@@ -94,6 +84,8 @@ class Map:
                         e,
                     )
                     raise e
+                setattr(self, game_component.__name__.lower(), component)
+
                 pbar.update(1)
 
     def previews(self) -> list[str]:

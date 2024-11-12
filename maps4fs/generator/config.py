@@ -1,7 +1,8 @@
 """This module contains the Config class for map settings and configuration."""
 
+from __future__ import annotations
+
 import os
-from typing import Any
 from xml.etree import ElementTree as ET
 
 from maps4fs.generator.component import Component
@@ -19,16 +20,9 @@ class Config(Component):
             info, warning. If not provided, default logging will be used.
     """
 
-    def __init__(
-        self,
-        coordinates: tuple[float, float],
-        distance: int,
-        map_directory: str,
-        logger: Any = None,
-        **kwargs,
-    ):
-        super().__init__(coordinates, distance, map_directory, logger)
-        self._map_xml_path = os.path.join(self.map_directory, "maps", "map", "map.xml")
+    def preprocess(self) -> None:
+        self._map_xml_path = self.game.map_xml_path(self.map_directory)
+        self.logger.debug(f"Map XML path: {self._map_xml_path}")
 
     def process(self):
         self._set_map_size()

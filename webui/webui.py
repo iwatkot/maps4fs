@@ -19,6 +19,8 @@ if "generated" not in st.session_state:
 
 
 def launch_process():
+    game = mfs.Game.from_code(game_code_input)
+
     try:
         lat, lon = map(float, lat_lon_input.split(","))
     except ValueError:
@@ -50,12 +52,12 @@ def launch_process():
     os.makedirs(map_directory, exist_ok=True)
 
     mp = mfs.Map(
+        game,
         coordinates,
         distance,
         map_directory,
         blur_seed=blur_seed,
         max_height=max_height,
-        map_template=map_template,
         logger=logger,
     )
     mp.generate()
@@ -70,6 +72,14 @@ def launch_process():
 
 
 # UI Elements
+st.write("Select the game for which you want to generate the map:")
+game_code_input = st.selectbox(
+    "Game",
+    options=["FS22", "FS25"],
+    key="game_code",
+    label_visibility="collapsed",
+)
+
 st.write("Enter latitude and longitude of the center point of the map:")
 lat_lon_input = st.text_input(
     "Latitude and Longitude", "45.2602, 19.8086", key="lat_lon", label_visibility="collapsed"
