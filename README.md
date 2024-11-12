@@ -26,7 +26,7 @@
 ### Supported Games
 
 ✅ Farming Simulator 22<br>
-🔃 Farming Simulator 25 (work in progress)<br>
+🔃 Farming Simulator 25 (changes in the library are ready, waiting for the Giants to release the Giants Editor v10)<br>
 
 ## Quick Start
 For those, who don't want to read anything, here you go:<br>
