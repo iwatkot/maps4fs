@@ -30,13 +30,23 @@
 
 ## Quick Start
 For those, who don't want to read anything, here you go:<br>
+For most users:<br>
 **Option 1:** open the [maps4fs](https://maps4fs.streamlit.app) on StreamLit a map template in a few clicks.<br>
+
+For advanced users:<br>
 **Option 2:** run the Docker version in your browser. Launch the following command in your terminal:
 ```bash
 docker run -d -p 8501:8501 iwatkot/maps4fs
 ```
 And open [http://localhost:8501](http://localhost:8501) in your browser.<br>
 If you don't know how to use Docker, navigate to the [Docker version](#option-2-docker-version), it's really simple.<br>
+
+For developers:<br>
+**Option 3:** Python package. Install the package using the following command:
+```bash
+pip install maps4fs
+```
+And refer to the 
 
 ## Overview
 The core idea is coming from the awesome [maps4cim](https://github.com/klamann/maps4cim) project.<br>
@@ -57,14 +67,14 @@ You'll find detailed instructions on how to run the project below. But if you pr
 ### Option 1: StreamLit
 **🗺️ Supported map sizes:** 2x2, 4x4, 8x8, 16x16 km.<br>
 🟢 Recommended for all users, you don't need to install anything.<br>
-Using Telegram bot [@maps4fs](https://t.me/maps4fsbot).<br>
+Using the [StreamLit](https://maps4fs.streamlit.app) version of the tool is the easiest way to generate a map template. Just open the link and follow the instructions.
 Note: due to CPU and RAM limitations of the hosting, the generation may take some time. If you need faster processing, use the [Docker version](#option-2-docker-version).<br>
 
 Using it is easy and doesn't require any guides. Enjoy!
 
 ### Option 2: Docker version
 **🗺️ Supported map sizes:** 2x2, 4x4, 8x8, 16x16 km.<br>
-🟢 Recommended for users who want faster processing, very simple installation.<br>
+🟠 Recommended for users who want faster processing, very simple installation.<br>
 You can launch the project with minimalistic UI in your browser using Docker. Follow these steps:
 
 1. Install [Docker](https://docs.docker.com/get-docker/) for your OS.
@@ -77,6 +87,53 @@ docker run -d -p 8501:8501 iwatkot/maps4fs
 5. When the map is generated click on the `Download` button to get the map.
 
 ![WebUI](https://github.com/user-attachments/assets/e3b48c9d-7b87-4ce7-8ad7-98332a558a88)
+
+### Option 3: Python package
+**🗺️ Supported map sizes:** 2x2, 4x4, 8x8, 16x16 km (and ANY other you may add).<br>
+🔴 Recommended for developers.<br>
+You can use the Python package to generate maps. Follow these steps:
+
+1. Install the package from PyPI:
+```bash
+pip install maps4fs
+```
+2. Import the Game class and create an instance of it:
+```python
+import maps4fs as mfs
+
+game = mfs.Game.from_code("FS25")
+```
+In this case the library will use the default templates, which should be present in the `data` directory, which should be placed in the current working directory.<br>
+Structure example:<br>
+
+```text
+📁 data
+ ┣ 📄 fs22-map-template.zip
+ ┗ 📄 fs22-texture-schema.json
+```
+
+So it's recommended to download the `data` directory from the repository and place it in the root of your project.<br>
+
+3. Create an instance of the Map class:
+```python
+import maps4fs as mfs
+
+map = mfs.Map(
+  game,
+  (52.5200, 13.4050),  # Latitude and longitude of the map center.
+  distance=1024,  # The DISTANCE from the center to the edge of the map in meters. The map will be 2048x2048 meters.
+  map_directory="path/to/your/map/directory",  # The directory where the map will be saved.
+  blur_seed=5,  # The seed for the blur algorithm. The default value is 5, which means 5 meters.
+  max_height=400  # The maximum height of the map.
+)
+```
+
+4. Generate the map:
+```python
+map.generate()
+```
+
+The map will be saved in the `map_directory` directory.
 
 ## Settings
 Advanced settings are available in the tool's UI under the **Advanced Settings** tab. Here's the list of them:
