@@ -27,6 +27,18 @@ https://www.youtube.com/watch?v=ujwWKHVKsw8
 
 [b]🗺️ Supported map sizes:** 2x2, 4x4, 8x8, 16x16 km.[/b]
 
+[h3]Option 1: Use the web application[/h3]
+In this case you don't need to install anything, just open the link and in a coiple of clicks your map template will be ready.
+
+[olist]
+[*] Open the [url=https://maps4fs.streamlit.app]MAPS4FS StreamLit[/url] web application.
+[*] Fill in the required fields and click on the [b]Generate[/b] button.
+[*] When the map is generated click on the [b]Download[/b] button to get the map.
+[/olist]
+
+[h3]Option 2: Use the Docker container[/h3]
+This approach is for advanced users who want fastet generation and don't mind to copy-paste one commands in the terminal.
+
 [olist]
 [*] Install [url=https://docs.docker.com/get-docker/]Docker[/url] for your OS.
 [*] Run the following command in your terminal: [code]docker run -d -p 8501:8501 iwatkot/maps4fs[/code]
@@ -45,4 +57,4 @@ If you find a bug or have a feature request, please create an issue in the [url=
 
 [i]Happy map making![/i]
 
-[i]If you need some additonal information, please visit the [url=https://github.com/iwatkot/maps4fs]repository page[/url]. You'll find more details on how this tool works and have an opportunity to collaborate in project development even without programming skills just by suggesting new features or reporting bugs.[/i]
+[i]If you need some additonal information or if you're developer and want to use this tool as a Python package, please visit the [url=https://github.com/iwatkot/maps4fs]repository page[/url]. You'll find more details on how this tool works and have an opportunity to collaborate in project development even without programming skills just by suggesting new features or reporting bugs.[/i]
