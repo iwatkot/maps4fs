@@ -1,133 +1,165 @@
 import os
 from time import time
 
+import config
 import streamlit as st
 
 import maps4fs as mfs
 
-working_directory = os.getcwd()
-archives_directory = os.path.join(working_directory, "archives")
-maps_directory = os.path.join(working_directory, "maps")
-os.makedirs(archives_directory, exist_ok=True)
-os.makedirs(maps_directory, exist_ok=True)
-download_path = None
-logger = mfs.Logger(__name__, level="DEBUG")
 
-if "generated" not in st.session_state:
-    st.session_state.generated = False
+class Maps4FS:
+    def __init__(self):
+        self.download_path = None
+        self.logger = mfs.Logger(__name__, level="DEBUG")
 
+        st.set_page_config(page_title="Maps4FS", page_icon="🚜")
+        st.title("Maps4FS")
+        st.write("Generate map templates for Farming Simulator from real places.")
 
-def launch_process():
-    game = mfs.Game.from_code(game_code_input)
+        st.markdown("---")
 
-    try:
-        lat, lon = map(float, lat_lon_input.split(","))
-    except ValueError:
-        st.error("Invalid latitude and longitude!")
-        return
+        if "generated" not in st.session_state:
+            st.session_state.generated = False
 
-    coordinates = (lat, lon)
+        self.add_widgets()
 
-    map_size = map_size_input[0]
-    if not isinstance(map_size, int):
-        st.error("Invalid map size!")
-        return
-
-    distance = int(map_size / 2)
-
-    max_height = max_height_input
-    if not isinstance(max_height, int):
-        st.error("Invalid maximum height!")
-        return
-    blur_seed = blur_seed_input
-    if not isinstance(blur_seed, int):
-        st.error("Invalid blur seed!")
-        return
-
-    session_name = f"{int(time())}"
-
-    st.success("Started map generation...")
-    map_directory = os.path.join(maps_directory, session_name)
-    os.makedirs(map_directory, exist_ok=True)
-
-    mp = mfs.Map(
-        game,
-        coordinates,
-        distance,
-        map_directory,
-        blur_seed=blur_seed,
-        max_height=max_height,
-        logger=logger,
-    )
-    mp.generate()
-    archive_path = mp.pack(os.path.join(archives_directory, session_name))
-
-    global download_path
-    download_path = archive_path
-
-    st.session_state.generated = True
-
-    st.success("Map generation completed!")
-
-
-# UI Elements
-st.write("Select the game for which you want to generate the map:")
-game_code_input = st.selectbox(
-    "Game",
-    options=["FS22"],  # TODO: Return "FS25" when the Giants Editor v10 will be released.
-    key="game_code",
-    label_visibility="collapsed",
-)
-
-st.write("Enter latitude and longitude of the center point of the map:")
-lat_lon_input = st.text_input(
-    "Latitude and Longitude", "45.2602, 19.8086", key="lat_lon", label_visibility="collapsed"
-)
-
-st.write("Select size of the map:")
-map_size_input = st.selectbox(
-    "Map Size",
-    options=[
-        (2048, "2048 x 2048 meters"),
-        (4096, "4096 x 4096 meters"),
-        (8192, "8192 x 8192 meters"),
-        (16384, "16384 x 16384 meters"),
-    ],
-    format_func=lambda x: x[1],
-    key="size",
-    label_visibility="collapsed",
-)
-
-st.write("Enter maximum height:")
-max_height_input = st.number_input(
-    "Maximum Height",
-    value=200,
-    key="max_height",
-    label_visibility="collapsed",
-    min_value=10,
-    max_value=3000,
-)
-
-st.write("Enter blur seed:")
-blur_seed_input = st.number_input(
-    "Blur Seed",
-    value=5,
-    key="blur_seed",
-    label_visibility="collapsed",
-    min_value=1,
-    max_value=1000,
-)
-
-if st.button("Generate", key="launch_btn"):
-    launch_process()
-
-if st.session_state.generated:
-    with open(download_path, "rb") as f:
-        st.download_button(
-            label="Download",
-            data=f,
-            file_name=f"{download_path.split('/')[-1]}",
-            mime="application/zip",
+    def add_widgets(self):
+        # Game selection (FS22 or FS25).
+        st.write("Select the game for which you want to generate the map:")
+        self.game_code_input = st.selectbox(
+            "Game",
+            options=["FS22"],  # TODO: Return "FS25" when the Giants Editor v10 will be released.
+            key="game_code",
+            label_visibility="collapsed",
         )
 
-    st.session_state.generated = False
+        # Latitude and longitude input.
+        st.write("Enter latitude and longitude of the center point of the map:")
+        self.lat_lon_input = st.text_input(
+            "Latitude and Longitude",
+            "45.2602, 19.8086",
+            key="lat_lon",
+            label_visibility="collapsed",
+        )
+
+        # Map size selection.
+        st.write("Select size of the map:")
+        self.map_size_input = st.selectbox(
+            "Map Size",
+            options=[
+                (2048, "2048 x 2048 meters"),
+                (4096, "4096 x 4096 meters"),
+                (8192, "8192 x 8192 meters"),
+                (16384, "16384 x 16384 meters"),
+            ],
+            format_func=lambda x: x[1],
+            key="size",
+            label_visibility="collapsed",
+        )
+
+        # Maximum height input.
+        st.write("Enter maximum height:")
+        self.max_height_input = st.number_input(
+            "Maximum Height",
+            value=200,
+            key="max_height",
+            label_visibility="collapsed",
+            min_value=10,
+            max_value=3000,
+        )
+
+        # Blur seed input.
+        st.write("Enter blur seed:")
+        self.blur_seed_input = st.number_input(
+            "Blur Seed",
+            value=5,
+            key="blur_seed",
+            label_visibility="collapsed",
+            min_value=1,
+            max_value=1000,
+        )
+
+        # Generate button.
+        if st.button("Generate", key="launch_btn"):
+            self.generate_map()
+
+        # Download button.
+        if st.session_state.generated:
+            with open(self.download_path, "rb") as f:
+                st.download_button(
+                    label="Download",
+                    data=f,
+                    file_name=f"{self.download_path.split('/')[-1]}",
+                    mime="application/zip",
+                )
+
+            st.session_state.generated = False
+
+    def generate_map(self):
+        # Read game code from the input widget and create a game object.
+        game = mfs.Game.from_code(self.game_code_input)
+
+        try:
+            # Read latitude and longitude from the input widget
+            # and try to convert them to float values.
+            lat, lon = map(float, self.lat_lon_input.split(","))
+        except ValueError:
+            st.error("Invalid latitude and longitude!")
+            return
+
+        # Prepare a tuple with the coordinates of the center point of the map.
+        coordinates = (lat, lon)
+
+        # Read map size from the input widget.
+        map_size = self.map_size_input[0]
+        if not isinstance(map_size, int):
+            st.error("Invalid map size!")
+            return
+
+        # Distance is half of the map size (from the center to the edge).
+        # Maps are always square, so the distance is the same in both directions.
+        distance = int(map_size / 2)
+
+        # Max height is a multiplier for calculations relative height.
+        max_height = self.max_height_input
+        if not isinstance(max_height, int):
+            st.error("Invalid maximum height!")
+            return
+
+        # Blur seed is used to remove noise in DEM data.
+        # Higher values will result in smoother terrain.
+        blur_seed = self.blur_seed_input
+        if not isinstance(blur_seed, int):
+            st.error("Invalid blur seed!")
+            return
+
+        # Session name will be used for a directory name as well as a zip file name.
+        session_name = str(time()).replace(".", "_")
+
+        st.info("Started map generation...", icon="⏳")
+        map_directory = os.path.join(config.MAPS_DIRECTORY, session_name)
+        os.makedirs(map_directory, exist_ok=True)
+
+        # Create an instance of the Map class and generate the map.
+        mp = mfs.Map(
+            game,
+            coordinates,
+            distance,
+            map_directory,
+            blur_seed=blur_seed,
+            max_height=max_height,
+            logger=self.logger,
+        )
+        mp.generate()
+
+        # Pack the generated map into a zip archive.
+        archive_path = mp.pack(os.path.join(config.ARCHIVES_DIRECTORY, session_name))
+
+        self.download_path = archive_path
+
+        st.session_state.generated = True
+
+        st.success("Map generation completed!", icon="✅")
+
+
+ui = Maps4FS()
