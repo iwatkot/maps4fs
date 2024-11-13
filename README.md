@@ -29,11 +29,11 @@
 🔃 Farming Simulator 25 (changes in the library are ready, waiting for the Giants to release the Giants Editor v10)<br>
 
 ## Quick Start
-For those, who don't want to read anything, here you go:<br>
-For most users:<br>
-**Option 1:** open the [maps4fs](https://maps4fs.streamlit.app) on StreamLit a map template in a few clicks.<br>
+There are several ways to use the tool. You obviously need the **first one**, but you can choose any of the others depending on your needs.<br>
+### 🚜 For most users
+**Option 1:** open the [maps4fs](https://maps4fs.streamlit.app) on StreamLit and generate a map template in a few clicks.<br>
 
-For advanced users:<br>
+### 😎 For advanced users
 **Option 2:** run the Docker version in your browser. Launch the following command in your terminal:
 ```bash
 docker run -d -p 8501:8501 iwatkot/maps4fs
@@ -41,7 +41,7 @@ docker run -d -p 8501:8501 iwatkot/maps4fs
 And open [http://localhost:8501](http://localhost:8501) in your browser.<br>
 If you don't know how to use Docker, navigate to the [Docker version](#option-2-docker-version), it's really simple.<br>
 
-For developers:<br>
+### 🤯 For developers
 **Option 3:** Python package. Install the package using the following command:
 ```bash
 pip install maps4fs
