@@ -9,6 +9,7 @@ WORKDIR /usr/src/app
 
 COPY data /usr/src/app/data
 COPY webui /usr/src/app/webui
+COPY requirements.txt /usr/src/app/requirements.txt
 
 RUN pip install -r requirements.txt
 
