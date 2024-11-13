@@ -9,9 +9,8 @@ WORKDIR /usr/src/app
 
 COPY data /usr/src/app/data
 COPY webui /usr/src/app/webui
-COPY requirements.txt /usr/src/app/requirements.txt
 
-RUN pip install -r requirements.txt
+RUN pip install opencv-python osmnx<2.0.0 rasterio tqdm streamlit maps4fs
 
 EXPOSE 8501
 
