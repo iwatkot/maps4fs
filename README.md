@@ -30,7 +30,7 @@
 
 ## Quick Start
 For those, who don't want to read anything, here you go:<br>
-**Option 1:** launch the [@maps4fs](https://t.me/maps4fsbot) Telegram bot and generate a map template in a few clicks.<br>
+**Option 1:** open the [maps4fs](https://maps4fs.streamlit.app) on StreamLit a map template in a few clicks.<br>
 **Option 2:** run the Docker version in your browser. Launch the following command in your terminal:
 ```bash
 docker run -d -p 8501:8501 iwatkot/maps4fs
@@ -54,20 +54,17 @@ You'll find detailed instructions on how to run the project below. But if you pr
 <a href="https://www.youtube.com/watch?v=ujwWKHVKsw8" target="_blank"><img src="https://github.com/user-attachments/assets/6dbbbc71-d04f-40b2-9fba-81e5e4857407"/></a>
 <i>Video tutorial: How to generate a Farming Simulator 22 map from real-world data.</i>
 
-### Option 1: Telegram bot
-**🗺️ Supported map sizes:** 2x2, 4x4 km.<br>
+### Option 1: StreamLit
+**🗺️ Supported map sizes:** 2x2, 4x4, 8x8, 16x16 km.<br>
 🟢 Recommended for all users, you don't need to install anything.<br>
 Using Telegram bot [@maps4fs](https://t.me/maps4fsbot).<br>
-Note: due to CPU and RAM limitations of the hosting, only 2x2 and 4x4 km maps are available. If you need bigger maps, use the [Docker version](#option-2-docker-version).<br>
-
-![Telegram bot](https://github.com/iwatkot/maps4fs/assets/118521851/ede69fe8-1a34-4ede-908f-52c9dc355ae4)
-<br>
+Note: due to CPU and RAM limitations of the hosting, the generation may take some time. If you need faster processing, use the [Docker version](#option-2-docker-version).<br>
 
 Using it is easy and doesn't require any guides. Enjoy!
 
 ### Option 2: Docker version
 **🗺️ Supported map sizes:** 2x2, 4x4, 8x8, 16x16 km.<br>
-🟢 Recommended for users who need bigger maps, very simple installation.<br>
+🟢 Recommended for users who want faster processing, very simple installation.<br>
 You can launch the project with minimalistic UI in your browser using Docker. Follow these steps:
 
 1. Install [Docker](https://docs.docker.com/get-docker/) for your OS.
@@ -79,7 +76,7 @@ docker run -d -p 8501:8501 iwatkot/maps4fs
 4. Fill in the required fields and click on the `Generate` button.
 5. When the map is generated click on the `Download` button to get the map.
 
-![WebUI](https://github.com/user-attachments/assets/b80c458b-29ea-4790-a640-8fa3b5550610)
+![WebUI](https://github.com/user-attachments/assets/e3b48c9d-7b87-4ce7-8ad7-98332a558a88)
 
 ## Settings
 Advanced settings are available in the tool's UI under the **Advanced Settings** tab. Here's the list of them:
