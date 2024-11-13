@@ -2,7 +2,6 @@ opencv-python
 opencv-python-headless
 osmnx<2.0.0
 rasterio
-python_dotenv
 tqdm
 streamlit
 maps4fs

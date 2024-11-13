@@ -1,4 +1,4 @@
-name: Docker Image Bot
+name: Build and push Docker image
 
 on:
   release:
@@ -23,8 +23,5 @@ jobs:
       with:
         context: .
         push: true
-        tags: iwatkot/maps4fsbot:latest
-        file: ./docker/Dockerfile_bot
-        build-args: |
-          BOT_TOKEN=${{ secrets.BOT_TOKEN }}
-          TELEGRAM_ADMIN_ID=${{ secrets.TELEGRAM_ADMIN_ID }}
+        tags: iwatkot/maps4fs:latest
+        file: ./docker/Dockerfile

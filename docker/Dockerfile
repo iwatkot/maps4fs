@@ -9,9 +9,8 @@ WORKDIR /usr/src/app
 
 COPY data /usr/src/app/data
 COPY webui /usr/src/app/webui
-COPY docker /usr/src/app/docker
 
-RUN pip install -r docker/requirements_webui.txt
+RUN pip install -r requirements.txt
 
 EXPOSE 8501
 

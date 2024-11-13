@@ -25,18 +25,6 @@
             "env": {
               "PYTHONPATH": "${workspaceFolder}:${PYTHONPATH}"
             }
-        },
-        {
-            "name": "Linux / Mac  Bot",
-            "type": "python",
-            "request": "launch",
-            "program": "bot/bot.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}:${PYTHONPATH}",
-                "LOG_LEVEL": "DEBUG",
-            }
         }
     ]
 }
