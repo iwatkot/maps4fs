@@ -1,4 +1,4 @@
-# opencv-python
+opencv-python
 opencv-python-headless
 osmnx<2.0.0
 rasterio
