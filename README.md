@@ -47,7 +47,7 @@ If you don't know how to use Docker, navigate to the [Docker version](#option-2-
 ```bash
 pip install maps4fs
 ```
-And refer to the 
+And refer to the [Python package](#option-3-python-package) section to learn how to use it.<br>
 
 ## Overview
 The core idea is coming from the awesome [maps4cim](https://github.com/klamann/maps4cim) project.<br>
