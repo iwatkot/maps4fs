@@ -372,7 +372,7 @@ class Texture(Component):
             for polygon in self.polygons(layer.tags, layer.width):  # type: ignore
                 cv2.fillPoly(img, [polygon], color=255)  # type: ignore
             cv2.imwrite(layer_path, img)
-            self.logger.debug("Texture %s saved.", layer.path)
+            self.logger.debug("Texture %s saved.", layer_path)
 
     def get_relative_x(self, x: float) -> int:
         """Converts UTM X coordinate to relative X coordinate in map image.
