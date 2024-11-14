@@ -16,134 +16,6 @@ from shapely.geometry.base import BaseGeometry  # type: ignore
 
 from maps4fs.generator.component import Component
 
-# region constants
-# texture = {
-#     "name": "concrete",
-#     "count": 4,
-#     "tags": {"building": True},
-#     "width": 8,
-#     "color": (130, 130, 130),
-# }
-
-# textures = [
-#     {
-#         "name": "animalMud",
-#         "count": 4,
-#     },
-#     {
-#         "name": "asphalt",
-#         "count": 4,
-#         "tags": {"highway": ["motorway", "trunk", "primary"]},
-#         "width": 8,
-#         "color": (70, 70, 70),
-#     },
-#     {
-#         "name": "cobbleStone",
-#         "count": 4,
-#     },
-#     {
-#         "name": "concrete",
-#         "count": 4,
-#         "tags": {"building": True},
-#         "width": 8,
-#         "color": (130, 130, 130),
-#     },
-#     {
-#         "name": "concreteRubble",
-#         "count": 4,
-#     },
-#     {
-#         "name": "concreteTiles",
-#         "count": 4,
-#     },
-#     {
-#         "name": "dirt",
-#         "count": 4,
-#     },
-#     {
-#         "name": "dirtDark",
-#         "count": 2,
-#         "tags": {"highway": ["unclassified", "residential", "track"]},
-#         "width": 2,
-#         "color": (33, 67, 101),
-#     },
-#     {
-#         "name": "forestGround",
-#         "count": 4,
-#         "tags": {"landuse": "farmland"},
-#         "color": (47, 107, 85),
-#     },
-#     {
-#         "name": "forestGroundLeaves",
-#         "count": 4,
-#     },
-#     {
-#         "name": "grass",
-#         "count": 4,
-#         "tags": {"natural": "grassland"},
-#         "color": (34, 255, 34),
-#     },
-#     {
-#         "name": "grassDirt",
-#         "count": 4,
-#         "tags": {"natural": ["wood", "tree_row"]},
-#         "width": 2,
-#         "color": (0, 252, 124),
-#     },
-#     {
-#         "name": "gravel",
-#         "count": 4,
-#         "tags": {"highway": ["secondary", "tertiary", "road"]},
-#         "width": 4,
-#         "color": (140, 180, 210),
-#     },
-#     {
-#         "name": "groundBricks",
-#         "count": 4,
-#     },
-#     {
-#         "name": "mountainRock",
-#         "count": 4,
-#     },
-#     {
-#         "name": "mountainRockDark",
-#         "count": 4,
-#     },
-#     {
-#         "name": "riverMud",
-#         "count": 4,
-#     },
-#     {
-#         "name": "waterPuddle",
-#         "count": 0,
-#         "tags": {"natural": "water", "waterway": True},
-#         "width": 10,
-#         "color": (255, 20, 20),
-#     },
-# ]
-
-# TEXTURES = {
-# ?     "animalMud": 4,
-# ?     "asphalt": 4,
-# ?     "cobbleStone": 4,
-# ?     "concrete": 4,
-#     "concreteRubble": 4,
-#     "concreteTiles": 4,
-#     "dirt": 4,
-#     "dirtDark": 2,
-#     "forestGround": 4,
-#     "forestGroundLeaves": 4,
-#     "grass": 4,
-#     "grassDirt": 4,
-#     "gravel": 4,
-#     "groundBricks": 4,
-#     "mountainRock": 4,
-#     "mountainRockDark": 4,
-#     "riverMud": 4,
-#     "waterPuddle": 0,
-# }
-# endregion
-
 
 # pylint: disable=R0902
 class Texture(Component):
@@ -365,6 +237,9 @@ class Texture(Component):
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
         for layer in self.layers:
+            if not layer.tags:
+                self.logger.debug("Layer %s has no tags, there's nothing to draw.", layer.name)
+                continue
             layer_path = layer.path(self._weights_dir)
             self.logger.debug("Drawing layer %s.", layer_path)
 
