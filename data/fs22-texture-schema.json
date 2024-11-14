@@ -17,7 +17,7 @@
   {
     "name": "concrete",
     "count": 4,
-    "tags": { "building": "true" },
+    "tags": { "building": true },
     "width": 8,
     "color": [130, 130, 130]
   },
@@ -89,7 +89,7 @@
   {
     "name": "waterPuddle",
     "count": 0,
-    "tags": { "natural": "water", "waterway": "true" },
+    "tags": { "natural": "water", "waterway": true },
     "width": 10,
     "color": [255, 20, 20]
   }
