@@ -84,7 +84,10 @@ class DEM(Component):
             f"Min: {data.min()}, max: {data.max()}."
         )
 
-        resampled_data = cv2.resize(data, dem_output_resolution, interpolation=cv2.INTER_LINEAR)
+        resampled_data = cv2.resize(
+            data, dem_output_resolution, interpolation=cv2.INTER_LINEAR
+        ).astype("uint16")
+
         self.logger.debug(
             f"DEM data was resampled. Shape: {resampled_data.shape}, "
             f"dtype: {resampled_data.dtype}. "
