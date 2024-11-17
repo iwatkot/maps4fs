@@ -47,11 +47,6 @@ This approach is for advanced users who want fastet generation and don't mind to
 [*] When the map is generated click on the [b]Download[/b] button to get the map.
 [/olist]
 
-[h2]Settings[/h2]
-There are some additional settings (you can ignore them and use the default values):
-[b]Maximum Height[/b] - the maximum height of the terrain in meters. Select smaller values for plain-like maps and bigger values for mountainous maps. You may need to experiment with this value to get the desired result.
-[b]Blur Seed[/b] - the seed for the blur algorithm. The default value is 5, which means 5 meters. The bigger the value, the smoother the map will be. The smaller the value, the more detailed the map will be. Keep in mind that for some regions, where terrain is bumpy, disabling the blur algorithm may lead to a very rough map. So, I recommend leaving this value as it is.
-
 [h2]Bugs and Feature Requests[/h2]
 If you find a bug or have a feature request, please create an issue in the [url=https://github.com/iwatkot/maps4fs/issues]GitHub repository[/url] or contact me directly in Telegram: [url=https://t.me/iwatkot]@iwatkot[/url].
 

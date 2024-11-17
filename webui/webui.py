@@ -58,28 +58,6 @@ class Maps4FS:
             label_visibility="collapsed",
         )
 
-        # Maximum height input.
-        st.write("Enter maximum height:")
-        self.max_height_input = st.number_input(
-            "Maximum Height",
-            value=200,
-            key="max_height",
-            label_visibility="collapsed",
-            min_value=10,
-            max_value=3000,
-        )
-
-        # Blur seed input.
-        st.write("Enter blur seed:")
-        self.blur_seed_input = st.number_input(
-            "Blur Seed",
-            value=5,
-            key="blur_seed",
-            label_visibility="collapsed",
-            min_value=1,
-            max_value=1000,
-        )
-
         # Add an empty container for status messages.
         self.status_container = st.empty()
 
@@ -132,19 +110,6 @@ class Maps4FS:
         # Maps are always square, so the distance is the same in both directions.
         distance = int(map_size / 2)
 
-        # Max height is a multiplier for calculations relative height.
-        max_height = self.max_height_input
-        if not isinstance(max_height, int):
-            st.error("Invalid maximum height!")
-            return
-
-        # Blur seed is used to remove noise in DEM data.
-        # Higher values will result in smoother terrain.
-        blur_seed = self.blur_seed_input
-        if not isinstance(blur_seed, int):
-            st.error("Invalid blur seed!")
-            return
-
         # Session name will be used for a directory name as well as a zip file name.
         session_name = str(time()).replace(".", "_")
 
@@ -159,8 +124,6 @@ class Maps4FS:
             coordinates,
             distance,
             map_directory,
-            blur_seed=blur_seed,
-            max_height=max_height,
             logger=self.logger,
         )
         mp.generate()

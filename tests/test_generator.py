@@ -1,15 +1,13 @@
 import json
 import os
 import shutil
-from random import choice, randint
+from random import choice
 from time import time
 
 import cv2
 
 from maps4fs import Map
 from maps4fs.generator.game import Game
-
-# from maps4fs.generator.texture import TEXTURES
 
 working_directory = os.getcwd()
 
@@ -38,24 +36,6 @@ def random_distance() -> int:
     """
     distances_cases = [1024, 2048, 4096, 8192]
     return choice(distances_cases[:2])  # Larger maps are too slow for automated tests.
-
-
-def random_blur_seed() -> int:
-    """Return random blur seed.
-
-    Returns:
-        int: Random blur seed.
-    """
-    return randint(1, 30)
-
-
-def random_max_height() -> int:
-    """Return random max height.
-
-    Returns:
-        int: Random max height.
-    """
-    return randint(100, 3000)
 
 
 def map_directory() -> str:
@@ -89,8 +69,6 @@ def test_map():
         game = Game.from_code(game_code)
         for coordinates in coordinates_cases:
             distance = random_distance()
-            blur_seed = random_blur_seed()
-            max_height = random_max_height()
             directory = map_directory()
 
             map = Map(
@@ -98,8 +76,6 @@ def test_map():
                 coordinates=coordinates,
                 distance=distance,
                 map_directory=directory,
-                blur_seed=blur_seed,
-                max_height=max_height,
             )
 
             map.generate()
@@ -142,8 +118,6 @@ def test_map_preview():
     """Test Map preview generation."""
     case = choice(coordinates_cases)
     distance = random_distance()
-    blur_seed = random_blur_seed()
-    max_height = random_max_height()
 
     game_code = choice(game_code_cases)
     game = Game.from_code(game_code)
@@ -154,8 +128,6 @@ def test_map_preview():
         coordinates=case,
         distance=distance,
         map_directory=directory,
-        blur_seed=blur_seed,
-        max_height=max_height,
     )
     map.generate()
     previews_paths = map.previews()
@@ -169,8 +141,6 @@ def test_map_pack():
     """Test Map packing into zip archive."""
     case = choice(coordinates_cases)
     distance = random_distance()
-    blur_seed = random_blur_seed()
-    max_height = random_max_height()
 
     game_code = choice(game_code_cases)
     game = Game.from_code(game_code)
@@ -181,8 +151,6 @@ def test_map_pack():
         coordinates=case,
         distance=distance,
         map_directory=directory,
-        blur_seed=blur_seed,
-        max_height=max_height,
     )
     map.generate()
     archive_name = os.path.join(base_directory, "archive")

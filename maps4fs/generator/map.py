@@ -20,8 +20,6 @@ class Map:
         coordinates (tuple[float, float]): Coordinates of the center of the map.
         distance (int): Distance from the center of the map.
         map_directory (str): Path to the directory where map files will be stored.
-        blur_seed (int): Seed used for blur effect.
-        max_height (int): Maximum height of the map.
         logger (Any): Logger instance
     """
 
@@ -31,8 +29,6 @@ class Map:
         coordinates: tuple[float, float],
         distance: int,
         map_directory: str,
-        blur_seed: int,
-        max_height: int,
         logger: Any = None,
     ):
         self.game = game
@@ -55,15 +51,6 @@ class Map:
         except Exception as e:
             raise RuntimeError(f"Can not unpack map template due to error: {e}") from e
 
-        # Blur seed should be positive and odd.
-        if blur_seed <= 0:
-            raise ValueError("Blur seed should be positive.")
-        if blur_seed % 2 == 0:
-            blur_seed += 1
-
-        self.blur_seed = blur_seed
-        self.max_height = max_height
-
     def generate(self) -> None:
         """Launch map generation using all components."""
         with tqdm(total=len(self.game.components), desc="Generating map...") as pbar:
@@ -74,8 +61,6 @@ class Map:
                     self.distance,
                     self.map_directory,
                     self.logger,
-                    blur_seed=self.blur_seed,
-                    max_height=self.max_height,
                 )
                 try:
                     component.process()

@@ -66,31 +66,12 @@ The generator also creates a multiple previews of the map. Here's the list of th
 2. Grayscale DEM preview - a grayscale image of the height map (as it is).
 3. Colored DEM preview - a colored image of the height map (from blue to red). The blue color represents the lowest point, and the red color represents the highest point.
 
-So the colored DEM preview can be very handy when you're trying to find the best value for the `max_height` parameter. Learn more about it in the [Settings](#settings) section.
+![16 km map](https://github.com/user-attachments/assets/82543bcc-1289-479e-bd13-85a8890f0485)<br>
+*Preview of a 16 km map with a 500-meter mountain in the middle of it.*<br>
 
-![Previews](https://github.com/user-attachments/assets/69609169-834b-4269-ac6a-9a5c56b629dc)<br>
-In the second row of the image you can see the following images:<br>
-1. DEM preview with `max_height=200`.
-2. Colored DEM preview with `max_height=200`.
-3. Colored DEM preview with `max_height=50`.
-
-As you can see there's a huge difference between images 2 and 3. The third (with lower `max_height`) will have a higher terrain contrast, and the second one will have lower differences between the terrain heights.<br>
-There's no like "in real world" option, because FS system of coordinates does not work in meters or something like that when talking about DEM. So you need to experiment with the `max_height` parameter to get the desired result. To clarify: in the example above the difference on the platue is about 80 meters, so `max_height=50` made this like super mountainous terrain, and `max_height=200` made it like a plain.
-
-<details>
-  <summary>Preview of 16 x 16 km map</summary>
-
-  <br>
-
-  ![16 km map](https://github.com/user-attachments/assets/82543bcc-1289-479e-bd13-85a8890f0485)<br>
-
-  Here's one more example of a giant 16 km map with a 500-meter mountain in the middle of it.<br>
-  Parameters:
-  - coordinates: 45.15, 19.71
-  - size: 16 x 16 km
-  - maximum height: 400
-  - blur seed: 11
-</details>
+Parameters:
+- coordinates: 45.15, 19.71
+- size: 16 x 16 km
 
 ## How-To-Run
 
@@ -157,8 +138,6 @@ map = mfs.Map(
   (52.5200, 13.4050),  # Latitude and longitude of the map center.
   distance=1024,  # The DISTANCE from the center to the edge of the map in meters. The map will be 2048x2048 meters.
   map_directory="path/to/your/map/directory",  # The directory where the map will be saved.
-  blur_seed=5,  # The seed for the blur algorithm. The default value is 5, which means 5 meters.
-  max_height=400  # The maximum height of the map.
 )
 ```
 
@@ -168,11 +147,6 @@ map.generate()
 ```
 
 The map will be saved in the `map_directory` directory.
-
-## Settings
-Advanced settings are available in the tool's UI under the **Advanced Settings** tab. Here's the list of them:
-- `max_height` - the maximum height of the map. The default value is 400. Select smaller values for plain-like maps and bigger values for mountainous maps. You may need to experiment with this value to get the desired result.
-- `blur_seed` - the seed for the blur algorithm. The default value is 5, which means 5 meters. The bigger the value, the smoother the map will be. The smaller the value, the more detailed the map will be. Keep in mind that for some regions, where terrain is bumpy, disabling the blur algorithm may lead to a very rough map. So, I recommend leaving this value as it is.
 
 ## Features
 - Allows to enter a location by lat and lon (e.g. from Google Maps).

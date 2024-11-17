@@ -29,9 +29,6 @@ class DEM(Component):
     """
 
     def preprocess(self) -> None:
-        self._blur_seed: int = self.kwargs.get("blur_seed") or 5
-        self._max_height: int = self.kwargs.get("max_height") or 200
-
         self._dem_path = self.game.dem_file_path(self.map_directory)
         self.temp_dir = "temp"
         self.hgt_dir = os.path.join(self.temp_dir, "hgt")
@@ -87,19 +84,17 @@ class DEM(Component):
             f"Min: {data.min()}, max: {data.max()}."
         )
 
-        normalized_data = self._normalize_dem(data)
-
         resampled_data = cv2.resize(
-            normalized_data, dem_output_resolution, interpolation=cv2.INTER_LINEAR
-        )
+            data, dem_output_resolution, interpolation=cv2.INTER_LINEAR
+        ).astype("uint16")
+
         self.logger.debug(
             f"DEM data was resampled. Shape: {resampled_data.shape}, "
             f"dtype: {resampled_data.dtype}. "
             f"Min: {resampled_data.min()}, max: {resampled_data.max()}."
         )
 
-        blurred_data = cv2.GaussianBlur(resampled_data, (self._blur_seed, self._blur_seed), 0)
-        cv2.imwrite(self._dem_path, blurred_data)
+        cv2.imwrite(self._dem_path, resampled_data)
         self.logger.debug("DEM data was saved to %s.", self._dem_path)
 
     def _tile_info(self, lat: float, lon: float) -> tuple[str, str]:
@@ -181,30 +176,6 @@ class DEM(Component):
         dem_data = np.zeros(dem_output_resolution, dtype="uint16")
         cv2.imwrite(self._dem_path, dem_data)  # pylint: disable=no-member
         self.logger.warning("DEM data filled with zeros and saved to %s.", self._dem_path)
-
-    def _normalize_dem(self, data: np.ndarray) -> np.ndarray:
-        """Normalize DEM data to 16-bit unsigned integer using max height from settings.
-
-        Args:
-            data (np.ndarray): DEM data from SRTM file after cropping.
-
-        Returns:
-            np.ndarray: Normalized DEM data.
-        """
-        max_dev = data.max() - data.min()
-        scaling_factor = max_dev / self._max_height if max_dev < self._max_height else 1
-        adjusted_max_height = int(65535 * scaling_factor)
-        self.logger.debug(
-            f"Maximum deviation: {max_dev}. Scaling factor: {scaling_factor}. "
-            f"Adjusted max height: {adjusted_max_height}."
-        )
-        normalized_data = (
-            (data - data.min()) / (data.max() - data.min()) * adjusted_max_height
-        ).astype("uint16")
-        self.logger.debug(
-            f"DEM data was normalized to {normalized_data.min()} - {normalized_data.max()}."
-        )
-        return normalized_data
 
     def grayscale_preview(self) -> str:
         """Converts DEM image to grayscale RGB image and saves it to the map directory.
