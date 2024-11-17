@@ -77,6 +77,21 @@ In the second row of the image you can see the following images:<br>
 As you can see there's a huge difference between images 2 and 3. The third (with lower `max_height`) will have a higher terrain contrast, and the second one will have lower differences between the terrain heights.<br>
 There's no like "in real world" option, because FS system of coordinates does not work in meters or something like that when talking about DEM. So you need to experiment with the `max_height` parameter to get the desired result. To clarify: in the example above the difference on the platue is about 80 meters, so `max_height=50` made this like super mountainous terrain, and `max_height=200` made it like a plain.
 
+<details>
+  <summary>Preview of 16 x 16 km map</summary>
+
+  <br>
+
+  ![16 km map](https://github.com/user-attachments/assets/82543bcc-1289-479e-bd13-85a8890f0485)<br>
+
+  Here's one more example of a giant 16 km map with a 500-meter mountain in the middle of it.<br>
+  Parameters:
+  - coordinates: 45.15, 19.71
+  - size: 16 x 16 km
+  - maximum height: 400
+  - blur seed: 11
+</details>
+
 ## How-To-Run
 
 You'll find detailed instructions on how to run the project below. But if you prefer video tutorials, here's one for you:
