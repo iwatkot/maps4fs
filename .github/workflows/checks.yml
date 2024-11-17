@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install mypy pylint opencv-python osmnx rasterio python_dotenv tqdm types-tqdm pandas-stubs types-requests pytest pytest-cov
+          pip install mypy pylint opencv-python osmnx rasterio tqdm types-tqdm pandas-stubs types-requests pytest pytest-cov
 
       - name: Run mypy to generate cache
         run: mypy maps4fs || true
