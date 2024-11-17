@@ -53,3 +53,11 @@ class Component:
             NotImplementedError: If the method is not implemented in the child class.
         """
         raise NotImplementedError
+
+    def previews(self) -> list[str]:
+        """Returns a list of paths to the preview images. Must be implemented in the child class.
+
+        Raises:
+            NotImplementedError: If the method is not implemented in the child class.
+        """
+        raise NotImplementedError
