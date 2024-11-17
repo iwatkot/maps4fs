@@ -205,3 +205,43 @@ class DEM(Component):
             f"DEM data was normalized to {normalized_data.min()} - {normalized_data.max()}."
         )
         return normalized_data
+
+    def grayscale_preview(self) -> str:
+        """Converts DEM image to grayscale RGB image and saves it to the map directory.
+        Returns path to the preview image.
+
+        Returns:
+            str: Path to the preview image.
+        """
+        rgb_dem_path = self._dem_path.replace(".png", "_grayscale.png")
+        dem_data = cv2.imread(self._dem_path, cv2.IMREAD_GRAYSCALE)
+        dem_data_rgb = cv2.cvtColor(dem_data, cv2.COLOR_GRAY2RGB)
+        cv2.imwrite(rgb_dem_path, dem_data_rgb)
+        return rgb_dem_path
+
+    def colored_preview(self) -> str:
+        """Converts DEM image to colored RGB image and saves it to the map directory.
+        Returns path to the preview image.
+
+        Returns:
+            list[str]: List with a single path to the DEM file
+        """
+
+        colored_dem_path = self._dem_path.replace(".png", "_colored.png")
+        dem_data = cv2.imread(self._dem_path, cv2.IMREAD_GRAYSCALE)
+
+        # Normalize the DEM data to the range [0, 255]
+        # dem_data_normalized = cv2.normalize(dem_data, None, 0, 255, cv2.NORM_MINMAX)
+
+        dem_data_colored = cv2.applyColorMap(dem_data, cv2.COLORMAP_JET)
+
+        cv2.imwrite(colored_dem_path, dem_data_colored)
+        return colored_dem_path
+
+    def previews(self) -> list[str]:
+        """Get list of preview images.
+
+        Returns:
+            list[str]: List of preview images.
+        """
+        return [self.grayscale_preview(), self.colored_preview()]

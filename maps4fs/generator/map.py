@@ -6,11 +6,12 @@ from typing import Any
 
 from tqdm import tqdm
 
+from maps4fs.generator.component import Component
 from maps4fs.generator.game import Game
 from maps4fs.logger import Logger
 
 
-# pylint: disable=R0913
+# pylint: disable=R0913, R0902
 class Map:
     """Class used to generate map using all components.
 
@@ -35,6 +36,7 @@ class Map:
         logger: Any = None,
     ):
         self.game = game
+        self.components: list[Component] = []
         self.coordinates = coordinates
         self.distance = distance
         self.map_directory = map_directory
@@ -84,7 +86,8 @@ class Map:
                         e,
                     )
                     raise e
-                setattr(self, game_component.__name__.lower(), component)
+                # setattr(self, game_component.__name__.lower(), component)
+                self.components.append(component)
 
                 pbar.update(1)
 
@@ -94,7 +97,13 @@ class Map:
         Returns:
             list[str]: List of preview images.
         """
-        return self.texture.previews()  # type: ignore # pylint: disable=no-member
+        # texture_previews = self.texture.previews()  # type: ignore # pylint: disable=no-member
+        # dem_previews = self.dem.previews()  # type: ignore # pylint: disable=no-member
+        # return texture_previews + dem_previews
+        previews = []
+        for component in self.components:
+            previews.extend(component.previews())
+        return previews
 
     def pack(self, archive_name: str) -> str:
         """Pack map directory to zip archive.

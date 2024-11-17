@@ -42,3 +42,12 @@ class Config(Component):
             self.logger.debug("Map size set to %sx%s in Map XML file.", width, height)
         tree.write(self._map_xml_path)
         self.logger.debug("Map XML file saved to: %s.", self._map_xml_path)
+
+    def previews(self) -> list[str]:
+        """Returns a list of paths to the preview images (empty list).
+        The component does not generate any preview images so it returns an empty list.
+
+        Returns:
+            list[str]: An empty list.
+        """
+        return []

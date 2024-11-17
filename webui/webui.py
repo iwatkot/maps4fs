@@ -87,7 +87,7 @@ class Maps4FS:
         self.buttons_container = st.empty()
 
         # Add an empty container for preview image.
-        self.preview_container = st.empty()
+        self.preview_container = st.container()
 
         # Generate button.
         with self.buttons_container:
@@ -181,15 +181,23 @@ class Maps4FS:
     def show_preview(self, mp: mfs.Map) -> None:
         # Get a list of all preview images.
         full_preview_paths = mp.previews()
+        preview_captions = [
+            "Preview of the texture map.",
+            "Preview of the DEM (elevation) map in grayscale (original).",
+            "Preview of the DEM (elevation) map in colored mode (only for demonstration).",
+        ]
         if not full_preview_paths:
             return
 
-        # Pick the first image from the list.
-        full_previe_path = full_preview_paths[0]
-        preview = Image.open(full_previe_path)
-
         with self.preview_container:
-            st.image(preview, caption="Preview of the generated map", use_container_width=True)
+            for caption, full_preview_path in zip(preview_captions, full_preview_paths):
+                if not os.path.isfile(full_preview_path):
+                    continue
+                try:
+                    image = Image.open(full_preview_path)
+                    st.image(image, use_container_width=True, caption=caption)
+                except Exception:
+                    continue
 
 
 ui = Maps4FS()
