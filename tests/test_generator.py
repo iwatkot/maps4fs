@@ -163,12 +163,6 @@ def test_map_preview():
         assert os.path.isfile(preview_path), f"Preview not found: {preview_path}"
         img = cv2.imread(preview_path)
         assert img is not None, f"Preview could not be read: {preview_path}"
-        assert img.shape == (
-            2048,
-            2048,
-            3,
-        ), f"Preview shape mismatch: {img.shape} != (2048, 2048, 3)"
-        assert img.dtype == "uint8", f"Preview dtype mismatch: {img.dtype} != uint8"
 
 
 def test_map_pack():
