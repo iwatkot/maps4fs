@@ -3,6 +3,7 @@ from time import time
 
 import config
 import streamlit as st
+from PIL import Image
 
 import maps4fs as mfs
 
@@ -23,7 +24,7 @@ class Maps4FS:
 
         self.add_widgets()
 
-    def add_widgets(self):
+    def add_widgets(self) -> None:
         # Game selection (FS22 or FS25).
         st.write("Select the game for which you want to generate the map:")
         self.game_code_input = st.selectbox(
@@ -79,23 +80,34 @@ class Maps4FS:
             max_value=1000,
         )
 
+        # Add an empty container for status messages.
+        self.status_container = st.empty()
+
+        # Add an empty container for buttons.
+        self.buttons_container = st.empty()
+
+        # Add an empty container for preview image.
+        self.preview_container = st.empty()
+
         # Generate button.
-        if st.button("Generate", key="launch_btn"):
-            self.generate_map()
+        with self.buttons_container:
+            if st.button("Generate", key="launch_btn"):
+                self.generate_map()
 
         # Download button.
         if st.session_state.generated:
             with open(self.download_path, "rb") as f:
-                st.download_button(
-                    label="Download",
-                    data=f,
-                    file_name=f"{self.download_path.split('/')[-1]}",
-                    mime="application/zip",
-                )
+                with self.buttons_container:
+                    st.download_button(
+                        label="Download",
+                        data=f,
+                        file_name=f"{self.download_path.split('/')[-1]}",
+                        mime="application/zip",
+                    )
 
             st.session_state.generated = False
 
-    def generate_map(self):
+    def generate_map(self) -> None:
         # Read game code from the input widget and create a game object.
         game = mfs.Game.from_code(self.game_code_input)
 
@@ -136,7 +148,8 @@ class Maps4FS:
         # Session name will be used for a directory name as well as a zip file name.
         session_name = str(time()).replace(".", "_")
 
-        st.info("Started map generation...", icon="⏳")
+        # st.info("Started map generation...", icon="⏳")
+        self.status_container.info("Started map generation...", icon="⏳")
         map_directory = os.path.join(config.MAPS_DIRECTORY, session_name)
         os.makedirs(map_directory, exist_ok=True)
 
@@ -152,6 +165,9 @@ class Maps4FS:
         )
         mp.generate()
 
+        # Create a preview image.
+        self.show_preview(mp)
+
         # Pack the generated map into a zip archive.
         archive_path = mp.pack(os.path.join(config.ARCHIVES_DIRECTORY, session_name))
 
@@ -159,7 +175,21 @@ class Maps4FS:
 
         st.session_state.generated = True
 
-        st.success("Map generation completed!", icon="✅")
+        # st.success("Map generation completed!", icon="✅")
+        self.status_container.success("Map generation completed!", icon="✅")
+
+    def show_preview(self, mp: mfs.Map) -> None:
+        # Get a list of all preview images.
+        full_preview_paths = mp.previews()
+        if not full_preview_paths:
+            return
+
+        # Pick the first image from the list.
+        full_previe_path = full_preview_paths[0]
+        preview = Image.open(full_previe_path)
+
+        with self.preview_container:
+            st.image(preview, caption="Preview of the generated map", use_container_width=True)
 
 
 ui = Maps4FS()
