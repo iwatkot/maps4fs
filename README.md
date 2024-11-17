@@ -59,6 +59,24 @@ So, if you're new to map making, here's a quick overview of the process:
 3. Open the map template in the Giants Editor.
 4. Now you can start creating your map (adding roads, fields, buildings, etc.).
 
+### Previews
+
+The generator also creates a multiple previews of the map. Here's the list of them:
+1. General preview - merging all the layers into one image with different colors.
+2. Grayscale DEM preview - a grayscale image of the height map (as it is).
+3. Colored DEM preview - a colored image of the height map (from blue to red). The blue color represents the lowest point, and the red color represents the highest point.
+
+So the colored DEM preview can be very handy when you're trying to find the best value for the `max_height` parameter. Learn more about it in the [Settings](#settings) section.
+
+![Previews](https://github.com/user-attachments/assets/69609169-834b-4269-ac6a-9a5c56b629dc)<br>
+In the second row of the image you can see the following images:<br>
+1. DEM preview with `max_height=200`.
+2. Colored DEM preview with `max_height=200`.
+3. Colored DEM preview with `max_height=50`.
+
+As you can see there's a huge difference between images 2 and 3. The third (with lower `max_height`) will have a higher terrain contrast, and the second one will have lower differences between the terrain heights.<br>
+There's no like "in real world" option, because FS system of coordinates does not work in meters or something like that when talking about DEM. So you need to experiment with the `max_height` parameter to get the desired result. To clarify: in the example above the difference on the platue is about 80 meters, so `max_height=50` made this like super mountainous terrain, and `max_height=200` made it like a plain.
+
 ## How-To-Run
 
 You'll find detailed instructions on how to run the project below. But if you prefer video tutorials, here's one for you:
