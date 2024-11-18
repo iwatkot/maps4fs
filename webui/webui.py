@@ -46,17 +46,23 @@ class Maps4FS:
         # Map size selection.
         st.write("Select size of the map:")
         self.map_size_input = st.selectbox(
-            "Map Size",
-            options=[
-                (2048, "2048 x 2048 meters"),
-                (4096, "4096 x 4096 meters"),
-                (8192, "8192 x 8192 meters"),
-                (16384, "16384 x 16384 meters"),
-            ],
-            format_func=lambda x: x[1],
-            key="size",
+            "Map Size (meters)",
+            options=["2048x2048", "4096x4096", "8192x8192", "16384x16384", "Custom"],
             label_visibility="collapsed",
         )
+
+        if self.map_size_input == "Custom":
+            st.write("Enter map height (meters):")
+            map_height_input = st.number_input(
+                "Height (meters)", 2048, key="map_height", label_visibility="collapsed"
+            )
+
+            st.write("Enter map width (meters):")
+            map_width_input = st.number_input(
+                "Width (meters)", 2048, key="map_width", label_visibility="collapsed"
+            )
+
+            self.map_size_input = f"{map_height_input}x{map_width_input}"
 
         # Add an empty container for status messages.
         self.status_container = st.empty()
@@ -101,14 +107,11 @@ class Maps4FS:
         coordinates = (lat, lon)
 
         # Read map size from the input widget.
-        map_size = self.map_size_input[0]
-        if not isinstance(map_size, int):
+        try:
+            height, width = map(int, self.map_size_input.split("x"))
+        except ValueError:
             st.error("Invalid map size!")
             return
-
-        # Distance is half of the map size (from the center to the edge).
-        # Maps are always square, so the distance is the same in both directions.
-        distance = int(map_size / 2)
 
         # Session name will be used for a directory name as well as a zip file name.
         session_name = str(time()).replace(".", "_")
@@ -122,7 +125,8 @@ class Maps4FS:
         mp = mfs.Map(
             game,
             coordinates,
-            distance,
+            height,
+            width,
             map_directory,
             logger=self.logger,
         )
