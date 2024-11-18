@@ -69,6 +69,15 @@ class Component:
         raise NotImplementedError
 
     def get_bbox(self, project_utm: bool = False) -> tuple[float, float, float, float]:
+        """Calculates the bounding box of the map from the coordinates and the height and
+        width of the map.
+
+        Args:
+            project_utm (bool, optional): Whether to project the bounding box to UTM.
+
+        Returns:
+            tuple[float, float, float, float]: The bounding box of the map.
+        """
         north, south, _, _ = ox.utils_geo.bbox_from_point(
             self.coordinates, dist=self.map_height / 2, project_utm=project_utm
         )
@@ -77,7 +86,8 @@ class Component:
         )
         bbox = north, south, east, west
         self.logger.debug(
-            f"Calculated bounding box for component: {self.__class__.__name__}: {bbox}, project_utm: {project_utm}"
+            f"Calculated bounding box for component: {self.__class__.__name__}: {bbox}, "
+            f"project_utm: {project_utm}"
         )
         return bbox
 
@@ -85,11 +95,5 @@ class Component:
         """Saves the bounding box of the map to the component instance from the coordinates and the
         height and width of the map.
         """
-        # north, south, east, west = ox.utils_geo.bbox_from_point(  # pylint: disable=W0632
-        #     self.coordinates, dist=self.distance
-        # )
-
-        # north, south, _, _ = ox.utils_geo.bbox_from_point(self.coordinates, dist=self.height / 2)
-        # _, _, east, west = ox.utils_geo.bbox_from_point(self.coordinates, dist=self.width / 2)
         self.bbox = self.get_bbox(project_utm=False)
         self.logger.debug(f"Saved bounding box: {self.bbox}")
