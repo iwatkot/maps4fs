@@ -7,7 +7,7 @@
   <a href="#How-To-Run">How-To-Run</a> • 
   <a href="#Features">Features</a> • 
   <a href="#Supported-objects">Supported objects</a> • 
-  <a href="Settings">Settings</a> • 
+  <a href="#Advanced Settings">Settings</a> • 
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a>
 </p>
 
@@ -184,6 +184,15 @@ The script will also generate the `generation_info.json` file in the `output` fo
 `"tile_name"` - the name of the SRTM tile which was used to generate the height map, e.g. "N52E013"<br>
 
 You can use this information to adjust some other sources of data to the map, e.g. textures, height maps, etc.
+
+## Advanced Settings
+You can also apply some advanced settings to the map generation process. Note that they're ADVANCED, so you don't need to use them if you're not sure what they do.<br>
+
+Here's the list of the advanced settings:
+
+- DEM multiplier: the height of the map is multiplied by this value. So the DEM map is just a 16-bit grayscale image, which means that the maximum avaiable value there is 65535, while the actual difference between the deepest and the highest point on Earth is about 20 km. So, by default this value is set to 3. Just note that this setting mostly does not matter, because you can always adjust it in the Giants Editor, learn more about the [heightScale](https://www.farming-simulator.org/19/terrain-heightscale.php) parameter on the [PMC Farming Simulator](https://www.farming-simulator.org/) website.
+
+- DEM Blur radius: the radius of the Gaussian blur filter applied to the DEM map. By default, it's set to 21. This filter just makes the DEM map smoother, so the height transitions will be more natural. You can set it to 1 to disable the filter, but it will result as a Minecraft-like map.
 
 ## Bugs and feature requests
 If you find a bug or have an idea for a new feature, please create an issue [here](https://github.com/iwatkot/maps4fs/issues) or contact me directly on [Telegram](https://t.me/iwatkot).<br>

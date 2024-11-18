@@ -7,7 +7,6 @@ import shutil
 
 import cv2
 import numpy as np
-import osmnx as ox  # type: ignore
 import rasterio  # type: ignore
 import requests
 
@@ -48,20 +47,17 @@ class DEM(Component):
     def process(self) -> None:
         """Reads SRTM file, crops it to map size, normalizes and blurs it,
         saves to map directory."""
-        north, south, east, west = ox.utils_geo.bbox_from_point(  # pylint: disable=W0632
-            self.coordinates, dist=self.distance
-        )
-        self.logger.debug(
-            "Processing DEM. North: %s, South: %s, East: %s, West: %s.", north, south, east, west
-        )
+        north, south, east, west = self.bbox
 
-        dem_output_size = self.distance * self.game.dem_multipliyer + 1
+        dem_height = self.map_height * self.game.dem_multipliyer + 1
+        dem_width = self.map_width * self.game.dem_multipliyer + 1
         self.logger.debug(
-            "DEM multiplier is %s, DEM output size is %s.",
+            "DEM multiplier is %s, DEM height is %s, DEM width is %s.",
             self.game.dem_multipliyer,
-            dem_output_size,
+            dem_height,
+            dem_width,
         )
-        dem_output_resolution = (dem_output_size, dem_output_size)
+        dem_output_resolution = (dem_width, dem_height)
         self.logger.debug("DEM output resolution: %s.", dem_output_resolution)
 
         tile_path = self._srtm_tile()
@@ -101,7 +97,7 @@ class DEM(Component):
             f"minimum value: {resampled_data.min()}."
         )
 
-        resampled_data = resampled_data * self.multiplier  # TODO: Add multiplier to config.
+        resampled_data = resampled_data * self.multiplier
         self.logger.debug(
             f"DEM data multiplied by {self.multiplier}. Shape: {resampled_data.shape}, "
             f"dtype: {resampled_data.dtype}. "
@@ -115,7 +111,7 @@ class DEM(Component):
         )
 
         resampled_data = cv2.GaussianBlur(resampled_data, (self.blur_radius, self.blur_radius), 0)
-        self.logger.debug(  # TODO: Add blur radius to config.
+        self.logger.debug(
             f"Gaussion blur applied to DEM data with kernel size {self.blur_radius}. "
         )
 

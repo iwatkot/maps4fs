@@ -18,7 +18,8 @@ class Map:
     Args:
         game (Type[Game]): Game for which the map is generated.
         coordinates (tuple[float, float]): Coordinates of the center of the map.
-        distance (int): Distance from the center of the map.
+        height (int): Height of the map in pixels.
+        width (int): Width of the map in pixels.
         map_directory (str): Path to the directory where map files will be stored.
         logger (Any): Logger instance
     """
@@ -27,7 +28,8 @@ class Map:
         self,
         game: Game,
         coordinates: tuple[float, float],
-        distance: int,
+        height: int,
+        width: int,
         map_directory: str,
         logger: Any = None,
         **kwargs,
@@ -35,7 +37,8 @@ class Map:
         self.game = game
         self.components: list[Component] = []
         self.coordinates = coordinates
-        self.distance = distance
+        self.height = height
+        self.width = width
         self.map_directory = map_directory
 
         if not logger:
@@ -61,7 +64,8 @@ class Map:
                 component = game_component(
                     self.game,
                     self.coordinates,
-                    self.distance,
+                    self.height,
+                    self.width,
                     self.map_directory,
                     self.logger,
                     **self.kwargs,

@@ -36,10 +36,11 @@ class Config(Component):
         self.logger.debug("Map XML file loaded from: %s.", self._map_xml_path)
         root = tree.getroot()
         for map_elem in root.iter("map"):
-            width = height = str(self.distance * 2)
-            map_elem.set("width", width)
-            map_elem.set("height", height)
-            self.logger.debug("Map size set to %sx%s in Map XML file.", width, height)
+            map_elem.set("width", str(self.map_width))
+            map_elem.set("height", str(self.map_height))
+            self.logger.debug(
+                "Map size set to %sx%s in Map XML file.", self.map_width, self.map_height
+            )
         tree.write(self._map_xml_path)
         self.logger.debug("Map XML file saved to: %s.", self._map_xml_path)
 
