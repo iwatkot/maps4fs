@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from maps4fs.generator.game import Game
 
 
-# pylint: disable=R0801, R0903
+# pylint: disable=R0801, R0903, R0902
 class Component:
     """Base class for all map generation components.
 
@@ -68,7 +68,7 @@ class Component:
         """
         raise NotImplementedError
 
-    def get_bbox(self, project_utm: bool = False) -> tuple[float, float, float, float]:
+    def get_bbox(self, project_utm: bool = False) -> tuple[int, int, int, int]:
         """Calculates the bounding box of the map from the coordinates and the height and
         width of the map.
 
@@ -76,7 +76,7 @@ class Component:
             project_utm (bool, optional): Whether to project the bounding box to UTM.
 
         Returns:
-            tuple[float, float, float, float]: The bounding box of the map.
+            tuple[int, int, int, int]: The bounding box of the map.
         """
         north, south, _, _ = ox.utils_geo.bbox_from_point(
             self.coordinates, dist=self.map_height / 2, project_utm=project_utm
