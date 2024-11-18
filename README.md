@@ -7,7 +7,7 @@
   <a href="#How-To-Run">How-To-Run</a> • 
   <a href="#Features">Features</a> • 
   <a href="#Supported-objects">Supported objects</a> • 
-  <a href="#Advanced Settings">Settings</a> • 
+  <a href="#Advanced Settings">Advanced Settings</a> • 
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a>
 </p>
 
