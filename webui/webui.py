@@ -6,6 +6,7 @@ import streamlit as st
 from PIL import Image
 
 import maps4fs as mfs
+from maps4fs.generator.dem import DEFAULT_BLUR_RADIUS, DEFAULT_MULTIPLIER
 
 
 class Maps4FS:
@@ -38,7 +39,7 @@ class Maps4FS:
         st.write("Enter latitude and longitude of the center point of the map:")
         self.lat_lon_input = st.text_input(
             "Latitude and Longitude",
-            "45.2602, 19.8086",
+            "45.2856, 20.2374",
             key="lat_lon",
             label_visibility="collapsed",
         )
@@ -46,17 +47,51 @@ class Maps4FS:
         # Map size selection.
         st.write("Select size of the map:")
         self.map_size_input = st.selectbox(
-            "Map Size",
-            options=[
-                (2048, "2048 x 2048 meters"),
-                (4096, "4096 x 4096 meters"),
-                (8192, "8192 x 8192 meters"),
-                (16384, "16384 x 16384 meters"),
-            ],
-            format_func=lambda x: x[1],
-            key="size",
+            "Map Size (meters)",
+            options=["2048x2048", "4096x4096", "8192x8192", "16384x16384"],  # , "Custom"],
             label_visibility="collapsed",
         )
+
+        if self.map_size_input == "Custom":
+            st.write("Enter map height (meters):")
+            map_height_input = st.number_input(
+                "Height (meters)", 1, 16384, 2048, key="map_height", label_visibility="collapsed"
+            )
+
+            st.write("Enter map width (meters):")
+            map_width_input = st.number_input(
+                "Width (meters)", 1, 16384, 2048, key="map_width", label_visibility="collapsed"
+            )
+
+            self.map_size_input = f"{map_height_input}x{map_width_input}"
+
+        # Add checkbox for advanced settings.
+        st.write("Advanced settings (do not change if you are not sure):")
+        self.advanced_settings = st.checkbox("Show advanced settings", key="advanced_settings")
+        self.multiplier_input = DEFAULT_MULTIPLIER
+        self.blur_radius_input = DEFAULT_BLUR_RADIUS
+
+        if self.advanced_settings:
+            # Show multiplier and blur radius inputs.
+            st.write("Enter multiplier for the DEM (elevation) map:")
+            self.multiplier_input = st.number_input(
+                "Multiplier",
+                value=DEFAULT_MULTIPLIER,
+                min_value=0,
+                max_value=10000,
+                key="multiplier",
+                label_visibility="collapsed",
+            )
+
+            st.write("Enter blur radius for the DEM (elevation) map:")
+            self.blur_radius_input = st.number_input(
+                "Blur Radius",
+                value=DEFAULT_BLUR_RADIUS,
+                min_value=1,
+                max_value=300,
+                key="blur_radius",
+                label_visibility="collapsed",
+            )
 
         # Add an empty container for status messages.
         self.status_container = st.empty()
@@ -101,14 +136,11 @@ class Maps4FS:
         coordinates = (lat, lon)
 
         # Read map size from the input widget.
-        map_size = self.map_size_input[0]
-        if not isinstance(map_size, int):
+        try:
+            height, width = map(int, self.map_size_input.split("x"))
+        except ValueError:
             st.error("Invalid map size!")
             return
-
-        # Distance is half of the map size (from the center to the edge).
-        # Maps are always square, so the distance is the same in both directions.
-        distance = int(map_size / 2)
 
         # Session name will be used for a directory name as well as a zip file name.
         session_name = str(time()).replace(".", "_")
@@ -122,9 +154,12 @@ class Maps4FS:
         mp = mfs.Map(
             game,
             coordinates,
-            distance,
+            height,
+            width,
             map_directory,
             logger=self.logger,
+            multiplier=self.multiplier_input,
+            blur_radius=self.blur_radius_input,
         )
         mp.generate()
 

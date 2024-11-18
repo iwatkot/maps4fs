@@ -7,13 +7,14 @@ import shutil
 
 import cv2
 import numpy as np
-import osmnx as ox  # type: ignore
 import rasterio  # type: ignore
 import requests
 
 from maps4fs.generator.component import Component
 
 SRTM = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
+DEFAULT_MULTIPLIER = 3
+DEFAULT_BLUR_RADIUS = 21
 
 
 # pylint: disable=R0903
@@ -22,7 +23,8 @@ class DEM(Component):
 
     Args:
         coordinates (tuple[float, float]): The latitude and longitude of the center of the map.
-        distance (int): The distance from the center to the edge of the map.
+        map_height (int): The height of the map in pixels.
+        map_width (int): The width of the map in pixels.
         map_directory (str): The directory where the map files are stored.
         logger (Any, optional): The logger to use. Must have at least three basic methods: debug,
             info, warning. If not provided, default logging will be used.
@@ -36,24 +38,27 @@ class DEM(Component):
         os.makedirs(self.hgt_dir, exist_ok=True)
         os.makedirs(self.gz_dir, exist_ok=True)
 
+        self.multiplier = self.kwargs.get("multiplier", DEFAULT_MULTIPLIER)
+        self.blur_radius = self.kwargs.get("blur_radius", DEFAULT_BLUR_RADIUS)
+        self.logger.debug(
+            "DEM multiplier is %s, blur radius is %s.", self.multiplier, self.blur_radius
+        )
+
     # pylint: disable=no-member
     def process(self) -> None:
         """Reads SRTM file, crops it to map size, normalizes and blurs it,
         saves to map directory."""
-        north, south, east, west = ox.utils_geo.bbox_from_point(  # pylint: disable=W0632
-            self.coordinates, dist=self.distance
-        )
-        self.logger.debug(
-            f"Processing DEM. North: {north}, south: {south}, east: {east}, west: {west}."
-        )
+        north, south, east, west = self.bbox
 
-        dem_output_size = self.distance * self.game.dem_multipliyer + 1
+        dem_height = self.map_height * self.game.dem_multipliyer + 1
+        dem_width = self.map_width * self.game.dem_multipliyer + 1
         self.logger.debug(
-            "DEM multiplier is %s, DEM output size is %s.",
+            "DEM multiplier is %s, DEM height is %s, DEM width is %s.",
             self.game.dem_multipliyer,
-            dem_output_size,
+            dem_height,
+            dem_width,
         )
-        dem_output_resolution = (dem_output_size, dem_output_size)
+        dem_output_resolution = (dem_width, dem_height)
         self.logger.debug("DEM output resolution: %s.", dem_output_resolution)
 
         tile_path = self._srtm_tile()
@@ -89,9 +94,26 @@ class DEM(Component):
         ).astype("uint16")
 
         self.logger.debug(
+            f"Maximum value in resampled data: {resampled_data.max()}, "
+            f"minimum value: {resampled_data.min()}."
+        )
+
+        resampled_data = resampled_data * self.multiplier
+        self.logger.debug(
+            f"DEM data multiplied by {self.multiplier}. Shape: {resampled_data.shape}, "
+            f"dtype: {resampled_data.dtype}. "
+            f"Min: {resampled_data.min()}, max: {resampled_data.max()}."
+        )
+
+        self.logger.debug(
             f"DEM data was resampled. Shape: {resampled_data.shape}, "
             f"dtype: {resampled_data.dtype}. "
             f"Min: {resampled_data.min()}, max: {resampled_data.max()}."
+        )
+
+        resampled_data = cv2.GaussianBlur(resampled_data, (self.blur_radius, self.blur_radius), 0)
+        self.logger.debug(
+            f"Gaussion blur applied to DEM data with kernel size {self.blur_radius}. "
         )
 
         cv2.imwrite(self._dem_path, resampled_data)

@@ -116,7 +116,6 @@ class Texture(Component):
         self.logger.info("Loaded %s layers.", len(self.layers))
 
         self._weights_dir = os.path.join(self.map_directory, "maps", "map", "data")
-        self._bbox = ox.utils_geo.bbox_from_point(self.coordinates, dist=self.distance)
         self.info_save_path = os.path.join(self.map_directory, "generation_info.json")
 
     def process(self):
@@ -132,9 +131,8 @@ class Texture(Component):
         - map dimensions in meters
         - map coefficients (meters per pixel)
         """
-        north, south, east, west = ox.utils_geo.bbox_from_point(  # pylint: disable=W0632
-            self.coordinates, dist=self.distance, project_utm=True
-        )
+        north, south, east, west = self.get_bbox(project_utm=True)
+
         # Parameters of the map in UTM format (meters).
         self.minimum_x = min(west, east)
         self.minimum_y = min(south, north)
@@ -147,8 +145,8 @@ class Texture(Component):
         self.width = abs(east - west)
         self.logger.info("Map dimensions (HxW): %s x %s.", self.height, self.width)
 
-        self.height_coef = self.height / (self.distance * 2)
-        self.width_coef = self.width / (self.distance * 2)
+        self.height_coef = self.height / self.map_height
+        self.width_coef = self.width / self.map_width
         self.logger.debug("Map coefficients (HxW): %s x %s.", self.height_coef, self.width_coef)
 
     def info_sequence(self) -> None:
@@ -157,7 +155,8 @@ class Texture(Component):
         Info sequence contains following attributes:
             - coordinates
             - bbox
-            - distance
+            - map_height
+            - map_width
             - minimum_x
             - minimum_y
             - maximum_x
@@ -170,7 +169,8 @@ class Texture(Component):
         useful_attributes = [
             "coordinates",
             "bbox",
-            "distance",
+            "map_height",
+            "map_width",
             "minimum_x",
             "minimum_y",
             "maximum_x",
@@ -201,7 +201,7 @@ class Texture(Component):
             texture_name (str): Name of the texture.
             layer_numbers (int): Number of layers in the texture.
         """
-        size = self.distance * 2
+        size = (self.map_height, self.map_width)
         postfix = "_weight.png"
         if layer_numbers == 0:
             filepaths = [os.path.join(self._weights_dir, texture_name + postfix)]
@@ -212,7 +212,7 @@ class Texture(Component):
             ]
 
         for filepath in filepaths:
-            img = np.zeros((size, size), dtype=np.uint8)
+            img = np.zeros(size, dtype=np.uint8)
             cv2.imwrite(filepath, img)  # pylint: disable=no-member
 
     @property
@@ -356,7 +356,7 @@ class Texture(Component):
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", DeprecationWarning)
-                objects = ox.features_from_bbox(bbox=self._bbox, tags=tags)
+                objects = ox.features_from_bbox(bbox=self.bbox, tags=tags)
         except Exception as e:  # pylint: disable=W0718
             self.logger.warning("Error fetching objects for tags: %s.", tags)
             self.logger.warning(e)
