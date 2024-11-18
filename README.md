@@ -6,7 +6,7 @@
   <a href="#Overview">Overview</a> • 
   <a href="#How-To-Run">How-To-Run</a> • 
   <a href="#Supported-objects">Supported objects</a> • 
-  <a href="#Advanced Settings">Advanced Settings</a> • 
+  <a href="#For-advanced-users">For advanced users</a> • 
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a>
 </p>
 
@@ -23,10 +23,13 @@
 
 </div>
 
-### Supported Games
+🗺️ Supports 2x2, 4x4, 8x8, 16x16 and any custom size maps<br>
+🌍 Based on real-world data from OpenStreetMap<br>
+🏞️ Generates height using SRTM dataset<br>
+📦 Provides a ready-to-use map template for the Giants Editor<br>
+🚜 Supports Farming Simulator 22 and 25*<br>
 
-✅ Farming Simulator 22<br>
-🔃 Farming Simulator 25 (changes in the library are ready, waiting for the Giants to release the Giants Editor v10)<br>
+\* changes in the library are ready, waiting for the Giants to release the Giants Editor v10. Meanwhile the option to generate a map for FS25 is disabled.
 
 ## Quick Start
 There are several ways to use the tool. You obviously need the **first one**, but you can choose any of the others depending on your needs.<br>
@@ -98,7 +101,7 @@ docker run -d -p 8501:8501 iwatkot/maps4fs
 4. Fill in the required fields and click on the `Generate` button.
 5. When the map is generated click on the `Download` button to get the map.
 
-![WebUI](https://github.com/user-attachments/assets/e3b48c9d-7b87-4ce7-8ad7-98332a558a88)
+![WebUI](https://github.com/user-attachments/assets/78744369-abac-44a6-a8f0-090e52657882)
 
 ### Option 3: Python package
 🔴 Recommended for developers.<br>
@@ -177,7 +180,13 @@ The script will also generate the `generation_info.json` file in the `output` fo
 
 You can use this information to adjust some other sources of data to the map, e.g. textures, height maps, etc.
 
-## Advanced Settings
+## For advanced users
+The tool supports the custom size of the map. To use this feature select `Custom` in the `Map size` dropdown and enter the desired size. The tool will generate a map with the size you entered.<br>
+
+⛔️ Do not use this feature, if you don't know what you're doing. In most cases the Giants Editor will just crash on opening the file, because you need to enter a specific values for the map size.<br><br>
+
+![Advanced settings and custom size](https://github.com/user-attachments/assets/73540462-fe88-4b3f-b5d6-5a29762f436f)
+
 You can also apply some advanced settings to the map generation process. Note that they're ADVANCED, so you don't need to use them if you're not sure what they do.<br>
 
 Here's the list of the advanced settings:
