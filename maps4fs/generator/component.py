@@ -86,8 +86,10 @@ class Component:
         )
         bbox = north, south, east, west
         self.logger.debug(
-            f"Calculated bounding box for component: {self.__class__.__name__}: {bbox}, "
-            f"project_utm: {project_utm}"
+            "Calculated bounding box for component: %s: %s, project_utm: %s",
+            self.__class__.__name__,
+            bbox,
+            project_utm,
         )
         return bbox
 
@@ -96,4 +98,4 @@ class Component:
         height and width of the map.
         """
         self.bbox = self.get_bbox(project_utm=False)
-        self.logger.debug(f"Saved bounding box: {self.bbox}")
+        self.logger.debug("Saved bounding box: %s", self.bbox)

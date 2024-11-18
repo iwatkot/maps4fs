@@ -5,7 +5,6 @@
   <a href="#Quick-Start">Quick Start</a> •
   <a href="#Overview">Overview</a> • 
   <a href="#How-To-Run">How-To-Run</a> • 
-  <a href="#Features">Features</a> • 
   <a href="#Supported-objects">Supported objects</a> • 
   <a href="#Advanced Settings">Advanced Settings</a> • 
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a>
@@ -80,7 +79,6 @@ You'll find detailed instructions on how to run the project below. But if you pr
 <i>Video tutorial: How to generate a Farming Simulator 22 map from real-world data.</i>
 
 ### Option 1: StreamLit
-**🗺️ Supported map sizes:** 2x2, 4x4, 8x8, 16x16 km.<br>
 🟢 Recommended for all users, you don't need to install anything.<br>
 Using the [StreamLit](https://maps4fs.streamlit.app) version of the tool is the easiest way to generate a map template. Just open the link and follow the instructions.
 Note: due to CPU and RAM limitations of the hosting, the generation may take some time. If you need faster processing, use the [Docker version](#option-2-docker-version).<br>
@@ -88,7 +86,6 @@ Note: due to CPU and RAM limitations of the hosting, the generation may take som
 Using it is easy and doesn't require any guides. Enjoy!
 
 ### Option 2: Docker version
-**🗺️ Supported map sizes:** 2x2, 4x4, 8x8, 16x16 km.<br>
 🟠 Recommended for users who want faster processing, very simple installation.<br>
 You can launch the project with minimalistic UI in your browser using Docker. Follow these steps:
 
@@ -104,7 +101,6 @@ docker run -d -p 8501:8501 iwatkot/maps4fs
 ![WebUI](https://github.com/user-attachments/assets/e3b48c9d-7b87-4ce7-8ad7-98332a558a88)
 
 ### Option 3: Python package
-**🗺️ Supported map sizes:** 2x2, 4x4, 8x8, 16x16 km (and ANY other you may add).<br>
 🔴 Recommended for developers.<br>
 You can use the Python package to generate maps. Follow these steps:
 
@@ -148,12 +144,6 @@ map.generate()
 ```
 
 The map will be saved in the `map_directory` directory.
-
-## Features
-- Allows to enter a location by lat and lon (e.g. from Google Maps).
-- Allows to select a size of the map (2x2, 4x4, 8x8 km, 16x16 km).
-- Generates a map template (check the list of supported objects in [this section](#supported-objects)).
-- Generates a height map.
 
 ## Supported objects
 The project is based on the [OpenStreetMap](https://www.openstreetmap.org/) data. So, refer to [this page](https://wiki.openstreetmap.org/wiki/Map_Features) to understand the list below.
