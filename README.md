@@ -136,7 +136,8 @@ import maps4fs as mfs
 map = mfs.Map(
   game,
   (52.5200, 13.4050),  # Latitude and longitude of the map center.
-  distance=1024,  # The DISTANCE from the center to the edge of the map in meters. The map will be 2048x2048 meters.
+  map_height=1024,  # The height of the map in meters.
+  map_width=1024,  # The width of the map in meters.
   map_directory="path/to/your/map/directory",  # The directory where the map will be saved.
 )
 ```
@@ -172,13 +173,14 @@ The list will be updated as the project develops.
 The script will also generate the `generation_info.json` file in the `output` folder. It contains the following keys: <br>
 `"coordinates"` - the coordinates of the map center which you entered,<br>
 `"bbox"` - the bounding box of the map in lat and lon,<br>
-`"distance"` - the size of the map in meters,<br>
+`"map_height"` - the height of the map in meters (this one is from the user input, e.g. 2048 and so on),<br>
+`"map_width"` - the width of the map in meters (same as above),<br>
 `"minimum_x"` - the minimum x coordinate of the map (UTM projection),<br>
 `"minimum_y"` - the minimum y coordinate of the map (UTM projection),<br>
 `"maximum_x"` - the maximum x coordinate of the map (UTM projection),<br>
 `"maximum_y"` - the maximum y coordinate of the map (UTM projection),<br>
-`"height"` - the height of the map in meters (it won't be equal to the distance since the Earth is not flat, sorry flat-earthers),<br>
-`"width"` - the width of the map in meters,<br>
+`"height"` - the height of the map in meters (it won't be equal to the parameters above since the Earth is not flat, sorry flat-earthers),<br>
+`"width"` - the width of the map in meters (same as above),<br>
 `"height_coef"` - since we need a texture of exact size, the height of the map is multiplied by this coefficient,<br>
 `"width_coef"` - same as above but for the width,<br>
 `"tile_name"` - the name of the SRTM tile which was used to generate the height map, e.g. "N52E013"<br>

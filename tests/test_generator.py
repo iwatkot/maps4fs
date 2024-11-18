@@ -28,14 +28,14 @@ coordinates_cases = [
 game_code_cases = ["FS22"]
 
 
-def random_distance() -> int:
-    """Return random distance.
+def get_random_size() -> tuple[int, int]:
+    """Return random size.
 
     Returns:
-        int: Random distance.
+        tuple[int, int]: Random size.
     """
-    distances_cases = [1024, 2048, 4096, 8192]
-    return choice(distances_cases[:2])  # Larger maps are too slow for automated tests.
+    sizes_cases = [(1024, 1024), (2048, 2048), (4096, 4096), (8192, 8192)]
+    return choice(sizes_cases[:2])  # Larger maps are too slow for automated tests.
 
 
 def map_directory() -> str:
@@ -68,13 +68,14 @@ def test_map():
     for game_code in game_code_cases:
         game = Game.from_code(game_code)
         for coordinates in coordinates_cases:
-            distance = random_distance()
+            height, width = get_random_size()
             directory = map_directory()
 
             map = Map(
                 game=game,
                 coordinates=coordinates,
-                distance=distance,
+                height=height,
+                width=width,
                 map_directory=directory,
             )
 
@@ -97,36 +98,35 @@ def test_map():
                     img = cv2.imread(texture_path)
                     assert img is not None, f"Texture could not be read: {texture_path}"
                     assert img.shape == (
-                        distance * 2,
-                        distance * 2,
+                        height,
+                        width,
                         3,
-                    ), f"Texture shape mismatch: {img.shape} != {(distance * 2, distance * 2, 3)}"
+                    ), f"Texture shape mismatch: {img.shape} != {(height, width, 3)}"
                     assert img.dtype == "uint8", f"Texture dtype mismatch: {img.dtype} != uint8"
 
             dem_file = os.path.join(textures_directory, "map_dem.png")
             assert os.path.isfile(dem_file), f"DEM file not found: {dem_file}"
             img = cv2.imread(dem_file, cv2.IMREAD_UNCHANGED)
             assert img is not None, f"DEM could not be read: {dem_file}"
-            assert img.shape == (
-                distance + 1,
-                distance + 1,
-            ), f"DEM shape mismatch: {img.shape} != {(distance + 1, distance + 1)}"
+
             assert img.dtype == "uint16", f"DEM dtype mismatch: {img.dtype} != uint16"
 
 
 def test_map_preview():
     """Test Map preview generation."""
     case = choice(coordinates_cases)
-    distance = random_distance()
 
     game_code = choice(game_code_cases)
     game = Game.from_code(game_code)
+
+    height, width = get_random_size()
 
     directory = map_directory()
     map = Map(
         game=game,
         coordinates=case,
-        distance=distance,
+        height=height,
+        width=width,
         map_directory=directory,
     )
     map.generate()
@@ -140,16 +140,18 @@ def test_map_preview():
 def test_map_pack():
     """Test Map packing into zip archive."""
     case = choice(coordinates_cases)
-    distance = random_distance()
 
     game_code = choice(game_code_cases)
     game = Game.from_code(game_code)
+
+    height, width = get_random_size()
 
     directory = map_directory()
     map = Map(
         game=game,
         coordinates=case,
-        distance=distance,
+        height=height,
+        width=width,
         map_directory=directory,
     )
     map.generate()

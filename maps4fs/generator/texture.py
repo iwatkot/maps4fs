@@ -155,7 +155,8 @@ class Texture(Component):
         Info sequence contains following attributes:
             - coordinates
             - bbox
-            - distance
+            - map_height
+            - map_width
             - minimum_x
             - minimum_y
             - maximum_x
@@ -168,7 +169,8 @@ class Texture(Component):
         useful_attributes = [
             "coordinates",
             "bbox",
-            "distance",
+            "map_height",
+            "map_width",
             "minimum_x",
             "minimum_y",
             "maximum_x",
