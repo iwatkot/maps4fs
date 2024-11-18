@@ -6,6 +6,7 @@ import streamlit as st
 from PIL import Image
 
 import maps4fs as mfs
+from maps4fs.generator.dem import DEFAULT_BLUR_RADIUS, DEFAULT_MULTIPLIER
 
 
 class Maps4FS:
@@ -67,19 +68,29 @@ class Maps4FS:
         # Add checkbox for advanced settings.
         st.write("Advanced settings (do not change if you are not sure):")
         self.advanced_settings = st.checkbox("Show advanced settings", key="advanced_settings")
-        self.multiplier_input = 150
-        self.blur_radius_input = 21
+        self.multiplier_input = DEFAULT_MULTIPLIER
+        self.blur_radius_input = DEFAULT_BLUR_RADIUS
 
         if self.advanced_settings:
             # Show multiplier and blur radius inputs.
             st.write("Enter multiplier for the DEM (elevation) map:")
             self.multiplier_input = st.number_input(
-                "Multiplier", 1, key="multiplier", label_visibility="collapsed"
+                "Multiplier",
+                value=DEFAULT_MULTIPLIER,
+                min_value=0,
+                max_value=10000,
+                key="multiplier",
+                label_visibility="collapsed",
             )
 
             st.write("Enter blur radius for the DEM (elevation) map:")
             self.blur_radius_input = st.number_input(
-                "Blur Radius", 1, key="blur_radius", label_visibility="collapsed"
+                "Blur Radius",
+                value=DEFAULT_BLUR_RADIUS,
+                min_value=1,
+                max_value=300,
+                key="blur_radius",
+                label_visibility="collapsed",
             )
 
         # Add an empty container for status messages.
