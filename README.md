@@ -5,9 +5,8 @@
   <a href="#Quick-Start">Quick Start</a> •
   <a href="#Overview">Overview</a> • 
   <a href="#How-To-Run">How-To-Run</a> • 
-  <a href="#Features">Features</a> • 
   <a href="#Supported-objects">Supported objects</a> • 
-  <a href="#Advanced Settings">Advanced Settings</a> • 
+  <a href="#For-advanced-users">For advanced users</a> • 
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a>
 </p>
 
@@ -24,10 +23,13 @@
 
 </div>
 
-### Supported Games
+🗺️ Supports 2x2, 4x4, 8x8, 16x16 and any custom size maps<br>
+🌍 Based on real-world data from OpenStreetMap<br>
+🏞️ Generates height using SRTM dataset<br>
+📦 Provides a ready-to-use map template for the Giants Editor<br>
+🚜 Supports Farming Simulator 22 and 25*<br>
 
-✅ Farming Simulator 22<br>
-🔃 Farming Simulator 25 (changes in the library are ready, waiting for the Giants to release the Giants Editor v10)<br>
+\* changes in the library are ready, waiting for the Giants to release the Giants Editor v10. Meanwhile the option to generate a map for FS25 is disabled.
 
 ## Quick Start
 There are several ways to use the tool. You obviously need the **first one**, but you can choose any of the others depending on your needs.<br>
@@ -80,7 +82,6 @@ You'll find detailed instructions on how to run the project below. But if you pr
 <i>Video tutorial: How to generate a Farming Simulator 22 map from real-world data.</i>
 
 ### Option 1: StreamLit
-**🗺️ Supported map sizes:** 2x2, 4x4, 8x8, 16x16 km.<br>
 🟢 Recommended for all users, you don't need to install anything.<br>
 Using the [StreamLit](https://maps4fs.streamlit.app) version of the tool is the easiest way to generate a map template. Just open the link and follow the instructions.
 Note: due to CPU and RAM limitations of the hosting, the generation may take some time. If you need faster processing, use the [Docker version](#option-2-docker-version).<br>
@@ -88,7 +89,6 @@ Note: due to CPU and RAM limitations of the hosting, the generation may take som
 Using it is easy and doesn't require any guides. Enjoy!
 
 ### Option 2: Docker version
-**🗺️ Supported map sizes:** 2x2, 4x4, 8x8, 16x16 km.<br>
 🟠 Recommended for users who want faster processing, very simple installation.<br>
 You can launch the project with minimalistic UI in your browser using Docker. Follow these steps:
 
@@ -101,10 +101,9 @@ docker run -d -p 8501:8501 iwatkot/maps4fs
 4. Fill in the required fields and click on the `Generate` button.
 5. When the map is generated click on the `Download` button to get the map.
 
-![WebUI](https://github.com/user-attachments/assets/e3b48c9d-7b87-4ce7-8ad7-98332a558a88)
+![WebUI](https://github.com/user-attachments/assets/581e1206-2abd-4b3c-ad31-80554ad92d99)
 
 ### Option 3: Python package
-**🗺️ Supported map sizes:** 2x2, 4x4, 8x8, 16x16 km (and ANY other you may add).<br>
 🔴 Recommended for developers.<br>
 You can use the Python package to generate maps. Follow these steps:
 
@@ -149,12 +148,6 @@ map.generate()
 
 The map will be saved in the `map_directory` directory.
 
-## Features
-- Allows to enter a location by lat and lon (e.g. from Google Maps).
-- Allows to select a size of the map (2x2, 4x4, 8x8 km, 16x16 km).
-- Generates a map template (check the list of supported objects in [this section](#supported-objects)).
-- Generates a height map.
-
 ## Supported objects
 The project is based on the [OpenStreetMap](https://www.openstreetmap.org/) data. So, refer to [this page](https://wiki.openstreetmap.org/wiki/Map_Features) to understand the list below.
 - "building": True
@@ -187,7 +180,13 @@ The script will also generate the `generation_info.json` file in the `output` fo
 
 You can use this information to adjust some other sources of data to the map, e.g. textures, height maps, etc.
 
-## Advanced Settings
+## For advanced users
+The tool supports the custom size of the map. To use this feature select `Custom` in the `Map size` dropdown and enter the desired size. The tool will generate a map with the size you entered.<br>
+
+⛔️ Do not use this feature, if you don't know what you're doing. In most cases the Giants Editor will just crash on opening the file, because you need to enter a specific values for the map size.<br><br>
+
+![Advanced settings and custom size](https://github.com/user-attachments/assets/327b6065-09ed-41d0-86a8-7d904025707c)
+
 You can also apply some advanced settings to the map generation process. Note that they're ADVANCED, so you don't need to use them if you're not sure what they do.<br>
 
 Here's the list of the advanced settings:

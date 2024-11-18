@@ -85,8 +85,11 @@ class DEM(Component):
             return
 
         self.logger.debug(
-            f"DEM data was read from SRTM file. Shape: {data.shape}, dtype: {data.dtype}. "
-            f"Min: {data.min()}, max: {data.max()}."
+            "DEM data was read from SRTM file. Shape: %s, dtype: %s. Min: %s, max: %s.",
+            data.shape,
+            data.dtype,
+            data.min(),
+            data.max(),
         )
 
         resampled_data = cv2.resize(
@@ -94,26 +97,33 @@ class DEM(Component):
         ).astype("uint16")
 
         self.logger.debug(
-            f"Maximum value in resampled data: {resampled_data.max()}, "
-            f"minimum value: {resampled_data.min()}."
+            "Maximum value in resampled data: %s, minimum value: %s.",
+            resampled_data.max(),
+            resampled_data.min(),
         )
 
         resampled_data = resampled_data * self.multiplier
         self.logger.debug(
-            f"DEM data multiplied by {self.multiplier}. Shape: {resampled_data.shape}, "
-            f"dtype: {resampled_data.dtype}. "
-            f"Min: {resampled_data.min()}, max: {resampled_data.max()}."
+            "DEM data multiplied by %s. Shape: %s, dtype: %s. Min: %s, max: %s.",
+            self.multiplier,
+            resampled_data.shape,
+            resampled_data.dtype,
+            resampled_data.min(),
+            resampled_data.max(),
         )
 
         self.logger.debug(
-            f"DEM data was resampled. Shape: {resampled_data.shape}, "
-            f"dtype: {resampled_data.dtype}. "
-            f"Min: {resampled_data.min()}, max: {resampled_data.max()}."
+            "DEM data was resampled. Shape: %s, dtype: %s. Min: %s, max: %s.",
+            resampled_data.shape,
+            resampled_data.dtype,
+            resampled_data.min(),
+            resampled_data.max(),
         )
 
         resampled_data = cv2.GaussianBlur(resampled_data, (self.blur_radius, self.blur_radius), 0)
         self.logger.debug(
-            f"Gaussion blur applied to DEM data with kernel size {self.blur_radius}. "
+            "Gaussion blur applied to DEM data with kernel size %s.",
+            self.blur_radius,
         )
 
         cv2.imwrite(self._dem_path, resampled_data)
@@ -179,7 +189,8 @@ class DEM(Component):
         decompressed_file_path = os.path.join(self.hgt_dir, f"{tile_name}.hgt")
         if os.path.isfile(decompressed_file_path):
             self.logger.info(
-                f"Decompressed tile already exists: {decompressed_file_path}, skipping download."
+                "Decompressed tile already exists: %s, skipping download.",
+                decompressed_file_path,
             )
             return decompressed_file_path
 

@@ -16,6 +16,8 @@ from shapely.geometry.base import BaseGeometry  # type: ignore
 
 from maps4fs.generator.component import Component
 
+PREVIEW_MAXIMUM_SIZE = 2048
+
 
 # pylint: disable=R0902
 class Texture(Component):
@@ -387,7 +389,20 @@ class Texture(Component):
         Returns:
             str: Path to the preview.
         """
-        preview_size = (2048, 2048)
+        scaling_factor = min(
+            PREVIEW_MAXIMUM_SIZE / self.map_width, PREVIEW_MAXIMUM_SIZE / self.map_height
+        )
+
+        preview_size = (
+            int(self.map_width * scaling_factor),
+            int(self.map_height * scaling_factor),
+        )
+        self.logger.debug(
+            "Scaling factor: %s. Preview size: %s.",
+            scaling_factor,
+            preview_size,
+        )
+
         images = [
             cv2.resize(
                 cv2.imread(layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED), preview_size
@@ -402,7 +417,9 @@ class Texture(Component):
             color_images.append(color_img)
         merged = np.sum(color_images, axis=0, dtype=np.uint8)
         self.logger.debug(
-            f"Merged layers into one image. Shape: {merged.shape}, dtype: {merged.dtype}."
+            "Merged layers into one image. Shape: %s, dtype: %s.",
+            merged.shape,
+            merged.dtype,
         )
         preview_path = os.path.join(self.map_directory, "preview_osm.png")
         cv2.imwrite(preview_path, merged)  # pylint: disable=no-member

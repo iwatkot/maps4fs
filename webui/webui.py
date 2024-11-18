@@ -48,11 +48,16 @@ class Maps4FS:
         st.write("Select size of the map:")
         self.map_size_input = st.selectbox(
             "Map Size (meters)",
-            options=["2048x2048", "4096x4096", "8192x8192", "16384x16384"],  # , "Custom"],
+            options=["2048x2048", "4096x4096", "8192x8192", "16384x16384", "Custom"],
             label_visibility="collapsed",
         )
 
         if self.map_size_input == "Custom":
+            st.warning(
+                "This feature is for advanced users only, you need to know exact correct values, "
+                "otherwise the Giants Editor will crash on opening the file. Do not use it, "
+                "if you are not sure what you are doing."
+            )
             st.write("Enter map height (meters):")
             map_height_input = st.number_input(
                 "Height (meters)", 1, 16384, 2048, key="map_height", label_visibility="collapsed"
