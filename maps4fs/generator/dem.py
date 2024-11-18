@@ -14,6 +14,8 @@ import requests
 from maps4fs.generator.component import Component
 
 SRTM = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
+DEFAULT_MULTIPLIER = 3
+DEFAULT_BLUR_RADIUS = 21
 
 
 # pylint: disable=R0903
@@ -36,6 +38,12 @@ class DEM(Component):
         os.makedirs(self.hgt_dir, exist_ok=True)
         os.makedirs(self.gz_dir, exist_ok=True)
 
+        self.multiplier = self.kwargs.get("multiplier", DEFAULT_MULTIPLIER)
+        self.blur_radius = self.kwargs.get("blur_radius", DEFAULT_BLUR_RADIUS)
+        self.logger.debug(
+            "DEM multiplier is %s, blur radius is %s.", self.multiplier, self.blur_radius
+        )
+
     # pylint: disable=no-member
     def process(self) -> None:
         """Reads SRTM file, crops it to map size, normalizes and blurs it,
@@ -44,7 +52,7 @@ class DEM(Component):
             self.coordinates, dist=self.distance
         )
         self.logger.debug(
-            f"Processing DEM. North: {north}, south: {south}, east: {east}, west: {west}."
+            "Processing DEM. North: %s, South: %s, East: %s, West: %s.", north, south, east, west
         )
 
         dem_output_size = self.distance * self.game.dem_multipliyer + 1
@@ -89,9 +97,26 @@ class DEM(Component):
         ).astype("uint16")
 
         self.logger.debug(
+            f"Maximum value in resampled data: {resampled_data.max()}, "
+            f"minimum value: {resampled_data.min()}."
+        )
+
+        resampled_data = resampled_data * self.multiplier  # TODO: Add multiplier to config.
+        self.logger.debug(
+            f"DEM data multiplied by {self.multiplier}. Shape: {resampled_data.shape}, "
+            f"dtype: {resampled_data.dtype}. "
+            f"Min: {resampled_data.min()}, max: {resampled_data.max()}."
+        )
+
+        self.logger.debug(
             f"DEM data was resampled. Shape: {resampled_data.shape}, "
             f"dtype: {resampled_data.dtype}. "
             f"Min: {resampled_data.min()}, max: {resampled_data.max()}."
+        )
+
+        resampled_data = cv2.GaussianBlur(resampled_data, (self.blur_radius, self.blur_radius), 0)
+        self.logger.debug(  # TODO: Add blur radius to config.
+            f"Gaussion blur applied to DEM data with kernel size {self.blur_radius}. "
         )
 
         cv2.imwrite(self._dem_path, resampled_data)

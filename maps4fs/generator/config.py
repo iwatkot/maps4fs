@@ -22,7 +22,7 @@ class Config(Component):
 
     def preprocess(self) -> None:
         self._map_xml_path = self.game.map_xml_path(self.map_directory)
-        self.logger.debug(f"Map XML path: {self._map_xml_path}")
+        self.logger.debug("Map XML path: %s.", self._map_xml_path)
 
     def process(self):
         self._set_map_size()

@@ -30,6 +30,7 @@ class Map:
         distance: int,
         map_directory: str,
         logger: Any = None,
+        **kwargs,
     ):
         self.game = game
         self.components: list[Component] = []
@@ -41,6 +42,8 @@ class Map:
             logger = Logger(__name__, to_stdout=True, to_file=False)
         self.logger = logger
         self.logger.debug("Game was set to %s", game.code)
+
+        self.kwargs = kwargs
 
         os.makedirs(self.map_directory, exist_ok=True)
         self.logger.debug("Map directory created: %s", self.map_directory)
@@ -61,6 +64,7 @@ class Map:
                     self.distance,
                     self.map_directory,
                     self.logger,
+                    **self.kwargs,
                 )
                 try:
                     component.process()
@@ -71,7 +75,6 @@ class Map:
                         e,
                     )
                     raise e
-                # setattr(self, game_component.__name__.lower(), component)
                 self.components.append(component)
 
                 pbar.update(1)
@@ -82,9 +85,6 @@ class Map:
         Returns:
             list[str]: List of preview images.
         """
-        # texture_previews = self.texture.previews()  # type: ignore # pylint: disable=no-member
-        # dem_previews = self.dem.previews()  # type: ignore # pylint: disable=no-member
-        # return texture_previews + dem_previews
         previews = []
         for component in self.components:
             previews.extend(component.previews())
