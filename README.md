@@ -136,8 +136,8 @@ import maps4fs as mfs
 map = mfs.Map(
   game,
   (52.5200, 13.4050),  # Latitude and longitude of the map center.
-  map_height=1024,  # The height of the map in meters.
-  map_width=1024,  # The width of the map in meters.
+  height=1024,  # The height of the map in meters.
+  width=1024,  # The width of the map in meters.
   map_directory="path/to/your/map/directory",  # The directory where the map will be saved.
 )
 ```
