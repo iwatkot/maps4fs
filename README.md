@@ -159,6 +159,7 @@ The project is based on the [OpenStreetMap](https://www.openstreetmap.org/) data
 - "natural": ["water"]
 - "waterway": True
 - "natural": ["wood", "tree_row"]
+- "railway": True
 
 The list will be updated as the project develops.
 

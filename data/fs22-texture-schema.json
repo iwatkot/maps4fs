@@ -76,7 +76,10 @@
   },
   {
     "name": "mountainRock",
-    "count": 4
+    "count": 4,
+    "tags": { "railway": true },
+    "width": 4,
+    "color": [100, 100, 100]
   },
   {
     "name": "mountainRockDark",
