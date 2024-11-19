@@ -235,9 +235,8 @@ class DEM(Component):
         dem_data = cv2.imread(self._dem_path, cv2.IMREAD_GRAYSCALE)
 
         # Normalize the DEM data to the range [0, 255]
-        # dem_data_normalized = cv2.normalize(dem_data, None, 0, 255, cv2.NORM_MINMAX)
-
-        dem_data_colored = cv2.applyColorMap(dem_data, cv2.COLORMAP_JET)
+        dem_data_normalized = cv2.normalize(dem_data, None, 0, 255, cv2.NORM_MINMAX)
+        dem_data_colored = cv2.applyColorMap(dem_data_normalized, cv2.COLORMAP_JET)
 
         cv2.imwrite(colored_dem_path, dem_data_colored)
         return colored_dem_path
