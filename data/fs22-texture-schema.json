@@ -53,8 +53,8 @@
   {
     "name": "grass",
     "count": 4,
-    "tags": { "natural": "grassland" },
-    "color": [34, 255, 34]
+    "tags": { "natural": ["grassland", "scrub"] },
+    "width": 2
   },
   {
     "name": "grassDirt",
@@ -66,7 +66,7 @@
   {
     "name": "gravel",
     "count": 4,
-    "tags": { "highway": ["secondary", "tertiary", "road"] },
+    "tags": { "highway": ["secondary", "tertiary", "road", "service"] },
     "width": 4,
     "color": [140, 180, 210]
   },

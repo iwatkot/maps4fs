@@ -152,9 +152,9 @@ The map will be saved in the `map_directory` directory.
 The project is based on the [OpenStreetMap](https://www.openstreetmap.org/) data. So, refer to [this page](https://wiki.openstreetmap.org/wiki/Map_Features) to understand the list below.
 - "building": True
 - "highway": ["motorway", "trunk", "primary"]
-- "highway": ["secondary", "tertiary", "road"]
+- "highway": ["secondary", "tertiary", "road", "service"]
 - "highway": ["unclassified", "residential", "track"]
-- "natural": "grassland"
+- "natural": ["grassland", "scrub"]
 - "landuse": "farmland"
 - "natural": ["water"]
 - "waterway": True
