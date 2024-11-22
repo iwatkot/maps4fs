@@ -1,10 +1,7 @@
 [
   {
     "name": "asphalt",
-    "count": 2,
-    "tags": { "highway": ["motorway", "trunk", "primary"] },
-    "width": 8,
-    "color": [70, 70, 70]
+    "count": 2
   },
   {
     "name": "asphaltCracks",
@@ -16,7 +13,10 @@
   },
   {
     "name": "asphaltDusty",
-    "count": 2
+    "count": 2,
+    "tags": { "highway": ["motorway", "trunk", "primary"] },
+    "width": 8,
+    "color": [70, 70, 70]
   },
   {
     "name": "asphaltGravel",
@@ -105,10 +105,7 @@
   },
   {
     "name": "gravel",
-    "count": 2,
-    "tags": { "highway": ["secondary", "tertiary", "road"] },
-    "width": 4,
-    "color": [140, 180, 210]
+    "count": 2
   },
   {
     "name": "gravelDirtMoss",
@@ -147,7 +144,10 @@
   },
   {
     "name": "mudLight",
-    "count": 2
+    "count": 2,
+    "tags": { "highway": ["secondary", "tertiary", "road"] },
+    "width": 4,
+    "color": [140, 180, 210]
   },
   {
     "name": "mudPebbles",
