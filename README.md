@@ -27,10 +27,7 @@
 🌍 Based on real-world data from OpenStreetMap<br>
 🏞️ Generates height using SRTM dataset<br>
 📦 Provides a ready-to-use map template for the Giants Editor<br>
-🚜 Supports Farming Simulator 22 and 25*<br>
-
-\* changes in the library are ready, waiting for the Giants to release the Giants Editor v10. Meanwhile the option to generate a map for FS25 is disabled.<br>
-UPD: Giants Editor v10 is released, but it contains critical bugs, which prevent modders from creating maps. Waiting for the bugfix, until then the option to generate a map for FS25 will remain disabled.<br>
+🚜 Supports Farming Simulator 22 and 25<br>
 
 ## Quick Start
 There are several ways to use the tool. You obviously need the **first one**, but you can choose any of the others depending on your needs.<br>

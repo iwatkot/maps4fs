@@ -1,0 +1,197 @@
+[
+  {
+    "name": "asphalt",
+    "count": 2
+  },
+  {
+    "name": "asphaltCracks",
+    "count": 2
+  },
+  {
+    "name": "asphaltDirt",
+    "count": 2
+  },
+  {
+    "name": "asphaltDusty",
+    "count": 2,
+    "tags": { "highway": ["motorway", "trunk", "primary"] },
+    "width": 8,
+    "color": [70, 70, 70]
+  },
+  {
+    "name": "asphaltGravel",
+    "count": 2
+  },
+  {
+    "name": "asphaltTwigs",
+    "count": 2
+  },
+  {
+    "name": "concrete",
+    "count": 2,
+    "tags": { "building": true },
+    "width": 8,
+    "color": [130, 130, 130]
+  },
+  {
+    "name": "concreteGravelSand",
+    "count": 2
+  },
+  {
+    "name": "concretePebbles",
+    "count": 2
+  },
+  {
+    "name": "concreteShattered",
+    "count": 2
+  },
+  {
+    "name": "forestGrass",
+    "count": 2
+  },
+  {
+    "name": "forestLeaves",
+    "count": 2
+  },
+  {
+    "name": "forestNeedels",
+    "count": 2
+  },
+  {
+    "name": "forestRockRoots",
+    "count": 2,
+    "exclude_weight": true
+  },
+  {
+    "name": "grass",
+    "count": 2,
+    "tags": { "natural": "grassland" },
+    "color": [34, 255, 34]
+  },
+  {
+    "name": "grassClovers",
+    "count": 2
+  },
+  {
+    "name": "grassCut",
+    "count": 2
+  },
+  {
+    "name": "grassDirtPatchy",
+    "count": 2,
+    "tags": { "natural": ["wood", "tree_row"] },
+    "width": 2,
+    "color": [0, 252, 124]
+  },
+  {
+    "name": "grassDirtPatchyDry",
+    "count": 2
+  },
+  {
+    "name": "grassDirtStones",
+    "count": 2
+  },
+  {
+    "name": "grassFreshMiddle",
+    "count": 2
+  },
+  {
+    "name": "grassFreshShort",
+    "count": 2
+  },
+  {
+    "name": "grassMoss",
+    "count": 2
+  },
+  {
+    "name": "gravel",
+    "count": 2
+  },
+  {
+    "name": "gravelDirtMoss",
+    "count": 2
+  },
+  {
+    "name": "gravelPebblesMoss",
+    "count": 2
+  },
+  {
+    "name": "gravelPebblesMossPatchy",
+    "count": 2
+  },
+  {
+    "name": "gravelSmall",
+    "count": 2
+  },
+  {
+    "name": "mudDark",
+    "count": 2,
+    "tags": { "highway": ["unclassified", "residential", "track"] },
+    "width": 2,
+    "color": [33, 67, 101]
+  },
+  {
+    "name": "mudDarkGrassPatchy",
+    "count": 2
+  },
+  {
+    "name": "mudDarkMossPatchy",
+    "count": 2
+  },
+  {
+    "name": "mudLeaves",
+    "count": 2
+  },
+  {
+    "name": "mudLight",
+    "count": 2,
+    "tags": { "highway": ["secondary", "tertiary", "road"] },
+    "width": 4,
+    "color": [140, 180, 210]
+  },
+  {
+    "name": "mudPebbles",
+    "count": 2
+  },
+  {
+    "name": "mudPebblesLight",
+    "count": 2
+  },
+  {
+    "name": "mudTracks",
+    "count": 2
+  },
+  {
+    "name": "pebblesForestGround",
+    "count": 2
+  },
+  {
+    "name": "rock",
+    "count": 2
+  },
+  {
+    "name": "rockFloorTiles",
+    "count": 2
+  },
+  {
+    "name": "rockFloorTilesPattern",
+    "count": 2
+  },
+  {
+    "name": "rockForest",
+    "count": 2
+  },
+  {
+    "name": "rockyForestGround",
+    "count": 2,
+    "tags": { "landuse": "farmland" },
+    "color": [47, 107, 85]
+  },
+  {
+    "name": "sand",
+    "count": 2,
+    "tags": { "natural": "water", "waterway": true },
+    "width": 10,
+    "color": [255, 20, 20]
+  }
+]

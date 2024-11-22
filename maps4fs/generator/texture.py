@@ -56,12 +56,14 @@ class Texture(Component):
             tags: dict[str, str | list[str] | bool] | None = None,
             width: int | None = None,
             color: tuple[int, int, int] | list[int] | None = None,
+            exclude_weight: bool = False,
         ):
             self.name = name
             self.count = count
             self.tags = tags
             self.width = width
             self.color = color if color else (255, 255, 255)
+            self.exclude_weight = exclude_weight
 
         def to_json(self) -> dict[str, str | list[str] | bool]:  # type: ignore
             """Returns dictionary with layer data.
@@ -74,6 +76,7 @@ class Texture(Component):
                 "tags": self.tags,
                 "width": self.width,
                 "color": list(self.color),
+                "exclude_weight": self.exclude_weight,
             }
 
             data = {k: v for k, v in data.items() if v is not None}
@@ -100,9 +103,9 @@ class Texture(Component):
             Returns:
                 str: Path to the texture.
             """
-            if self.name == "waterPuddle":
-                return os.path.join(weights_directory, "waterPuddle_weight.png")
-            return os.path.join(weights_directory, f"{self.name}01_weight.png")
+            idx = "01" if self.count > 0 else ""
+            weight_postfix = "_weight" if not self.exclude_weight else ""
+            return os.path.join(weights_directory, f"{self.name}{idx}{weight_postfix}.png")
 
     def preprocess(self) -> None:
         if not os.path.isfile(self.game.texture_schema):
@@ -117,8 +120,10 @@ class Texture(Component):
         self.layers = [self.Layer.from_json(layer) for layer in layers_schema]
         self.logger.info("Loaded %s layers.", len(self.layers))
 
-        self._weights_dir = os.path.join(self.map_directory, "maps", "map", "data")
+        self._weights_dir = self.game.weights_dir_path(self.map_directory)
+        self.logger.debug("Weights directory: %s.", self._weights_dir)
         self.info_save_path = os.path.join(self.map_directory, "generation_info.json")
+        self.logger.debug("Generation info save path: %s.", self.info_save_path)
 
     def process(self):
         self._prepare_weights()
@@ -192,25 +197,24 @@ class Texture(Component):
         self.logger.debug("Starting preparing weights from %s layers.", len(self.layers))
 
         for layer in self.layers:
-            self._generate_weights(layer.name, layer.count)
+            self._generate_weights(layer)
         self.logger.debug("Prepared weights for %s layers.", len(self.layers))
 
-    def _generate_weights(self, texture_name: str, layer_numbers: int) -> None:
+    def _generate_weights(self, layer: Layer) -> None:
         """Generates weight files for textures. Each file is a numpy array of zeros and
             dtype uint8 (0-255).
 
         Args:
-            texture_name (str): Name of the texture.
-            layer_numbers (int): Number of layers in the texture.
+            layer (Layer): Layer with textures and tags.
         """
         size = (self.map_height, self.map_width)
-        postfix = "_weight.png"
-        if layer_numbers == 0:
-            filepaths = [os.path.join(self._weights_dir, texture_name + postfix)]
+        postfix = "_weight.png" if not layer.exclude_weight else ".png"
+        if layer.count == 0:
+            filepaths = [os.path.join(self._weights_dir, layer.name + postfix)]
         else:
             filepaths = [
-                os.path.join(self._weights_dir, texture_name + str(i).zfill(2) + postfix)
-                for i in range(1, layer_numbers + 1)
+                os.path.join(self._weights_dir, layer.name + str(i).zfill(2) + postfix)
+                for i in range(1, layer.count + 1)
             ]
 
         for filepath in filepaths:
@@ -403,13 +407,16 @@ class Texture(Component):
             preview_size,
         )
 
+        active_layers = [layer for layer in self.layers if layer.tags is not None]
+        self.logger.debug("Following layers have tag textures: %s.", len(active_layers))
+
         images = [
             cv2.resize(
                 cv2.imread(layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED), preview_size
             )
-            for layer in self.layers
+            for layer in active_layers
         ]
-        colors = [layer.color for layer in self.layers]
+        colors = [layer.color for layer in active_layers]
         color_images = []
         for img, color in zip(images, colors):
             color_img = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)
