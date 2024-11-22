@@ -125,6 +125,13 @@ class DEM(Component):
             "Gaussion blur applied to DEM data with kernel size %s.",
             self.blur_radius,
         )
+        self.logger.debug(
+            "DEM data was blurred. Shape: %s, dtype: %s. Min: %s, max: %s.",
+            resampled_data.shape,
+            resampled_data.dtype,
+            resampled_data.min(),
+            resampled_data.max(),
+        )
 
         cv2.imwrite(self._dem_path, resampled_data)
         self.logger.debug("DEM data was saved to %s.", self._dem_path)
@@ -244,13 +251,28 @@ class DEM(Component):
 
         self.logger.debug("Creating colored preview of DEM data in %s.", colored_dem_path)
 
-        dem_data = cv2.imread(self._dem_path, cv2.IMREAD_GRAYSCALE)
+        dem_data = cv2.imread(self._dem_path, cv2.IMREAD_UNCHANGED)
 
-        # Create an empty array with the same shape and type as dem_data
+        self.logger.debug(
+            "DEM data before normalization. Shape: %s, dtype: %s. Min: %s, max: %s.",
+            dem_data.shape,
+            dem_data.dtype,
+            dem_data.min(),
+            dem_data.max(),
+        )
+
+        # Create an empty array with the same shape and type as dem_data.
         dem_data_normalized = np.empty_like(dem_data)
 
         # Normalize the DEM data to the range [0, 255]
         cv2.normalize(dem_data, dem_data_normalized, 0, 255, cv2.NORM_MINMAX)
+        self.logger.debug(
+            "DEM data after normalization. Shape: %s, dtype: %s. Min: %s, max: %s.",
+            dem_data_normalized.shape,
+            dem_data_normalized.dtype,
+            dem_data_normalized.min(),
+            dem_data_normalized.max(),
+        )
         dem_data_colored = cv2.applyColorMap(dem_data_normalized, cv2.COLORMAP_JET)
 
         cv2.imwrite(colored_dem_path, dem_data_colored)

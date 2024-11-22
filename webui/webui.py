@@ -42,7 +42,7 @@ class Maps4FS:
         st.write("Enter latitude and longitude of the center point of the map:")
         self.lat_lon_input = st.text_input(
             "Latitude and Longitude",
-            "45.26, 19.80",
+            "45.28571409289627, 20.237433441210115",
             key="lat_lon",
             label_visibility="collapsed",
         )
