@@ -25,7 +25,7 @@ So, if you're new to map making, here's a quick overview of the process:
 You'll find detailed instructions on how to run the project below. But if you prefer video tutorials, here's one for you.
 https://www.youtube.com/watch?v=ujwWKHVKsw8
 
-[b]🗺️ Supported map sizes:** 2x2, 4x4, 8x8, 16x16 km.[/b]
+[b]🗺️ Supported map sizes: 2x2, 4x4, 8x8, 16x16 km.[/b]
 
 [h3]Option 1: Use the web application[/h3]
 In this case you don't need to install anything, just open the link and in a coiple of clicks your map template will be ready.
