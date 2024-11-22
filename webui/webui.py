@@ -1,5 +1,5 @@
 import os
-from time import time
+from datetime import datetime
 
 import config
 import streamlit as st
@@ -30,7 +30,10 @@ class Maps4FS:
         st.write("Select the game for which you want to generate the map:")
         self.game_code_input = st.selectbox(
             "Game",
-            options=["FS22"],  # TODO: Return "FS25" when the Giants Editor v10 will be released.
+            options=[
+                "FS25",
+                "FS22",
+            ],
             key="game_code",
             label_visibility="collapsed",
         )
@@ -39,7 +42,7 @@ class Maps4FS:
         st.write("Enter latitude and longitude of the center point of the map:")
         self.lat_lon_input = st.text_input(
             "Latitude and Longitude",
-            "45.2856, 20.2374",
+            "45.26, 19.80",
             key="lat_lon",
             label_visibility="collapsed",
         )
@@ -127,7 +130,8 @@ class Maps4FS:
 
     def generate_map(self) -> None:
         # Read game code from the input widget and create a game object.
-        game = mfs.Game.from_code(self.game_code_input)
+        game_code = self.game_code_input
+        game = mfs.Game.from_code(game_code)
 
         try:
             # Read latitude and longitude from the input widget
@@ -148,7 +152,8 @@ class Maps4FS:
             return
 
         # Session name will be used for a directory name as well as a zip file name.
-        session_name = str(time()).replace(".", "_")
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        session_name = f"{game.code}_{timestamp}"
 
         # st.info("Started map generation...", icon="⏳")
         self.status_container.info("Started map generation...", icon="⏳")

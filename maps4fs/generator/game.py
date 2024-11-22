@@ -30,6 +30,7 @@ class Game:
 
     code: str | None = None
     dem_multipliyer: int = 1
+    _additional_dem_name: str | None = None
     _map_template_path: str | None = None
     _texture_schema: str | None = None
 
@@ -102,6 +103,24 @@ class Game:
         """
         raise NotImplementedError
 
+    def weights_dir_path(self, map_directory: str) -> str:
+        """Returns the path to the weights directory.
+
+        Arguments:
+            map_directory (str): The path to the map directory.
+
+        Returns:
+            str: The path to the weights directory."""
+        raise NotImplementedError
+
+    @property
+    def additional_dem_name(self) -> str | None:
+        """Returns the name of the additional DEM file.
+
+        Returns:
+            str | None: The name of the additional DEM file."""
+        return self._additional_dem_name
+
 
 class FS22(Game):
     """Class used to define the game version FS22."""
@@ -120,12 +139,23 @@ class FS22(Game):
             str: The path to the DEM file."""
         return os.path.join(map_directory, "maps", "map", "data", "map_dem.png")
 
+    def weights_dir_path(self, map_directory: str) -> str:
+        """Returns the path to the weights directory.
+
+        Arguments:
+            map_directory (str): The path to the map directory.
+
+        Returns:
+            str: The path to the weights directory."""
+        return os.path.join(map_directory, "maps", "map", "data")
+
 
 class FS25(Game):
     """Class used to define the game version FS25."""
 
     code = "FS25"
     dem_multipliyer: int = 2
+    _additional_dem_name = "unprocessedHeightMap.png"
     _map_template_path = os.path.join(working_directory, "data", "fs25-map-template.zip")
     _texture_schema = os.path.join(working_directory, "data", "fs25-texture-schema.json")
 
@@ -137,4 +167,25 @@ class FS25(Game):
 
         Returns:
             str: The path to the DEM file."""
-        return os.path.join(map_directory, "maps", "map", "data", "dem.png")
+        return os.path.join(map_directory, "mapUS", "data", "dem.png")
+
+    def map_xml_path(self, map_directory: str) -> str:
+        """Returns the path to the map.xml file.
+
+        Arguments:
+            map_directory (str): The path to the map directory.
+
+        Returns:
+            str: The path to the map.xml file.
+        """
+        return os.path.join(map_directory, "mapUS", "mapUS.xml")
+
+    def weights_dir_path(self, map_directory: str) -> str:
+        """Returns the path to the weights directory.
+
+        Arguments:
+            map_directory (str): The path to the map directory.
+
+        Returns:
+            str: The path to the weights directory."""
+        return os.path.join(map_directory, "mapUS", "data")
