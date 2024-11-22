@@ -41,7 +41,7 @@ class DEM(Component):
         self.multiplier = self.kwargs.get("multiplier", DEFAULT_MULTIPLIER)
         self.blur_radius = self.kwargs.get("blur_radius", DEFAULT_BLUR_RADIUS)
         self.logger.debug(
-            "DEM multiplier is %s, blur radius is %s.", self.multiplier, self.blur_radius
+            "DEM value multiplier is %s, blur radius is %s.", self.multiplier, self.blur_radius
         )
 
     # pylint: disable=no-member
@@ -50,10 +50,10 @@ class DEM(Component):
         saves to map directory."""
         north, south, east, west = self.bbox
 
-        dem_height = self.map_height * self.game.dem_multipliyer + 1
-        dem_width = self.map_width * self.game.dem_multipliyer + 1
+        dem_height = int((self.map_height / 2) * self.game.dem_multipliyer + 1)
+        dem_width = int((self.map_width / 2) * self.game.dem_multipliyer + 1)
         self.logger.debug(
-            "DEM multiplier is %s, DEM height is %s, DEM width is %s.",
+            "DEM size multiplier is %s, DEM height is %s, DEM width is %s.",
             self.game.dem_multipliyer,
             dem_height,
             dem_width,
@@ -224,6 +224,9 @@ class DEM(Component):
             str: Path to the preview image.
         """
         rgb_dem_path = self._dem_path.replace(".png", "_grayscale.png")
+
+        self.logger.debug("Creating grayscale preview of DEM data in %s.", rgb_dem_path)
+
         dem_data = cv2.imread(self._dem_path, cv2.IMREAD_GRAYSCALE)
         dem_data_rgb = cv2.cvtColor(dem_data, cv2.COLOR_GRAY2RGB)
         cv2.imwrite(rgb_dem_path, dem_data_rgb)
@@ -238,6 +241,9 @@ class DEM(Component):
         """
 
         colored_dem_path = self._dem_path.replace(".png", "_colored.png")
+
+        self.logger.debug("Creating colored preview of DEM data in %s.", colored_dem_path)
+
         dem_data = cv2.imread(self._dem_path, cv2.IMREAD_GRAYSCALE)
 
         # Create an empty array with the same shape and type as dem_data
@@ -256,4 +262,5 @@ class DEM(Component):
         Returns:
             list[str]: List of preview images.
         """
+        self.logger.debug("Starting DEM previews generation.")
         return [self.grayscale_preview(), self.colored_preview()]

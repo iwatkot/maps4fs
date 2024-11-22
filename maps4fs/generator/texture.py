@@ -407,13 +407,16 @@ class Texture(Component):
             preview_size,
         )
 
+        active_layers = [layer for layer in self.layers if layer.tags is not None]
+        self.logger.debug("Following layers have tag textures: %s.", len(active_layers))
+
         images = [
             cv2.resize(
                 cv2.imread(layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED), preview_size
             )
-            for layer in self.layers
+            for layer in active_layers
         ]
-        colors = [layer.color for layer in self.layers]
+        colors = [layer.color for layer in active_layers]
         color_images = []
         for img, color in zip(images, colors):
             color_img = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)

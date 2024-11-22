@@ -91,7 +91,14 @@ class Map:
         """
         previews = []
         for component in self.components:
-            previews.extend(component.previews())
+            try:
+                previews.extend(component.previews())
+            except Exception as e:
+                self.logger.error(
+                    "Error getting previews for component %s: %s",
+                    component.__class__.__name__,
+                    e,
+                )
         return previews
 
     def pack(self, archive_name: str) -> str:

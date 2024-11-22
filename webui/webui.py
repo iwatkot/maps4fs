@@ -56,22 +56,18 @@ class Maps4FS:
         )
 
         if self.map_size_input == "Custom":
-            st.warning(
-                "This feature is for advanced users only, you need to know exact correct values, "
-                "otherwise the Giants Editor will crash on opening the file. Do not use it, "
-                "if you are not sure what you are doing."
-            )
-            st.write("Enter map height (meters):")
-            map_height_input = st.number_input(
-                "Height (meters)", 1, 16384, 2048, key="map_height", label_visibility="collapsed"
-            )
-
-            st.write("Enter map width (meters):")
-            map_width_input = st.number_input(
-                "Width (meters)", 1, 16384, 2048, key="map_width", label_visibility="collapsed"
+            st.info("ℹ️ Map size can be only a power of 2. For example: 2, 4, ... 2048, 4096, ...")
+            st.warning("⚠️ Large map sizes can crash on generation or import in the game.")
+            st.write("Enter map size (meters):")
+            custom_map_size_input = st.number_input(
+                label="Height (meters)",
+                min_value=2,
+                value=2048,
+                key="map_height",
+                label_visibility="collapsed",
             )
 
-            self.map_size_input = f"{map_height_input}x{map_width_input}"
+            self.map_size_input = f"{custom_map_size_input}x{custom_map_size_input}"
 
         # Add checkbox for advanced settings.
         st.write("Advanced settings (do not change if you are not sure):")
@@ -80,8 +76,18 @@ class Maps4FS:
         self.blur_radius_input = DEFAULT_BLUR_RADIUS
 
         if self.advanced_settings:
+            st.warning("⚠️ Changing these settings can lead to unexpected results.")
+            st.info(
+                "ℹ️ [DEM] is for settings related to the Digital Elevation Model (elevation map). "
+                "This file is used to generate the terrain of the map (hills, valleys, etc.)."
+            )
             # Show multiplier and blur radius inputs.
-            st.write("Enter multiplier for the DEM (elevation) map:")
+            st.write("[DEM] Enter multiplier for the elevation map:")
+            st.write(
+                "This multiplier can be used to make the terrain more pronounced. "
+                "By default the DEM file will be exact copy of the real terrain. "
+                "If you want to make it more steep, you can increase this value."
+            )
             self.multiplier_input = st.number_input(
                 "Multiplier",
                 value=DEFAULT_MULTIPLIER,
@@ -91,7 +97,13 @@ class Maps4FS:
                 label_visibility="collapsed",
             )
 
-            st.write("Enter blur radius for the DEM (elevation) map:")
+            st.write("[DEM] Enter blur radius for the elevation map:")
+            st.write(
+                "This value is used to blur the elevation map. Without blurring the terrain "
+                "may look too sharp and unrealistic. By default the blur radius is set to 21 "
+                "which corresponds to a 21x21 pixel kernel. You can increase this value to make "
+                "the terrain more smooth. Or make it smaller to make the terrain more sharp."
+            )
             self.blur_radius_input = st.number_input(
                 "Blur Radius",
                 value=DEFAULT_BLUR_RADIUS,
@@ -151,6 +163,14 @@ class Maps4FS:
             st.error("Invalid map size!")
             return
 
+        if height % 2 != 0 or width % 2 != 0:
+            st.error("Map size must be a power of 2. For example: 2, 4, ... 2048, 4096, ...")
+            return
+
+        if height != width:
+            st.error("Map size must be square (height == width).")
+            return
+
         # Session name will be used for a directory name as well as a zip file name.
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         session_name = f"{game.code}_{timestamp}"
@@ -194,7 +214,8 @@ class Maps4FS:
             "Preview of the DEM (elevation) map in grayscale (original).",
             "Preview of the DEM (elevation) map in colored mode (only for demonstration).",
         ]
-        if not full_preview_paths:
+        if not full_preview_paths or len(full_preview_paths) != len(preview_captions):
+            # In case if generation of the preview images failed, we will not show them.
             return
 
         with self.preview_container:
