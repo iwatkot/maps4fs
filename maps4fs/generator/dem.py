@@ -240,10 +240,12 @@ class DEM(Component):
         colored_dem_path = self._dem_path.replace(".png", "_colored.png")
         dem_data = cv2.imread(self._dem_path, cv2.IMREAD_GRAYSCALE)
 
-        # Normalize the DEM data to the range [0, 255]
-        # dem_data_normalized = cv2.normalize(dem_data, None, 0, 255, cv2.NORM_MINMAX)
+        # Create an empty array with the same shape and type as dem_data
+        dem_data_normalized = np.empty_like(dem_data)
 
-        dem_data_colored = cv2.applyColorMap(dem_data, cv2.COLORMAP_JET)
+        # Normalize the DEM data to the range [0, 255]
+        cv2.normalize(dem_data, dem_data_normalized, 0, 255, cv2.NORM_MINMAX)
+        dem_data_colored = cv2.applyColorMap(dem_data_normalized, cv2.COLORMAP_JET)
 
         cv2.imwrite(colored_dem_path, dem_data_colored)
         return colored_dem_path

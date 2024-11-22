@@ -407,23 +407,12 @@ class Texture(Component):
             preview_size,
         )
 
-        images = []
-        for layer in self.layers:
-            self.logger.debug(
-                "Reading layer %s from %s.", layer.name, layer.path(self._weights_dir)
+        images = [
+            cv2.resize(
+                cv2.imread(layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED), preview_size
             )
-            images.append(
-                cv2.resize(
-                    cv2.imread(layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED), preview_size
-                )
-            )
-
-        # images = [
-        #     cv2.resize(
-        #         cv2.imread(layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED), preview_size
-        #     )
-        #     for layer in self.layers
-        # ]
+            for layer in self.layers
+        ]
         colors = [layer.color for layer in self.layers]
         color_images = []
         for img, color in zip(images, colors):

@@ -29,7 +29,7 @@
 📦 Provides a ready-to-use map template for the Giants Editor<br>
 🚜 Supports Farming Simulator 22 and 25*<br>
 
-\* changes in the library are ready, waiting for the Giants to release the Giants Editor v10. Meanwhile the option to generate a map for FS25 is disabled.
+\* in process, ETA: 24.11.2024.
 
 ## Quick Start
 There are several ways to use the tool. You obviously need the **first one**, but you can choose any of the others depending on your needs.<br>
@@ -152,13 +152,14 @@ The map will be saved in the `map_directory` directory.
 The project is based on the [OpenStreetMap](https://www.openstreetmap.org/) data. So, refer to [this page](https://wiki.openstreetmap.org/wiki/Map_Features) to understand the list below.
 - "building": True
 - "highway": ["motorway", "trunk", "primary"]
-- "highway": ["secondary", "tertiary", "road"]
+- "highway": ["secondary", "tertiary", "road", "service"]
 - "highway": ["unclassified", "residential", "track"]
-- "natural": "grassland"
+- "natural": ["grassland", "scrub"]
 - "landuse": "farmland"
 - "natural": ["water"]
 - "waterway": True
 - "natural": ["wood", "tree_row"]
+- "railway": True
 
 The list will be updated as the project develops.
 
