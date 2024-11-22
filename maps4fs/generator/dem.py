@@ -39,7 +39,10 @@ class DEM(Component):
         os.makedirs(self.gz_dir, exist_ok=True)
 
         self.multiplier = self.kwargs.get("multiplier", DEFAULT_MULTIPLIER)
-        self.blur_radius = self.kwargs.get("blur_radius", DEFAULT_BLUR_RADIUS)
+        blur_radius = self.kwargs.get("blur_radius", DEFAULT_BLUR_RADIUS)
+        if blur_radius % 2 == 0:
+            blur_radius += 1
+        self.blur_radius = blur_radius
         self.logger.debug(
             "DEM value multiplier is %s, blur radius is %s.", self.multiplier, self.blur_radius
         )

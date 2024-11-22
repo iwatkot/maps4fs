@@ -111,6 +111,7 @@ class Maps4FS:
                 max_value=300,
                 key="blur_radius",
                 label_visibility="collapsed",
+                step=2,
             )
 
         # Add an empty container for status messages.
