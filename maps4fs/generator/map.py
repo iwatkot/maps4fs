@@ -93,7 +93,7 @@ class Map:
         for component in self.components:
             try:
                 previews.extend(component.previews())
-            except Exception as e:
+            except Exception as e:  # pylint: disable=W0718
                 self.logger.error(
                     "Error getting previews for component %s: %s",
                     component.__class__.__name__,
