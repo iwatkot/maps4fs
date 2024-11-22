@@ -254,7 +254,7 @@ class DEM(Component):
 
         self.logger.debug("Creating colored preview of DEM data in %s.", colored_dem_path)
 
-        dem_data = cv2.imread(self._dem_path, cv2.IMREAD_UNCHANGED)
+        dem_data = cv2.imread(self._dem_path, cv2.IMREAD_GRAYSCALE)
 
         self.logger.debug(
             "DEM data before normalization. Shape: %s, dtype: %s. Min: %s, max: %s.",
