@@ -2,11 +2,16 @@ import os
 from datetime import datetime
 
 import config
+import osmp
 import streamlit as st
+import streamlit.components.v1 as components
 from PIL import Image
 
 import maps4fs as mfs
 from maps4fs.generator.dem import DEFAULT_BLUR_RADIUS, DEFAULT_MULTIPLIER
+
+DEFAULT_LAT = 45.28571409289627
+DEFAULT_LON = 20.237433441210115
 
 
 class Maps4FS:
@@ -14,25 +19,57 @@ class Maps4FS:
         self.download_path = None
         self.logger = mfs.Logger(__name__, level="DEBUG")
 
-        st.set_page_config(page_title="Maps4FS", page_icon="🚜")
+        st.set_page_config(page_title="Maps4FS", page_icon="🚜", layout="wide")
         st.title("Maps4FS")
         st.write("Generate map templates for Farming Simulator from real places.")
 
         st.info(
             "ℹ️ When opening map first time in the Giants Editor, select **terrain** object, "
             "open **Terrain** tab in the **Attributes** window, scroll down to the end "
-            "and press the **Reload material** button. Otherwise you may (and will) face some "
-            "glitches."
+            "and press the **Reload material** button.  \n"
+            "Otherwise you may (and will) face some glitches."
         )
 
         st.markdown("---")
 
+        self.left_column, self.right_column = st.columns(2, gap="large")
+
         if "generated" not in st.session_state:
             st.session_state.generated = False
 
-        self.add_widgets()
+        with self.right_column:
+            self.add_right_widgets()
 
-    def add_widgets(self) -> None:
+        with self.left_column:
+            self.add_left_widgets()
+
+        self.map_preview()
+
+    def map_preview(self, is_finished: bool = False) -> None:
+        try:
+            lat, lon = map(float, self.lat_lon_input.split(","))
+        except ValueError:
+            return
+
+        try:
+            map_size, _ = map(int, self.map_size_input.split("x"))
+        except ValueError:
+            return
+
+        html_file = osmp.get_preview(lat, lon, map_size)
+
+        height = 300 if is_finished else 600
+
+        with self.html_preview_container:
+            components.html(open(html_file).read(), height=height)
+
+    def add_right_widgets(self) -> None:
+        self.html_preview_container = st.empty()
+        self.map_selector_container = st.container()
+        # Add an empty container for preview image.
+        self.preview_container = st.container()
+
+    def add_left_widgets(self) -> None:
         # Game selection (FS22 or FS25).
         st.write("Select the game for which you want to generate the map:")
         self.game_code_input = st.selectbox(
@@ -49,9 +86,10 @@ class Maps4FS:
         st.write("Enter latitude and longitude of the center point of the map:")
         self.lat_lon_input = st.text_input(
             "Latitude and Longitude",
-            "45.28571409289627, 20.237433441210115",
+            f"{DEFAULT_LAT}, {DEFAULT_LON}",
             key="lat_lon",
             label_visibility="collapsed",
+            on_change=self.map_preview,
         )
 
         # Map size selection.
@@ -60,6 +98,7 @@ class Maps4FS:
             "Map Size (meters)",
             options=["2048x2048", "4096x4096", "8192x8192", "16384x16384", "Custom"],
             label_visibility="collapsed",
+            on_change=self.map_preview,
         )
 
         if self.map_size_input == "Custom":
@@ -72,6 +111,7 @@ class Maps4FS:
                 value=2048,
                 key="map_height",
                 label_visibility="collapsed",
+                on_change=self.map_preview,
             )
 
             self.map_size_input = f"{custom_map_size_input}x{custom_map_size_input}"
@@ -151,9 +191,6 @@ class Maps4FS:
         # Add an empty container for buttons.
         self.buttons_container = st.empty()
 
-        # Add an empty container for preview image.
-        self.preview_container = st.container()
-
         # Generate button.
         with self.buttons_container:
             if st.button("Generate", key="launch_btn"):
@@ -228,6 +265,7 @@ class Maps4FS:
 
         # Create a preview image.
         self.show_preview(mp)
+        self.map_preview(is_finished=True)
 
         # Pack the generated map into a zip archive.
         archive_path = mp.pack(os.path.join(config.ARCHIVES_DIRECTORY, session_name))
@@ -252,12 +290,17 @@ class Maps4FS:
             return
 
         with self.preview_container:
-            for caption, full_preview_path in zip(preview_captions, full_preview_paths):
+            st.markdown("---")
+            st.write("Previews of the generated map:")
+            columns = st.columns(len(full_preview_paths))
+            for column, caption, full_preview_path in zip(
+                columns, preview_captions, full_preview_paths
+            ):
                 if not os.path.isfile(full_preview_path):
                     continue
                 try:
                     image = Image.open(full_preview_path)
-                    st.image(image, use_container_width=True, caption=caption)
+                    column.image(image, use_container_width=True, caption=caption)
                 except Exception:
                     continue
 
