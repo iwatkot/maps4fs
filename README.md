@@ -6,6 +6,7 @@
   <a href="#Overview">Overview</a> • 
   <a href="#How-To-Run">How-To-Run</a> • 
   <a href="#Supported-objects">Supported objects</a> • 
+  <a href="Texture-schema">Texture schema</a> •
   <a href="#For-advanced-users">For advanced users</a> • 
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a>
 </p>
@@ -16,6 +17,7 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/iwatkot/maps4fs)](https://hub.docker.com/repository/docker/iwatkot/maps4fs/general)
 [![GitHub issues](https://img.shields.io/github/issues/iwatkot/maps4fs)](https://github.com/iwatkot/maps4fs/issues)
 [![Maintainability](https://api.codeclimate.com/v1/badges/b922fd0a7188d37e61de/maintainability)](https://codeclimate.com/github/iwatkot/maps4fs/maintainability)<br>
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/maps4fs)](https://pypi.org/project/maps4fs)
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
 [![Build Status](https://github.com/iwatkot/maps4fs/actions/workflows/checks.yml/badge.svg)](https://github.com/iwatkot/maps4fs/actions)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/b922fd0a7188d37e61de/test_coverage)](https://codeclimate.com/github/iwatkot/maps4fs/test_coverage)
@@ -178,6 +180,51 @@ The script will also generate the `generation_info.json` file in the `output` fo
 `"tile_name"` - the name of the SRTM tile which was used to generate the height map, e.g. "N52E013"<br>
 
 You can use this information to adjust some other sources of data to the map, e.g. textures, height maps, etc.
+
+## Texture schema
+maps4fs uses a simple JSON file to define the texture schema. For each of supported games this file has unique entries, but the structure is the same. Here's an example of the schema for Farming Simulator 25:
+
+```json
+[
+    {
+    "name": "forestRockRoots",
+    "count": 2,
+    "exclude_weight": true
+  },
+  {
+    "name": "grass",
+    "count": 2,
+    "tags": { "natural": "grassland" },
+    "color": [34, 255, 34],
+    "priority": 0
+  },
+  {
+    "name": "grassClovers",
+    "count": 2
+  },
+  {
+    "name": "grassCut",
+    "count": 2
+  },
+  {
+    "name": "grassDirtPatchy",
+    "count": 2,
+    "tags": { "natural": ["wood", "tree_row"] },
+    "width": 2,
+    "color": [0, 252, 124]
+  }
+]
+```
+Let's have a closer look at the fields:
+- `name` - the name of the texture. Just the way the file will be named.
+- `count` - the number of textures of this type. For example, for the **dirtMedium** texture there will be two textures: **dirtMedium01_weight.png** and **dirtMedium02_weight.png**.
+ℹ️ There's one texture that have count `0`, it's the waterPuddle texture from FS22, which not present in FS25.
+- `tags` - the tags from the OpenStreetMap data. Refer to the section [Supported objects](#supported-objects) to see the list of supported tags. If there are no tags, the texture file will be generated empty and no objects will be placed on it.
+- `width` - the width of the texture in meters. Some of the objects from OSM (roads, for example) are lines, not areas. So, to draw them correctly, the tool needs to know the width of the line.
+- `color` - the color of the texture. It's used only in the preview images and have no effect on the map itself. But remember that previews are crucial for the map making process, so it's better to set the color to something that represents the texture.
+- `priority` - the priority of the texture for overlapping. Textures with higher priorities will be drawn over the textures with lower priorities.
+ℹ️ The texture with 0 priority considers the base layer, which means that all empty areas will be filled with this texture.
+- `exclude_weight` - this only used for the forestRockRoots texture from FS25. It's just means that this texture has no `weight` postfix, that's all.
 
 ## For advanced users
 The tool supports the custom size of the map. To use this feature select `Custom` in the `Map size` dropdown and enter the desired size. The tool will generate a map with the size you entered.<br>
