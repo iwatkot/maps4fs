@@ -10,6 +10,8 @@
   {
     "name": "asphaltDirt",
     "count": 2
+    "count": 2,
+    "priority": 2
   },
   {
     "name": "asphaltDusty",
@@ -17,6 +19,8 @@
     "tags": { "highway": ["motorway", "trunk", "primary"] },
     "width": 8,
     "color": [70, 70, 70]
+    "color": [70, 70, 70],
+    "priority": 1
   },
   {
     "name": "asphaltGravel",
@@ -106,6 +110,8 @@
   {
     "name": "gravel",
     "count": 2
+    "count": 2,
+    "priority": 3
   },
   {
     "name": "gravelDirtMoss",

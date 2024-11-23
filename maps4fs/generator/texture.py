@@ -57,6 +57,7 @@ class Texture(Component):
             width: int | None = None,
             color: tuple[int, int, int] | list[int] | None = None,
             exclude_weight: bool = False,
+            priority: int | None = 999,
         ):
             self.name = name
             self.count = count
@@ -64,6 +65,7 @@ class Texture(Component):
             self.width = width
             self.color = color if color else (255, 255, 255)
             self.exclude_weight = exclude_weight
+            self.priority = priority
 
         def to_json(self) -> dict[str, str | list[str] | bool]:  # type: ignore
             """Returns dictionary with layer data.
@@ -77,13 +79,14 @@ class Texture(Component):
                 "width": self.width,
                 "color": list(self.color),
                 "exclude_weight": self.exclude_weight,
+                "priority": self.priority,
             }
 
             data = {k: v for k, v in data.items() if v is not None}
             return data  # type: ignore
 
         @classmethod
-        def from_json(cls, data: dict[str, str | list[str] | bool]) -> Texture.Layer:
+        def from_json(cls, data: dict[str, str | list[str] | bool ]) -> Texture.Layer:
             """Creates a new instance of the class from dictionary.
 
             Args:
@@ -242,17 +245,22 @@ class Texture(Component):
     # pylint: disable=no-member
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
-        for layer in self.layers:
+        layers = sorted(self.layers, key=lambda _layer: _layer.priority)
+        cumulative_image = None
+        for layer in layers:
             if not layer.tags:
                 self.logger.debug("Layer %s has no tags, there's nothing to draw.", layer.name)
                 continue
             layer_path = layer.path(self._weights_dir)
             self.logger.debug("Drawing layer %s.", layer_path)
-
             img = cv2.imread(layer_path, cv2.IMREAD_UNCHANGED)
+            cumulative_img = cumulative_image if cumulative_image is not None else img
+            img_mask = cv2.bitwise_not(cumulative_img) # converts black part of map to white
             for polygon in self.polygons(layer.tags, layer.width):  # type: ignore
                 cv2.fillPoly(img, [polygon], color=255)  # type: ignore
-            cv2.imwrite(layer_path, img)
+            output_img = cv2.bitwise_and(img, img_mask) # Wherever it's white on both images, it can draw
+            cumulative_image = cv2.bitwise_or(cumulative_img, output_img) # output of this will be the mask for the next layer
+            cv2.imwrite(layer_path, output_img)
             self.logger.debug("Texture %s saved.", layer_path)
 
     def get_relative_x(self, x: float) -> int:
