@@ -254,6 +254,7 @@ class Texture(Component):
                 continue
             if layer.priority == 0:
                 base_layer = layer
+                self.logger.debug("Found base layer %s. Postponing that to be the last layer drawn.", layer.name)
                 continue
             layer_path = layer.path(self._weights_dir)
             self.logger.debug("Drawing layer %s.", layer_path)
