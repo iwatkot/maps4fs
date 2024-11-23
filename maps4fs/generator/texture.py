@@ -57,7 +57,7 @@ class Texture(Component):
             width: int | None = None,
             color: tuple[int, int, int] | list[int] | None = None,
             exclude_weight: bool = False,
-            priority: int | None = 999,
+            priority: int | None = 999, # TODO: Remove default of 999 when sorting with None is figured out
         ):
             self.name = name
             self.count = count
@@ -245,6 +245,7 @@ class Texture(Component):
     # pylint: disable=no-member
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
+        # TODO: Add sorting with None values
         layers = sorted(self.layers, key=lambda _layer: _layer.priority)
         cumulative_image = None
         base_layer = None
