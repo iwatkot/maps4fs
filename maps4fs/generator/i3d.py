@@ -9,6 +9,7 @@ from maps4fs.generator.component import Component
 
 DEFAULT_HEIGHT_SCALE = 2000
 DEFAULT_MAX_LOD_DISTANCE = 10000
+DEFAULT_MAX_LOD_OCCLUDER_DISTANCE = 10000
 
 
 # pylint: disable=R0903
@@ -66,6 +67,13 @@ class I3d(Component):
                     "maxLODDistance attribute set to %s in TerrainTransformGroup element.",
                     DEFAULT_MAX_LOD_DISTANCE,
                 )
+
+                terrain_elem.set("occMaxLODDistance", str(DEFAULT_MAX_LOD_OCCLUDER_DISTANCE))
+                self.logger.debug(
+                    "occMaxLODDistance attribute set to %s in TerrainTransformGroup element.",
+                    DEFAULT_MAX_LOD_OCCLUDER_DISTANCE,
+                )
+
                 self.logger.debug("TerrainTransformGroup element updated in I3D file.")
 
         tree.write(self._map_i3d_path)

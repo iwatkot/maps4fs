@@ -8,3 +8,5 @@ pylint
 types-tqdm
 pandas-stubs
 types-requests
+pytest
+folium
