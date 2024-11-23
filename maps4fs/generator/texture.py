@@ -267,10 +267,10 @@ class Texture(Component):
         for layer in layers:
             if layer.priority == 0:
                 layer_path = layer.path(self._weights_dir)
-                self.logger.debug("Drawing layer %s.", layer_path)
+                self.logger.debug("Drawing base layer %s.", layer_path)
                 img = cv2.bitwise_not(cumulative_image)
                 cv2.imwrite(layer_path, img)
-                self.logger.debug("Texture %s saved.", layer_path)
+                self.logger.debug("Base texture %s saved.", layer_path)
 
 
     def get_relative_x(self, x: float) -> int:
