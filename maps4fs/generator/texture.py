@@ -251,7 +251,7 @@ class Texture(Component):
             if not layer.tags:
                 self.logger.debug("Layer %s has no tags, there's nothing to draw.", layer.name)
                 continue
-            if layer.name == "grass":
+            if layer.priority == 0:
                 continue
             layer_path = layer.path(self._weights_dir)
             self.logger.debug("Drawing layer %s.", layer_path)
@@ -265,7 +265,7 @@ class Texture(Component):
             cv2.imwrite(layer_path, output_img)
             self.logger.debug("Texture %s saved.", layer_path)
         for layer in layers:
-            if layer.name == "grass":
+            if layer.priority == 0:
                 layer_path = layer.path(self._weights_dir)
                 self.logger.debug("Drawing layer %s.", layer_path)
                 img = cv2.bitwise_not(cumulative_image)

@@ -68,7 +68,8 @@
     "name": "grass",
     "count": 2,
     "tags": { "natural": "grassland" },
-    "color": [34, 255, 34]
+    "color": [34, 255, 34],
+    "priority": 0
   },
   {
     "name": "grassClovers",
