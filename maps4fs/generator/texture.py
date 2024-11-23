@@ -86,7 +86,7 @@ class Texture(Component):
             return data  # type: ignore
 
         @classmethod
-        def from_json(cls, data: dict[str, str | list[str] | bool ]) -> Texture.Layer:
+        def from_json(cls, data: dict[str, str | list[str] | bool]) -> Texture.Layer:
             """Creates a new instance of the class from dictionary.
 
             Args:
