@@ -292,7 +292,7 @@ class DEM(Component):
         return [self.grayscale_preview(), self.colored_preview()]
 
     def _get_scaling_factor(self, maximum_deviation: int) -> float:
-        ESTIMATED_MAXIMUM_DEVIATION = 1000
+        ESTIMATED_MAXIMUM_DEVIATION = 1000  # pylint: disable=C0103
         scaling_factor = maximum_deviation / ESTIMATED_MAXIMUM_DEVIATION
         return scaling_factor if scaling_factor < 1 else 1
 

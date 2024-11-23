@@ -133,6 +133,7 @@ class Game:
         return self._additional_dem_name
 
 
+# pylint: disable=W0223
 class FS22(Game):
     """Class used to define the game version FS22."""
 

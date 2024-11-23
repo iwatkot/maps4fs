@@ -24,6 +24,8 @@ class I3d(Component):
             info, warning. If not provided, default logging will be used.
     """
 
+    _map_i3d_path: str | None = None
+
     def preprocess(self) -> None:
         try:
             self._map_i3d_path = self.game.i3d_file_path(self.map_directory)
@@ -33,22 +35,22 @@ class I3d(Component):
             self._map_i3d_path = None
 
     def process(self) -> None:
-        if not self._map_i3d_path:
-            self.logger.info("No path to the i3d file was obtained, processing skipped.")
-            return
-
         self._update_i3d_file()
+
+    def _update_i3d_file(self) -> None:
+        if not self._map_i3d_path:
+            self.logger.info("I3D is not obtained, skipping the update.")
+            return
+        if not os.path.isfile(self._map_i3d_path):
+            self.logger.warning("I3D file not found: %s.", self._map_i3d_path)
+            return
 
         tree = ET.parse(self._map_i3d_path)
 
-        # Find "Scene" element
         self.logger.debug("Map I3D file loaded from: %s.", self._map_i3d_path)
 
         root = tree.getroot()
         for map_elem in root.iter("Scene"):
-            # Find TerrainTransformGroup element
-            # Set heightScale="4000"
-            # and maxLODDistance="10000"
             for terrain_elem in map_elem.iter("TerrainTransformGroup"):
                 terrain_elem.set("heightScale", str(DEFAULT_HEIGHT_SCALE))
                 self.logger.debug(
@@ -64,11 +66,6 @@ class I3d(Component):
 
         tree.write(self._map_i3d_path)
         self.logger.debug("Map I3D file saved to: %s.", self._map_i3d_path)
-
-    def _update_i3d_file(self) -> None:
-        if not os.path.isfile(self._map_i3d_path):
-            self.logger.warning("I3D file not found: %s.", self._map_i3d_path)
-            return
 
     def previews(self) -> list[str]:
         """Returns a list of paths to the preview images (empty list).
