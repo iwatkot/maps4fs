@@ -9,14 +9,16 @@
   },
   {
     "name": "asphaltDirt",
-    "count": 2
+    "count": 2,
+    "priority": 2
   },
   {
     "name": "asphaltDusty",
     "count": 2,
     "tags": { "highway": ["motorway", "trunk", "primary"] },
     "width": 8,
-    "color": [70, 70, 70]
+    "color": [70, 70, 70],
+    "priority": 1
   },
   {
     "name": "asphaltGravel",
@@ -66,7 +68,8 @@
     "name": "grass",
     "count": 2,
     "tags": { "natural": "grassland" },
-    "color": [34, 255, 34]
+    "color": [34, 255, 34],
+    "priority": 0
   },
   {
     "name": "grassClovers",
@@ -105,7 +108,8 @@
   },
   {
     "name": "gravel",
-    "count": 2
+    "count": 2,
+    "priority": 3
   },
   {
     "name": "gravelDirtMoss",
