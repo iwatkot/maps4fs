@@ -18,6 +18,13 @@ class Maps4FS:
         st.title("Maps4FS")
         st.write("Generate map templates for Farming Simulator from real places.")
 
+        st.info(
+            "ℹ️ When opening map first time in the Giants Editor, select **terrain** object, "
+            "open **Terrain** tab in the **Attributes** window, scroll down to the end "
+            "and press the **Reload material** button. Otherwise you may (and will) face some "
+            "glitches."
+        )
+
         st.markdown("---")
 
         if "generated" not in st.session_state:
@@ -69,50 +76,74 @@ class Maps4FS:
 
             self.map_size_input = f"{custom_map_size_input}x{custom_map_size_input}"
 
-        # Add checkbox for advanced settings.
-        st.write("Advanced settings (do not change if you are not sure):")
-        self.advanced_settings = st.checkbox("Show advanced settings", key="advanced_settings")
+        st.info(
+            "ℹ️ Remember to adjust the ***heightScale*** parameter in the Giants Editor to a value "
+            "that suits your map. Learn more about it in repo's "
+            "[README](https://github.com/iwatkot/maps4fs)."
+        )
+
+        self.auto_process = st.checkbox("Use auto preset", value=True, key="auto_process")
+        if self.auto_process:
+            st.info(
+                "Auto preset will automatically apply different algorithms to make terrain more "
+                "realistic. It's recommended for most cases. If you want to have more control over the "
+                "terrain generation, you can disable this option and change the advanced settings."
+            )
+
         self.multiplier_input = DEFAULT_MULTIPLIER
         self.blur_radius_input = DEFAULT_BLUR_RADIUS
 
-        if self.advanced_settings:
-            st.warning("⚠️ Changing these settings can lead to unexpected results.")
+        if not self.auto_process:
             st.info(
-                "ℹ️ [DEM] is for settings related to the Digital Elevation Model (elevation map). "
-                "This file is used to generate the terrain of the map (hills, valleys, etc.)."
+                "Auto preset is disabled. In this case you probably receive a full black DEM "
+                "image file. But it is NOT EMPTY. Dem image value range is from 0 to 65535, "
+                "while on Earth the highest point is 8848 meters. So, unless you are not "
+                "working with map for Everest, you probably can't see anything on the DEM image "
+                "by eye, because it is too dark. You can use the "
+                "multiplier option from Advanced settings to make the terrain more pronounced."
             )
-            # Show multiplier and blur radius inputs.
-            st.write("[DEM] Enter multiplier for the elevation map:")
-            st.write(
-                "This multiplier can be used to make the terrain more pronounced. "
-                "By default the DEM file will be exact copy of the real terrain. "
-                "If you want to make it more steep, you can increase this value."
-            )
-            self.multiplier_input = st.number_input(
-                "Multiplier",
-                value=DEFAULT_MULTIPLIER,
-                min_value=0,
-                max_value=10000,
-                key="multiplier",
-                label_visibility="collapsed",
-            )
+            # Add checkbox for advanced settings.
+            st.write("Advanced settings (do not change if you are not sure):")
+            self.advanced_settings = st.checkbox("Show advanced settings", key="advanced_settings")
 
-            st.write("[DEM] Enter blur radius for the elevation map:")
-            st.write(
-                "This value is used to blur the elevation map. Without blurring the terrain "
-                "may look too sharp and unrealistic. By default the blur radius is set to 21 "
-                "which corresponds to a 21x21 pixel kernel. You can increase this value to make "
-                "the terrain more smooth. Or make it smaller to make the terrain more sharp."
-            )
-            self.blur_radius_input = st.number_input(
-                "Blur Radius",
-                value=DEFAULT_BLUR_RADIUS,
-                min_value=1,
-                max_value=300,
-                key="blur_radius",
-                label_visibility="collapsed",
-                step=2,
-            )
+            if self.advanced_settings:
+                st.warning("⚠️ Changing these settings can lead to unexpected results.")
+                st.info(
+                    "ℹ️ [DEM] is for settings related to the Digital Elevation Model (elevation map). "
+                    "This file is used to generate the terrain of the map (hills, valleys, etc.)."
+                )
+                # Show multiplier and blur radius inputs.
+                st.write("[DEM] Enter multiplier for the elevation map:")
+                st.write(
+                    "This multiplier can be used to make the terrain more pronounced. "
+                    "By default the DEM file will be exact copy of the real terrain. "
+                    "If you want to make it more steep, you can increase this value."
+                )
+                self.multiplier_input = st.number_input(
+                    "Multiplier",
+                    value=DEFAULT_MULTIPLIER,
+                    min_value=0,
+                    max_value=10000,
+                    key="multiplier",
+                    label_visibility="collapsed",
+                )
+
+                st.write("[DEM] Enter blur radius for the elevation map:")
+                st.write(
+                    "This value is used to blur the elevation map. Without blurring the terrain "
+                    "may look too sharp and unrealistic. By default the blur radius is set to 21 "
+                    "which corresponds to a 21x21 pixel kernel. You can increase this value to make "
+                    "the terrain more smooth. Or make it smaller to make the terrain more sharp."
+                )
+                self.blur_radius_input = st.number_input(
+                    "Blur Radius",
+                    value=DEFAULT_BLUR_RADIUS,
+                    min_value=1,
+                    max_value=300,
+                    key="blur_radius",
+                    label_visibility="collapsed",
+                    step=2,
+                )
 
         # Add an empty container for status messages.
         self.status_container = st.empty()
@@ -191,6 +222,7 @@ class Maps4FS:
             logger=self.logger,
             multiplier=self.multiplier_input,
             blur_radius=self.blur_radius_input,
+            auto_process=self.auto_process,
         )
         mp.generate()
 

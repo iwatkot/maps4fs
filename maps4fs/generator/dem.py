@@ -14,7 +14,7 @@ from maps4fs.generator.component import Component
 
 SRTM = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
 DEFAULT_MULTIPLIER = 1
-DEFAULT_BLUR_RADIUS = 21
+DEFAULT_BLUR_RADIUS = 35
 
 
 # pylint: disable=R0903
@@ -46,6 +46,8 @@ class DEM(Component):
         self.logger.debug(
             "DEM value multiplier is %s, blur radius is %s.", self.multiplier, self.blur_radius
         )
+
+        self.auto_process = self.kwargs.get("auto_process", False)
 
     # pylint: disable=no-member
     def process(self) -> None:
@@ -105,15 +107,12 @@ class DEM(Component):
             resampled_data.min(),
         )
 
-        resampled_data = resampled_data * self.multiplier
-        self.logger.debug(
-            "DEM data multiplied by %s. Shape: %s, dtype: %s. Min: %s, max: %s.",
-            self.multiplier,
-            resampled_data.shape,
-            resampled_data.dtype,
-            resampled_data.min(),
-            resampled_data.max(),
-        )
+        if self.auto_process:
+            self.logger.debug("Auto processing is enabled, will normalize DEM data.")
+            resampled_data = self._normalize_dem(resampled_data)
+        else:
+            self.logger.debug("Auto processing is disabled, DEM data will not be normalized.")
+            resampled_data = resampled_data * self.multiplier
 
         self.logger.debug(
             "DEM data was resampled. Shape: %s, dtype: %s. Min: %s, max: %s.",
@@ -123,7 +122,9 @@ class DEM(Component):
             resampled_data.max(),
         )
 
-        resampled_data = cv2.GaussianBlur(resampled_data, (self.blur_radius, self.blur_radius), 0)
+        resampled_data = cv2.GaussianBlur(
+            resampled_data, (self.blur_radius, self.blur_radius), sigmaX=40, sigmaY=40
+        )
         self.logger.debug(
             "Gaussion blur applied to DEM data with kernel size %s.",
             self.blur_radius,
@@ -289,3 +290,42 @@ class DEM(Component):
         """
         self.logger.debug("Starting DEM previews generation.")
         return [self.grayscale_preview(), self.colored_preview()]
+
+    def _get_scaling_factor(self, maximum_deviation: int) -> float:
+        ESTIMATED_MAXIMUM_DEVIATION = 1000  # pylint: disable=C0103
+        scaling_factor = maximum_deviation / ESTIMATED_MAXIMUM_DEVIATION
+        return scaling_factor if scaling_factor < 1 else 1
+
+    def _normalize_dem(self, data: np.ndarray) -> np.ndarray:
+        """Normalize DEM data to 16-bit unsigned integer using max height from settings.
+        Args:
+            data (np.ndarray): DEM data from SRTM file after cropping.
+        Returns:
+            np.ndarray: Normalized DEM data.
+        """
+        self.logger.debug("Starting DEM data normalization.")
+        # Calculate the difference between the maximum and minimum values in the DEM data.
+
+        max_height = data.max()  # 1800
+        min_height = data.min()  # 1700
+        max_dev = max_height - min_height  # 100
+        self.logger.debug(
+            "Maximum deviation: %s with maximum at %s and minimum at %s.",
+            max_dev,
+            max_height,
+            min_height,
+        )
+
+        scaling_factor = self._get_scaling_factor(max_dev)
+        adjusted_max_height = int(65535 * scaling_factor)
+        self.logger.debug(
+            f"Maximum deviation: {max_dev}. Scaling factor: {scaling_factor}. "
+            f"Adjusted max height: {adjusted_max_height}."
+        )
+        normalized_data = (
+            (data - data.min()) / (data.max() - data.min()) * adjusted_max_height
+        ).astype("uint16")
+        self.logger.debug(
+            f"DEM data was normalized to {normalized_data.min()} - {normalized_data.max()}."
+        )
+        return normalized_data
