@@ -2,40 +2,124 @@ import os
 from datetime import datetime
 
 import config
+import osmp
 import streamlit as st
+import streamlit.components.v1 as components
 from PIL import Image
 
 import maps4fs as mfs
 from maps4fs.generator.dem import DEFAULT_BLUR_RADIUS, DEFAULT_MULTIPLIER
 
+DEFAULT_LAT = 45.28571409289627
+DEFAULT_LON = 20.237433441210115
+
 
 class Maps4FS:
+    """Main class for the Maps4FS web interface.
+
+    Attributes:
+        download_path (str): The path to the generated map archive.
+        logger (Logger): The logger instance.
+
+    Properties:
+        lat_lon (tuple[float, float]): The latitude and longitude of the center point of the map.
+        map_size (tuple[int, int]): The size of the map in meters.
+
+    Public methods:
+        map_preview: Generate a preview of the map.
+        add_right_widgets: Add widgets to the right column.
+        add_left_widgets: Add widgets to the left column.
+        generate_map: Generate the map.
+        get_sesion_name: Generate a session name for the map.
+        shorten_coordinate: Shorten a coordinate to a string.
+        show_preview: Show the preview of the generated map.
+    """
+
     def __init__(self):
         self.download_path = None
-        self.logger = mfs.Logger(__name__, level="DEBUG")
+        self.logger = mfs.Logger(__name__, level="DEBUG", to_file=False)
 
-        st.set_page_config(page_title="Maps4FS", page_icon="🚜")
+        st.set_page_config(page_title="Maps4FS", page_icon="🚜", layout="wide")
         st.title("Maps4FS")
         st.write("Generate map templates for Farming Simulator from real places.")
 
         st.info(
             "ℹ️ When opening map first time in the Giants Editor, select **terrain** object, "
             "open **Terrain** tab in the **Attributes** window, scroll down to the end "
-            "and press the **Reload material** button. Otherwise you may (and will) face some "
-            "glitches."
+            "and press the **Reload material** button.  \n"
+            "Otherwise you may (and will) face some glitches."
         )
 
         st.markdown("---")
 
+        self.left_column, self.right_column = st.columns(2, gap="large")
+
         if "generated" not in st.session_state:
             st.session_state.generated = False
 
-        self.add_widgets()
+        with self.right_column:
+            self.add_right_widgets()
 
-    def add_widgets(self) -> None:
+        with self.left_column:
+            self.add_left_widgets()
+
+        self.map_preview()
+
+    @property
+    def lat_lon(self) -> tuple[float, float]:
+        """Get the latitude and longitude of the center point of the map.
+
+        Returns:
+            tuple[float, float]: The latitude and longitude of the center point of the map.
+        """
+        return tuple(map(float, self.lat_lon_input.split(",")))
+
+    @property
+    def map_size(self) -> tuple[int, int]:
+        """Get the size of the map in meters.
+
+        Returns:
+            tuple[int, int]: The size of the map in meters.
+        """
+        return tuple(map(int, self.map_size_input.split("x")))
+
+    def map_preview(self) -> None:
+        """Generate a preview of the map in the HTML container.
+        This method is called when the latitude, longitude, or map size is changed.
+        """
+        try:
+            lat, lon = self.lat_lon
+        except ValueError:
+            return
+
+        try:
+            map_size, _ = self.map_size
+        except ValueError:
+            return
+
+        self.logger.info(
+            "Generating map preview for lat=%s, lon=%s, map_size=%s", lat, lon, map_size
+        )
+
+        html_file = osmp.get_preview(lat, lon, map_size)
+
+        with self.html_preview_container:
+            components.html(open(html_file).read(), height=300)
+
+    def add_right_widgets(self) -> None:
+        """Add widgets to the right column."""
+        self.logger.info("Adding widgets to the right column...")
+        self.html_preview_container = st.empty()
+        self.map_selector_container = st.container()
+        self.preview_container = st.container()
+
+    def add_left_widgets(self) -> None:
+        """Add widgets to the left column."""
+        self.logger.info("Adding widgets to the left column...")
+
         # Game selection (FS22 or FS25).
         st.write("Select the game for which you want to generate the map:")
-        self.game_code_input = st.selectbox(
+        self.game_code = st.selectbox(
             "Game",
             options=[
                 "FS25",
@@ -49,9 +133,10 @@ class Maps4FS:
         st.write("Enter latitude and longitude of the center point of the map:")
         self.lat_lon_input = st.text_input(
             "Latitude and Longitude",
-            "45.28571409289627, 20.237433441210115",
+            f"{DEFAULT_LAT}, {DEFAULT_LON}",
             key="lat_lon",
             label_visibility="collapsed",
+            on_change=self.map_preview,
         )
 
         # Map size selection.
@@ -60,9 +145,12 @@ class Maps4FS:
             "Map Size (meters)",
             options=["2048x2048", "4096x4096", "8192x8192", "16384x16384", "Custom"],
             label_visibility="collapsed",
+            on_change=self.map_preview,
         )
 
         if self.map_size_input == "Custom":
+            self.logger.info("Custom map size selected.")
+
             st.info("ℹ️ Map size can be only a power of 2. For example: 2, 4, ... 2048, 4096, ...")
             st.warning("⚠️ Large map sizes can crash on generation or import in the game.")
             st.write("Enter map size (meters):")
@@ -72,6 +160,7 @@ class Maps4FS:
                 value=2048,
                 key="map_height",
                 label_visibility="collapsed",
+                on_change=self.map_preview,
             )
 
             self.map_size_input = f"{custom_map_size_input}x{custom_map_size_input}"
@@ -84,6 +173,7 @@ class Maps4FS:
 
         self.auto_process = st.checkbox("Use auto preset", value=True, key="auto_process")
         if self.auto_process:
+            self.logger.info("Auto preset is enabled.")
             st.info(
                 "Auto preset will automatically apply different algorithms to make terrain more "
                 "realistic. It's recommended for most cases. If you want to have more control over the "
@@ -94,6 +184,8 @@ class Maps4FS:
         self.blur_radius_input = DEFAULT_BLUR_RADIUS
 
         if not self.auto_process:
+            self.logger.info("Auto preset is disabled.")
+
             st.info(
                 "Auto preset is disabled. In this case you probably receive a full black DEM "
                 "image file. But it is NOT EMPTY. Dem image value range is from 0 to 65535, "
@@ -107,6 +199,8 @@ class Maps4FS:
             self.advanced_settings = st.checkbox("Show advanced settings", key="advanced_settings")
 
             if self.advanced_settings:
+                self.logger.info("Advanced settings are enabled.")
+
                 st.warning("⚠️ Changing these settings can lead to unexpected results.")
                 st.info(
                     "ℹ️ [DEM] is for settings related to the Digital Elevation Model (elevation map). "
@@ -151,9 +245,6 @@ class Maps4FS:
         # Add an empty container for buttons.
         self.buttons_container = st.empty()
 
-        # Add an empty container for preview image.
-        self.preview_container = st.container()
-
         # Generate button.
         with self.buttons_container:
             if st.button("Generate", key="launch_btn"):
@@ -161,6 +252,7 @@ class Maps4FS:
 
         # Download button.
         if st.session_state.generated:
+            self.logger.info("Generated was set to True in the session state.")
             with open(self.download_path, "rb") as f:
                 with self.buttons_container:
                     st.download_button(
@@ -171,16 +263,39 @@ class Maps4FS:
                     )
 
             st.session_state.generated = False
+            self.logger.info("Generated was set to False in the session state.")
+
+    def get_sesion_name(self, coordinates: tuple[float, float]) -> str:
+        """Return a session name for the map, using the coordinates and the current timestamp.
+
+        Args:
+            coordinates (tuple[float, float]): The latitude and longitude of the center point of
+                the map.
+
+        Returns:
+            str: The session name for the map.
+        """
+        coordinates_str = "_".join(map(self.shorten_coordinate, coordinates))
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        return f"{self.game_code}_{coordinates_str}_{timestamp}"
+
+    def shorten_coordinate(self, coordinate: float) -> str:
+        """Shorten a coordinate to a string.
+
+        Args:
+            coordinate (float): The coordinate to shorten.
+
+        Returns:
+            str: The shortened coordinate.
+        """
+        return f"{coordinate:.5f}".replace(".", "_")
 
     def generate_map(self) -> None:
-        # Read game code from the input widget and create a game object.
-        game_code = self.game_code_input
-        game = mfs.Game.from_code(game_code)
+        """Generate the map."""
+        game = mfs.Game.from_code(self.game_code)
 
         try:
-            # Read latitude and longitude from the input widget
-            # and try to convert them to float values.
-            lat, lon = map(float, self.lat_lon_input.split(","))
+            lat, lon = self.lat_lon
         except ValueError:
             st.error("Invalid latitude and longitude!")
             return
@@ -190,7 +305,7 @@ class Maps4FS:
 
         # Read map size from the input widget.
         try:
-            height, width = map(int, self.map_size_input.split("x"))
+            height, width = self.map_size
         except ValueError:
             st.error("Invalid map size!")
             return
@@ -204,11 +319,10 @@ class Maps4FS:
             return
 
         # Session name will be used for a directory name as well as a zip file name.
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        session_name = f"{game.code}_{timestamp}"
 
-        # st.info("Started map generation...", icon="⏳")
-        self.status_container.info("Started map generation...", icon="⏳")
+        session_name = self.get_sesion_name(coordinates)
+
+        self.status_container.info("Map is generating...", icon="⏳")
         map_directory = os.path.join(config.MAPS_DIRECTORY, session_name)
         os.makedirs(map_directory, exist_ok=True)
 
@@ -228,6 +342,7 @@ class Maps4FS:
 
         # Create a preview image.
         self.show_preview(mp)
+        self.map_preview()
 
         # Pack the generated map into a zip archive.
         archive_path = mp.pack(os.path.join(config.ARCHIVES_DIRECTORY, session_name))
@@ -236,10 +351,14 @@ class Maps4FS:
 
         st.session_state.generated = True
 
-        # st.success("Map generation completed!", icon="✅")
         self.status_container.success("Map generation completed!", icon="✅")
 
     def show_preview(self, mp: mfs.Map) -> None:
+        """Show the preview of the generated map.
+
+        Args:
+            mp (Map): The generated map.
+        """
         # Get a list of all preview images.
         full_preview_paths = mp.previews()
         preview_captions = [
@@ -252,12 +371,17 @@ class Maps4FS:
             return
 
         with self.preview_container:
-            for caption, full_preview_path in zip(preview_captions, full_preview_paths):
+            st.markdown("---")
+            st.write("Previews of the generated map:")
+            columns = st.columns(len(full_preview_paths))
+            for column, caption, full_preview_path in zip(
+                columns, preview_captions, full_preview_paths
+            ):
                 if not os.path.isfile(full_preview_path):
                     continue
                 try:
                     image = Image.open(full_preview_path)
-                    st.image(image, use_container_width=True, caption=caption)
+                    column.image(image, use_container_width=True, caption=caption)
                 except Exception:
                     continue
 

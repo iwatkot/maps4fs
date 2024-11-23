@@ -22,13 +22,15 @@ class Config(Component):
     """
 
     def preprocess(self) -> None:
+        """Gets the path to the map XML file and saves it to the instance variable."""
         self._map_xml_path = self.game.map_xml_path(self.map_directory)
         self.logger.debug("Map XML path: %s.", self._map_xml_path)
 
-    def process(self):
+    def process(self) -> None:
+        """Sets the map size in the map.xml file."""
         self._set_map_size()
 
-    def _set_map_size(self):
+    def _set_map_size(self) -> None:
         """Edits map.xml file to set correct map size."""
         if not os.path.isfile(self._map_xml_path):
             self.logger.warning("Map XML file not found: %s.", self._map_xml_path)

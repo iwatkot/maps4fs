@@ -27,6 +27,8 @@ class I3d(Component):
     _map_i3d_path: str | None = None
 
     def preprocess(self) -> None:
+        """Gets the path to the map I3D file from the game instance and saves it to the instance
+        attribute. If the game does not support I3D files, the attribute is set to None."""
         try:
             self._map_i3d_path = self.game.i3d_file_path(self.map_directory)
             self.logger.debug("Map I3D path: %s.", self._map_i3d_path)
@@ -35,9 +37,11 @@ class I3d(Component):
             self._map_i3d_path = None
 
     def process(self) -> None:
+        """Updates the map I3D file with the default settings."""
         self._update_i3d_file()
 
     def _update_i3d_file(self) -> None:
+        """Updates the map I3D file with the default settings."""
         if not self._map_i3d_path:
             self.logger.info("I3D is not obtained, skipping the update.")
             return
