@@ -57,7 +57,7 @@ class Texture(Component):
             width: int | None = None,
             color: tuple[int, int, int] | list[int] | None = None,
             exclude_weight: bool = False,
-            priority: int | None = 999, # TODO: Remove default of 999 when sorting with None is figured out
+            priority: int | None = None,
         ):
             self.name = name
             self.count = count
@@ -123,10 +123,27 @@ class Texture(Component):
         self.layers = [self.Layer.from_json(layer) for layer in layers_schema]
         self.logger.info("Loaded %s layers.", len(self.layers))
 
+        base_layer = self.get_base_layer()
+        if base_layer:
+            self.logger.info("Base layer found: %s.", base_layer.name)
+        else:
+            self.logger.warning("No base layer found.")
+
         self._weights_dir = self.game.weights_dir_path(self.map_directory)
         self.logger.debug("Weights directory: %s.", self._weights_dir)
         self.info_save_path = os.path.join(self.map_directory, "generation_info.json")
         self.logger.debug("Generation info save path: %s.", self.info_save_path)
+
+    def get_base_layer(self) -> Layer | None:
+        """Returns base layer.
+
+        Returns:
+            Layer | None: Base layer.
+        """
+        for layer in self.layers:
+            if layer.priority == 0:
+                return layer
+        return None
 
     def process(self):
         self._prepare_weights()
@@ -242,40 +259,78 @@ class Texture(Component):
         """
         self._layers = layers
 
+    def layers_by_priority(self) -> list[Layer]:
+        """Returns list of layers sorted by priority: None priority layers are first,
+        then layers are sorted by priority (descending).
+
+        Returns:
+            list[Layer]: List of layers sorted by priority.
+        """
+        return sorted(
+            self.layers,
+            key=lambda _layer: (
+                _layer.priority is not None,
+                -_layer.priority if _layer.priority is not None else float("inf"),
+            ),
+        )
+
     # pylint: disable=no-member
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
-        # TODO: Add sorting with None values
-        layers = sorted(self.layers, key=lambda _layer: _layer.priority)
+        layers = self.layers_by_priority()
+
+        self.logger.debug(
+            "Sorted layers by priority: %s.", [(layer.name, layer.priority) for layer in layers]
+        )
+
         cumulative_image = None
-        base_layer = None
+
         for layer in layers:
             if not layer.tags:
                 self.logger.debug("Layer %s has no tags, there's nothing to draw.", layer.name)
                 continue
             if layer.priority == 0:
-                base_layer = layer
-                self.logger.debug("Found base layer %s. Postponing that to be the last layer drawn.", layer.name)
+                self.logger.debug(
+                    "Found base layer %s. Postponing that to be the last layer drawn.", layer.name
+                )
                 continue
             layer_path = layer.path(self._weights_dir)
             self.logger.debug("Drawing layer %s.", layer_path)
-            img = cv2.imread(layer_path, cv2.IMREAD_UNCHANGED)
-            cumulative_img = cumulative_image if cumulative_image is not None else img
-            img_mask = cv2.bitwise_not(cumulative_img) # converts black part of map to white
-            for polygon in self.polygons(layer.tags, layer.width):  # type: ignore
-                cv2.fillPoly(img, [polygon], color=255)  # type: ignore
-            output_img = cv2.bitwise_and(img, img_mask) # Wherever it's white on both images, it can draw
-            cumulative_image = cv2.bitwise_or(cumulative_img, output_img) # output of this will be the mask for the next layer
-            cv2.imwrite(layer_path, output_img)
-            self.logger.debug("Texture %s saved.", layer_path)
-        if base_layer is not None:
-            if base_layer.priority == 0:
-                layer_path = base_layer.path(self._weights_dir)
-                self.logger.debug("Drawing base layer %s.", layer_path)
-                img = cv2.bitwise_not(cumulative_image)
-                cv2.imwrite(layer_path, img)
-                self.logger.debug("Base texture %s saved.", layer_path)
+            layer_image = cv2.imread(layer_path, cv2.IMREAD_UNCHANGED)
 
+            if cumulative_image is None:
+                self.logger.debug("First layer, creating new cumulative image.")
+                cumulative_image = layer_image
+
+            mask = cv2.bitwise_not(cumulative_image)
+
+            for polygon in self.polygons(layer.tags, layer.width):  # type: ignore
+                cv2.fillPoly(layer_image, [polygon], color=255)  # type: ignore
+
+            output_image = cv2.bitwise_and(layer_image, mask)
+
+            cumulative_image = cv2.bitwise_or(cumulative_image, output_image)
+
+            cv2.imwrite(layer_path, output_image)
+            self.logger.debug("Texture %s saved.", layer_path)
+
+        if cumulative_image is not None:
+            self.draw_base_layer(cumulative_image)
+
+    def draw_base_layer(self, cumulative_image: np.ndarray) -> None:
+        """Draws base layer and saves it into the png file.
+        Base layer is the last layer to be drawn, it fills the remaining area of the map.
+
+        Args:
+            cumulative_image (np.ndarray): Cumulative image with all layers.
+        """
+        base_layer = self.get_base_layer()
+        if base_layer is not None:
+            layer_path = base_layer.path(self._weights_dir)
+            self.logger.debug("Drawing base layer %s.", layer_path)
+            img = cv2.bitwise_not(cumulative_image)
+            cv2.imwrite(layer_path, img)
+            self.logger.debug("Base texture %s saved.", layer_path)
 
     def get_relative_x(self, x: float) -> int:
         """Converts UTM X coordinate to relative X coordinate in map image.
