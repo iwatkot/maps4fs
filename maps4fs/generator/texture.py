@@ -247,11 +247,13 @@ class Texture(Component):
         """Iterates over layers and fills them with polygons from OSM data."""
         layers = sorted(self.layers, key=lambda _layer: _layer.priority)
         cumulative_image = None
+        base_layer = None
         for layer in layers:
             if not layer.tags:
                 self.logger.debug("Layer %s has no tags, there's nothing to draw.", layer.name)
                 continue
             if layer.priority == 0:
+                base_layer = layer
                 continue
             layer_path = layer.path(self._weights_dir)
             self.logger.debug("Drawing layer %s.", layer_path)
@@ -264,9 +266,9 @@ class Texture(Component):
             cumulative_image = cv2.bitwise_or(cumulative_img, output_img) # output of this will be the mask for the next layer
             cv2.imwrite(layer_path, output_img)
             self.logger.debug("Texture %s saved.", layer_path)
-        for layer in layers:
-            if layer.priority == 0:
-                layer_path = layer.path(self._weights_dir)
+        if base_layer is not None:
+            if base_layer.priority == 0:
+                layer_path = base_layer.path(self._weights_dir)
                 self.logger.debug("Drawing base layer %s.", layer_path)
                 img = cv2.bitwise_not(cumulative_image)
                 cv2.imwrite(layer_path, img)
