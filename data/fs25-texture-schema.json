@@ -9,7 +9,6 @@
   },
   {
     "name": "asphaltDirt",
-    "count": 2
     "count": 2,
     "priority": 2
   },
@@ -18,7 +17,6 @@
     "count": 2,
     "tags": { "highway": ["motorway", "trunk", "primary"] },
     "width": 8,
-    "color": [70, 70, 70]
     "color": [70, 70, 70],
     "priority": 1
   },
@@ -109,7 +107,6 @@
   },
   {
     "name": "gravel",
-    "count": 2
     "count": 2,
     "priority": 3
   },
