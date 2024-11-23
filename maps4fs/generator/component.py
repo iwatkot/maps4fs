@@ -15,6 +15,7 @@ class Component:
     """Base class for all map generation components.
 
     Args:
+        game (Game): The game instance for which the map is generated.
         coordinates (tuple[float, float]): The latitude and longitude of the center of the map.
         map_height (int): The height of the map in pixels.
         map_width (int): The width of the map in pixels.

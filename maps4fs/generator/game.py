@@ -8,6 +8,7 @@ import os
 
 from maps4fs.generator.config import Config
 from maps4fs.generator.dem import DEM
+from maps4fs.generator.i3d import I3d
 from maps4fs.generator.texture import Texture
 
 working_directory = os.getcwd()
@@ -34,7 +35,7 @@ class Game:
     _map_template_path: str | None = None
     _texture_schema: str | None = None
 
-    components = [Config, Texture, DEM]
+    components = [Config, Texture, DEM, I3d]
 
     def __init__(self, map_template_path: str | None = None):
         if map_template_path:
@@ -113,6 +114,16 @@ class Game:
             str: The path to the weights directory."""
         raise NotImplementedError
 
+    def i3d_file_path(self, map_directory: str) -> str:
+        """Returns the path to the i3d file.
+
+        Arguments:
+            map_directory (str): The path to the map directory.
+
+        Returns:
+            str: The path to the i3d file."""
+        raise NotImplementedError
+
     @property
     def additional_dem_name(self) -> str | None:
         """Returns the name of the additional DEM file.
@@ -189,3 +200,13 @@ class FS25(Game):
         Returns:
             str: The path to the weights directory."""
         return os.path.join(map_directory, "mapUS", "data")
+
+    def i3d_file_path(self, map_directory: str) -> str:
+        """Returns the path to the i3d file.
+
+        Arguments:
+            map_directory (str): The path to the map directory.
+
+        Returns:
+            str: The path to the i3d file."""
+        return os.path.join(map_directory, "mapUS", "mapUS.i3d")

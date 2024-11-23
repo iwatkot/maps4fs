@@ -47,6 +47,7 @@ class Map:
         self.logger.debug("Game was set to %s", game.code)
 
         self.kwargs = kwargs
+        self.logger.debug("Additional arguments: %s", kwargs)
 
         os.makedirs(self.map_directory, exist_ok=True)
         self.logger.debug("Map directory created: %s", self.map_directory)
