@@ -7,7 +7,7 @@ import os
 
 import cv2
 import numpy as np
-import trimesh
+import trimesh  # type: ignore
 
 from maps4fs.generator.component import Component
 from maps4fs.generator.path_steps import DEFAULT_DISTANCE, get_steps
