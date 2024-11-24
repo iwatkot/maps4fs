@@ -1,4 +1,4 @@
-"""This module contains the Tile component, which is used to generate a tile of DEM data around 
+"""This module contains the Tile component, which is used to generate a tile of DEM data around
 the map."""
 
 import os

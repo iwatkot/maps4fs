@@ -1,4 +1,4 @@
-"""This module contains the Background component, which generates 3D obj files based on DEM data 
+"""This module contains the Background component, which generates 3D obj files based on DEM data
 around the map."""
 
 from __future__ import annotations
