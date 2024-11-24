@@ -6,4 +6,5 @@ streamlit
 folium
 geopy
 trimesh
+pyproj
 maps4fs

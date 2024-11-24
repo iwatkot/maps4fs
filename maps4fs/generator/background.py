@@ -8,6 +8,7 @@ import os
 import cv2
 import numpy as np
 import trimesh  # type: ignore
+from pyproj import Transformer
 
 from maps4fs.generator.component import Component
 from maps4fs.generator.path_steps import DEFAULT_DISTANCE, get_steps
@@ -71,6 +72,44 @@ class Background(Component):
             tile.process()
 
         self.generate_obj_files()
+
+    def info_sequence(self) -> dict[str, dict[str, str | float | int]]:
+        """Returns a dictionary with information about the tiles around the map.
+        Adds the EPSG:3857 string to the data for convenient usage in QGIS.
+
+        Returns:
+            dict[str, dict[str, float | int]] -- A dictionary with information about the tiles.
+        """
+        data = {}
+        for tile in self.tiles:
+            north, south, east, west = tile.bbox
+
+            # The default CMS in library is EPSG:4326.
+            # It needed to be converted to EPSG:3857 for convinient usage in QGIS.
+
+            transformer = Transformer.from_crs("epsg:4326", "epsg:3857")
+            epsg3857_north, epsg3857_west = transformer.transform(north, west)
+            epsg3857_south, epsg3857_east = transformer.transform(south, east)
+
+            epsg3857_string = (
+                f"{epsg3857_north},{epsg3857_south},{epsg3857_east},{epsg3857_west} [EPSG:3857]"
+            )
+
+            tile_entry = {
+                "center_latitude": tile.coordinates[0],
+                "center_longitude": tile.coordinates[1],
+                "epsg3857_string": epsg3857_string,
+                "height": tile.map_height,
+                "width": tile.map_width,
+                "north": north,
+                "south": south,
+                "east": east,
+                "west": west,
+            }
+            if tile.code is not None:
+                data[tile.code] = tile_entry
+
+        return data  # type: ignore
 
     def generate_obj_files(self) -> None:
         """Iterates over all tiles and generates 3D obj files based on DEM data.
