@@ -40,7 +40,10 @@ class DEM(Component):
 
         self.multiplier = self.kwargs.get("multiplier", DEFAULT_MULTIPLIER)
         blur_radius = self.kwargs.get("blur_radius", DEFAULT_BLUR_RADIUS)
-        if blur_radius % 2 == 0:
+        if blur_radius <= 0:
+            # We'll disable blur if the radius is 0 or negative.
+            blur_radius = 0
+        elif blur_radius % 2 == 0:
             blur_radius += 1
         self.blur_radius = blur_radius
         self.logger.debug(
@@ -49,12 +52,12 @@ class DEM(Component):
 
         self.auto_process = self.kwargs.get("auto_process", False)
 
-    # pylint: disable=no-member
-    def process(self) -> None:
-        """Reads SRTM file, crops it to map size, normalizes and blurs it,
-        saves to map directory."""
-        north, south, east, west = self.bbox
+    def get_output_resolution(self) -> tuple[int, int]:
+        """Get output resolution for DEM data.
 
+        Returns:
+            tuple[int, int]: Output resolution for DEM data.
+        """
         dem_height = int((self.map_height / 2) * self.game.dem_multipliyer + 1)
         dem_width = int((self.map_width / 2) * self.game.dem_multipliyer + 1)
         self.logger.debug(
@@ -63,7 +66,15 @@ class DEM(Component):
             dem_height,
             dem_width,
         )
-        dem_output_resolution = (dem_width, dem_height)
+        return dem_width, dem_height
+
+    # pylint: disable=no-member
+    def process(self) -> None:
+        """Reads SRTM file, crops it to map size, normalizes and blurs it,
+        saves to map directory."""
+        north, south, east, west = self.bbox
+
+        dem_output_resolution = self.get_output_resolution()
         self.logger.debug("DEM output resolution: %s.", dem_output_resolution)
 
         tile_path = self._srtm_tile()
@@ -122,13 +133,15 @@ class DEM(Component):
             resampled_data.max(),
         )
 
-        resampled_data = cv2.GaussianBlur(
-            resampled_data, (self.blur_radius, self.blur_radius), sigmaX=40, sigmaY=40
-        )
-        self.logger.debug(
-            "Gaussion blur applied to DEM data with kernel size %s.",
-            self.blur_radius,
-        )
+        if self.blur_radius > 0:
+            resampled_data = cv2.GaussianBlur(
+                resampled_data, (self.blur_radius, self.blur_radius), sigmaX=40, sigmaY=40
+            )
+            self.logger.debug(
+                "Gaussion blur applied to DEM data with kernel size %s.",
+                self.blur_radius,
+            )
+
         self.logger.debug(
             "DEM data was blurred. Shape: %s, dtype: %s. Min: %s, max: %s.",
             resampled_data.shape,
@@ -141,10 +154,20 @@ class DEM(Component):
         self.logger.debug("DEM data was saved to %s.", self._dem_path)
 
         if self.game.additional_dem_name is not None:
-            dem_directory = os.path.dirname(self._dem_path)
-            additional_dem_path = os.path.join(dem_directory, self.game.additional_dem_name)
-            shutil.copyfile(self._dem_path, additional_dem_path)
-            self.logger.debug("Additional DEM data was copied to %s.", additional_dem_path)
+            self.make_copy(self.game.additional_dem_name)
+
+    def make_copy(self, dem_name: str) -> None:
+        """Copies DEM data to additional DEM file.
+
+        Args:
+            dem_name (str): Name of the additional DEM file.
+        """
+        dem_directory = os.path.dirname(self._dem_path)
+
+        additional_dem_path = os.path.join(dem_directory, dem_name)
+
+        shutil.copyfile(self._dem_path, additional_dem_path)
+        self.logger.debug("Additional DEM data was copied to %s.", additional_dem_path)
 
     def _tile_info(self, lat: float, lon: float) -> tuple[str, str]:
         """Returns latitude band and tile name for SRTM tile from coordinates.
@@ -292,6 +315,15 @@ class DEM(Component):
         return [self.grayscale_preview(), self.colored_preview()]
 
     def _get_scaling_factor(self, maximum_deviation: int) -> float:
+        """Calculate scaling factor for DEM data normalization.
+        NOTE: Needs reconsideration for the implementation.
+
+        Args:
+            maximum_deviation (int): Maximum deviation in DEM data.
+
+        Returns:
+            float: Scaling factor for DEM data normalization.
+        """
         ESTIMATED_MAXIMUM_DEVIATION = 1000  # pylint: disable=C0103
         scaling_factor = maximum_deviation / ESTIMATED_MAXIMUM_DEVIATION
         return scaling_factor if scaling_factor < 1 else 1

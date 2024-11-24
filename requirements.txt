@@ -4,4 +4,6 @@ rasterio
 tqdm
 streamlit
 folium
+geopy
+trimesh
 maps4fs

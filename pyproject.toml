@@ -22,6 +22,8 @@ dependencies = [
     "rasterio",
     "tqdm",
     "folium",
+    "geopy",
+    "trimesh",
 ]
 
 [project.urls]

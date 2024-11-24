@@ -10,3 +10,4 @@ pandas-stubs
 types-requests
 pytest
 folium
+geopy

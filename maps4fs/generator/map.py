@@ -1,11 +1,14 @@
 """This module contains Map class, which is used to generate map using all components."""
 
+from __future__ import annotations
+
 import os
 import shutil
 from typing import Any
 
 from tqdm import tqdm
 
+from maps4fs.generator.background import Background
 from maps4fs.generator.component import Component
 from maps4fs.generator.game import Game
 from maps4fs.logger import Logger
@@ -58,6 +61,9 @@ class Map:
         except Exception as e:
             raise RuntimeError(f"Can not unpack map template due to error: {e}") from e
 
+        self.background = Background(self)
+        # self.background.process()
+
     def generate(self) -> None:
         """Launch map generation using all components."""
         with tqdm(total=len(self.game.components), desc="Generating map...") as pbar:
@@ -83,6 +89,8 @@ class Map:
                 self.components.append(component)
 
                 pbar.update(1)
+
+        self.background.process()
 
     def previews(self) -> list[str]:
         """Get list of preview images.
