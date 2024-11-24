@@ -19,7 +19,7 @@ DEFAULT_BLUR_RADIUS = 35
 
 # pylint: disable=R0903
 class DEM(Component):
-    """Component for map settings and configuration.
+    """Component for processing Digital Elevation Model data.
 
     Args:
         coordinates (tuple[float, float]): The latitude and longitude of the center of the map.
@@ -40,7 +40,7 @@ class DEM(Component):
 
         self.multiplier = self.kwargs.get("multiplier", DEFAULT_MULTIPLIER)
         blur_radius = self.kwargs.get("blur_radius", DEFAULT_BLUR_RADIUS)
-        if blur_radius <= 0:
+        if blur_radius is None or blur_radius <= 0:
             # We'll disable blur if the radius is 0 or negative.
             blur_radius = 0
         elif blur_radius % 2 == 0:
@@ -51,6 +51,15 @@ class DEM(Component):
         )
 
         self.auto_process = self.kwargs.get("auto_process", False)
+
+    @property
+    def dem_path(self) -> str:
+        """Returns path to the DEM file.
+
+        Returns:
+            str: Path to the DEM file.
+        """
+        return self._dem_path
 
     def get_output_resolution(self) -> tuple[int, int]:
         """Get output resolution for DEM data.
@@ -257,14 +266,15 @@ class DEM(Component):
         Returns:
             str: Path to the preview image.
         """
-        rgb_dem_path = self._dem_path.replace(".png", "_grayscale.png")
+        # rgb_dem_path = self._dem_path.replace(".png", "_grayscale.png")
+        grayscale_dem_path = os.path.join(self.previews_directory, "dem_grayscale.png")
 
-        self.logger.debug("Creating grayscale preview of DEM data in %s.", rgb_dem_path)
+        self.logger.debug("Creating grayscale preview of DEM data in %s.", grayscale_dem_path)
 
         dem_data = cv2.imread(self._dem_path, cv2.IMREAD_GRAYSCALE)
         dem_data_rgb = cv2.cvtColor(dem_data, cv2.COLOR_GRAY2RGB)
-        cv2.imwrite(rgb_dem_path, dem_data_rgb)
-        return rgb_dem_path
+        cv2.imwrite(grayscale_dem_path, dem_data_rgb)
+        return grayscale_dem_path
 
     def colored_preview(self) -> str:
         """Converts DEM image to colored RGB image and saves it to the map directory.
@@ -274,7 +284,8 @@ class DEM(Component):
             list[str]: List with a single path to the DEM file
         """
 
-        colored_dem_path = self._dem_path.replace(".png", "_colored.png")
+        # colored_dem_path = self._dem_path.replace(".png", "_colored.png")
+        colored_dem_path = os.path.join(self.previews_directory, "dem_colored.png")
 
         self.logger.debug("Creating colored preview of DEM data in %s.", colored_dem_path)
 

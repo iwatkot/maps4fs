@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING, Any
 
 import osmnx as ox  # type: ignore
@@ -42,6 +43,8 @@ class Component:
         self.logger = logger
         self.kwargs = kwargs
 
+        os.makedirs(self.previews_directory, exist_ok=True)
+
         self.save_bbox()
         self.preprocess()
 
@@ -68,6 +71,15 @@ class Component:
             NotImplementedError: If the method is not implemented in the child class.
         """
         raise NotImplementedError
+
+    @property
+    def previews_directory(self) -> str:
+        """The directory where the preview images are stored.
+
+        Returns:
+            str: The directory where the preview images are stored.
+        """
+        return os.path.join(self.map_directory, "previews")
 
     def get_bbox(self, project_utm: bool = False) -> tuple[int, int, int, int]:
         """Calculates the bounding box of the map from the coordinates and the height and

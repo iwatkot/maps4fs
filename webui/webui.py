@@ -38,6 +38,8 @@ class Maps4FS:
     def __init__(self):
         self.download_path = None
         self.logger = mfs.Logger(__name__, level="DEBUG", to_file=False)
+        self.community = config.is_on_community_server()
+        self.logger.info("The application launched on the community server: %s", self.community)
 
         st.set_page_config(page_title="Maps4FS", page_icon="🚜", layout="wide")
         st.title("Maps4FS")
@@ -365,6 +367,7 @@ class Maps4FS:
             "Preview of the texture map.",
             "Preview of the DEM (elevation) map in grayscale (original).",
             "Preview of the DEM (elevation) map in colored mode (only for demonstration).",
+            "Preview of the terrain background DEM (elevation) map.",
         ]
         if not full_preview_paths or len(full_preview_paths) != len(preview_captions):
             # In case if generation of the preview images failed, we will not show them.

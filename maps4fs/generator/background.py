@@ -1,118 +1,111 @@
+"""This module contains the Background component, which generates 3D obj files based on DEM data 
+around the map."""
+
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, NamedTuple
 
 import cv2
 import numpy as np
 import trimesh
-from geopy.distance import distance
 
+from maps4fs.generator.component import Component
+from maps4fs.generator.path_steps import DEFAULT_DISTANCE, get_steps
 from maps4fs.generator.tile import Tile
 
-if TYPE_CHECKING:
-    from maps4fs.generator.map import Map
-
-DEFAULT_DISTANCE = 2048
+RESIZE_FACTOR = 1 / 4
 
 
-class PathInfo(NamedTuple):
-    code: str
-    angle: int
-    distance: int
-    size: tuple[int, int]
+class Background(Component):
+    """Component for creating 3D obj files based on DEM data around the map.
 
+    Args:
+        coordinates (tuple[float, float]): The latitude and longitude of the center of the map.
+        map_height (int): The height of the map in pixels.
+        map_width (int): The width of the map in pixels.
+        map_directory (str): The directory where the map files are stored.
+        logger (Any, optional): The logger to use. Must have at least three basic methods: debug,
+            info, warning. If not provided, default logging will be used.
+    """
 
-class Background:
-    def __init__(self, map: Map):
-        self.map = map
-        self.center_latitude = map.coordinates[0]
-        self.center_longitude = map.coordinates[1]
-        self.map_height = map.height
-        self.map_width = map.width
-        self.map_directory = map.map_directory
-        self.logger = map.logger
-
+    def preprocess(self) -> None:
+        """Prepares the component for processing. Registers the tiles around the map by moving
+        clockwise from North, then clockwise."""
         self.tiles: list[Tile] = []
-        self.register_tiles()
+        origin = self.coordinates
 
-    def register_tiles(self):
-        # Move clockwise from N and calculate coordinates and sizes for each tile.
-        origin = (self.center_latitude, self.center_longitude)
-        half_width = int(self.map_width / 2)
-        half_height = int(self.map_height / 2)
+        # Getting a list of 8 tiles around the map starting from the N(North) tile.
+        for path_step in get_steps(self.map_height, self.map_width):
+            # Getting the destination coordinates for the current tile.
+            tile_coordinates = path_step.get_destination(origin)
 
-        paths = [
-            PathInfo(
-                "N", 0, half_height + DEFAULT_DISTANCE / 2, (self.map_width, DEFAULT_DISTANCE)
-            ),
-            PathInfo(
-                "NE", 90, half_width + DEFAULT_DISTANCE / 2, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
-            ),
-            PathInfo(
-                "E", 180, half_height + DEFAULT_DISTANCE / 2, (self.map_height, DEFAULT_DISTANCE)
-            ),
-            PathInfo(
-                "SE", 180, half_height + DEFAULT_DISTANCE / 2, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
-            ),
-            PathInfo(
-                "S", 270, half_width + DEFAULT_DISTANCE / 2, (self.map_width, DEFAULT_DISTANCE)
-            ),
-            PathInfo(
-                "SW", 270, half_width + DEFAULT_DISTANCE / 2, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
-            ),
-            PathInfo(
-                "W", 0, half_height + DEFAULT_DISTANCE / 2, (self.map_height, DEFAULT_DISTANCE)
-            ),
-            PathInfo(
-                "NW", 0, half_height + DEFAULT_DISTANCE / 2, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
-            ),
-        ]
-
-        for path in paths:
-            destination = distance(meters=path.distance).destination(origin, path.angle)
-            tile_coordinates = (destination.latitude, destination.longitude)
-
+            # Create a Tile component, which is needed to save the DEM image.
             tile = Tile(
-                game=self.map.game,
+                game=self.game,
                 coordinates=tile_coordinates,
-                map_height=path.size[1],
-                map_width=path.size[0],
+                map_height=path_step.size[1],
+                map_width=path_step.size[0],
                 map_directory=self.map_directory,
                 logger=self.logger,
-                tile_code=path.code,
+                tile_code=path_step.code,
                 auto_process=False,
-                blur_radius=0,
-                multiplier=10,
+                blur_radius=self.kwargs.get("blur_radius"),
+                multiplier=300,
             )
 
+            # Update the origin for the next tile.
             origin = tile_coordinates
             self.tiles.append(tile)
+            self.logger.debug(
+                "Registered tile: %s, coordinates: %s, size: %s",
+                tile.code,
+                tile_coordinates,
+                path_step.size,
+            )
 
-    def process(self):
+    def process(self) -> None:
+        """Launches the component processing. Iterates over all tiles and processes them
+        as a result the DEM files will be saved, then based on them the obj files will be
+        generated."""
         for tile in self.tiles:
             tile.process()
 
-        self.debug()
         self.generate_obj_files()
 
-    def generate_obj_files(self):
+    def generate_obj_files(self) -> None:
+        """Iterates over all tiles and generates 3D obj files based on DEM data.
+        If at least one DEM file is missing, the generation will be stopped at all.
+        """
         for tile in self.tiles:
             # Read DEM data from the tile.
-            dem_path = tile._dem_path
+            dem_path = tile.dem_path
+            if not os.path.isfile(dem_path):
+                self.logger.warning("DEM file not found, generation will be stopped: %s", dem_path)
+                return
+
+            self.logger.info("DEM file for tile %s found: %s", tile.code, dem_path)
+
             base_directory = os.path.dirname(dem_path)
             save_path = os.path.join(base_directory, f"{tile.code}.obj")
-            dem_data = cv2.imread(tile._dem_path, cv2.IMREAD_UNCHANGED)
+            self.logger.debug("Generating obj file for tile %s in path: %s", tile.code, save_path)
+
+            dem_data = cv2.imread(tile.dem_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
             self.plane_from_np(dem_data, save_path)
 
-    def plane_from_np(self, dem_data: np.ndarray, save_path: str):
-        # We need to apply gaussian blur to the DEM data to make it smooth.
-        dem_data = cv2.normalize(dem_data, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
+    # pylint: disable=too-many-locals
+    def plane_from_np(self, dem_data: np.ndarray, save_path: str) -> None:
+        """Generates a 3D obj file based on DEM data.
 
-        # resize to 25% of the original size
-        dem_data = cv2.resize(dem_data, (0, 0), fx=0.25, fy=0.25)
-
-        dem_data = cv2.GaussianBlur(dem_data, (51, 51), sigmaX=40, sigmaY=40)
+        Arguments:
+            dem_data (np.ndarray) -- The DEM data as a numpy array.
+            save_path (str) -- The path where the obj file will be saved.
+        """
+        dem_data = cv2.resize(  # pylint: disable=no-member
+            dem_data, (0, 0), fx=RESIZE_FACTOR, fy=RESIZE_FACTOR
+        )
+        self.logger.debug(
+            "DEM data resized to shape: %s with factor: %s", dem_data.shape, RESIZE_FACTOR
+        )
 
         rows, cols = dem_data.shape
         x = np.linspace(0, cols - 1, cols)
@@ -130,24 +123,32 @@ class Background:
                 bottom_left = top_left + cols
                 bottom_right = bottom_left + 1
 
-                faces.append([top_left, bottom_left, bottom_right])
-                faces.append([top_left, bottom_right, top_right])
+                # Invert the order of vertices to flip the normals
+                faces.append([top_left, bottom_right, bottom_left])
+                faces.append([top_left, top_right, bottom_right])
 
-        faces = np.array(faces)
+        faces = np.array(faces)  # type: ignore
         mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
         mesh.export(save_path)
+        self.logger.info("Obj file saved: %s", save_path)
 
-    def debug(self):
-        # Merge all tiles into one image for debugging purposes.
-        # Center tile not exists, fill it with black color.
+    def previews(self) -> list[str]:
+        """Generates a preview by combining all tiles into one image.
+        NOTE: The map itself is not included in the preview, so it will be empty.
+
+        Returns:
+            list[str] -- A list of paths to the preview images."""
+
+        self.logger.info("Generating a preview image for the background DEM")
 
         image_height = self.map_height + DEFAULT_DISTANCE * 2
         image_width = self.map_width + DEFAULT_DISTANCE * 2
+        self.logger.debug("Full size of the preview image: %s x %s", image_width, image_height)
 
-        image = np.zeros((image_height, image_width, 3), np.uint8)
+        image = np.zeros((image_height, image_width, 3), np.uint8)  # pylint: disable=no-member
 
         for tile in self.tiles:
-            tile_image = cv2.imread(tile._dem_path)
+            tile_image = cv2.imread(tile.dem_path)  # pylint: disable=no-member
             if tile.code == "N":
                 x = DEFAULT_DISTANCE
                 y = 0
@@ -173,15 +174,13 @@ class Background:
                 x = 0
                 y = 0
 
+            # pylint: disable=possibly-used-before-assignment
             image[y : y + tile.map_height, x : x + tile.map_width] = tile_image
 
         # Save image to the map directory.
-        cv2.imwrite(f"{self.map_directory}/background.png", image)
-
-    # def parse_code(self, tile_code: str):
-    #     half_width = int(self.map_width / 2)
-    #     half_height = int(self.map_height / 2)
-    #     offset = DEFAULT_DISTANCE / 2
+        preview_path = os.path.join(self.previews_directory, "background_dem.png")
+        cv2.imwrite(preview_path, image)  # pylint: disable=no-member
+        return [preview_path]
 
 
 # Creates tiles around the map.
