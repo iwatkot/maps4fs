@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 import warnings
-from typing import Callable, Generator, Optional
+from typing import Any, Callable, Generator, Optional
 
 import cv2
 import numpy as np
@@ -149,7 +149,6 @@ class Texture(Component):
         self._prepare_weights()
         self._read_parameters()
         self.draw()
-        self.info_sequence()
 
     # pylint: disable=W0201
     def _read_parameters(self) -> None:
@@ -176,23 +175,8 @@ class Texture(Component):
         self.width_coef = self.width / self.map_width
         self.logger.debug("Map coefficients (HxW): %s x %s.", self.height_coef, self.width_coef)
 
-    def info_sequence(self) -> None:
-        """Saves generation info to JSON file "generation_info.json".
-
-        Info sequence contains following attributes:
-            - coordinates
-            - bbox
-            - map_height
-            - map_width
-            - minimum_x
-            - minimum_y
-            - maximum_x
-            - maximum_y
-            - height
-            - width
-            - height_coef
-            - width_coef
-        """
+    def info_sequence(self) -> dict[str, Any]:
+        """Returns the JSON representation of the generation info for textures."""
         useful_attributes = [
             "coordinates",
             "bbox",
@@ -207,11 +191,7 @@ class Texture(Component):
             "height_coef",
             "width_coef",
         ]
-        info_sequence = {attr: getattr(self, attr, None) for attr in useful_attributes}
-
-        with open(self.info_save_path, "w") as f:  # pylint: disable=W1514
-            json.dump(info_sequence, f, indent=4)
-        self.logger.info("Generation info saved to %s.", self.info_save_path)
+        return {attr: getattr(self, attr, None) for attr in useful_attributes}
 
     def _prepare_weights(self):
         self.logger.debug("Starting preparing weights from %s layers.", len(self.layers))

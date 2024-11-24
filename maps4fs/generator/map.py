@@ -83,6 +83,16 @@ class Map:
                         e,
                     )
                     raise e
+
+                try:
+                    component.commit_generation_info()
+                except Exception as e:  # pylint: disable=W0718
+                    self.logger.error(
+                        "Error committing generation info for component %s: %s",
+                        component.__class__.__name__,
+                        e,
+                    )
+                    raise e
                 self.components.append(component)
 
                 pbar.update(1)
