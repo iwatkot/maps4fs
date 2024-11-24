@@ -38,6 +38,7 @@ class Maps4FS:
     def __init__(self):
         self.download_path = None
         self.logger = mfs.Logger(__name__, level="DEBUG", to_file=False)
+
         self.community = config.is_on_community_server()
         self.logger.info("The application launched on the community server: %s", self.community)
 
