@@ -38,6 +38,7 @@ class Maps4FS:
     def __init__(self):
         self.download_path = None
         self.logger = mfs.Logger(__name__, level="DEBUG", to_file=False)
+        config.print_all_env_vars(self.logger)
 
         st.set_page_config(page_title="Maps4FS", page_icon="🚜", layout="wide")
         st.title("Maps4FS")
