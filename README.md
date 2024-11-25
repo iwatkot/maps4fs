@@ -8,9 +8,9 @@
   <a href="#Supported-objects">Supported objects</a> •
   <a href="#Generation-info">Generation info</a> •
   <a href="#Texture-schema">Texture schema</a> •
-  <a href="Background-terrain">Background terrain</a><br>
+  <a href="#Background-terrain">Background terrain</a><br>
   <a href="#For-advanced-users">For advanced users</a> •
-  <a jref="#Resources">Resources</a> •
+  <a href="#Resources">Resources</a> •
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a>
 </p>
 
