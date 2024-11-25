@@ -244,8 +244,8 @@ class Background(Component):
         preview_path = os.path.join(self.previews_directory, "background_dem.png")
 
         # pylint: disable=no-member
-        image = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
-        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+        image = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)  # type: ignore
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)  # type: ignore
         cv2.imwrite(preview_path, image)
 
         return [preview_path]
