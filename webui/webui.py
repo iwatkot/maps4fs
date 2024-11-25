@@ -82,6 +82,35 @@ class Maps4FS:
 
         self.map_preview()
 
+        st.markdown(
+            """
+            <style>
+            .footer {
+                position: fixed;
+                left: 0;
+                bottom: 0;
+                width: 100%;
+                height: 40px;
+                background-color: #066E7A;
+                color: white;
+                text-align: center;
+                padding: 10px;
+            }
+            .footer a {
+                color: black;
+                text-decoration: none;
+            }
+            .footer a:hover {
+                text-decoration: underline;
+            }
+            </style>
+            <div class="footer">
+                <p>Maps4FS by <a href="https://github.com/iwatkot">iwatkot</a> | Support the project on <a href="https://www.buymeacoffee.com/iwatkot0">Buy Me a Coffee</a></p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
     @property
     def lat_lon(self) -> tuple[float, float]:
         """Get the latitude and longitude of the center point of the map.

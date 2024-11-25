@@ -12,3 +12,4 @@ folium
 geopy
 fast-simplification
 pyproj
+trimesh
