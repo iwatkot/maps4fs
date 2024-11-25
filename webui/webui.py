@@ -348,7 +348,7 @@ class Maps4FS:
 
         session_name = self.get_sesion_name(coordinates)
 
-        self.status_container.info("Map is generating...", icon="⏳")
+        self.status_container.info("Starting...", icon="⏳")
         map_directory = os.path.join(config.MAPS_DIRECTORY, session_name)
         os.makedirs(map_directory, exist_ok=True)
 
@@ -364,11 +364,16 @@ class Maps4FS:
             blur_radius=self.blur_radius_input,
             auto_process=self.auto_process,
         )
-        mp.generate()
+        for component_name in mp.generate():
+            self.status_container.info(f"Generating {component_name}...", icon="⏳")
+
+        self.status_container.info("Creating previews...", icon="⏳")
 
         # Create a preview image.
         self.show_preview(mp)
         self.map_preview()
+
+        self.status_container.info("Packing the map...", icon="⏳")
 
         # Pack the generated map into a zip archive.
         archive_path = mp.pack(os.path.join(config.ARCHIVES_DIRECTORY, session_name))
@@ -387,13 +392,7 @@ class Maps4FS:
         """
         # Get a list of all preview images.
         full_preview_paths = mp.previews()
-        preview_captions = [
-            "Preview of the texture map.",
-            "Preview of the DEM (elevation) map in grayscale (original).",
-            "Preview of the DEM (elevation) map in colored mode (only for demonstration).",
-            "Preview of the terrain background DEM (elevation) map.",
-        ]
-        if not full_preview_paths or len(full_preview_paths) != len(preview_captions):
+        if not full_preview_paths:
             # In case if generation of the preview images failed, we will not show them.
             return
 
@@ -401,14 +400,12 @@ class Maps4FS:
             st.markdown("---")
             st.write("Previews of the generated map:")
             columns = st.columns(len(full_preview_paths))
-            for column, caption, full_preview_path in zip(
-                columns, preview_captions, full_preview_paths
-            ):
+            for column, full_preview_path in zip(columns, full_preview_paths):
                 if not os.path.isfile(full_preview_path):
                     continue
                 try:
                     image = Image.open(full_preview_path)
-                    column.image(image, use_container_width=True, caption=caption)
+                    column.image(image, use_container_width=True)
                 except Exception:
                     continue
 

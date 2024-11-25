@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import os
 import shutil
-from typing import Any
-
-from tqdm import tqdm
+from typing import Any, Generator
 
 # from maps4fs.generator.background import Background
 from maps4fs.generator.component import Component
@@ -61,41 +59,45 @@ class Map:
         except Exception as e:
             raise RuntimeError(f"Can not unpack map template due to error: {e}") from e
 
-    def generate(self) -> None:
-        """Launch map generation using all components."""
-        with tqdm(total=len(self.game.components), desc="Generating map...") as pbar:
-            for game_component in self.game.components:
-                component = game_component(
-                    self.game,
-                    self.coordinates,
-                    self.height,
-                    self.width,
-                    self.map_directory,
-                    self.logger,
-                    **self.kwargs,
+    def generate(self) -> Generator[str, None, None]:
+        """Launch map generation using all components. Yield component names during the process.
+
+        Yields:
+            Generator[str, None, None]: Component names.
+        """
+        for game_component in self.game.components:
+            component = game_component(
+                self.game,
+                self.coordinates,
+                self.height,
+                self.width,
+                self.map_directory,
+                self.logger,
+                **self.kwargs,
+            )
+
+            yield component.__class__.__name__
+
+            try:
+                component.process()
+            except Exception as e:  # pylint: disable=W0718
+                self.logger.error(
+                    "Error processing component %s: %s",
+                    component.__class__.__name__,
+                    e,
                 )
-                try:
-                    component.process()
-                except Exception as e:  # pylint: disable=W0718
-                    self.logger.error(
-                        "Error processing component %s: %s",
-                        component.__class__.__name__,
-                        e,
-                    )
-                    raise e
+                raise e
 
-                try:
-                    component.commit_generation_info()
-                except Exception as e:  # pylint: disable=W0718
-                    self.logger.error(
-                        "Error committing generation info for component %s: %s",
-                        component.__class__.__name__,
-                        e,
-                    )
-                    raise e
-                self.components.append(component)
-
-                pbar.update(1)
+            try:
+                component.commit_generation_info()
+            except Exception as e:  # pylint: disable=W0718
+                self.logger.error(
+                    "Error committing generation info for component %s: %s",
+                    component.__class__.__name__,
+                    e,
+                )
+                raise e
+            self.components.append(component)
 
     def previews(self) -> list[str]:
         """Get list of preview images.

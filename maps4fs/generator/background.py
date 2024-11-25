@@ -189,10 +189,29 @@ class Background(Component):
         image_width = self.map_width + DEFAULT_DISTANCE * 2
         self.logger.debug("Full size of the preview image: %s x %s", image_width, image_height)
 
-        image = np.zeros((image_height, image_width, 3), np.uint8)  # pylint: disable=no-member
+        image = np.zeros((image_height, image_width), np.uint16)  # pylint: disable=no-member
 
         for tile in self.tiles:
-            tile_image = cv2.imread(tile.dem_path)  # pylint: disable=no-member
+            # pylint: disable=no-member
+            tile_image = cv2.imread(tile.dem_path, cv2.IMREAD_UNCHANGED)
+
+            self.logger.debug(
+                "Tile %s image shape: %s, dtype: %s, max: %s, min: %s",
+                tile.code,
+                tile_image.shape,
+                tile_image.dtype,
+                tile_image.max(),
+                tile_image.min(),
+            )
+
+            # tile_image is a single channel 16-bit (uint16) image.
+            # We need to normalize values so they will be visible by the human eye
+            # and convert it to 8-bit (uint8) image.
+
+            # pylint: disable=no-member
+            # tile_image = cv2.normalize(tile_image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
+            # tile_image = cv2.cvtColor(tile_image, cv2.COLOR_GRAY2BGR)
+
             if tile.code == "N":
                 x = DEFAULT_DISTANCE
                 y = 0
@@ -223,7 +242,12 @@ class Background(Component):
 
         # Save image to the map directory.
         preview_path = os.path.join(self.previews_directory, "background_dem.png")
-        cv2.imwrite(preview_path, image)  # pylint: disable=no-member
+
+        # pylint: disable=no-member
+        image = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+        cv2.imwrite(preview_path, image)
+
         return [preview_path]
 
 

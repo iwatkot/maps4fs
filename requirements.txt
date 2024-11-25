@@ -1,7 +1,6 @@
 opencv-python
 osmnx<2.0.0
 rasterio
-tqdm
 streamlit
 folium
 geopy

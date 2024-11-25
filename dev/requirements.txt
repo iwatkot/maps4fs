@@ -1,11 +1,9 @@
 opencv-python
 osmnx<2.0.0
 rasterio
-tqdm
 streamlit
 mypy
 pylint
-types-tqdm
 pandas-stubs
 types-requests
 pytest
