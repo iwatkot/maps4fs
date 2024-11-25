@@ -9,6 +9,7 @@ types-tqdm
 pandas-stubs
 types-requests
 pytest
+pytest-cov
 folium
 geopy
 pyproj

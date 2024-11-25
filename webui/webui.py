@@ -46,9 +46,23 @@ class Maps4FS:
         st.title("Maps4FS")
         st.write("Generate map templates for Farming Simulator from real places.")
 
+        if self.community:
+            st.warning(
+                "🚜 Hey, farmer!  \n"
+                "Do you know what **Docker** is? If yes, please consider running the application "
+                "locally.  \n"
+                "On StreamLit community hosting the sizes of generated maps are limited "
+                "to a size of maximum 4096x4096 meters, while locally you only limited by "
+                "your hardware.  \n"
+                "Learn more about the Docker version in the repo's "
+                "[README](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version).  \n"
+                "Also, if you are familiar with Python, you can use the "
+                "[maps4fs](https://pypi.org/project/maps4fs/) package to generate maps locally."
+            )
+
         st.info(
-            "ℹ️ When opening map first time in the Giants Editor, select **terrain** object, "
-            "open **Terrain** tab in the **Attributes** window, scroll down to the end "
+            "ℹ️ When opening the map first time in the Giants Editor, select the **terrain** object, "
+            "open the **Terrain** tab in the **Attributes** window, scroll down to the end "
             "and press the **Reload material** button.  \n"
             "Otherwise you may (and will) face some glitches."
         )
@@ -142,11 +156,15 @@ class Maps4FS:
             on_change=self.map_preview,
         )
 
+        size_options = ["2048x2048", "4096x4096", "8192x8192", "16384x16384", "Custom"]
+        if self.community:
+            size_options = size_options[:2]
+
         # Map size selection.
         st.write("Select size of the map:")
         self.map_size_input = st.selectbox(
             "Map Size (meters)",
-            options=["2048x2048", "4096x4096", "8192x8192", "16384x16384", "Custom"],
+            options=size_options,
             label_visibility="collapsed",
             on_change=self.map_preview,
         )
@@ -167,6 +185,11 @@ class Maps4FS:
             )
 
             self.map_size_input = f"{custom_map_size_input}x{custom_map_size_input}"
+
+        if self.community:
+            st.warning(
+                "💡 If you run the tool locally, you can generate larger maps, even with the custom size.  \n"
+            )
 
         st.info(
             "ℹ️ Remember to adjust the ***heightScale*** parameter in the Giants Editor to a value "
