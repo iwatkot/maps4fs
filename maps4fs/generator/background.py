@@ -234,6 +234,7 @@ class Background(Component):
                 x = 0
                 y = 0
 
+            # pylint: disable=possibly-used-before-assignment
             x2 = x + tile_width
             y2 = y + tile_height
 
