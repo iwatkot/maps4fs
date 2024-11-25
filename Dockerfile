@@ -10,7 +10,7 @@ WORKDIR /usr/src/app
 COPY data /usr/src/app/data
 COPY webui /usr/src/app/webui
 
-RUN pip install "opencv-python" "pyproj" "folium" "geopy" "osmnx<2.0.0" "fast-simplification" "rasterio" "trimesh" "streamlit" "maps4fs"
+RUN pip install "opencv-python" "pyproj" "tifffile" "folium" "geopy" "osmnx<2.0.0" "fast-simplification" "rasterio" "trimesh" "streamlit" "maps4fs"
 
 EXPOSE 8501
 
