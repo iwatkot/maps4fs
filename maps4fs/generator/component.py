@@ -156,7 +156,7 @@ class Component:
             tuple[int, int, int, int]: The bounding box of the map.
         """
         coordinates = coordinates or self.coordinates
-        distance = distance or self.map_height / 2
+        distance = distance or int(self.map_height / 2)
 
         north, south, _, _ = ox.utils_geo.bbox_from_point(
             coordinates, dist=distance, project_utm=project_utm
@@ -182,9 +182,10 @@ class Component:
 
     def get_epsg3857_string(self, bbox: tuple[int, int, int, int] | None = None) -> str:
         """Converts the bounding box to EPSG:3857 string.
+        If the bounding box is not provided, the instance variable is used.
 
         Args:
-            bbox (tuple[int, int, int, int], optional): The bounding box to convert. Defaults to None.
+            bbox (tuple[int, int, int, int], optional): The bounding box to convert.
 
         Returns:
             str: The bounding box in EPSG:3857 string.

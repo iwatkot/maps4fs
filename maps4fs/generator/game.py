@@ -36,8 +36,7 @@ class Game:
     _map_template_path: str | None = None
     _texture_schema: str | None = None
 
-    # components = [Config, Texture, DEM, I3d, Background]
-    components = [Background]
+    components = [Config, Texture, DEM, I3d, Background]
 
     def __init__(self, map_template_path: str | None = None):
         if map_template_path:

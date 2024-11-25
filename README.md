@@ -183,6 +183,31 @@ List of components:
 Below you'll find descriptions of the components and the fields that they contain.<br>
 ℹ️ If there's no information about the component, it means that at the moment it does not store any data in the `generation_info.json` file.
 
+### Config
+Example of the `Config` component:
+```json
+"Config": {
+    "Overview": {
+        "epsg3857_string": "2249906.6679576184,2255734.9033189337,5663700.389039194,5669528.6247056825 [EPSG:3857]",
+        "south": 45.304132173367165,
+        "west": 45.267296012425376,
+        "north": 20.263611405732693,
+        "east": 20.211255476687537,
+        "height": 4096,
+        "width": 4096
+    }
+},
+```
+The `Overview` section contains information to create an overview image, which represents the in-game map. You can use the `epsg3857_string` to obtain the satellite images in the QGIS. So this section describes the region of the map plus the borders. Usually, it's exact 2X the size of the map.<br>
+And here's the list of the fields:
+- `"epsg3857_string"` - the string representation of the bounding box in the EPSG:3857 projection, it's required to obtain the satellite images in the QGIS,<br>
+- `"south"` - the southern border of overview region,<br>
+- `"west"` - the western border of overview region,<br>
+- `"north"` - the northern border of overview region,<br>
+- `"east"` - the eastern border of overview region,<br>
+- `"height"` - the height of the overview region in meters (2X the size of the map),<br>
+- `"width"` - the width of the overview region in meters,<br>
+
 ### Texture
 
 Example of the `Texture` component:

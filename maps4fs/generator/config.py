@@ -55,3 +55,34 @@ class Config(Component):
             list[str]: An empty list.
         """
         return []
+
+    def info_sequence(self) -> dict[str, dict[str, str | float | int]]:
+        """Returns information about the component.
+        Overview section is needed to create the overview file (in-game map).
+
+        Returns:
+            dict[str, dict[str, str | float | int]]: Information about the component.
+        """
+        # The overview file is exactly 2X bigger than the map size, does not matter
+        # if the map is 2048x2048 or 4096x4096, the overview will be 4096x4096
+        # and the map will be in the center of the overview.
+        # That's why the distance is set to the map height not as a half of it.
+        bbox = self.get_bbox(distance=self.map_height)
+        south, west, north, east = bbox
+        epsg3857_string = self.get_epsg3857_string(bbox=bbox)
+
+        overview_data = {
+            "epsg3857_string": epsg3857_string,
+            "south": south,
+            "west": west,
+            "north": north,
+            "east": east,
+            "height": self.map_height * 2,
+            "width": self.map_width * 2,
+        }
+
+        data = {
+            "Overview": overview_data,
+        }
+
+        return data  # type: ignore
