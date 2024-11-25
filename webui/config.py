@@ -8,7 +8,14 @@ os.makedirs(ARCHIVES_DIRECTORY, exist_ok=True)
 os.makedirs(MAPS_DIRECTORY, exist_ok=True)
 os.makedirs(OSMPS_DIRECTORY, exist_ok=True)
 
-def print_all_env_vars(logger):
-    logger.debug("All environment variables:")
-    for key, value in os.environ.items():
-        logger.debug(f"{key} = {value}")
+STREAMLIT_COMMUNITY_KEY = "HOSTNAME"
+STREAMLIT_COMMUNITY_VALUE = "streamlit"
+
+
+def is_on_community_server() -> bool:
+    """Check if the script is running on the Streamlit Community server.
+
+    Returns:
+        bool: True if the script is running on the Streamlit Community server, False otherwise.
+    """
+    return os.environ.get(STREAMLIT_COMMUNITY_KEY) == STREAMLIT_COMMUNITY_VALUE

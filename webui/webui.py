@@ -38,15 +38,31 @@ class Maps4FS:
     def __init__(self):
         self.download_path = None
         self.logger = mfs.Logger(__name__, level="DEBUG", to_file=False)
-        config.print_all_env_vars(self.logger)
+
+        self.community = config.is_on_community_server()
+        self.logger.info("The application launched on the community server: %s", self.community)
 
         st.set_page_config(page_title="Maps4FS", page_icon="🚜", layout="wide")
         st.title("Maps4FS")
         st.write("Generate map templates for Farming Simulator from real places.")
 
+        if self.community:
+            st.warning(
+                "🚜 Hey, farmer!  \n"
+                "Do you know what **Docker** is? If yes, please consider running the application "
+                "locally.  \n"
+                "On StreamLit community hosting the sizes of generated maps are limited "
+                "to a size of maximum 4096x4096 meters, while locally you only limited by "
+                "your hardware.  \n"
+                "Learn more about the Docker version in the repo's "
+                "[README](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version).  \n"
+                "Also, if you are familiar with Python, you can use the "
+                "[maps4fs](https://pypi.org/project/maps4fs/) package to generate maps locally."
+            )
+
         st.info(
-            "ℹ️ When opening map first time in the Giants Editor, select **terrain** object, "
-            "open **Terrain** tab in the **Attributes** window, scroll down to the end "
+            "ℹ️ When opening the map first time in the Giants Editor, select the **terrain** object, "
+            "open the **Terrain** tab in the **Attributes** window, scroll down to the end "
             "and press the **Reload material** button.  \n"
             "Otherwise you may (and will) face some glitches."
         )
@@ -140,11 +156,15 @@ class Maps4FS:
             on_change=self.map_preview,
         )
 
+        size_options = ["2048x2048", "4096x4096", "8192x8192", "16384x16384", "Custom"]
+        if self.community:
+            size_options = size_options[:2]
+
         # Map size selection.
         st.write("Select size of the map:")
         self.map_size_input = st.selectbox(
             "Map Size (meters)",
-            options=["2048x2048", "4096x4096", "8192x8192", "16384x16384", "Custom"],
+            options=size_options,
             label_visibility="collapsed",
             on_change=self.map_preview,
         )
@@ -165,6 +185,11 @@ class Maps4FS:
             )
 
             self.map_size_input = f"{custom_map_size_input}x{custom_map_size_input}"
+
+        if self.community:
+            st.warning(
+                "💡 If you run the tool locally, you can generate larger maps, even with the custom size.  \n"
+            )
 
         st.info(
             "ℹ️ Remember to adjust the ***heightScale*** parameter in the Giants Editor to a value "
@@ -323,7 +348,7 @@ class Maps4FS:
 
         session_name = self.get_sesion_name(coordinates)
 
-        self.status_container.info("Map is generating...", icon="⏳")
+        self.status_container.info("Starting...", icon="⏳")
         map_directory = os.path.join(config.MAPS_DIRECTORY, session_name)
         os.makedirs(map_directory, exist_ok=True)
 
@@ -339,11 +364,16 @@ class Maps4FS:
             blur_radius=self.blur_radius_input,
             auto_process=self.auto_process,
         )
-        mp.generate()
+        for component_name in mp.generate():
+            self.status_container.info(f"Generating {component_name}...", icon="⏳")
+
+        self.status_container.info("Creating previews...", icon="⏳")
 
         # Create a preview image.
         self.show_preview(mp)
         self.map_preview()
+
+        self.status_container.info("Packing the map...", icon="⏳")
 
         # Pack the generated map into a zip archive.
         archive_path = mp.pack(os.path.join(config.ARCHIVES_DIRECTORY, session_name))
@@ -362,12 +392,7 @@ class Maps4FS:
         """
         # Get a list of all preview images.
         full_preview_paths = mp.previews()
-        preview_captions = [
-            "Preview of the texture map.",
-            "Preview of the DEM (elevation) map in grayscale (original).",
-            "Preview of the DEM (elevation) map in colored mode (only for demonstration).",
-        ]
-        if not full_preview_paths or len(full_preview_paths) != len(preview_captions):
+        if not full_preview_paths:
             # In case if generation of the preview images failed, we will not show them.
             return
 
@@ -375,14 +400,12 @@ class Maps4FS:
             st.markdown("---")
             st.write("Previews of the generated map:")
             columns = st.columns(len(full_preview_paths))
-            for column, caption, full_preview_path in zip(
-                columns, preview_captions, full_preview_paths
-            ):
+            for column, full_preview_path in zip(columns, full_preview_paths):
                 if not os.path.isfile(full_preview_path):
                     continue
                 try:
                     image = Image.open(full_preview_path)
-                    column.image(image, use_container_width=True, caption=caption)
+                    column.image(image, use_container_width=True)
                 except Exception:
                     continue
 

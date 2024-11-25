@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 
+from maps4fs.generator.background import Background
 from maps4fs.generator.config import Config
 from maps4fs.generator.dem import DEM
 from maps4fs.generator.i3d import I3d
@@ -35,7 +36,7 @@ class Game:
     _map_template_path: str | None = None
     _texture_schema: str | None = None
 
-    components = [Config, Texture, DEM, I3d]
+    components = [Config, Texture, DEM, I3d, Background]
 
     def __init__(self, map_template_path: str | None = None):
         if map_template_path:

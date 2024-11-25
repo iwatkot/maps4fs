@@ -5,9 +5,12 @@
   <a href="#Quick-Start">Quick Start</a> •
   <a href="#Overview">Overview</a> • 
   <a href="#How-To-Run">How-To-Run</a><br>
-  <a href="#Supported-objects">Supported objects</a> • 
+  <a href="#Supported-objects">Supported objects</a> •
+  <a href="#Generation-info">Generation info</a> •
   <a href="#Texture-schema">Texture schema</a> •
-  <a href="#For-advanced-users">For advanced users</a> • 
+  <a href="Background-terrain">Background terrain</a><br>
+  <a href="#For-advanced-users">For advanced users</a> •
+  <a jref="#Resources">Resources</a> •
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a>
 </p>
 
@@ -30,6 +33,8 @@
 🏞️ Generates height using SRTM dataset<br>
 📦 Provides a ready-to-use map template for the Giants Editor<br>
 🚜 Supports Farming Simulator 22 and 25<br>
+🔷 Generates *.obj files for background terrain based on the real-world height map 🆕<br>
+📄 Generates commands to obtain high-resolution satellite images from [QGIS](https://qgis.org/download/) 🆕<br>
 
 ## Quick Start
 There are several ways to use the tool. You obviously need the **first one**, but you can choose any of the others depending on your needs.<br>
@@ -101,7 +106,7 @@ docker run -d -p 8501:8501 iwatkot/maps4fs
 4. Fill in the required fields and click on the `Generate` button.
 5. When the map is generated click on the `Download` button to get the map.
 
-![WebUI](https://github.com/user-attachments/assets/581e1206-2abd-4b3c-ad31-80554ad92d99)
+![Basic WebUI](https://github.com/user-attachments/assets/14620044-9e92-47ae-8531-d61460740f58)
 
 ### Option 3: Python package
 🔴 Recommended for developers.<br>
@@ -142,8 +147,10 @@ map = mfs.Map(
 ```
 
 4. Generate the map:
+The `generate` method returns a generator, which yields the active component of the map. You can use it to track the progress of the generation process.
 ```python
-map.generate()
+for active_component in map.generate():
+    print(active_component)
 ```
 
 The map will be saved in the `map_directory` directory.
@@ -163,23 +170,94 @@ The project is based on the [OpenStreetMap](https://www.openstreetmap.org/) data
 
 The list will be updated as the project develops.
 
-## Info sequence
-The script will also generate the `generation_info.json` file in the `output` folder. It contains the following keys: <br>
-`"coordinates"` - the coordinates of the map center which you entered,<br>
-`"bbox"` - the bounding box of the map in lat and lon,<br>
-`"map_height"` - the height of the map in meters (this one is from the user input, e.g. 2048 and so on),<br>
-`"map_width"` - the width of the map in meters (same as above),<br>
-`"minimum_x"` - the minimum x coordinate of the map (UTM projection),<br>
-`"minimum_y"` - the minimum y coordinate of the map (UTM projection),<br>
-`"maximum_x"` - the maximum x coordinate of the map (UTM projection),<br>
-`"maximum_y"` - the maximum y coordinate of the map (UTM projection),<br>
-`"height"` - the height of the map in meters (it won't be equal to the parameters above since the Earth is not flat, sorry flat-earthers),<br>
-`"width"` - the width of the map in meters (same as above),<br>
-`"height_coef"` - since we need a texture of exact size, the height of the map is multiplied by this coefficient,<br>
-`"width_coef"` - same as above but for the width,<br>
-`"tile_name"` - the name of the SRTM tile which was used to generate the height map, e.g. "N52E013"<br>
+## Generation info
+The script will generate the `generation_info.json` file in the `output` folder. It splitted to the different sections, which represents the components of the map generator. You may need this information to use some other tools and services to obtain additional data for your map.<br>
 
-You can use this information to adjust some other sources of data to the map, e.g. textures, height maps, etc.
+List of components:
+- `Config` - this component handles the `map.xml` file, where the basic description of the map is stored.
+- `Texture` -  this component describes the textures, that were used to generate the map.
+- `DEM` - this component describes the Digital Elevation Model (the one which creates terrain on your map), which was used to generate the height map and related to the `dem.png` file.
+- `I3d` - this component describes the i3d file, where some specific attributes properties and path to the files are stored.
+- `Background` - this component describes the 8 tiles, that surround the map.
+
+Below you'll find descriptions of the components and the fields that they contain.<br>
+ℹ️ If there's no information about the component, it means that at the moment it does not store any data in the `generation_info.json` file.
+
+### Texture
+
+Example of the `Texture` component:
+```json
+"Texture": {
+    "coordinates": [
+        45.28571409289627,
+        20.237433441210115
+    ],
+    "bbox": [
+        45.29492313313172,
+        45.27650505266082,
+        20.250522423471406,
+        20.224344458948824
+    ],
+    "map_height": 2048,
+    "map_width": 2048,
+    "minimum_x": 439161.2439774908,
+    "minimum_y": 5013940.540089059,
+    "maximum_x": 441233.5397821935,
+    "maximum_y": 5016006.074349126,
+    "height": 2065.5342600671574,
+    "width": 2072.295804702677,
+    "height_coef": 1.0085616504234167,
+    "width_coef": 1.011863185889979
+},
+```
+
+And here's the list of the fields:
+
+- `"coordinates"` - the coordinates of the map center which you entered,<br>
+- `"bbox"` - the bounding box of the map in lat and lon,<br>
+- `"map_height"` - the height of the map in meters (this one is from the user input, e.g. 2048 and so on),<br>
+- `"map_width"` - the width of the map in meters (same as above),<br>
+- `"minimum_x"` - the minimum x coordinate of the map (UTM projection),<br>
+- `"minimum_y"` - the minimum y coordinate of the map (UTM projection),<br>
+- `"maximum_x"` - the maximum x coordinate of the map (UTM projection),<br>
+- `"maximum_y"` - the maximum y coordinate of the map (UTM projection),<br>
+- `"height"` - the height of the map in meters (it won't be equal to the parameters above since the Earth is not flat, sorry flat-earthers),<br>
+- `"width"` - the width of the map in meters (same as above),<br>
+- `"height_coef"` - since we need a texture of exact size, the height of the map is multiplied by this coefficient,<br>
+- `"width_coef"` - same as above but for the width,<br>
+- `"tile_name"` - the name of the SRTM tile which was used to generate the height map, e.g. "N52E013"<br>
+
+### Background
+
+The background component consist of the 8 tiles, each one represents the tile, that surrounds the map. The tiles are named as the cardinal points, e.g. "N", "NE", "E" and so on.<br>
+Example of the `Background` component:
+
+```json
+"Background": {
+"N": {
+    "center_latitude": 45.30414170952092,
+    "center_longitude": 20.237433441210115,
+    "epsg3857_string": "2251363.25324853,2254278.318028022,5668072.719985372,5670987.784803056 [EPSG:3857]",
+    "height": 2048,
+    "width": 2048,
+    "north": 45.31335074975637,
+    "south": 45.29493266928547,
+    "east": 20.250526677438195,
+    "west": 20.224340204982035
+},
+}
+```
+
+And here's the list of the fields:
+- `"center_latitude"` - the latitude of the center of the tile,<br>
+- `"center_longitude"` - the longitude of the center of the tile,<br>
+- `"epsg3857_string"` - the string representation of the bounding box in the EPSG:3857 projection, it's required to obtain the satellite images in the QGIS,<br>
+- `"height"` - the height of the tile in meters,<br>
+- `"width"` - the width of the tile in meters,<br>
+- `"north"` - the northern border of the tile,<br>
+- `"south"` - the southern border of the tile,<br>
+- `"east"` - the eastern border of the tile,<br>
+- `"west"` - the western border of the tile,<br>
 
 ## Texture schema
 maps4fs uses a simple JSON file to define the texture schema. For each of supported games this file has unique entries, but the structure is the same. Here's an example of the schema for Farming Simulator 25:
@@ -226,12 +304,23 @@ Let's have a closer look at the fields:
 ℹ️ The texture with 0 priority considers the base layer, which means that all empty areas will be filled with this texture.
 - `exclude_weight` - this only used for the forestRockRoots texture from FS25. It's just means that this texture has no `weight` postfix, that's all.
 
+## Background terrain
+The tool now supports the generation of the background terrain. If you don't know what it is, here's a brief explanation. The background terrain is the world around the map. It's important to create it, because if you don't, the map will look like it's floating in the void. The background terrain is a simple plane which can (and should) be texture to look fine.<br>
+So, the tool generates the background terrain in the form of the 8 tiles, which surround the map. The tiles are named as the cardinal points, e.g. "N", "NE", "E" and so on. All those tiles will be saved in the `objects/tiles` directory with corresponding names: `N.obj`, `NE.obj`, `E.obj` and so on.<br>
+If you're willing to create a background terrain, you will need: Blender, the Blender Exporter Plugins and the QGIS. You'll find the download links in the [Resources](#resources) section.<br>
+
+If you're afraid of this task, please don't be. It's really simple and I've prepaired detailed step-by-step instructions for you, you'll find them in the separate README files. Here are the steps you need to follow:
+
+1. [Download high-resolution satellite images](README_satellite_images.md).
+2. [Prepare the i3d files](README_i3d.md).
+3. [Import the i3d files to Giants Editor](README_giants_editor.md).
+
 ## For advanced users
 The tool supports the custom size of the map. To use this feature select `Custom` in the `Map size` dropdown and enter the desired size. The tool will generate a map with the size you entered.<br>
 
 ⛔️ Do not use this feature, if you don't know what you're doing. In most cases the Giants Editor will just crash on opening the file, because you need to enter a specific values for the map size.<br><br>
 
-![Advanced settings and custom size](https://github.com/user-attachments/assets/327b6065-09ed-41d0-86a8-7d904025707c)
+![Advanced settings](https://github.com/user-attachments/assets/0446cdf2-f093-49ba-ba8f-9bef18a58b47)
 
 You can also apply some advanced settings to the map generation process. Note that they're ADVANCED, so you don't need to use them if you're not sure what they do.<br>
 
@@ -240,6 +329,15 @@ Here's the list of the advanced settings:
 - DEM multiplier: the height of the map is multiplied by this value. So the DEM map is just a 16-bit grayscale image, which means that the maximum avaiable value there is 65535, while the actual difference between the deepest and the highest point on Earth is about 20 km. So, by default this value is set to 3. Just note that this setting mostly does not matter, because you can always adjust it in the Giants Editor, learn more about the [heightScale](https://www.farming-simulator.org/19/terrain-heightscale.php) parameter on the [PMC Farming Simulator](https://www.farming-simulator.org/) website.
 
 - DEM Blur radius: the radius of the Gaussian blur filter applied to the DEM map. By default, it's set to 21. This filter just makes the DEM map smoother, so the height transitions will be more natural. You can set it to 1 to disable the filter, but it will result as a Minecraft-like map.
+
+## Resources
+In this section you'll find a list of the resources that you need to create a map for the Farming Simulator.<br>
+To create a basic map, you only need the Giants Editor. But if you want to create a background terrain - the world around the map, so it won't look like it's floating in the void - you also need Blender and the Blender Exporter Plugins. To create realistic textures for the background terrain, the QGIS is required to obtain high-resolution satellite images.<br>
+
+1. [Giants Editor](https://gdn.giants-software.com/downloads.php) - the official tool for creating maps for the Farming Simulator.
+2. [Blender](https://www.blender.org/download/) - the open-source 3D modeling software that you can use to create models for the Farming Simulator.
+3. [Blender Exporter Plugins](https://gdn.giants-software.com/downloads.php) - the official plugins for exporting models from Blender to i3d format (the format used in the Farming Simulator).
+4. [QGIS](https://qgis.org/download/) - the open-source GIS software that you can use to obtain high-resolution satellite images for your map.
 
 ## Bugs and feature requests
 If you find a bug or have an idea for a new feature, please create an issue [here](https://github.com/iwatkot/maps4fs/issues) or contact me directly on [Telegram](https://t.me/iwatkot).<br>

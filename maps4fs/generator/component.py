@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+import os
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
 import osmnx as ox  # type: ignore
@@ -42,6 +45,8 @@ class Component:
         self.logger = logger
         self.kwargs = kwargs
 
+        os.makedirs(self.previews_directory, exist_ok=True)
+
         self.save_bbox()
         self.preprocess()
 
@@ -68,6 +73,66 @@ class Component:
             NotImplementedError: If the method is not implemented in the child class.
         """
         raise NotImplementedError
+
+    @property
+    def previews_directory(self) -> str:
+        """The directory where the preview images are stored.
+
+        Returns:
+            str: The directory where the preview images are stored.
+        """
+        return os.path.join(self.map_directory, "previews")
+
+    @property
+    def generation_info_path(self) -> str:
+        """The path to the generation info JSON file.
+
+        Returns:
+            str: The path to the generation info JSON file.
+        """
+        return os.path.join(self.map_directory, "generation_info.json")
+
+    def info_sequence(self) -> dict[Any, Any]:
+        """Returns the information sequence for the component. Must be implemented in the child
+        class. If the component does not have an information sequence, an empty dictionary must be
+        returned.
+
+        Returns:
+            dict[Any, Any]: The information sequence for the component.
+        """
+        return {}
+
+    def commit_generation_info(self) -> None:
+        """Commits the generation info to the generation info JSON file."""
+        self.update_generation_info(self.info_sequence())
+
+    def update_generation_info(self, data: dict[Any, Any]) -> None:
+        """Updates the generation info with the provided data.
+        If the generation info file does not exist, it will be created.
+
+        Args:
+            data (dict[Any, Any]): The data to update the generation info with.
+        """
+        if os.path.isfile(self.generation_info_path):
+            with open(self.generation_info_path, "r", encoding="utf-8") as file:
+                generation_info = json.load(file)
+                self.logger.debug("Loaded generation info from %s", self.generation_info_path)
+        else:
+            self.logger.debug(
+                "Generation info file does not exist, creating a new one in %s",
+                self.generation_info_path,
+            )
+            generation_info = {}
+
+        updated_generation_info = deepcopy(generation_info)
+        updated_generation_info[self.__class__.__name__] = data
+
+        self.logger.debug("Updated generation info, now contains %s fields", len(data))
+
+        with open(self.generation_info_path, "w", encoding="utf-8") as file:
+            json.dump(updated_generation_info, file, indent=4)
+
+        self.logger.debug("Saved updated generation info to %s", self.generation_info_path)
 
     def get_bbox(self, project_utm: bool = False) -> tuple[int, int, int, int]:
         """Calculates the bounding box of the map from the coordinates and the height and
