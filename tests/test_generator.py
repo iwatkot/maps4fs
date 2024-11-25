@@ -39,14 +39,17 @@ def get_random_size() -> tuple[int, int]:
     return choice(sizes_cases[:2])  # Larger maps are too slow for automated tests.
 
 
-def map_directory() -> str:
+def map_directory(game_code: str) -> str:
     """Creates a new map directory and returns its path.
+
+    Arguments:
+        game_code {str} -- Game code.
 
     Returns:
         str: Path to the new map directory.
     """
     timestamp = int(time())
-    directory = os.path.join(base_directory, f"map_{timestamp}")
+    directory = os.path.join(base_directory, f"{game_code}_{timestamp}")
     os.makedirs(directory, exist_ok=True)
     return directory
 
@@ -71,7 +74,7 @@ def test_map():
             game = Game.from_code(game_code)
             for coordinates in coordinates_cases:
                 height, width = get_random_size()
-                directory = map_directory()
+                directory = map_directory(game_code)
 
                 map = Map(
                     game=game,
@@ -82,7 +85,8 @@ def test_map():
                     auto_process=autoprocess_case,
                 )
 
-                map.generate()
+                for _ in map.generate():
+                    pass
 
                 layers_schema = load_textures_schema(game.texture_schema)
 
@@ -132,7 +136,7 @@ def test_map_preview():
 
     height, width = get_random_size()
 
-    directory = map_directory()
+    directory = map_directory(game_code)
     map = Map(
         game=game,
         coordinates=case,
@@ -140,7 +144,8 @@ def test_map_preview():
         width=width,
         map_directory=directory,
     )
-    map.generate()
+    for _ in map.generate():
+        pass
     previews_paths = map.previews()
     for preview_path in previews_paths:
         assert os.path.isfile(preview_path), f"Preview not found: {preview_path}"
@@ -157,7 +162,7 @@ def test_map_pack():
 
     height, width = get_random_size()
 
-    directory = map_directory()
+    directory = map_directory(game_code)
     map = Map(
         game=game,
         coordinates=case,
@@ -165,7 +170,8 @@ def test_map_pack():
         width=width,
         map_directory=directory,
     )
-    map.generate()
+    for _ in map.generate():
+        pass
     archive_name = os.path.join(base_directory, "archive")
     archive_path = map.pack(archive_name)
     assert os.path.isfile(archive_path), f"Archive not found: {archive_path}"

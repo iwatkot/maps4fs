@@ -147,8 +147,10 @@ map = mfs.Map(
 ```
 
 4. Generate the map:
+The `generate` method returns a generator, which yields the active component of the map. You can use it to track the progress of the generation process.
 ```python
-map.generate()
+for active_component in map.generate():
+    print(active_component)
 ```
 
 The map will be saved in the `map_directory` directory.
