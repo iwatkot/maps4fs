@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install mypy pylint opencv-python tifffile "osmnx<2.0.0" "fast-simplification" geopy trimesh rasterio pandas-stubs types-requests pytest pytest-cov
+          pip install mypy pylint opencv-python tifffile imageio "osmnx<2.0.0" "fast-simplification" geopy trimesh rasterio pandas-stubs types-requests pytest pytest-cov
 
       - name: Run mypy to generate cache
         run: mypy maps4fs || true
