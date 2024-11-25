@@ -7,4 +7,5 @@ folium
 geopy
 trimesh
 pyproj
+fast-simplification
 maps4fs

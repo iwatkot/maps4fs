@@ -51,7 +51,7 @@ class Background(Component):
                 tile_code=path_step.code,
                 auto_process=False,
                 blur_radius=self.kwargs.get("blur_radius"),
-                multiplier=300,
+                multiplier=1,
             )
 
             # Update the origin for the next tile.
@@ -168,6 +168,11 @@ class Background(Component):
 
         faces = np.array(faces)  # type: ignore
         mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
+
+        # Simplify the mesh to reduce the number of faces.
+        mesh = mesh.simplify_quadric_decimation(face_count=len(faces) // 10)
+        self.logger.debug("Mesh simplified to %s faces", len(mesh.faces))
+
         mesh.export(save_path)
         self.logger.info("Obj file saved: %s", save_path)
 
