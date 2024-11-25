@@ -106,7 +106,7 @@ docker run -d -p 8501:8501 iwatkot/maps4fs
 4. Fill in the required fields and click on the `Generate` button.
 5. When the map is generated click on the `Download` button to get the map.
 
-![WebUI](https://github.com/user-attachments/assets/581e1206-2abd-4b3c-ad31-80554ad92d99)
+![Basic WebUI](https://github.com/user-attachments/assets/14620044-9e92-47ae-8531-d61460740f58)
 
 ### Option 3: Python package
 🔴 Recommended for developers.<br>
@@ -320,7 +320,7 @@ The tool supports the custom size of the map. To use this feature select `Custom
 
 ⛔️ Do not use this feature, if you don't know what you're doing. In most cases the Giants Editor will just crash on opening the file, because you need to enter a specific values for the map size.<br><br>
 
-![Advanced settings and custom size](https://github.com/user-attachments/assets/327b6065-09ed-41d0-86a8-7d904025707c)
+![Advanced settings](https://github.com/user-attachments/assets/0446cdf2-f093-49ba-ba8f-9bef18a58b47)
 
 You can also apply some advanced settings to the map generation process. Note that they're ADVANCED, so you don't need to use them if you're not sure what they do.<br>
 

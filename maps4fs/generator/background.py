@@ -190,6 +190,7 @@ class Background(Component):
         self.logger.debug("Full size of the preview image: %s x %s", image_width, image_height)
 
         image = np.zeros((image_height, image_width), np.uint16)  # pylint: disable=no-member
+        self.logger.debug("Empty image created: %s", image.shape)
 
         for tile in self.tiles:
             # pylint: disable=no-member
@@ -204,32 +205,28 @@ class Background(Component):
                 tile_image.min(),
             )
 
-            # tile_image is a single channel 16-bit (uint16) image.
-            # We need to normalize values so they will be visible by the human eye
-            # and convert it to 8-bit (uint8) image.
+            tile_height, tile_width = tile_image.shape
+            self.logger.debug("Tile %s size: %s x %s", tile.code, tile_width, tile_height)
 
-            # pylint: disable=no-member
-            # tile_image = cv2.normalize(tile_image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
-            # tile_image = cv2.cvtColor(tile_image, cv2.COLOR_GRAY2BGR)
-
+            # Calculate the position based on the tile code
             if tile.code == "N":
                 x = DEFAULT_DISTANCE
                 y = 0
             elif tile.code == "NE":
-                x = image_width - DEFAULT_DISTANCE
+                x = self.map_width + DEFAULT_DISTANCE
                 y = 0
             elif tile.code == "E":
-                x = image_width - DEFAULT_DISTANCE
+                x = self.map_width + DEFAULT_DISTANCE
                 y = DEFAULT_DISTANCE
             elif tile.code == "SE":
-                x = image_width - DEFAULT_DISTANCE
-                y = image_height - DEFAULT_DISTANCE
+                x = self.map_width + DEFAULT_DISTANCE
+                y = self.map_height + DEFAULT_DISTANCE
             elif tile.code == "S":
                 x = DEFAULT_DISTANCE
-                y = image_height - DEFAULT_DISTANCE
+                y = self.map_height + DEFAULT_DISTANCE
             elif tile.code == "SW":
                 x = 0
-                y = image_height - DEFAULT_DISTANCE
+                y = self.map_height + DEFAULT_DISTANCE
             elif tile.code == "W":
                 x = 0
                 y = DEFAULT_DISTANCE
@@ -237,8 +234,15 @@ class Background(Component):
                 x = 0
                 y = 0
 
+            x2 = x + tile_width
+            y2 = y + tile_height
+
+            self.logger.debug(
+                "Tile %s position. X from %s to %s, Y from %s to %s", tile.code, x, x2, y, y2
+            )
+
             # pylint: disable=possibly-used-before-assignment
-            image[y : y + tile.map_height, x : x + tile.map_width] = tile_image
+            image[y:y2, x:x2] = tile_image
 
         # Save image to the map directory.
         preview_path = os.path.join(self.previews_directory, "background_dem.png")

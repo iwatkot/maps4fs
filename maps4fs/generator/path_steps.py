@@ -57,7 +57,7 @@ def get_steps(map_height: int, map_width: int) -> list[PathStep]:
         PathStep(
             "NE", 90, half_width + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
         ),
-        PathStep("E", 180, half_height + half_default_distance, (map_height, DEFAULT_DISTANCE)),
+        PathStep("E", 180, half_height + half_default_distance, (DEFAULT_DISTANCE, map_height)),
         PathStep(
             "SE", 180, half_height + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
         ),
@@ -65,7 +65,7 @@ def get_steps(map_height: int, map_width: int) -> list[PathStep]:
         PathStep(
             "SW", 270, half_width + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
         ),
-        PathStep("W", 0, half_height + half_default_distance, (map_height, DEFAULT_DISTANCE)),
+        PathStep("W", 0, half_height + half_default_distance, (DEFAULT_DISTANCE, map_height)),
         PathStep(
             "NW", 0, half_height + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
         ),
