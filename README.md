@@ -41,6 +41,8 @@ There are several ways to use the tool. You obviously need the **first one**, bu
 ### 🚜 For most users
 **Option 1:** open the [maps4fs](https://maps4fs.streamlit.app) on StreamLit and generate a map template in a few clicks.<br>
 
+![Basic WebUI](https://github.com/user-attachments/assets/14620044-9e92-47ae-8531-d61460740f58)
+
 ### 😎 For advanced users
 **Option 2:** run the Docker version in your browser. Launch the following command in your terminal:
 ```bash
@@ -105,8 +107,6 @@ docker run -d -p 8501:8501 iwatkot/maps4fs
 3. Open your browser and go to [http://localhost:8501](http://localhost:8501).
 4. Fill in the required fields and click on the `Generate` button.
 5. When the map is generated click on the `Download` button to get the map.
-
-![Basic WebUI](https://github.com/user-attachments/assets/14620044-9e92-47ae-8531-d61460740f58)
 
 ### Option 3: Python package
 🔴 Recommended for developers.<br>
