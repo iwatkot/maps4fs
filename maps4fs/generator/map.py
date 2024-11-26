@@ -6,7 +6,6 @@ import os
 import shutil
 from typing import Any, Generator
 
-# from maps4fs.generator.background import Background
 from maps4fs.generator.component import Component
 from maps4fs.generator.game import Game
 from maps4fs.logger import Logger

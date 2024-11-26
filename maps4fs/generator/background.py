@@ -8,7 +8,6 @@ import os
 import cv2
 import numpy as np
 import trimesh  # type: ignore
-from pyproj import Transformer
 
 from maps4fs.generator.component import Component
 from maps4fs.generator.path_steps import DEFAULT_DISTANCE, get_steps
@@ -83,17 +82,7 @@ class Background(Component):
         data = {}
         for tile in self.tiles:
             north, south, east, west = tile.bbox
-
-            # The default CMS in library is EPSG:4326.
-            # It needed to be converted to EPSG:3857 for convinient usage in QGIS.
-
-            transformer = Transformer.from_crs("epsg:4326", "epsg:3857")
-            epsg3857_north, epsg3857_west = transformer.transform(north, west)
-            epsg3857_south, epsg3857_east = transformer.transform(south, east)
-
-            epsg3857_string = (
-                f"{epsg3857_north},{epsg3857_south},{epsg3857_east},{epsg3857_west} [EPSG:3857]"
-            )
+            epsg3857_string = tile.get_epsg3857_string()
 
             tile_entry = {
                 "center_latitude": tile.coordinates[0],

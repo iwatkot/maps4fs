@@ -8,6 +8,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
 import osmnx as ox  # type: ignore
+from pyproj import Transformer
 
 if TYPE_CHECKING:
     from maps4fs.generator.game import Game
@@ -134,21 +135,34 @@ class Component:
 
         self.logger.debug("Saved updated generation info to %s", self.generation_info_path)
 
-    def get_bbox(self, project_utm: bool = False) -> tuple[int, int, int, int]:
+    def get_bbox(
+        self,
+        coordinates: tuple[float, float] | None = None,
+        distance: int | None = None,
+        project_utm: bool = False,
+    ) -> tuple[int, int, int, int]:
         """Calculates the bounding box of the map from the coordinates and the height and
         width of the map.
+        If coordinates and distance are not provided, the instance variables are used.
 
         Args:
+            coordinates (tuple[float, float], optional): The latitude and longitude of the center of
+                the map. Defaults to None.
+            distance (int, optional): The distance from the center of the map to the edge of the
+                map. Defaults to None.
             project_utm (bool, optional): Whether to project the bounding box to UTM.
 
         Returns:
             tuple[int, int, int, int]: The bounding box of the map.
         """
+        coordinates = coordinates or self.coordinates
+        distance = distance or int(self.map_height / 2)
+
         north, south, _, _ = ox.utils_geo.bbox_from_point(
-            self.coordinates, dist=self.map_height / 2, project_utm=project_utm
+            coordinates, dist=distance, project_utm=project_utm
         )
         _, _, east, west = ox.utils_geo.bbox_from_point(
-            self.coordinates, dist=self.map_width / 2, project_utm=project_utm
+            coordinates, dist=distance, project_utm=project_utm
         )
         bbox = north, south, east, west
         self.logger.debug(
@@ -165,3 +179,21 @@ class Component:
         """
         self.bbox = self.get_bbox(project_utm=False)
         self.logger.debug("Saved bounding box: %s", self.bbox)
+
+    def get_epsg3857_string(self, bbox: tuple[int, int, int, int] | None = None) -> str:
+        """Converts the bounding box to EPSG:3857 string.
+        If the bounding box is not provided, the instance variable is used.
+
+        Args:
+            bbox (tuple[int, int, int, int], optional): The bounding box to convert.
+
+        Returns:
+            str: The bounding box in EPSG:3857 string.
+        """
+        bbox = bbox or self.bbox
+        north, south, east, west = bbox
+        transformer = Transformer.from_crs("epsg:4326", "epsg:3857")
+        epsg3857_north, epsg3857_west = transformer.transform(north, west)
+        epsg3857_south, epsg3857_east = transformer.transform(south, east)
+
+        return f"{epsg3857_north},{epsg3857_south},{epsg3857_east},{epsg3857_west} [EPSG:3857]"

@@ -13,3 +13,5 @@ geopy
 fast-simplification
 pyproj
 trimesh
+tifffile
+imageio

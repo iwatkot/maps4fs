@@ -8,7 +8,9 @@
   <a href="#Supported-objects">Supported objects</a> •
   <a href="#Generation-info">Generation info</a> •
   <a href="#Texture-schema">Texture schema</a> •
-  <a href="#Background-terrain">Background terrain</a><br>
+  <a href="#Background-terrain">Background terrain</a> •
+  <a href="#Overview-image">Overview image</a><br>
+  <a href="#DDS-conversion">DDS conversion</a> •
   <a href="#For-advanced-users">For advanced users</a> •
   <a href="#Resources">Resources</a> •
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a>
@@ -183,6 +185,31 @@ List of components:
 Below you'll find descriptions of the components and the fields that they contain.<br>
 ℹ️ If there's no information about the component, it means that at the moment it does not store any data in the `generation_info.json` file.
 
+### Config
+Example of the `Config` component:
+```json
+"Config": {
+    "Overview": {
+        "epsg3857_string": "2249906.6679576184,2255734.9033189337,5663700.389039194,5669528.6247056825 [EPSG:3857]",
+        "south": 45.304132173367165,
+        "west": 45.267296012425376,
+        "north": 20.263611405732693,
+        "east": 20.211255476687537,
+        "height": 4096,
+        "width": 4096
+    }
+},
+```
+The `Overview` section contains information to create an overview image, which represents the in-game map. You can use the `epsg3857_string` to obtain the satellite images in the QGIS. So this section describes the region of the map plus the borders. Usually, it's exact 2X the size of the map.<br>
+And here's the list of the fields:
+- `"epsg3857_string"` - the string representation of the bounding box in the EPSG:3857 projection, it's required to obtain the satellite images in the QGIS,<br>
+- `"south"` - the southern border of overview region,<br>
+- `"west"` - the western border of overview region,<br>
+- `"north"` - the northern border of overview region,<br>
+- `"east"` - the eastern border of overview region,<br>
+- `"height"` - the height of the overview region in meters (2X the size of the map),<br>
+- `"width"` - the width of the overview region in meters,<br>
+
 ### Texture
 
 Example of the `Texture` component:
@@ -315,6 +342,34 @@ If you're afraid of this task, please don't be. It's really simple and I've prep
 2. [Prepare the i3d files](README_i3d.md).
 3. [Import the i3d files to Giants Editor](README_giants_editor.md).
 
+## Overview image
+The overview image is an image that is used as in-game map. No matter what the size of the map, this file is always `4096x4096 pixels`, while the region of your map is `2048x2048 pixels` in center of this file. The rest of the image is just here for nice view, but you still may add satellite pictures to this region.<br>
+
+<img width="400" src="https://github.com/user-attachments/assets/ede9ea81-ef97-4914-9dbf-9761ef1eb7ca">
+
+Cool image by [@ZenJakey](https://github.com/ZenJakey).
+
+So, the same way you've downloaded the satellite images for the background terrain, you can download them for the overview image. Just use the `epsg3857_string` from the `generation_info.json` file. You'll find the needed string in the `Config` component in the `Overview` section:
+
+```json
+"Config": {
+    "Overview": {
+        "epsg3857_string": "2249906.6679576184,2255734.9033189337,5663700.389039194,5669528.6247056825 [EPSG:3857]",
+    }
+},
+```
+
+After it you need to resize the image to 4096x4096 pixels and convert it to the `.dds` format.
+
+## DDS conversion
+The `.dds` format is the format used in the Farming Simulator for the textures, icons, overview and preview images. There's a plenty of options to convert the images to the `.dds` format, you can just google something like `png to dds` and the first link probably will help you with it.<br>
+But if you prefer using scripts, you'll find Python converters in the `scripts` directory in this repository.<br>
+
+List of the important DDS files:
+- `icon.dds` - 256x256 pixels, the icon of the map,
+- `preview.dds` - 2048x2048 pixels, the preview image of the map on loading screen,
+- `mapsUS/overview.dds` - 4096x4096 pixels, the overview image of the map (in-game map)
+
 ## For advanced users
 The tool supports the custom size of the map. To use this feature select `Custom` in the `Map size` dropdown and enter the desired size. The tool will generate a map with the size you entered.<br>
 
@@ -340,4 +395,4 @@ To create a basic map, you only need the Giants Editor. But if you want to creat
 4. [QGIS](https://qgis.org/download/) - the open-source GIS software that you can use to obtain high-resolution satellite images for your map.
 
 ## Bugs and feature requests
-If you find a bug or have an idea for a new feature, please create an issue [here](https://github.com/iwatkot/maps4fs/issues) or contact me directly on [Telegram](https://t.me/iwatkot).<br>
+If you find a bug or have an idea for a new feature, please create an issue [here](https://github.com/iwatkot/maps4fs/issues) or contact me directly on [Telegram](https://t.me/iwatkot) or on Discord: `iwatkot`.
