@@ -346,7 +346,7 @@ If you're afraid of this task, please don't be. It's really simple and I've prep
 The overview image is an image that is used as in-game map. No matter what the size of the map, this file is always `4096x4096 pixels`, while the region of your map is `2048x2048 pixels` in center of this file. The rest of the image is just here for nice view, but you still may add satellite pictures to this region.<br>
 
 ![Overview image](https://github.com/user-attachments/assets/ede9ea81-ef97-4914-9dbf-9761ef1eb7ca)
-Cool image by @ZenJakey.
+Cool image by [@ZenJakey](https://github.com/ZenJakey).
 
 So, the same way you've downloaded the satellite images for the background terrain, you can download them for the overview image. Just use the `epsg3857_string` from the `generation_info.json` file. You'll find the needed string in the `Config` component in the `Overview` section:
 
