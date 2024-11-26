@@ -49,7 +49,10 @@
   },
   {
     "name": "forestGrass",
-    "count": 2
+    "count": 2,
+    "tags": { "landuse": "farmland" },
+    "color": [47, 107, 85],
+    "priority": 4
   },
   {
     "name": "forestLeaves",
@@ -187,9 +190,7 @@
   },
   {
     "name": "rockyForestGround",
-    "count": 2,
-    "tags": { "landuse": "farmland" },
-    "color": [47, 107, 85]
+    "count": 2
   },
   {
     "name": "sand",
