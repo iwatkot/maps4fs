@@ -2,7 +2,7 @@
 
 To create a background terrain for the Farming Simulator map, you need to open the `*.obj` files with the terrain, obtain the satellite images as described in the [Download high-resolution satellite images](README_satellite_images.md) tutorial to use them as textures and export your results to the `*.i3d` format.<br>
 
-ℹ️ In this tutorials it's assumed that you have already generated the map. <br>
+ℹ️ In this tutorials it's assumed that you have already generated the map and downloaded satellite images from the previous step: [Download high-resolution satellite images](README_satellite_images.md).<br>
 
 Let's go straight to the deal:
 
