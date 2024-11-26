@@ -3,7 +3,27 @@ from typing import Literal
 
 import cv2
 import imageio
+import numpy as np
 import tifffile as tiff
+
+
+def read(image_path: str) -> np.ndarray:
+    """Read an image and return it as a NumPy array.
+
+    Arguments:
+        image_path (str): Path to the image.
+    """
+    if not os.path.isfile(image_path):
+        raise FileNotFoundError(f"File not found: {image_path}")
+
+    if image_path.lower().endswith(".dds"):
+        image = imageio.imread(image_path)
+    elif image_path.lower().endswith(".tif"):
+        image = tiff.imread(image_path)
+    else:
+        image = cv2.imread(image_path)
+
+    return image
 
 
 def tiff_to_png(input_path: str, output_path: str) -> None:
@@ -20,15 +40,23 @@ def tiff_to_png(input_path: str, output_path: str) -> None:
     print(f"Converted {input_path} to {output_path}")
 
 
-def tiff_to_dds(input_path: str, output_path: str) -> None:
+def tiff_to_dds(
+    input_path: str, output_path: str, height: int | None = None, width: int | None = None
+) -> None:
     """Read a TIFF image and save it as a DDS image.
     Change the color space from RGB to BGR for compatibility with OpenCV.
 
     Arguments:
         input_path (str): Path to the input TIFF image.
         output_path (str): Path to the output DDS image.
+        height (int, optional): Height of the output image. Defaults to None.
+        width (int, optional): Width of the output image. Defaults to None.
     """
     image = tiff.imread(input_path)
+
+    if height and width:
+        image = cv2.resize(image, (width, height), interpolation=cv2.INTER_AREA)
+
     imageio.imwrite(output_path, image)
     print(f"Converted {input_path} to {output_path}")
 
@@ -78,7 +106,3 @@ def tiffs_to_dds(input_directory: str) -> None:
         input_directory (str): Path to the directory with TIFF images.
     """
     return to_dds(input_directory, "dds")
-
-
-directory = "C:/Users/iwatk/Downloads/FS25_Guneycik/objects/tiles"
-tiffs_to_dds(directory)
