@@ -8,7 +8,7 @@ Here's what you need to do:
 
 1. Download and install the Giants Editor from the official website: [https://gdn.giants-software.com/downloads.php](https://gdn.giants-software.com/downloads.php). Note that for working with a map for Farming Simulator 25, you need to use the Giants Editor 10.0.0 or later, while for Farming Simulator 22, you need to use the Giants Editor 9.0.0 or later. If you try to open the map for the editor of the wrong version, it will crash.
 
-2. Open the main map file, for example for the Farming Simulator 25 it's a `mapUS/mapUS.i3d` file.
+2. Open the main map file, for example for the Farming Simulator 25 it's a `map/map.i3d` file.
 
 3. Click on the `File` menu and select `Import...` select the `*.i3d` file with the background terrain. Note, that aftet the import, the terrain will have no textures, so don't worry, it's ok.
 

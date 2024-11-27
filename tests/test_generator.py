@@ -90,7 +90,7 @@ def test_map():
 
                 layers_schema = load_textures_schema(game.texture_schema)
 
-                texture_subdir = "maps/map/data" if game_code == "FS22" else "mapUS/data"
+                texture_subdir = "maps/map/data" if game_code == "FS22" else "map/data"
 
                 textures_directory = os.path.join(directory, texture_subdir)
                 for texture in layers_schema:
