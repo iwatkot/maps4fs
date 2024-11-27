@@ -7,5 +7,4 @@ geopy
 trimesh
 pyproj
 fast-simplification
-tifffile
 maps4fs
