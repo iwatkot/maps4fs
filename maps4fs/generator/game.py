@@ -180,7 +180,7 @@ class FS25(Game):
 
         Returns:
             str: The path to the DEM file."""
-        return os.path.join(map_directory, "mapUS", "data", "dem.png")
+        return os.path.join(map_directory, "map", "data", "dem.png")
 
     def map_xml_path(self, map_directory: str) -> str:
         """Returns the path to the map.xml file.
@@ -191,7 +191,7 @@ class FS25(Game):
         Returns:
             str: The path to the map.xml file.
         """
-        return os.path.join(map_directory, "mapUS", "mapUS.xml")
+        return os.path.join(map_directory, "map", "map.xml")
 
     def weights_dir_path(self, map_directory: str) -> str:
         """Returns the path to the weights directory.
@@ -201,7 +201,7 @@ class FS25(Game):
 
         Returns:
             str: The path to the weights directory."""
-        return os.path.join(map_directory, "mapUS", "data")
+        return os.path.join(map_directory, "map", "data")
 
     def i3d_file_path(self, map_directory: str) -> str:
         """Returns the path to the i3d file.
@@ -211,4 +211,4 @@ class FS25(Game):
 
         Returns:
             str: The path to the i3d file."""
-        return os.path.join(map_directory, "mapUS", "mapUS.i3d")
+        return os.path.join(map_directory, "map", "map.i3d")

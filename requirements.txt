@@ -8,5 +8,4 @@ trimesh
 pyproj
 fast-simplification
 tifffile
-imageio
 maps4fs
