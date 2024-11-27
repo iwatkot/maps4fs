@@ -237,6 +237,7 @@ class Maps4FS:
 
         self.multiplier_input = DEFAULT_MULTIPLIER
         self.blur_radius_input = DEFAULT_BLUR_RADIUS
+        self.plateau_height_input = 0
 
         if not self.auto_process:
             self.logger.info("Auto preset is disabled.")
