@@ -39,10 +39,14 @@
 📄 Generates commands to obtain high-resolution satellite images from [QGIS](https://qgis.org/download/) 🆕<br>
 
 <p align="center">
-<img width="360" src="https://github.com/user-attachments/assets/cf8f5752-9c69-4018-bead-290f59ba6976">
-<img width="360" src="https://github.com/user-attachments/assets/7f238ab4-9ff4-4c6e-ba07-5796be012baa"><br>
-<img width="360" src="https://github.com/user-attachments/assets/80e5923c-22c7-4dc0-8906-680902511f3a">
-<img width="360" src="https://github.com/user-attachments/assets/cce45575-c917-4a1b-bdc0-6368e32ccdff">
+<img src="https://github.com/user-attachments/assets/cf8f5752-9c69-4018-bead-290f59ba6976"><br>
+🌎 Detailed terrain based on real world data.<br><br>
+<img src="https://github.com/user-attachments/assets/7f238ab4-9ff4-4c6e-ba07-5796be012baa"><br>
+🛰️ Realistic background terrain objects with satellite images.<br><br>
+<img src="https://github.com/user-attachments/assets/80e5923c-22c7-4dc0-8906-680902511f3a"><br>
+🗒️ True-to-life blueprints for fast and precise modding.<br><br>
+<img src="https://github.com/user-attachments/assets/cce45575-c917-4a1b-bdc0-6368e32ccdff"><br>
+📏 Almost any possible map sizes.
 </p>
 
 ## Quick Start
