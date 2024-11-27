@@ -67,7 +67,7 @@ class Config(Component):
         # if the map is 2048x2048 or 4096x4096, the overview will be 4096x4096
         # and the map will be in the center of the overview.
         # That's why the distance is set to the map height not as a half of it.
-        bbox = self.get_bbox(distance=self.map_height)
+        bbox = self.get_bbox(height_distance=self.map_height, width_distance=self.map_width)
         south, west, north, east = bbox
         epsg3857_string = self.get_epsg3857_string(bbox=bbox)
 
