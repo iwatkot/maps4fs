@@ -138,7 +138,8 @@ class Component:
     def get_bbox(
         self,
         coordinates: tuple[float, float] | None = None,
-        distance: int | None = None,
+        height_distance: int | None = None,
+        width_distance: int | None = None,
         project_utm: bool = False,
     ) -> tuple[int, int, int, int]:
         """Calculates the bounding box of the map from the coordinates and the height and
@@ -148,28 +149,34 @@ class Component:
         Args:
             coordinates (tuple[float, float], optional): The latitude and longitude of the center of
                 the map. Defaults to None.
-            distance (int, optional): The distance from the center of the map to the edge of the
-                map. Defaults to None.
+            height_distance (int, optional): The distance from the center of the map to the edge of
+                the map in the north-south direction. Defaults to None.
+            width_distance (int, optional): The distance from the center of the map to the edge of
+                the map in the east-west direction. Defaults to None.
             project_utm (bool, optional): Whether to project the bounding box to UTM.
 
         Returns:
             tuple[int, int, int, int]: The bounding box of the map.
         """
         coordinates = coordinates or self.coordinates
-        distance = distance or int(self.map_height / 2)
+        height_distance = height_distance or int(self.map_height / 2)
+        width_distance = width_distance or int(self.map_width / 2)
 
         north, south, _, _ = ox.utils_geo.bbox_from_point(
-            coordinates, dist=distance, project_utm=project_utm
+            coordinates, dist=height_distance, project_utm=project_utm
         )
         _, _, east, west = ox.utils_geo.bbox_from_point(
-            coordinates, dist=distance, project_utm=project_utm
+            coordinates, dist=width_distance, project_utm=project_utm
         )
         bbox = north, south, east, west
         self.logger.debug(
-            "Calculated bounding box for component: %s: %s, project_utm: %s",
+            "Calculated bounding box for component: %s: %s, project_utm: %s, "
+            "height_distance: %s, width_distance: %s",
             self.__class__.__name__,
             bbox,
             project_utm,
+            height_distance,
+            width_distance,
         )
         return bbox
 
