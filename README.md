@@ -363,7 +363,6 @@ After it you need to resize the image to 4096x4096 pixels and convert it to the 
 
 ## DDS conversion
 The `.dds` format is the format used in the Farming Simulator for the textures, icons, overview and preview images. There's a plenty of options to convert the images to the `.dds` format, you can just google something like `png to dds` and the first link probably will help you with it.<br>
-But if you prefer using scripts, you'll find Python converters in the `scripts` directory in this repository.<br>
 
 List of the important DDS files:
 - `icon.dds` - 256x256 pixels, the icon of the map,
