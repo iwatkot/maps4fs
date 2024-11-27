@@ -12,6 +12,13 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Wait until PyPI release is available
+      uses: actions/github-script@v3
+      with:
+        script: |
+          const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+          await wait(300000); // Wait for 5 minutes (300000 milliseconds)
+
     - name: Login to DockerHub
       uses: docker/login-action@v1 
       with:
