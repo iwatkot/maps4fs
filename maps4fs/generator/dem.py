@@ -17,7 +17,7 @@ DEFAULT_MULTIPLIER = 1
 DEFAULT_BLUR_RADIUS = 35
 
 
-# pylint: disable=R0903
+# pylint: disable=R0903, R0902
 class DEM(Component):
     """Component for processing Digital Elevation Model data.
 
@@ -51,6 +51,7 @@ class DEM(Component):
         )
 
         self.auto_process = self.kwargs.get("auto_process", False)
+        self.plateau = self.kwargs.get("plateau", False)
 
     @property
     def dem_path(self) -> str:
@@ -158,6 +159,22 @@ class DEM(Component):
             resampled_data.min(),
             resampled_data.max(),
         )
+
+        if self.plateau:
+            # Plateau is a flat area with a constant height.
+            # So we just add this value to each pixel of the DEM.
+            # And also need to ensure that there will be no values with height greater than
+            # it's allowed in 16-bit unsigned integer.
+
+            resampled_data += self.plateau
+            resampled_data = np.clip(resampled_data, 0, 65535)
+
+            self.logger.debug(
+                "Plateau with height %s was added to DEM data. Min: %s, max: %s.",
+                self.plateau,
+                resampled_data.min(),
+                resampled_data.max(),
+            )
 
         cv2.imwrite(self._dem_path, resampled_data)
         self.logger.debug("DEM data was saved to %s.", self._dem_path)

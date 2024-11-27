@@ -294,6 +294,22 @@ class Maps4FS:
                     step=2,
                 )
 
+                st.write("[DEM] Enter the plateau height (which will be added to the whole map):")
+                st.write(
+                    "This value is used to make the whole map higher or lower. "
+                    "This value will be added to each pixel of the DEM image, making it higher."
+                    "It can be useful if you're working on a plain area and need to add some "
+                    "negative height (to make rivers, for example)."
+                )
+                self.plateau_height_input = st.number_input(
+                    "Plateau Height",
+                    value=0,
+                    min_value=0,
+                    max_value=10000,
+                    key="plateau_height",
+                    label_visibility="collapsed",
+                )
+
         # Add an empty container for status messages.
         self.status_container = st.empty()
 
@@ -392,6 +408,7 @@ class Maps4FS:
             multiplier=self.multiplier_input,
             blur_radius=self.blur_radius_input,
             auto_process=self.auto_process,
+            plateau=self.plateau_height_input,
         )
         for component_name in mp.generate():
             self.status_container.info(f"Generating {component_name}...", icon="⏳")

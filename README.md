@@ -395,6 +395,8 @@ Here's the list of the advanced settings:
 
 - DEM Blur radius: the radius of the Gaussian blur filter applied to the DEM map. By default, it's set to 21. This filter just makes the DEM map smoother, so the height transitions will be more natural. You can set it to 1 to disable the filter, but it will result as a Minecraft-like map.
 
+- DEM Plateau height: this value will be added to each pixel of the DEM image, making it "higher". It's useful when you want to add some negative heights on the map, which appears to be in a "low" place. By default, it's set to 0.
+
 ## Resources
 In this section you'll find a list of the resources that you need to create a map for the Farming Simulator.<br>
 To create a basic map, you only need the Giants Editor. But if you want to create a background terrain - the world around the map, so it won't look like it's floating in the void - you also need Blender and the Blender Exporter Plugins. To create realistic textures for the background terrain, the QGIS is required to obtain high-resolution satellite images.<br>
