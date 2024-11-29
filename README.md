@@ -242,10 +242,6 @@ Example of the `Texture` component:
     "minimum_y": 5013940.540089059,
     "maximum_x": 441233.5397821935,
     "maximum_y": 5016006.074349126,
-    "height": 2065.5342600671574,
-    "width": 2072.295804702677,
-    "height_coef": 1.0085616504234167,
-    "width_coef": 1.011863185889979
 },
 ```
 
@@ -258,12 +254,7 @@ And here's the list of the fields:
 - `"minimum_x"` - the minimum x coordinate of the map (UTM projection),<br>
 - `"minimum_y"` - the minimum y coordinate of the map (UTM projection),<br>
 - `"maximum_x"` - the maximum x coordinate of the map (UTM projection),<br>
-- `"maximum_y"` - the maximum y coordinate of the map (UTM projection),<br>
-- `"height"` - the height of the map in meters (it won't be equal to the parameters above since the Earth is not flat, sorry flat-earthers),<br>
-- `"width"` - the width of the map in meters (same as above),<br>
-- `"height_coef"` - since we need a texture of exact size, the height of the map is multiplied by this coefficient,<br>
-- `"width_coef"` - same as above but for the width,<br>
-- `"tile_name"` - the name of the SRTM tile which was used to generate the height map, e.g. "N52E013"<br>
+- `"maximum_y"` - the maximum y coordinate of the map (UTM projection),
 
 ### Background
 
