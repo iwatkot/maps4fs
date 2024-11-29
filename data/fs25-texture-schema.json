@@ -152,7 +152,7 @@
   {
     "name": "mudLight",
     "count": 2,
-    "tags": { "highway": ["secondary", "tertiary", "road"] },
+    "tags": { "highway": ["secondary", "tertiary", "road", "service"] },
     "width": 4,
     "color": [140, 180, 210]
   },
