@@ -50,7 +50,8 @@ class Background(Component):
                 tile_code=path_step.code,
                 auto_process=False,
                 blur_radius=self.kwargs.get("blur_radius"),
-                multiplier=1,
+                multiplier=self.kwargs.get("multiplier", 1),
+                plateau=self.kwargs.get("plateau", 0),
             )
 
             # Update the origin for the next tile.

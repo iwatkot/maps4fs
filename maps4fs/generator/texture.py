@@ -167,14 +167,6 @@ class Texture(Component):
         self.logger.debug("Map minimum coordinates (XxY): %s x %s.", self.minimum_x, self.minimum_y)
         self.logger.debug("Map maximum coordinates (XxY): %s x %s.", self.maximum_x, self.maximum_y)
 
-        self.height = abs(north - south)
-        self.width = abs(east - west)
-        self.logger.info("Map dimensions (HxW): %s x %s.", self.height, self.width)
-
-        self.height_coef = self.height / self.map_height
-        self.width_coef = self.width / self.map_width
-        self.logger.debug("Map coefficients (HxW): %s x %s.", self.height_coef, self.width_coef)
-
     def info_sequence(self) -> dict[str, Any]:
         """Returns the JSON representation of the generation info for textures."""
         useful_attributes = [
@@ -186,10 +178,6 @@ class Texture(Component):
             "minimum_y",
             "maximum_x",
             "maximum_y",
-            "height",
-            "width",
-            "height_coef",
-            "width_coef",
         ]
         return {attr: getattr(self, attr, None) for attr in useful_attributes}
 
@@ -321,8 +309,7 @@ class Texture(Component):
         Returns:
             int: Relative X coordinate in map image.
         """
-        raw_x = x - self.minimum_x
-        return int(raw_x * self.height_coef)
+        return int(self.map_width * (x - self.minimum_x) / (self.maximum_x - self.minimum_x))
 
     def get_relative_y(self, y: float) -> int:
         """Converts UTM Y coordinate to relative Y coordinate in map image.
@@ -333,8 +320,7 @@ class Texture(Component):
         Returns:
             int: Relative Y coordinate in map image.
         """
-        raw_y = y - self.minimum_y
-        return self.height - int(raw_y * self.width_coef)
+        return int(self.map_height * (1 - (y - self.minimum_y) / (self.maximum_y - self.minimum_y)))
 
     # pylint: disable=W0613
     def _to_np(self, geometry: shapely.geometry.polygon.Polygon, *args) -> np.ndarray:
