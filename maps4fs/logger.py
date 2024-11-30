@@ -4,8 +4,11 @@ import logging
 import os
 import sys
 from datetime import datetime
-from typing import Literal
+from logging import getLogger
+from time import perf_counter
+from typing import Any, Callable, Literal
 
+LOGGER_NAME = "maps4fs"
 log_directory = os.path.join(os.getcwd(), "logs")
 os.makedirs(log_directory, exist_ok=True)
 
@@ -15,12 +18,11 @@ class Logger(logging.Logger):
 
     def __init__(
         self,
-        name: str,
         level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "ERROR",
         to_stdout: bool = True,
         to_file: bool = True,
     ):
-        super().__init__(name)
+        super().__init__(LOGGER_NAME)
         self.setLevel(level)
         self.stdout_handler = logging.StreamHandler(sys.stdout)
         self.file_handler = logging.FileHandler(
@@ -44,3 +46,25 @@ class Logger(logging.Logger):
         today = datetime.now().strftime("%Y-%m-%d")
         log_file = os.path.join(log_directory, f"{today}.txt")
         return log_file
+
+
+def timeit(func: Callable[..., Any]) -> Callable[..., Any]:
+    """Decorator to log the time taken by a function to execute.
+
+    Args:
+        func (function): The function to be timed.
+
+    Returns:
+        function: The timed function.
+    """
+
+    def timed(*args, **kwargs):
+        logger = getLogger("maps4fs")
+        start = perf_counter()
+        result = func(*args, **kwargs)
+        end = perf_counter()
+        if logger is not None:
+            logger.info("Function %s took %s seconds to execute", func.__name__, end - start)
+        return result
+
+    return timed

@@ -5,6 +5,7 @@ from typing import NamedTuple
 from geopy.distance import distance  # type: ignore
 
 DEFAULT_DISTANCE = 2048
+PATH_FULL_NAME = "FULL"
 
 
 class PathStep(NamedTuple):
@@ -13,13 +14,17 @@ class PathStep(NamedTuple):
     Attributes:
         code {str} -- Tile code (N, NE, E, SE, S, SW, W, NW).
         angle {int} -- Angle in degrees (for example 0 for North, 90 for East).
+            If None, the step is a full map with a center at the same coordinates as the
+            map itself.
         distance {int} -- Distance in meters from previous step.
+            If None, the step is a full map with a center at the same coordinates as the
+            map itself.
         size {tuple[int, int]} -- Size of the tile in pixels (width, height).
     """
 
     code: str
-    angle: int
-    distance: int
+    angle: int | None
+    distance: int | None
     size: tuple[int, int]
 
     def get_destination(self, origin: tuple[float, float]) -> tuple[float, float]:
@@ -68,5 +73,11 @@ def get_steps(map_height: int, map_width: int) -> list[PathStep]:
         PathStep("W", 0, half_height + half_default_distance, (DEFAULT_DISTANCE, map_height)),
         PathStep(
             "NW", 0, half_height + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
+        ),
+        PathStep(
+            PATH_FULL_NAME,
+            None,
+            None,
+            (map_width + DEFAULT_DISTANCE * 2, map_height + DEFAULT_DISTANCE * 2),
         ),
     ]

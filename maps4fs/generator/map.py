@@ -42,7 +42,7 @@ class Map:
         self.map_directory = map_directory
 
         if not logger:
-            logger = Logger(__name__, to_stdout=True, to_file=False)
+            logger = Logger(to_stdout=True, to_file=False)
         self.logger = logger
         self.logger.debug("Game was set to %s", game.code)
 
