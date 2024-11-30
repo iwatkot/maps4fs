@@ -340,9 +340,9 @@ If you're willing to create a background terrain, you will need: Blender, the Bl
 
 If you're afraid of this task, please don't be. It's really simple and I've prepaired detailed step-by-step instructions for you, you'll find them in the separate README files. Here are the steps you need to follow:
 
-1. [Download high-resolution satellite images](README_satellite_images.md).
-2. [Prepare the i3d files](README_i3d.md).
-3. [Import the i3d files to Giants Editor](README_giants_editor.md).
+1. [Download high-resolution satellite images](tutorials/README_satellite_images.md).
+2. [Prepare the i3d files](tutorials/README_i3d.md).
+3. [Import the i3d files to Giants Editor](tutorials/README_giants_editor.md).
 
 ## Overview image
 The overview image is an image that is used as in-game map. No matter what the size of the map, this file is always `4096x4096 pixels`, while the region of your map is `2048x2048 pixels` in center of this file. The rest of the image is just here for nice view, but you still may add satellite pictures to this region.<br>

@@ -37,6 +37,6 @@ Here's what you need to do:
 So, we'are done here.<br>
 ℹ️ Please note, that is almost no way to align all background terrain with map perfectly without editing them in the 3D editor, Blender for example. You can find a lot of tutorials on YouTube on how to do it, this won't be covered here. Or you can just leave it as is and find the best possible position for the terrain, and maybe hiding the edges with some objects. It's up to you.<br>
 
-If you want, you can go back to the previous step: [Prepare the i3d files](README_i3d.md).<br>
+If you want, you can go back to the previous step: [Prepare the i3d files](tutorials/README_i3d.md).<br>
 
 Happy mapping! 🚜🌾
