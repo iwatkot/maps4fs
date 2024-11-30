@@ -78,4 +78,4 @@ Now ensure that the object is selected [1], specify the path to the output file 
 
 ![Export to i3d](https://github.com/user-attachments/assets/ad3913d7-a16e-47c0-a039-9f792e34ad4c)
 
-Now we can go to the final section of the tutorial: [Import the i3d files to Giants Editor](tutorials/README_giants_editor.md). Or you can go back to the previous step: [Download high-resolution satellite images](tutorials/README_satellite_images.md).
+Now we can go to the final section of the tutorial: [Import the i3d files to Giants Editor](README_giants_editor.md). Or you can go back to the previous step: [Download high-resolution satellite images](README_satellite_images.md).
