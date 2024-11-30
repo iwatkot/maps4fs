@@ -405,12 +405,6 @@ class Texture(Component):
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", DeprecationWarning)
-                # FutureWarning: The expected order of coordinates in `bbox` will change in
-                # the v2.0.0 release to `(left, bottom, right, top)`.
-
-                left, bottom, right, top = self.new_bbox
-                print(left, bottom, right, top)
-
                 objects = ox.features_from_bbox(bbox=self.bbox, tags=tags)
         except Exception as e:  # pylint: disable=W0718
             self.logger.warning("Error fetching objects for tags: %s.", tags)
