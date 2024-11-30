@@ -340,8 +340,6 @@ If you don't want to work with separate tiles, the tool also generates the `FULL
 
 ![Complete background terrain in Blender](https://github.com/user-attachments/assets/7266b8f1-bfa2-4c14-a740-1c84b1030a66)
 
-![Complete background terrain in Giants Editor](https://github.com/user-attachments/assets/70e4183f-b884-4aa9-9b85-03b4a197473e)
-
 ➡️ *No matter which approach you choose, you still need to adjust the background terrain to connect it to the map without any gaps. But with a sinlge file it's much easier to do.*
 
 If you're willing to create a background terrain, you will need: Blender, the Blender Exporter Plugins and the QGIS. You'll find the download links in the [Resources](#resources) section.<br>
