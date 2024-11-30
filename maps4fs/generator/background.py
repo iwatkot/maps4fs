@@ -10,10 +10,14 @@ import numpy as np
 import trimesh  # type: ignore
 
 from maps4fs.generator.component import Component
-from maps4fs.generator.path_steps import DEFAULT_DISTANCE, get_steps
+from maps4fs.generator.path_steps import DEFAULT_DISTANCE, PATH_FULL_NAME, get_steps
 from maps4fs.generator.tile import Tile
+from maps4fs.logger import timeit
 
 RESIZE_FACTOR = 1 / 4
+SIMPLIFY_FACTOR = 10
+FULL_RESIZE_FACTOR = 1 / 4
+FULL_SIMPLIFY_FACTOR = 20
 
 
 class Background(Component):
@@ -37,7 +41,12 @@ class Background(Component):
         # Getting a list of 8 tiles around the map starting from the N(North) tile.
         for path_step in get_steps(self.map_height, self.map_width):
             # Getting the destination coordinates for the current tile.
-            tile_coordinates = path_step.get_destination(origin)
+            if path_step.angle is None:
+                # For the case when generating the overview map, which has the same
+                # center as the main map.
+                tile_coordinates = self.coordinates
+            else:
+                tile_coordinates = path_step.get_destination(origin)
 
             # Create a Tile component, which is needed to save the DEM image.
             tile = Tile(
@@ -129,28 +138,48 @@ class Background(Component):
             self.logger.debug("Generating obj file for tile %s in path: %s", tile.code, save_path)
 
             dem_data = cv2.imread(tile.dem_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
-            self.plane_from_np(dem_data, save_path)
+            self.plane_from_np(tile.code, dem_data, save_path)
 
     # pylint: disable=too-many-locals
-    def plane_from_np(self, dem_data: np.ndarray, save_path: str) -> None:
+    @timeit
+    def plane_from_np(self, tile_code: str, dem_data: np.ndarray, save_path: str) -> None:
         """Generates a 3D obj file based on DEM data.
 
         Arguments:
+            tile_code (str) -- The code of the tile.
             dem_data (np.ndarray) -- The DEM data as a numpy array.
             save_path (str) -- The path where the obj file will be saved.
         """
+        if tile_code == PATH_FULL_NAME:
+            resize_factor = FULL_RESIZE_FACTOR
+            simplify_factor = FULL_SIMPLIFY_FACTOR
+            self.logger.info("Generating a full map obj file")
+        else:
+            resize_factor = RESIZE_FACTOR
+            simplify_factor = SIMPLIFY_FACTOR
         dem_data = cv2.resize(  # pylint: disable=no-member
-            dem_data, (0, 0), fx=RESIZE_FACTOR, fy=RESIZE_FACTOR
+            dem_data, (0, 0), fx=resize_factor, fy=resize_factor
         )
         self.logger.debug(
-            "DEM data resized to shape: %s with factor: %s", dem_data.shape, RESIZE_FACTOR
+            "DEM data resized to shape: %s with factor: %s", dem_data.shape, resize_factor
         )
+
+        # Invert the height values.
+        dem_data = dem_data.max() - dem_data
 
         rows, cols = dem_data.shape
         x = np.linspace(0, cols - 1, cols)
         y = np.linspace(0, rows - 1, rows)
         x, y = np.meshgrid(x, y)
         z = dem_data
+
+        self.logger.info(
+            "Starting to generate a mesh for tile %s with shape: %s x %s. "
+            "This may take a while...",
+            tile_code,
+            cols,
+            rows,
+        )
 
         vertices = np.column_stack([x.ravel(), y.ravel(), z.ravel()])
         faces = []
@@ -162,15 +191,22 @@ class Background(Component):
                 bottom_left = top_left + cols
                 bottom_right = bottom_left + 1
 
-                # Invert the order of vertices to flip the normals
-                faces.append([top_left, bottom_right, bottom_left])
-                faces.append([top_left, top_right, bottom_right])
+                faces.append([top_left, bottom_left, bottom_right])
+                faces.append([top_left, bottom_right, top_right])
 
         faces = np.array(faces)  # type: ignore
         mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
 
+        # Apply rotation: 180 degrees around Y-axis and Z-axis
+        rotation_matrix_y = trimesh.transformations.rotation_matrix(np.pi, [0, 1, 0])
+        rotation_matrix_z = trimesh.transformations.rotation_matrix(np.pi, [0, 0, 1])
+        mesh.apply_transform(rotation_matrix_y)
+        mesh.apply_transform(rotation_matrix_z)
+
+        self.logger.info("Mesh generated with %s faces, will be simplified", len(mesh.faces))
+
         # Simplify the mesh to reduce the number of faces.
-        mesh = mesh.simplify_quadric_decimation(face_count=len(faces) // 10)
+        mesh = mesh.simplify_quadric_decimation(face_count=len(faces) // simplify_factor)
         self.logger.debug("Mesh simplified to %s faces", len(mesh.faces))
 
         mesh.export(save_path)
