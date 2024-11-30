@@ -35,8 +35,8 @@
 🏞️ Generates height using SRTM dataset<br>
 📦 Provides a ready-to-use map template for the Giants Editor<br>
 🚜 Supports Farming Simulator 22 and 25<br>
-🔷 Generates *.obj files for background terrain based on the real-world height map 🆕<br>
-📄 Generates commands to obtain high-resolution satellite images from [QGIS](https://qgis.org/download/) 🆕<br>
+🔷 Generates *.obj files for background terrain based on the real-world height map<br>
+📄 Generates scripts to download high-resolution satellite images from [QGIS](https://qgis.org/download/) in one click<br>
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/cf8f5752-9c69-4018-bead-290f59ba6976"><br>
