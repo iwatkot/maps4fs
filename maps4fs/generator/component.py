@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 import osmnx as ox  # type: ignore
 from pyproj import Transformer
 
-from maps4fs.generator.qgis import get_bbox_template, get_rasterize_template
+from maps4fs.generator.qgis import save_scripts
 
 if TYPE_CHECKING:
     from maps4fs.generator.game import Game
@@ -259,17 +259,4 @@ class Component:
                 create scripts for.
         """
         class_name = self.__class__.__name__.lower()
-
-        script_files = [
-            (f"{class_name}_bbox.py", get_bbox_template),
-            (f"{class_name}_rasterize.py", get_rasterize_template),
-        ]
-
-        for script_file, process_function in script_files:
-            script_path = os.path.join(self.scripts_directory, script_file)
-            script_content = process_function(qgis_layers)  # type: ignore
-
-            with open(script_path, "w", encoding="utf-8") as file:
-                file.write(script_content)
-
-            self.logger.info("QGIS script saved: %s", script_path)
+        save_scripts(qgis_layers, class_name, self.scripts_directory)

@@ -115,7 +115,7 @@ class Background(Component):
     def qgis_sequence(self) -> None:
         """Generates QGIS scripts for creating bounding box layers and rasterizing them."""
         qgis_layers = [
-            (f"Background_bbox_{tile.code}", *tile.get_espg3857_bbox()) for tile in self.tiles
+            (f"Background_{tile.code}", *tile.get_espg3857_bbox()) for tile in self.tiles
         ]
 
         self.create_qgis_scripts(qgis_layers)  # type: ignore

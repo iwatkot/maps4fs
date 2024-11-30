@@ -44,13 +44,15 @@ Now, let's start downloading the images:
 ```text
 📁scripts
  ┣ 📄background_bbox.py
+ ┣ 📄background_point.py
  ┣ 📄background_rasterize.py
  ┣ 📄config_bbox.py
+ ┣ 📄config_point.py
  ┗ 📄config_rasterize.py
  ```
 
  So, the background scripts are for the background terrain and the config scripts are for the overview map.<br>
- The `bbox` scripts are used to set the bounds of the map, and the `rasterize` scripts are used to download the images.<br>
+ The `bbox` scripts are used to set the bounds of the map, and the `rasterize` scripts are used to download the images. There are also `point` scripts,which can be used to add points to the cornders of tiles, so it may be helpful in some scenarios.<br>
 
 ⚡Remember that you should run them separately and remember to remove extra layers between the components, otherwise you'll get lines from the previous component on your images.<br>
 
