@@ -81,6 +81,8 @@ class Background(Component):
             dict[str, dict[str, float | int]] -- A dictionary with information about the tiles.
         """
         data = {}
+        self.qgis_sequence()
+
         for tile in self.tiles:
             north, south, east, west = tile.bbox
             epsg3857_string = tile.get_epsg3857_string()
@@ -100,6 +102,14 @@ class Background(Component):
                 data[tile.code] = tile_entry
 
         return data  # type: ignore
+
+    def qgis_sequence(self) -> None:
+        """Generates QGIS scripts for creating bounding box layers and rasterizing them."""
+        qgis_layers = [
+            (f"Background_bbox_{tile.code}", *tile.get_espg3857_bbox()) for tile in self.tiles
+        ]
+
+        self.create_qgis_scripts(qgis_layers)  # type: ignore
 
     def generate_obj_files(self) -> None:
         """Iterates over all tiles and generates 3D obj files based on DEM data.

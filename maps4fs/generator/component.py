@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING, Any
 import osmnx as ox  # type: ignore
 from pyproj import Transformer
 
+from maps4fs.generator.qgis import get_bbox_template, get_rasterize_template
+
 if TYPE_CHECKING:
     from maps4fs.generator.game import Game
 
@@ -47,6 +49,7 @@ class Component:
         self.kwargs = kwargs
 
         os.makedirs(self.previews_directory, exist_ok=True)
+        os.makedirs(self.scripts_directory, exist_ok=True)
 
         self.save_bbox()
         self.preprocess()
@@ -83,6 +86,15 @@ class Component:
             str: The directory where the preview images are stored.
         """
         return os.path.join(self.map_directory, "previews")
+
+    @property
+    def scripts_directory(self) -> str:
+        """The directory where the scripts are stored.
+
+        Returns:
+            str: The directory where the scripts are stored.
+        """
+        return os.path.join(self.map_directory, "scripts")
 
     @property
     def generation_info_path(self) -> str:
@@ -187,6 +199,40 @@ class Component:
         self.bbox = self.get_bbox(project_utm=False)
         self.logger.debug("Saved bounding box: %s", self.bbox)
 
+    @property
+    def new_bbox(self) -> tuple[float, float, float, float]:
+        """This property is used for a new version of osmnx library, where the order of coordinates
+        has been changed to (left, bottom, right, top).
+
+        Returns:
+            tuple[float, float, float, float]: The bounding box of the map in the new order:
+                (left, bottom, right, top).
+        """
+        # FutureWarning: The expected order of coordinates in `bbox`
+        # will change in the v2.0.0 release to `(left, bottom, right, top)`.
+        north, south, east, west = self.bbox
+        return west, south, east, north
+
+    def get_espg3857_bbox(
+        self, bbox: tuple[int, int, int, int] | None = None
+    ) -> tuple[int, int, int, int]:
+        """Converts the bounding box to EPSG:3857.
+        If the bounding box is not provided, the instance variable is used.
+
+        Args:
+            bbox (tuple[int, int, int, int], optional): The bounding box to convert.
+
+        Returns:
+            tuple[int, int, int, int]: The bounding box in EPSG:3857.
+        """
+        bbox = bbox or self.bbox
+        north, south, east, west = bbox
+        transformer = Transformer.from_crs("epsg:4326", "epsg:3857")
+        epsg3857_north, epsg3857_west = transformer.transform(north, west)
+        epsg3857_south, epsg3857_east = transformer.transform(south, east)
+
+        return epsg3857_north, epsg3857_south, epsg3857_east, epsg3857_west
+
     def get_epsg3857_string(self, bbox: tuple[int, int, int, int] | None = None) -> str:
         """Converts the bounding box to EPSG:3857 string.
         If the bounding box is not provided, the instance variable is used.
@@ -197,10 +243,33 @@ class Component:
         Returns:
             str: The bounding box in EPSG:3857 string.
         """
-        bbox = bbox or self.bbox
-        north, south, east, west = bbox
-        transformer = Transformer.from_crs("epsg:4326", "epsg:3857")
-        epsg3857_north, epsg3857_west = transformer.transform(north, west)
-        epsg3857_south, epsg3857_east = transformer.transform(south, east)
+        north, south, east, west = self.get_espg3857_bbox(bbox)
+        return f"{north},{south},{east},{west} [EPSG:3857]"
 
-        return f"{epsg3857_north},{epsg3857_south},{epsg3857_east},{epsg3857_west} [EPSG:3857]"
+    def create_qgis_scripts(
+        self, qgis_layers: list[tuple[str, float, float, float, float]]
+    ) -> None:
+        """Creates QGIS scripts from the given layers.
+        Each layer is a tuple where the first element is a name of the layer and the rest are the
+        bounding box coordinates in EPSG:3857.
+        For filenames, the class name is used as a prefix.
+
+        Args:
+            qgis_layers (list[tuple[str, float, float, float, float]]): The list of layers to
+                create scripts for.
+        """
+        class_name = self.__class__.__name__.lower()
+
+        script_files = [
+            (f"{class_name}_bbox.py", get_bbox_template),
+            (f"{class_name}_rasterize.py", get_rasterize_template),
+        ]
+
+        for script_file, process_function in script_files:
+            script_path = os.path.join(self.scripts_directory, script_file)
+            script_content = process_function(qgis_layers)  # type: ignore
+
+            with open(script_path, "w", encoding="utf-8") as file:
+                file.write(script_content)
+
+            self.logger.info("QGIS script saved: %s", script_path)

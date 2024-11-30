@@ -35,8 +35,8 @@
 🏞️ Generates height using SRTM dataset<br>
 📦 Provides a ready-to-use map template for the Giants Editor<br>
 🚜 Supports Farming Simulator 22 and 25<br>
-🔷 Generates *.obj files for background terrain based on the real-world height map 🆕<br>
-📄 Generates commands to obtain high-resolution satellite images from [QGIS](https://qgis.org/download/) 🆕<br>
+🔷 Generates *.obj files for background terrain based on the real-world height map<br>
+📄 Generates scripts to download high-resolution satellite images from [QGIS](https://qgis.org/download/) in one click<br>
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/cf8f5752-9c69-4018-bead-290f59ba6976"><br>
@@ -340,9 +340,9 @@ If you're willing to create a background terrain, you will need: Blender, the Bl
 
 If you're afraid of this task, please don't be. It's really simple and I've prepaired detailed step-by-step instructions for you, you'll find them in the separate README files. Here are the steps you need to follow:
 
-1. [Download high-resolution satellite images](README_satellite_images.md).
-2. [Prepare the i3d files](README_i3d.md).
-3. [Import the i3d files to Giants Editor](README_giants_editor.md).
+1. [Download high-resolution satellite images](tutorials/README_satellite_images.md).
+2. [Prepare the i3d files](tutorials/README_i3d.md).
+3. [Import the i3d files to Giants Editor](tutorials/README_giants_editor.md).
 
 ## Overview image
 The overview image is an image that is used as in-game map. No matter what the size of the map, this file is always `4096x4096 pixels`, while the region of your map is `2048x2048 pixels` in center of this file. The rest of the image is just here for nice view, but you still may add satellite pictures to this region.<br>

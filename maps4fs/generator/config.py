@@ -71,6 +71,8 @@ class Config(Component):
         south, west, north, east = bbox
         epsg3857_string = self.get_epsg3857_string(bbox=bbox)
 
+        self.qgis_sequence()
+
         overview_data = {
             "epsg3857_string": epsg3857_string,
             "south": south,
@@ -86,3 +88,12 @@ class Config(Component):
         }
 
         return data  # type: ignore
+
+    def qgis_sequence(self) -> None:
+        """Generates QGIS scripts for creating bounding box layers and rasterizing them."""
+        bbox = self.get_bbox(height_distance=self.map_height, width_distance=self.map_width)
+        espg3857_bbox = self.get_espg3857_bbox(bbox=bbox)
+
+        qgis_layers = [("Overview_bbox", *espg3857_bbox)]
+
+        self.create_qgis_scripts(qgis_layers)  # type: ignore
