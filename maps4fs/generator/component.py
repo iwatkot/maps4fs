@@ -233,7 +233,7 @@ class Component:
         epsg3857_south, epsg3857_east = transformer.transform(south, east)
 
         if add_margin:
-            MARGIN = 100  # pylint: disable=C0103
+            MARGIN = 500  # pylint: disable=C0103
             epsg3857_north = int(epsg3857_north - MARGIN)
             epsg3857_south = int(epsg3857_south + MARGIN)
             epsg3857_east = int(epsg3857_east - MARGIN)
