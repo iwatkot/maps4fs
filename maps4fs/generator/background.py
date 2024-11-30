@@ -95,11 +95,13 @@ class Background(Component):
         for tile in self.tiles:
             north, south, east, west = tile.bbox
             epsg3857_string = tile.get_epsg3857_string()
+            epsg3857_string_with_margin = tile.get_epsg3857_string(add_margin=True)
 
             tile_entry = {
                 "center_latitude": tile.coordinates[0],
                 "center_longitude": tile.coordinates[1],
                 "epsg3857_string": epsg3857_string,
+                "epsg3857_string_with_margin": epsg3857_string_with_margin,
                 "height": tile.map_height,
                 "width": tile.map_width,
                 "north": north,
@@ -117,8 +119,14 @@ class Background(Component):
         qgis_layers = [
             (f"Background_{tile.code}", *tile.get_espg3857_bbox()) for tile in self.tiles
         ]
+        qgis_layers_with_margin = [
+            (f"Background_{tile.code}_margin", *tile.get_espg3857_bbox(add_margin=True))
+            for tile in self.tiles
+        ]
 
-        self.create_qgis_scripts(qgis_layers)  # type: ignore
+        layers = qgis_layers + qgis_layers_with_margin
+
+        self.create_qgis_scripts(layers)
 
     def generate_obj_files(self) -> None:
         """Iterates over all tiles and generates 3D obj files based on DEM data.
