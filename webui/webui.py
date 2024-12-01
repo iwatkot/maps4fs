@@ -8,7 +8,11 @@ import streamlit.components.v1 as components
 from PIL import Image
 
 import maps4fs as mfs
-from maps4fs.generator.dem import DEFAULT_BLUR_RADIUS, DEFAULT_MULTIPLIER
+from maps4fs.generator.dem import (
+    DEFAULT_BLUR_RADIUS,
+    DEFAULT_MULTIPLIER,
+    DEFAULT_PLATEAU,
+)
 
 DEFAULT_LAT = 45.28571409289627
 DEFAULT_LON = 20.237433441210115
@@ -44,7 +48,11 @@ class Maps4FS:
 
         st.set_page_config(page_title="Maps4FS", page_icon="🚜", layout="wide")
         st.title("Maps4FS")
-        st.write("Generate map templates for Farming Simulator from real places.")
+        st.write(
+            "Generate map templates for Farming Simulator from real places.  \n"
+            "Join our [Discord server](https://discord.gg/Sj5QKKyE42) to get help, share your "
+            "maps, or just chat."
+        )
 
         if self.community:
             st.warning(
@@ -237,7 +245,7 @@ class Maps4FS:
 
         self.multiplier_input = DEFAULT_MULTIPLIER
         self.blur_radius_input = DEFAULT_BLUR_RADIUS
-        self.plateau_height_input = 0
+        self.plateau_height_input = DEFAULT_PLATEAU
 
         if not self.auto_process:
             self.logger.info("Auto preset is disabled.")
@@ -288,7 +296,7 @@ class Maps4FS:
                 self.blur_radius_input = st.number_input(
                     "Blur Radius",
                     value=DEFAULT_BLUR_RADIUS,
-                    min_value=1,
+                    min_value=0,
                     max_value=300,
                     key="blur_radius",
                     label_visibility="collapsed",

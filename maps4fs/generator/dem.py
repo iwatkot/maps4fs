@@ -15,6 +15,7 @@ from maps4fs.generator.component import Component
 SRTM = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
 DEFAULT_MULTIPLIER = 1
 DEFAULT_BLUR_RADIUS = 35
+DEFAULT_PLATEAU = 0
 
 
 # pylint: disable=R0903, R0902

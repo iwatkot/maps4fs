@@ -10,6 +10,11 @@ import numpy as np
 import trimesh  # type: ignore
 
 from maps4fs.generator.component import Component
+from maps4fs.generator.dem import (
+    DEFAULT_BLUR_RADIUS,
+    DEFAULT_MULTIPLIER,
+    DEFAULT_PLATEAU,
+)
 from maps4fs.generator.path_steps import DEFAULT_DISTANCE, PATH_FULL_NAME, get_steps
 from maps4fs.generator.tile import Tile
 from maps4fs.logger import timeit
@@ -58,9 +63,9 @@ class Background(Component):
                 logger=self.logger,
                 tile_code=path_step.code,
                 auto_process=False,
-                blur_radius=self.kwargs.get("blur_radius"),
-                multiplier=self.kwargs.get("multiplier", 1),
-                plateau=self.kwargs.get("plateau", 0),
+                blur_radius=self.kwargs.get("blur_radius", DEFAULT_BLUR_RADIUS),
+                multiplier=self.kwargs.get("multiplier", DEFAULT_MULTIPLIER),
+                plateau=self.kwargs.get("plateau", DEFAULT_PLATEAU),
             )
 
             # Update the origin for the next tile.
