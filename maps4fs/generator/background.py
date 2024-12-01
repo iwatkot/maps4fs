@@ -16,7 +16,7 @@ from maps4fs.logger import timeit
 
 RESIZE_FACTOR = 1 / 4
 SIMPLIFY_FACTOR = 10
-FULL_RESIZE_FACTOR = 1 / 4
+FULL_RESIZE_FACTOR = 1 / 8
 FULL_SIMPLIFY_FACTOR = 20
 
 
