@@ -6,7 +6,8 @@
 <p align="center">
   <a href="#Quick-Start">Quick Start</a> •
   <a href="#Overview">Overview</a> • 
-  <a href="#How-To-Run">How-To-Run</a><br>
+  <a href="#How-To-Run">How-To-Run</a> •
+  <a href="tutorials/FAQ.md">FAQ</a><br>
   <a href="#Supported-objects">Supported objects</a> •
   <a href="#Generation-info">Generation info</a> •
   <a href="#Texture-schema">Texture schema</a> •
@@ -407,4 +408,5 @@ To create a basic map, you only need the Giants Editor. But if you want to creat
 4. [QGIS](https://qgis.org/download/) - the open-source GIS software that you can use to obtain high-resolution satellite images for your map.
 
 ## Bugs and feature requests
+➡️ Please, before creating an issue or asking some questions, check the [FAQ](tutorials/FAQ.md) section.<br>
 If you find a bug or have an idea for a new feature, please create an issue [here](https://github.com/iwatkot/maps4fs/issues) or contact me directly on [Telegram](https://t.me/iwatkot) or on Discord: `iwatkot`.
