@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 import osmnx as ox  # type: ignore
 from pyproj import Transformer
 
-from maps4fs.generator.qgis import get_bbox_template, get_rasterize_template
+from maps4fs.generator.qgis import save_scripts
 
 if TYPE_CHECKING:
     from maps4fs.generator.game import Game
@@ -214,16 +214,17 @@ class Component:
         return west, south, east, north
 
     def get_espg3857_bbox(
-        self, bbox: tuple[int, int, int, int] | None = None
-    ) -> tuple[int, int, int, int]:
+        self, bbox: tuple[float, float, float, float] | None = None, add_margin: bool = False
+    ) -> tuple[float, float, float, float]:
         """Converts the bounding box to EPSG:3857.
         If the bounding box is not provided, the instance variable is used.
 
         Args:
-            bbox (tuple[int, int, int, int], optional): The bounding box to convert.
+            bbox (tuple[float, float, float, float], optional): The bounding box to convert.
+            add_margin (bool, optional): Whether to add a margin to the bounding box.
 
         Returns:
-            tuple[int, int, int, int]: The bounding box in EPSG:3857.
+            tuple[float, float, float, float]: The bounding box in EPSG:3857.
         """
         bbox = bbox or self.bbox
         north, south, east, west = bbox
@@ -231,19 +232,29 @@ class Component:
         epsg3857_north, epsg3857_west = transformer.transform(north, west)
         epsg3857_south, epsg3857_east = transformer.transform(south, east)
 
+        if add_margin:
+            MARGIN = 500  # pylint: disable=C0103
+            epsg3857_north = int(epsg3857_north - MARGIN)
+            epsg3857_south = int(epsg3857_south + MARGIN)
+            epsg3857_east = int(epsg3857_east - MARGIN)
+            epsg3857_west = int(epsg3857_west + MARGIN)
+
         return epsg3857_north, epsg3857_south, epsg3857_east, epsg3857_west
 
-    def get_epsg3857_string(self, bbox: tuple[int, int, int, int] | None = None) -> str:
+    def get_epsg3857_string(
+        self, bbox: tuple[float, float, float, float] | None = None, add_margin: bool = False
+    ) -> str:
         """Converts the bounding box to EPSG:3857 string.
         If the bounding box is not provided, the instance variable is used.
 
         Args:
-            bbox (tuple[int, int, int, int], optional): The bounding box to convert.
+            bbox (tuple[float, float, float, float], optional): The bounding box to convert.
+            add_margin (bool, optional): Whether to add a margin to the bounding box.
 
         Returns:
             str: The bounding box in EPSG:3857 string.
         """
-        north, south, east, west = self.get_espg3857_bbox(bbox)
+        north, south, east, west = self.get_espg3857_bbox(bbox, add_margin=add_margin)
         return f"{north},{south},{east},{west} [EPSG:3857]"
 
     def create_qgis_scripts(
@@ -259,17 +270,4 @@ class Component:
                 create scripts for.
         """
         class_name = self.__class__.__name__.lower()
-
-        script_files = [
-            (f"{class_name}_bbox.py", get_bbox_template),
-            (f"{class_name}_rasterize.py", get_rasterize_template),
-        ]
-
-        for script_file, process_function in script_files:
-            script_path = os.path.join(self.scripts_directory, script_file)
-            script_content = process_function(qgis_layers)  # type: ignore
-
-            with open(script_path, "w", encoding="utf-8") as file:
-                file.write(script_content)
-
-            self.logger.info("QGIS script saved: %s", script_path)
+        save_scripts(qgis_layers, class_name, self.scripts_directory)

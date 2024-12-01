@@ -70,11 +70,13 @@ class Config(Component):
         bbox = self.get_bbox(height_distance=self.map_height, width_distance=self.map_width)
         south, west, north, east = bbox
         epsg3857_string = self.get_epsg3857_string(bbox=bbox)
+        epsg3857_string_with_margin = self.get_epsg3857_string(bbox=bbox, add_margin=True)
 
         self.qgis_sequence()
 
         overview_data = {
             "epsg3857_string": epsg3857_string,
+            "epsg3857_string_with_margin": epsg3857_string_with_margin,
             "south": south,
             "west": west,
             "north": north,
@@ -93,7 +95,11 @@ class Config(Component):
         """Generates QGIS scripts for creating bounding box layers and rasterizing them."""
         bbox = self.get_bbox(height_distance=self.map_height, width_distance=self.map_width)
         espg3857_bbox = self.get_espg3857_bbox(bbox=bbox)
+        espg3857_bbox_with_margin = self.get_espg3857_bbox(bbox=bbox, add_margin=True)
 
         qgis_layers = [("Overview_bbox", *espg3857_bbox)]
+        qgis_layers_with_margin = [("Overview_bbox_with_margin", *espg3857_bbox_with_margin)]
 
-        self.create_qgis_scripts(qgis_layers)  # type: ignore
+        layers = qgis_layers + qgis_layers_with_margin
+
+        self.create_qgis_scripts(layers)
