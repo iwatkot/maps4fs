@@ -222,8 +222,27 @@ class Background(Component):
         mesh = mesh.simplify_quadric_decimation(face_count=len(faces) // simplify_factor)
         self.logger.debug("Mesh simplified to %s faces", len(mesh.faces))
 
+        if tile_code == PATH_FULL_NAME:
+            self.mesh_to_stl(mesh)
+
         mesh.export(save_path)
         self.logger.info("Obj file saved: %s", save_path)
+
+    def mesh_to_stl(self, mesh: trimesh.Trimesh) -> None:
+        """Converts the mesh to an STL file and saves it in the previews directory.
+        Uses powerful simplification to reduce the size of the file since it will be used
+        only for the preview.
+
+        Arguments:
+            mesh (trimesh.Trimesh) -- The mesh to convert to an STL file.
+        """
+        preview_path = os.path.join(self.previews_directory, "background_dem.stl")
+        mesh = mesh.simplify_quadric_decimation(percent=0.05)
+        mesh.export(preview_path)
+
+        self.logger.info("STL file saved: %s", preview_path)
+
+        self.stl_preview_path = preview_path  # pylint: disable=attribute-defined-outside-init
 
     def previews(self) -> list[str]:
         """Generates a preview by combining all tiles into one image.
@@ -243,6 +262,8 @@ class Background(Component):
 
         for tile in self.tiles:
             # pylint: disable=no-member
+            if tile.code == PATH_FULL_NAME:
+                continue
             tile_image = cv2.imread(tile.dem_path, cv2.IMREAD_UNCHANGED)
 
             self.logger.debug(
@@ -302,7 +323,7 @@ class Background(Component):
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)  # type: ignore
         cv2.imwrite(preview_path, image)
 
-        return [preview_path]
+        return [preview_path, self.stl_preview_path]
 
 
 # Creates tiles around the map.

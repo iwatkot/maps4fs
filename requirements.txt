@@ -7,4 +7,5 @@ geopy
 trimesh
 pyproj
 fast-simplification
+streamlit-stl==0.0.2
 maps4fs

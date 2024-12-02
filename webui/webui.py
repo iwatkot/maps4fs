@@ -6,6 +6,7 @@ import osmp
 import streamlit as st
 import streamlit.components.v1 as components
 from PIL import Image
+from streamlit_stl import stl_from_file
 
 import maps4fs as mfs
 from maps4fs.generator.dem import (
@@ -47,35 +48,6 @@ class Maps4FS:
         self.logger.info("The application launched on the community server: %s", self.community)
 
         st.set_page_config(page_title="Maps4FS", page_icon="🚜", layout="wide")
-        st.title("Maps4FS")
-        st.write(
-            "Generate map templates for Farming Simulator from real places.  \n"
-            "Join our [Discord server](https://discord.gg/Sj5QKKyE42) to get help, share your "
-            "maps, or just chat."
-        )
-
-        if self.community:
-            st.warning(
-                "🚜 Hey, farmer!  \n"
-                "Do you know what **Docker** is? If yes, please consider running the application "
-                "locally.  \n"
-                "On StreamLit community hosting the sizes of generated maps are limited "
-                "to a size of maximum 4096x4096 meters, while locally you only limited by "
-                "your hardware.  \n"
-                "Learn more about the Docker version in the repo's "
-                "[README](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version).  \n"
-                "Also, if you are familiar with Python, you can use the "
-                "[maps4fs](https://pypi.org/project/maps4fs/) package to generate maps locally."
-            )
-
-        st.info(
-            "ℹ️ When opening the map first time in the Giants Editor, select the **terrain** object, "
-            "open the **Terrain** tab in the **Attributes** window, scroll down to the end "
-            "and press the **Reload material** button.  \n"
-            "Otherwise you may (and will) face some glitches."
-        )
-
-        st.markdown("---")
 
         self.left_column, self.right_column = st.columns(2, gap="large")
 
@@ -89,35 +61,6 @@ class Maps4FS:
             self.add_left_widgets()
 
         self.map_preview()
-
-        st.markdown(
-            """
-            <style>
-            .footer {
-                position: fixed;
-                left: 0;
-                bottom: 0;
-                width: 100%;
-                height: 40px;
-                background-color: #066E7A;
-                color: white;
-                text-align: center;
-                padding: 10px;
-            }
-            .footer a {
-                color: black;
-                text-decoration: none;
-            }
-            .footer a:hover {
-                text-decoration: underline;
-            }
-            </style>
-            <div class="footer">
-                <p>Maps4FS by <a href="https://github.com/iwatkot">iwatkot</a> | Support the project on <a href="https://www.buymeacoffee.com/iwatkot0">Buy Me a Coffee</a></p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
 
     @property
     def lat_lon(self) -> tuple[float, float]:
@@ -158,7 +101,7 @@ class Maps4FS:
         html_file = osmp.get_preview(lat, lon, map_size)
 
         with self.html_preview_container:
-            components.html(open(html_file).read(), height=300)
+            components.html(open(html_file).read(), height=400)
 
     def add_right_widgets(self) -> None:
         """Add widgets to the right column."""
@@ -170,6 +113,37 @@ class Maps4FS:
     def add_left_widgets(self) -> None:
         """Add widgets to the left column."""
         self.logger.info("Adding widgets to the left column...")
+
+        st.title("Maps4FS")
+        st.write(
+            "Generate map templates for Farming Simulator from real places.  \n"
+            "💬 Join our [Discord server](https://discord.gg/Sj5QKKyE42) to get help, share your "
+            "maps, or just chat.  \n"
+            "🤗 If you like the project, consider supporting it on [Buy Me a Coffee](https://www.buymeacoffee.com/iwatkot0)."
+        )
+
+        if self.community:
+            st.warning(
+                "🚜 Hey, farmer!  \n"
+                "Do you know what **Docker** is? If yes, please consider running the application "
+                "locally.  \n"
+                "On StreamLit community hosting the sizes of generated maps are limited "
+                "to a size of maximum 4096x4096 meters, while locally you only limited by "
+                "your hardware.  \n"
+                "Learn more about the Docker version in the repo's "
+                "[README](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version).  \n"
+                "Also, if you are familiar with Python, you can use the "
+                "[maps4fs](https://pypi.org/project/maps4fs/) package to generate maps locally."
+            )
+
+        st.info(
+            "ℹ️ When opening the map first time in the Giants Editor, select the **terrain** object, "
+            "open the **Terrain** tab in the **Attributes** window, scroll down to the end "
+            "and press the **Reload material** button.  \n"
+            "Otherwise you may (and will) face some glitches."
+        )
+
+        st.markdown("---")
 
         # Game selection (FS22 or FS25).
         st.write("Select the game for which you want to generate the map:")
@@ -275,13 +249,15 @@ class Maps4FS:
                 st.write(
                     "This multiplier can be used to make the terrain more pronounced. "
                     "By default the DEM file will be exact copy of the real terrain. "
-                    "If you want to make it more steep, you can increase this value."
+                    "If you want to make it more steep, you can increase this value. "
+                    "Or make it smaller to make the terrain more flat."
                 )
                 self.multiplier_input = st.number_input(
                     "Multiplier",
                     value=DEFAULT_MULTIPLIER,
-                    min_value=0,
-                    max_value=10000,
+                    min_value=0.0,
+                    max_value=10000.0,
+                    step=0.01,
                     key="multiplier",
                     label_visibility="collapsed",
                 )
@@ -340,6 +316,7 @@ class Maps4FS:
                         data=f,
                         file_name=f"{self.download_path.split('/')[-1]}",
                         mime="application/zip",
+                        icon="📥",
                     )
 
             st.session_state.generated = False
@@ -402,7 +379,7 @@ class Maps4FS:
 
         session_name = self.get_sesion_name(coordinates)
 
-        self.status_container.info("Starting...", icon="⏳")
+        # self.status_container.info("Starting...", icon="⏳")
         map_directory = os.path.join(config.MAPS_DIRECTORY, session_name)
         os.makedirs(map_directory, exist_ok=True)
 
@@ -419,16 +396,28 @@ class Maps4FS:
             auto_process=self.auto_process,
             plateau=self.plateau_height_input,
         )
-        for component_name in mp.generate():
-            self.status_container.info(f"Generating {component_name}...", icon="⏳")
 
-        self.status_container.info("Creating previews...", icon="⏳")
+        step = int(100 / (len(game.components) + 2))
+        completed = 0
+        progress_bar = st.progress(0)
+        for component_name in mp.generate():
+            # self.status_container.info(f"Generating {component_name}...", icon="⏳")
+            progress_bar.progress(completed, f"⏳ Generating {component_name}...")
+            completed += step
+
+        # self.status_container.info("Creating previews...", icon="⏳")
+
+        completed += step
+        progress_bar.progress(completed, "🖼️ Creating previews...")
 
         # Create a preview image.
         self.show_preview(mp)
         self.map_preview()
 
-        self.status_container.info("Packing the map...", icon="⏳")
+        completed += step
+        progress_bar.progress(completed, "🗃️ Packing the map...")
+
+        # self.status_container.info("Packing the map...", icon="⏳")
 
         # Pack the generated map into a zip archive.
         archive_path = mp.pack(os.path.join(config.ARCHIVES_DIRECTORY, session_name))
@@ -454,13 +443,37 @@ class Maps4FS:
         with self.preview_container:
             st.markdown("---")
             st.write("Previews of the generated map:")
-            columns = st.columns(len(full_preview_paths))
-            for column, full_preview_path in zip(columns, full_preview_paths):
-                if not os.path.isfile(full_preview_path):
+
+            image_preview_paths = [
+                preview for preview in full_preview_paths if preview.endswith(".png")
+            ]
+
+            columns = st.columns(len(image_preview_paths))
+            for column, image_preview_path in zip(columns, image_preview_paths):
+                if not os.path.isfile(image_preview_path):
                     continue
                 try:
-                    image = Image.open(full_preview_path)
+                    image = Image.open(image_preview_path)
                     column.image(image, use_container_width=True)
+                except Exception:
+                    continue
+
+            stl_preview_paths = [
+                preview for preview in full_preview_paths if preview.endswith(".stl")
+            ]
+
+            for stl_preview_path in stl_preview_paths:
+                if not os.path.isfile(stl_preview_path):
+                    continue
+                try:
+                    stl_from_file(
+                        file_path=stl_preview_path,
+                        color="#808080",
+                        material="material",
+                        auto_rotate=True,
+                        height="400",
+                        key=None,
+                    )
                 except Exception:
                     continue
 

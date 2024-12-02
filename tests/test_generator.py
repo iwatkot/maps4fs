@@ -148,6 +148,8 @@ def test_map_preview():
         pass
     previews_paths = map.previews()
     for preview_path in previews_paths:
+        if not preview_path.endswith(".png"):
+            continue
         assert os.path.isfile(preview_path), f"Preview not found: {preview_path}"
         img = cv2.imread(preview_path)
         assert img is not None, f"Preview could not be read: {preview_path}"
