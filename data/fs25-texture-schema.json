@@ -49,10 +49,7 @@
   },
   {
     "name": "forestGrass",
-    "count": 2,
-    "tags": { "landuse": "farmland" },
-    "color": [47, 107, 85],
-    "priority": 4
+    "count": 2
   },
   {
     "name": "forestLeaves",
@@ -128,14 +125,17 @@
   },
   {
     "name": "gravelSmall",
-    "count": 2
+    "count": 2,
+    "tags": { "highway": ["secondary", "tertiary", "road", "service"] },
+    "width": 4,
+    "color": [140, 180, 210]
   },
   {
     "name": "mudDark",
     "count": 2,
-    "tags": { "highway": ["unclassified", "residential", "track"] },
-    "width": 2,
-    "color": [33, 67, 101]
+    "tags": { "landuse": "farmland" },
+    "color": [47, 107, 85],
+    "priority": 4
   },
   {
     "name": "mudDarkGrassPatchy",
@@ -152,9 +152,9 @@
   {
     "name": "mudLight",
     "count": 2,
-    "tags": { "highway": ["secondary", "tertiary", "road", "service"] },
-    "width": 4,
-    "color": [140, 180, 210]
+    "tags": { "highway": ["unclassified", "residential", "track"] },
+    "width": 2,
+    "color": [33, 67, 101]
   },
   {
     "name": "mudPebbles",
