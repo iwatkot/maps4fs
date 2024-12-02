@@ -13,7 +13,7 @@ import requests
 from maps4fs.generator.component import Component
 
 SRTM = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
-DEFAULT_MULTIPLIER = 1
+DEFAULT_MULTIPLIER = 1.0
 DEFAULT_BLUR_RADIUS = 35
 DEFAULT_PLATEAU = 0
 
@@ -135,6 +135,15 @@ class DEM(Component):
         else:
             self.logger.debug("Auto processing is disabled, DEM data will not be normalized.")
             resampled_data = resampled_data * self.multiplier
+            # Clip values to 16-bit unsigned integer range.
+            resampled_data = np.clip(resampled_data, 0, 65535)
+            self.logger.debug(
+                "DEM data was multiplied by %s and clipped to 16-bit unsigned integer range. "
+                "Min: %s, max: %s.",
+                self.multiplier,
+                resampled_data.min(),
+                resampled_data.max(),
+            )
 
         self.logger.debug(
             "DEM data was resampled. Shape: %s, dtype: %s. Min: %s, max: %s.",

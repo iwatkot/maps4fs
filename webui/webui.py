@@ -275,13 +275,15 @@ class Maps4FS:
                 st.write(
                     "This multiplier can be used to make the terrain more pronounced. "
                     "By default the DEM file will be exact copy of the real terrain. "
-                    "If you want to make it more steep, you can increase this value."
+                    "If you want to make it more steep, you can increase this value. "
+                    "Or make it smaller to make the terrain more flat."
                 )
                 self.multiplier_input = st.number_input(
                     "Multiplier",
                     value=DEFAULT_MULTIPLIER,
-                    min_value=0,
-                    max_value=10000,
+                    min_value=0.0,
+                    max_value=10000.0,
+                    step=0.01,
                     key="multiplier",
                     label_visibility="collapsed",
                 )
