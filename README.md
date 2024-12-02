@@ -58,7 +58,7 @@ There are several ways to use the tool. You obviously need the **first one**, bu
 ### 🚜 For most users
 **Option 1:** open the [maps4fs](https://maps4fs.streamlit.app) on StreamLit and generate a map template in a few clicks.<br>
 
-![Basic WebUI](https://github.com/user-attachments/assets/14620044-9e92-47ae-8531-d61460740f58)
+![Basic WebUI](https://github.com/user-attachments/assets/52f499cc-f28a-4da3-abef-0e818abe8dbe)
 
 ### 😎 For advanced users
 **Option 2:** run the Docker version in your browser. Launch the following command in your terminal:
@@ -386,7 +386,7 @@ The tool supports the custom size of the map. To use this feature select `Custom
 
 ⛔️ Do not use this feature, if you don't know what you're doing. In most cases the Giants Editor will just crash on opening the file, because you need to enter a specific values for the map size.<br><br>
 
-![Advanced settings](https://github.com/user-attachments/assets/0446cdf2-f093-49ba-ba8f-9bef18a58b47)
+![Advanced settings](https://github.com/user-attachments/assets/e7406adf-6b82-41a0-838a-13dd8877bebf)
 
 You can also apply some advanced settings to the map generation process. Note that they're ADVANCED, so you don't need to use them if you're not sure what they do.<br>
 

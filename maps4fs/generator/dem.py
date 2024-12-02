@@ -137,6 +137,7 @@ class DEM(Component):
             resampled_data = resampled_data * self.multiplier
             # Clip values to 16-bit unsigned integer range.
             resampled_data = np.clip(resampled_data, 0, 65535)
+            resampled_data = resampled_data.astype("uint16")
             self.logger.debug(
                 "DEM data was multiplied by %s and clipped to 16-bit unsigned integer range. "
                 "Min: %s, max: %s.",
