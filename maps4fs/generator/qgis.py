@@ -52,7 +52,7 @@ for layer in layers:
     points = [top_left, top_right, bottom_right, bottom_left, top_left]
 
     # Create a new layer
-    layer = QgsVectorLayer('Point?crs=EPSG:4326', name, 'memory')
+    layer = QgsVectorLayer('Point?crs=EPSG:3857', name, 'memory')
     provider = layer.dataProvider()
 
     # Add fields
