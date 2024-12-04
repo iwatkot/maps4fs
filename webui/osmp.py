@@ -1,72 +1,86 @@
 import os
+import random
 
 import config
 import folium
 import osmnx as ox
 
 
-def get_preview(center_lat: float, center_lon: float, size_meters: int) -> str:
-    """Generate an HTML file with OpenStreetMap data centered at the given point and size in meters.
+def get_preview(bboxes: list[tuple[float, float, float, float]]) -> str:
+    save_path = get_save_path(bboxes)
+    # if os.path.isfile(save_path):
+    #     return save_path
 
-    Arguments:
-        center_lat (float): Latitude of the central point.
-        center_lon (float): Longitude of the central point.
-        size_meters (int): Width of the bounding box in meters.
-        output_file (str): Path to the output HTML file.
+    m = folium.Map(zoom_control=False)
 
-    Returns:
-        str: Path to the HTML file where the OpenStreetMap data is saved.
-    """
-    save_path = get_save_path(center_lat, center_lon, size_meters)
-    if os.path.isfile(save_path):
-        return save_path
-    # Calculate the bounding box
-    center = (center_lat, center_lon)
+    for bbox in bboxes:
+        center = get_center(bbox)
+        north, south, east, west = bbox
+        color = get_random_color()
+        folium.CircleMarker(center, radius=1, color=color, fill=True).add_to(m)
 
-    north, south, east, west = ox.utils_geo.bbox_from_point(
-        center, size_meters / 2, project_utm=False
-    )
+        folium.Rectangle(
+            bounds=[[south, west], [north, east]],
+            color=color,
+            fill=True,
+            fill_opacity=0.1,
+            fill_color=color,
+        ).add_to(m)
 
-    # Create a map centered at the given point
-    m = folium.Map(location=[center_lat, center_lon], max_bounds=True)
+    folium.ClickForMarker("<b>${lat}, ${lng}</b>").add_to(m)
 
-    # Draw the bounding box
-    folium.Rectangle(
-        bounds=[[south, west], [north, east]], color="blue", fill=True, fill_opacity=0.2
-    ).add_to(m)
-
+    # Fit bounds to the last bbox in the list.
     m.fit_bounds([[south, west], [north, east]])
 
-    # Save the map as an HTML file
     m.save(save_path)
     return save_path
 
 
-def get_save_path(lat: float, lon: float, size_meters: int) -> str:
+def get_random_color() -> str:
+    return "#{:06x}".format(random.randint(0, 0xFFFFFF))
+
+
+def get_center(bbox: tuple[float, float, float, float]) -> tuple[float, float]:
+    north, south, east, west = bbox
+    return (north + south) / 2, (east + west) / 2
+
+
+def get_bbox(center: tuple[float, float], size_meters: int) -> tuple[float, float, float, float]:
+    center_lat, center_lon = center
+    north, south, east, west = ox.utils_geo.bbox_from_point(
+        (center_lat, center_lon), size_meters / 2, project_utm=False
+    )
+    return north, south, east, west
+
+
+def get_save_path(bboxes: list[tuple[float, float, float, float]]) -> str:
     """Return the path to the HTML file where the OpenStreetMap data is saved.
 
     Arguments:
         lat (float): Latitude of the central point.
         lon (float): Longitude of the central point.
         size_meters (int): Width of the bounding box in meters.
+        postfix (str): Optional postfix to add to the filename.
 
     Returns:
         str: Path to the HTML file.
     """
+    file_names = [format_coordinates(bbox) for bbox in bboxes]
+    filename = "_".join(file_names) + ".html"
     return os.path.join(
         config.OSMPS_DIRECTORY,
-        f"{format_coordinates(lat, lon)}_{size_meters}.html",
+        filename,
     )
 
 
-def format_coordinates(lat: float, lon: float) -> str:
+def format_coordinates(bbox: tuple[float, float, float, float]) -> str:
     """Return a string representation of the coordinates.
 
     Arguments:
-        lat (float): Latitude.
-        lon (float): Longitude.
+        bbox (tuple[float, float, float, float]): The bounding box coordinates.
 
     Returns:
         str: String representation of the coordinates.
     """
-    return f"{lat:.6f}_{lon:.6f}"
+    # return f"{lat:.6f}_{lon:.6f}"
+    return "_".join(map(str, bbox))
