@@ -2,7 +2,7 @@ import os
 
 import streamlit as st
 import streamlit.components.v1 as components
-from config import INPUT_DIRECTORY, is_on_community_server
+from config import INPUT_DIRECTORY
 from osmp import get_bbox, get_center, get_preview
 from tools.tool import Tool
 
