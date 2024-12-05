@@ -61,6 +61,10 @@ class Messages:
         "negative height (to make rivers, for example)."
     )
     TOOLBOX_INFO = (
-        "This section contains different tools that can be helpful for modders.  \n"
-        "If you're rookie, you're in the wrong tab, go back to the **🗺️ Map Generator** tab."
+        "This section contains different tools that can be helpful for modders, grouped by "
+        "the component of the map they are related to.  \n"
     )
+    KNOWLEDGE_INFO = (
+        "Here you can find some useful information about the different aspects of map modding."
+    )
+    FAQ_INFO = "Here you can find answers to the most frequently asked questions."

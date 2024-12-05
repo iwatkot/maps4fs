@@ -11,6 +11,16 @@ os.makedirs(OSMPS_DIRECTORY, exist_ok=True)
 STREAMLIT_COMMUNITY_KEY = "HOSTNAME"
 STREAMLIT_COMMUNITY_VALUE = "streamlit"
 
+DOCS_DIRECTORY = os.path.join(WORKING_DIRECTORY, "docs")
+MD_FILES = {"⛰️ DEM": "dem.md"}
+FAQ_MD = os.path.join(DOCS_DIRECTORY, "FAQ.md")
+
+
+def get_mds() -> dict[str, str]:
+    return {
+        md_file: os.path.join(DOCS_DIRECTORY, filename) for md_file, filename in MD_FILES.items()
+    }
+
 
 def is_on_community_server() -> bool:
     """Check if the script is running on the Streamlit Community server.

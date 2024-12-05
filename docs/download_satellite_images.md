@@ -190,4 +190,4 @@ You should see the square with a hole in the center, where your map is located. 
 
 </details>
 
-Go to the next section of the tutorial: [Prepare the i3d files](README_i3d.md).
+Go to the next section of the tutorial: [Prepare the i3d files](create_background_terrain.md).

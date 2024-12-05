@@ -7,7 +7,7 @@
   <a href="#Quick-Start">Quick Start</a> •
   <a href="#Overview">Overview</a> • 
   <a href="#How-To-Run">How-To-Run</a> •
-  <a href="tutorials/FAQ.md">FAQ</a><br>
+  <a href="docs/FAQ.md">FAQ</a><br>
   <a href="#Supported-objects">Supported objects</a> •
   <a href="#Generation-info">Generation info</a> •
   <a href="#Texture-schema">Texture schema</a> •
@@ -350,9 +350,9 @@ If you're willing to create a background terrain, you will need: Blender, the Bl
 
 If you're afraid of this task, please don't be. It's really simple and I've prepaired detailed step-by-step instructions for you, you'll find them in the separate README files. Here are the steps you need to follow:
 
-1. [Download high-resolution satellite images](tutorials/README_satellite_images.md).
-2. [Prepare the i3d files](tutorials/README_i3d.md).
-3. [Import the i3d files to Giants Editor](tutorials/README_giants_editor.md).
+1. [Download high-resolution satellite images](docs/download_satellite_images.md).
+2. [Prepare the i3d files](docs/create_background_terrain.md).
+3. [Import the i3d files to Giants Editor](docs/import_to_giants_editor.md).
 
 ## Overview image
 The overview image is an image that is used as in-game map. No matter what the size of the map, this file is always `4096x4096 pixels`, while the region of your map is `2048x2048 pixels` in center of this file. The rest of the image is just here for nice view, but you still may add satellite pictures to this region.<br>
@@ -410,5 +410,5 @@ To create a basic map, you only need the Giants Editor. But if you want to creat
 6. [AnyConv](https://anyconv.com/png-to-dds-converter/) - the online tool to convert the PNG images to the DDS format. You'll need this format for the textures, icons, overview and preview images.
 
 ## Bugs and feature requests
-➡️ Please, before creating an issue or asking some questions, check the [FAQ](tutorials/FAQ.md) section.<br>
+➡️ Please, before creating an issue or asking some questions, check the [FAQ](docs/FAQ.md) section.<br>
 If you find a bug or have an idea for a new feature, please create an issue [here](https://github.com/iwatkot/maps4fs/issues) or contact me directly on [Telegram](https://t.me/iwatkot) or on Discord: `iwatkot`.

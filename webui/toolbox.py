@@ -1,13 +1,15 @@
 import streamlit as st
-from dem import DemUI
 from templates import Messages
+from tools.section import Section
 
 
 class ToolboxUI:
     def __init__(self):
         st.write(Messages.TOOLBOX_INFO)
 
-        dem_tab, test_tab = st.tabs(["🏔️ DEM", "TEST"])
+        sections = Section.all()
+        tabs = st.tabs([section.title for section in sections])
 
-        with dem_tab:
-            DemUI()
+        for tab, section in zip(tabs, sections):
+            with tab:
+                section.add()

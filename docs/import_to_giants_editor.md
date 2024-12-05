@@ -2,7 +2,7 @@
 
 So, at this point, you should have the `*.i3d` files with the background terrain. Now, let's import them into the Giants Editor.
 
-ℹ️ In this tutorials it's assumed that you have already generated the map, downloaded satellite images using this tutorial: [Download high-resolution satellite images](README_satellite_images.md), and created a background terrain as described in the previous tutorial: [Prepare the i3d files](README_i3d.md).
+ℹ️ In this tutorials it's assumed that you have already generated the map, downloaded satellite images using this tutorial: [Download high-resolution satellite images](download_satellite_images.md), and created a background terrain as described in the previous tutorial: [Prepare the i3d files](create_background_terrain.md).
 
 Here's what you need to do:
 
@@ -10,7 +10,7 @@ Here's what you need to do:
 
 2. Open the main map file, for example for the Farming Simulator 25 it's a `map/map.i3d` file.
 
-3. Click on the `File` menu and select `Import...` select the `*.i3d` file with the background terrain. Note, that aftet the import, the terrain will have no textures, so don't worry, it's ok.
+3. Click on the `File` menu and select `Import...` select the `*.i3d` file with the background terrain.
 
 ![Import](https://github.com/user-attachments/assets/32145805-6583-4147-ac04-4c69d041b554)
 
@@ -18,7 +18,8 @@ Here's what you need to do:
 
 ![Position](https://github.com/user-attachments/assets/8202b2f5-2286-4213-8785-c3779e9ad88a)
 
-5. Open the `Material Editing` panel (if it's not visible click on the `Window` menu and select `Material Editing`) and ensure that you've selected the correct object in the `Scenegraph` panel. Find the `Albedo map` and click on the `...` button to select the texture for the terrain. 
+5. If after the import you can't see the texture on the terrain, you need to add the texture manually.
+Open the `Material Editing` panel (if it's not visible click on the `Window` menu and select `Material Editing`) and ensure that you've selected the correct object in the `Scenegraph` panel. Find the `Albedo map` and click on the `...` button to select the texture for the terrain. 
 
 ![Albedo map](https://github.com/user-attachments/assets/20a197cd-dadf-4e61-8ad2-c6752d60fb17)
 
@@ -37,6 +38,6 @@ Here's what you need to do:
 So, we'are done here.<br>
 ℹ️ Please note, that is almost no way to align all background terrain with map perfectly without editing them in the 3D editor, Blender for example. You can find a lot of tutorials on YouTube on how to do it, this won't be covered here. Or you can just leave it as is and find the best possible position for the terrain, and maybe hiding the edges with some objects. It's up to you.<br>
 
-If you want, you can go back to the previous step: [Prepare the i3d files](README_i3d.md).<br>
+If you want, you can go back to the previous step: [Prepare the i3d files](create_background_terrain.md).<br>
 
 Happy mapping! 🚜🌾
