@@ -117,8 +117,8 @@ class GeneratorUI:
         st.title(Messages.TITLE)
         st.write(Messages.MAIN_PAGE_DESCRIPTION)
         if self.community:
-            st.warning(Messages.MAIN_PAGE_COMMUNITY_WARNING)
-        st.info(Messages.TERRAIN_RELOAD)
+            st.info(Messages.MAIN_PAGE_COMMUNITY_WARNING)
+        # st.info(Messages.TERRAIN_RELOAD)
         st.markdown("---")
 
         # Game selection (FS22 or FS25).
@@ -178,7 +178,7 @@ class GeneratorUI:
                 "💡 If you run the tool locally, you can generate larger maps, even with the custom size.  \n"
             )
 
-        st.info(Messages.HEIGHT_SCALE_INFO)
+        # st.info(Messages.HEIGHT_SCALE_INFO)
 
         self.auto_process = st.checkbox("Use auto preset", value=True, key="auto_process")
         if self.auto_process:
