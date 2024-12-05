@@ -4,7 +4,7 @@ class Messages:
         "Generate map templates for Farming Simulator from real places.  \n"
         "💬 Join our [Discord server](https://discord.gg/Sj5QKKyE42) to get help, share your "
         "maps, or just chat.  \n"
-        "🤗 If you like the project, consider supporting it on [Buy Me a Coffee](https://www.buymeacoffee.com/iwatkot0)."
+        "🤗 If you like the project, consider supporting it on [Buy Me a Coffee](https://www.buymeacoffee.com/iwatkot)."
     )
     MAIN_PAGE_COMMUNITY_WARNING = (
         "🚜 Hey, farmer!  \n"
