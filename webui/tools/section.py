@@ -1,6 +1,6 @@
 from typing import Type
 
-from tools.dem import CropGeotiffTool
+from tools.dem import GeoTIFFWindowingTool
 from tools.tool import Tool
 
 
@@ -19,7 +19,7 @@ class Section:
             tool()
 
 
-class DEMSection(Section):
-    title = "⛰️ DEM"
-    description = "Tools for Digital Elevation Models"
-    tools = [CropGeotiffTool]
+class TexturesAndDEM(Section):
+    title = "🖼️ Textures and DEM"
+    description = "Tools to work with textures and digital elevation models."
+    tools = [GeoTIFFWindowingTool]

@@ -4,9 +4,13 @@ WORKING_DIRECTORY = os.getcwd()
 ARCHIVES_DIRECTORY = os.path.join(WORKING_DIRECTORY, "archives")
 MAPS_DIRECTORY = os.path.join(WORKING_DIRECTORY, "maps")
 OSMPS_DIRECTORY = os.path.join(WORKING_DIRECTORY, "osmps")
+TEMP_DIRECTORY = os.path.join(WORKING_DIRECTORY, "temp")
+INPUT_DIRECTORY = os.path.join(TEMP_DIRECTORY, "input")
 os.makedirs(ARCHIVES_DIRECTORY, exist_ok=True)
 os.makedirs(MAPS_DIRECTORY, exist_ok=True)
 os.makedirs(OSMPS_DIRECTORY, exist_ok=True)
+os.makedirs(INPUT_DIRECTORY, exist_ok=True)
+
 
 STREAMLIT_COMMUNITY_KEY = "HOSTNAME"
 STREAMLIT_COMMUNITY_VALUE = "streamlit"

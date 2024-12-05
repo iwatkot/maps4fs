@@ -7,7 +7,8 @@
   <a href="#Quick-Start">Quick Start</a> •
   <a href="#Overview">Overview</a> • 
   <a href="#How-To-Run">How-To-Run</a> •
-  <a href="docs/FAQ.md">FAQ</a><br>
+  <a href="docs/FAQ.md">FAQ</a> •
+  <a href="#Modder-Toolbox">Modder Toolbox</a><br>
   <a href="#Supported-objects">Supported objects</a> •
   <a href="#Generation-info">Generation info</a> •
   <a href="#Texture-schema">Texture schema</a> •
@@ -41,6 +42,7 @@
 🚜 Supports Farming Simulator 22 and 25<br>
 🔷 Generates *.obj files for background terrain based on the real-world height map<br>
 📄 Generates scripts to download high-resolution satellite images from [QGIS](https://qgis.org/download/) in one click<br>
+🧰 Modder Toolbox to help you with various of tasks 🆕<br>
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/cf8f5752-9c69-4018-bead-290f59ba6976"><br>
@@ -171,6 +173,14 @@ for active_component in map.generate():
 ```
 
 The map will be saved in the `map_directory` directory.
+
+## Modder Toolbox
+The tool now has a Modder Toolbox, which is a set of tools to help you with various tasks. You can open the toolbox by switching to the `🧰 Modder Toolbox` tab in the StreamLit app.<br>
+
+### Tool categories
+Tools are divided into categories, which are listed below.
+#### Textures and DEM
+- **GeoTIFF windowing** - allows you to upload your GeoTIFF file and select the region of interest to extract it from the image.
 
 ## Supported objects
 The project is based on the [OpenStreetMap](https://www.openstreetmap.org/) data. So, refer to [this page](https://wiki.openstreetmap.org/wiki/Map_Features) to understand the list below.
@@ -392,7 +402,7 @@ You can also apply some advanced settings to the map generation process. Note th
 
 Here's the list of the advanced settings:
 
-- DEM multiplier: the height of the map is multiplied by this value. So the DEM map is just a 16-bit grayscale image, which means that the maximum avaiable value there is 65535, while the actual difference between the deepest and the highest point on Earth is about 20 km. So, by default this value is set to 3. Just note that this setting mostly does not matter, because you can always adjust it in the Giants Editor, learn more about the [heightScale](https://www.farming-simulator.org/19/terrain-heightscale.php) parameter on the [PMC Farming Simulator](https://www.farming-simulator.org/) website.
+- DEM multiplier: the height of the map is multiplied by this value. So the DEM map is just a 16-bit grayscale image, which means that the maximum avaiable value there is 65535, while the actual difference between the deepest and the highest point on Earth is about 20 km. Just note that this setting mostly does not matter, because you can always adjust it in the Giants Editor, learn more about the DEM file and the heightScale paramter in [docs](docs/dem.md). By default, it's set to 1.
 
 - DEM Blur radius: the radius of the Gaussian blur filter applied to the DEM map. By default, it's set to 21. This filter just makes the DEM map smoother, so the height transitions will be more natural. You can set it to 1 to disable the filter, but it will result as a Minecraft-like map.
 
