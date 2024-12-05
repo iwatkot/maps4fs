@@ -177,6 +177,8 @@ The map will be saved in the `map_directory` directory.
 ## Modder Toolbox
 The tool now has a Modder Toolbox, which is a set of tools to help you with various tasks. You can open the toolbox by switching to the `🧰 Modder Toolbox` tab in the StreamLit app.<br>
 
+![Modder Toolbox](https://github.com/user-attachments/assets/18f169e9-1a5b-474c-b488-6becfffadcea)
+
 ### Tool categories
 Tools are divided into categories, which are listed below.
 #### Textures and DEM
