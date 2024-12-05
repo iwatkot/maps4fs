@@ -7,6 +7,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 from PIL import Image
 from streamlit_stl import stl_from_file
+from templates import Messages
 
 import maps4fs as mfs
 from maps4fs.generator.dem import (
@@ -19,7 +20,7 @@ DEFAULT_LAT = 45.28571409289627
 DEFAULT_LON = 20.237433441210115
 
 
-class Maps4FS:
+class GeneratorUI:
     """Main class for the Maps4FS web interface.
 
     Attributes:
@@ -46,8 +47,6 @@ class Maps4FS:
 
         self.community = config.is_on_community_server()
         self.logger.info("The application launched on the community server: %s", self.community)
-
-        st.set_page_config(page_title="Maps4FS", page_icon="🚜", layout="wide")
 
         self.left_column, self.right_column = st.columns(2, gap="large")
 
@@ -98,7 +97,8 @@ class Maps4FS:
             "Generating map preview for lat=%s, lon=%s, map_size=%s", lat, lon, map_size
         )
 
-        html_file = osmp.get_preview(lat, lon, map_size)
+        bbox = osmp.get_bbox((lat, lon), map_size)
+        html_file = osmp.get_preview([bbox])
 
         with self.html_preview_container:
             components.html(open(html_file).read(), height=400)
@@ -114,35 +114,11 @@ class Maps4FS:
         """Add widgets to the left column."""
         self.logger.info("Adding widgets to the left column...")
 
-        st.title("Maps4FS")
-        st.write(
-            "Generate map templates for Farming Simulator from real places.  \n"
-            "💬 Join our [Discord server](https://discord.gg/Sj5QKKyE42) to get help, share your "
-            "maps, or just chat.  \n"
-            "🤗 If you like the project, consider supporting it on [Buy Me a Coffee](https://www.buymeacoffee.com/iwatkot0)."
-        )
-
+        st.title(Messages.TITLE)
+        st.write(Messages.MAIN_PAGE_DESCRIPTION)
         if self.community:
-            st.warning(
-                "🚜 Hey, farmer!  \n"
-                "Do you know what **Docker** is? If yes, please consider running the application "
-                "locally.  \n"
-                "On StreamLit community hosting the sizes of generated maps are limited "
-                "to a size of maximum 4096x4096 meters, while locally you only limited by "
-                "your hardware.  \n"
-                "Learn more about the Docker version in the repo's "
-                "[README](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version).  \n"
-                "Also, if you are familiar with Python, you can use the "
-                "[maps4fs](https://pypi.org/project/maps4fs/) package to generate maps locally."
-            )
-
-        st.info(
-            "ℹ️ When opening the map first time in the Giants Editor, select the **terrain** object, "
-            "open the **Terrain** tab in the **Attributes** window, scroll down to the end "
-            "and press the **Reload material** button.  \n"
-            "Otherwise you may (and will) face some glitches."
-        )
-
+            st.warning(Messages.MAIN_PAGE_COMMUNITY_WARNING)
+        st.info(Messages.TERRAIN_RELOAD)
         st.markdown("---")
 
         # Game selection (FS22 or FS25).
@@ -202,20 +178,12 @@ class Maps4FS:
                 "💡 If you run the tool locally, you can generate larger maps, even with the custom size.  \n"
             )
 
-        st.info(
-            "ℹ️ Remember to adjust the ***heightScale*** parameter in the Giants Editor to a value "
-            "that suits your map. Learn more about it in repo's "
-            "[README](https://github.com/iwatkot/maps4fs)."
-        )
+        st.info(Messages.HEIGHT_SCALE_INFO)
 
         self.auto_process = st.checkbox("Use auto preset", value=True, key="auto_process")
         if self.auto_process:
             self.logger.info("Auto preset is enabled.")
-            st.info(
-                "Auto preset will automatically apply different algorithms to make terrain more "
-                "realistic. It's recommended for most cases. If you want to have more control over the "
-                "terrain generation, you can disable this option and change the advanced settings."
-            )
+            st.info(Messages.AUTO_PRESET_INFO)
 
         self.multiplier_input = DEFAULT_MULTIPLIER
         self.blur_radius_input = DEFAULT_BLUR_RADIUS
@@ -224,14 +192,8 @@ class Maps4FS:
         if not self.auto_process:
             self.logger.info("Auto preset is disabled.")
 
-            st.info(
-                "Auto preset is disabled. In this case you probably receive a full black DEM "
-                "image file. But it is NOT EMPTY. Dem image value range is from 0 to 65535, "
-                "while on Earth the highest point is 8848 meters. So, unless you are not "
-                "working with map for Everest, you probably can't see anything on the DEM image "
-                "by eye, because it is too dark. You can use the "
-                "multiplier option from Advanced settings to make the terrain more pronounced."
-            )
+            st.info(Messages.AUTO_PRESET_DISABLED)
+
             # Add checkbox for advanced settings.
             st.write("Advanced settings (do not change if you are not sure):")
             self.advanced_settings = st.checkbox("Show advanced settings", key="advanced_settings")
@@ -246,12 +208,8 @@ class Maps4FS:
                 )
                 # Show multiplier and blur radius inputs.
                 st.write("[DEM] Enter multiplier for the elevation map:")
-                st.write(
-                    "This multiplier can be used to make the terrain more pronounced. "
-                    "By default the DEM file will be exact copy of the real terrain. "
-                    "If you want to make it more steep, you can increase this value. "
-                    "Or make it smaller to make the terrain more flat."
-                )
+                st.write(Messages.DEM_MULTIPLIER_INFO)
+
                 self.multiplier_input = st.number_input(
                     "Multiplier",
                     value=DEFAULT_MULTIPLIER,
@@ -263,12 +221,8 @@ class Maps4FS:
                 )
 
                 st.write("[DEM] Enter blur radius for the elevation map:")
-                st.write(
-                    "This value is used to blur the elevation map. Without blurring the terrain "
-                    "may look too sharp and unrealistic. By default the blur radius is set to 21 "
-                    "which corresponds to a 21x21 pixel kernel. You can increase this value to make "
-                    "the terrain more smooth. Or make it smaller to make the terrain more sharp."
-                )
+                st.write(Messages.DEM_BLUR_RADIUS_INFO)
+
                 self.blur_radius_input = st.number_input(
                     "Blur Radius",
                     value=DEFAULT_BLUR_RADIUS,
@@ -280,12 +234,7 @@ class Maps4FS:
                 )
 
                 st.write("[DEM] Enter the plateau height (which will be added to the whole map):")
-                st.write(
-                    "This value is used to make the whole map higher or lower. "
-                    "This value will be added to each pixel of the DEM image, making it higher."
-                    "It can be useful if you're working on a plain area and need to add some "
-                    "negative height (to make rivers, for example)."
-                )
+                st.write(Messages.DEM_PLATEAU_INFO)
                 self.plateau_height_input = st.number_input(
                     "Plateau Height",
                     value=0,
@@ -476,6 +425,3 @@ class Maps4FS:
                     )
                 except Exception:
                     continue
-
-
-ui = Maps4FS()

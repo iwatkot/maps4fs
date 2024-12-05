@@ -7,7 +7,8 @@
   <a href="#Quick-Start">Quick Start</a> •
   <a href="#Overview">Overview</a> • 
   <a href="#How-To-Run">How-To-Run</a> •
-  <a href="tutorials/FAQ.md">FAQ</a><br>
+  <a href="docs/FAQ.md">FAQ</a> •
+  <a href="#Modder-Toolbox">Modder Toolbox</a><br>
   <a href="#Supported-objects">Supported objects</a> •
   <a href="#Generation-info">Generation info</a> •
   <a href="#Texture-schema">Texture schema</a> •
@@ -41,6 +42,7 @@
 🚜 Supports Farming Simulator 22 and 25<br>
 🔷 Generates *.obj files for background terrain based on the real-world height map<br>
 📄 Generates scripts to download high-resolution satellite images from [QGIS](https://qgis.org/download/) in one click<br>
+🧰 Modder Toolbox to help you with various of tasks 🆕<br>
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/cf8f5752-9c69-4018-bead-290f59ba6976"><br>
@@ -171,6 +173,16 @@ for active_component in map.generate():
 ```
 
 The map will be saved in the `map_directory` directory.
+
+## Modder Toolbox
+The tool now has a Modder Toolbox, which is a set of tools to help you with various tasks. You can open the toolbox by switching to the `🧰 Modder Toolbox` tab in the StreamLit app.<br>
+
+![Modder Toolbox](https://github.com/user-attachments/assets/18f169e9-1a5b-474c-b488-6becfffadcea)
+
+### Tool categories
+Tools are divided into categories, which are listed below.
+#### Textures and DEM
+- **GeoTIFF windowing** - allows you to upload your GeoTIFF file and select the region of interest to extract it from the image.
 
 ## Supported objects
 The project is based on the [OpenStreetMap](https://www.openstreetmap.org/) data. So, refer to [this page](https://wiki.openstreetmap.org/wiki/Map_Features) to understand the list below.
@@ -350,9 +362,9 @@ If you're willing to create a background terrain, you will need: Blender, the Bl
 
 If you're afraid of this task, please don't be. It's really simple and I've prepaired detailed step-by-step instructions for you, you'll find them in the separate README files. Here are the steps you need to follow:
 
-1. [Download high-resolution satellite images](tutorials/README_satellite_images.md).
-2. [Prepare the i3d files](tutorials/README_i3d.md).
-3. [Import the i3d files to Giants Editor](tutorials/README_giants_editor.md).
+1. [Download high-resolution satellite images](docs/download_satellite_images.md).
+2. [Prepare the i3d files](docs/create_background_terrain.md).
+3. [Import the i3d files to Giants Editor](docs/import_to_giants_editor.md).
 
 ## Overview image
 The overview image is an image that is used as in-game map. No matter what the size of the map, this file is always `4096x4096 pixels`, while the region of your map is `2048x2048 pixels` in center of this file. The rest of the image is just here for nice view, but you still may add satellite pictures to this region.<br>
@@ -392,7 +404,7 @@ You can also apply some advanced settings to the map generation process. Note th
 
 Here's the list of the advanced settings:
 
-- DEM multiplier: the height of the map is multiplied by this value. So the DEM map is just a 16-bit grayscale image, which means that the maximum avaiable value there is 65535, while the actual difference between the deepest and the highest point on Earth is about 20 km. So, by default this value is set to 3. Just note that this setting mostly does not matter, because you can always adjust it in the Giants Editor, learn more about the [heightScale](https://www.farming-simulator.org/19/terrain-heightscale.php) parameter on the [PMC Farming Simulator](https://www.farming-simulator.org/) website.
+- DEM multiplier: the height of the map is multiplied by this value. So the DEM map is just a 16-bit grayscale image, which means that the maximum avaiable value there is 65535, while the actual difference between the deepest and the highest point on Earth is about 20 km. Just note that this setting mostly does not matter, because you can always adjust it in the Giants Editor, learn more about the DEM file and the heightScale paramter in [docs](docs/dem.md). By default, it's set to 1.
 
 - DEM Blur radius: the radius of the Gaussian blur filter applied to the DEM map. By default, it's set to 21. This filter just makes the DEM map smoother, so the height transitions will be more natural. You can set it to 1 to disable the filter, but it will result as a Minecraft-like map.
 
@@ -410,5 +422,5 @@ To create a basic map, you only need the Giants Editor. But if you want to creat
 6. [AnyConv](https://anyconv.com/png-to-dds-converter/) - the online tool to convert the PNG images to the DDS format. You'll need this format for the textures, icons, overview and preview images.
 
 ## Bugs and feature requests
-➡️ Please, before creating an issue or asking some questions, check the [FAQ](tutorials/FAQ.md) section.<br>
+➡️ Please, before creating an issue or asking some questions, check the [FAQ](docs/FAQ.md) section.<br>
 If you find a bug or have an idea for a new feature, please create an issue [here](https://github.com/iwatkot/maps4fs/issues) or contact me directly on [Telegram](https://t.me/iwatkot) or on Discord: `iwatkot`.
