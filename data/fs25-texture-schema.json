@@ -121,7 +121,10 @@
   },
   {
     "name": "gravelPebblesMossPatchy",
-    "count": 2
+    "count": 2,
+    "tags": { "railway": true },
+    "width": 4,
+    "color": [100, 100, 100]
   },
   {
     "name": "gravelSmall",
@@ -178,10 +181,7 @@
   },
   {
     "name": "rockFloorTiles",
-    "count": 2,
-    "tags": { "railway": true },
-    "width": 4,
-    "color": [100, 100, 100]
+    "count": 2
   },
   {
     "name": "rockFloorTilesPattern",
