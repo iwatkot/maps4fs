@@ -79,6 +79,22 @@ class DEM(Component):
         )
         return dem_width, dem_height
 
+    def to_ground(self, data: np.ndarray) -> np.ndarray:
+        """Receives the signed 16-bit integer array and converts it to the ground level.
+        If the min value is negative, it will become zero value and the rest of the values
+        will be shifted accordingly.
+        """
+        # For examlem, min value was -50, it will become 0 and for all values we'll +50.
+
+        if data.min() < 0:
+            self.logger.debug("Array contains negative values, will be shifted to the ground.")
+            data = data + abs(data.min())
+
+        self.logger.debug(
+            "Array was shifted to the ground. Min: %s, max: %s.", data.min(), data.max()
+        )
+        return data
+
     # pylint: disable=no-member
     def process(self) -> None:
         """Reads SRTM file, crops it to map size, normalizes and blurs it,
@@ -118,6 +134,8 @@ class DEM(Component):
             data.min(),
             data.max(),
         )
+
+        data = self.to_ground(data)
 
         resampled_data = cv2.resize(
             data, dem_output_resolution, interpolation=cv2.INTER_LINEAR

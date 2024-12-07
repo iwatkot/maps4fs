@@ -4,7 +4,7 @@
         {
             "label": "Run Streamlit",
             "type": "shell",
-            "command": "streamlit run webui/main.py",
+            "command": "streamlit run webui/webui.py",
             "group": "build",
             "presentation": {
                 "reveal": "always",
