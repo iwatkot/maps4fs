@@ -101,7 +101,7 @@ class GeneratorUI:
         html_file = osmp.get_preview([bbox])
 
         with self.html_preview_container:
-            components.html(open(html_file).read(), height=400)
+            components.html(open(html_file).read(), height=600)
 
     def add_right_widgets(self) -> None:
         """Add widgets to the right column."""

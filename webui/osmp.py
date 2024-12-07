@@ -8,8 +8,8 @@ import osmnx as ox
 
 def get_preview(bboxes: list[tuple[float, float, float, float]]) -> str:
     save_path = get_save_path(bboxes)
-    # if os.path.isfile(save_path):
-    #     return save_path
+    if os.path.isfile(save_path):
+        return save_path
 
     m = folium.Map(zoom_control=False)
 
@@ -82,5 +82,4 @@ def format_coordinates(bbox: tuple[float, float, float, float]) -> str:
     Returns:
         str: String representation of the coordinates.
     """
-    # return f"{lat:.6f}_{lon:.6f}"
     return "_".join(map(str, bbox))
