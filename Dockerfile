@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /usr/src/app
 
 COPY data /usr/src/app/data
+COPY docs /usr/src/app/docs
 COPY webui /usr/src/app/webui
 
 RUN pip install "opencv-python" "pyproj" "folium" "geopy" "streamlit-stl==0.0.2" "osmnx<2.0.0" "fast-simplification" "rasterio" "trimesh" "streamlit" "maps4fs"
