@@ -23,7 +23,7 @@ DOCS_DIRECTORY = os.path.join(WORKING_DIRECTORY, "docs")
 MD_FILES = {"⛰️ DEM": "dem.md"}
 FAQ_MD = os.path.join(DOCS_DIRECTORY, "FAQ.md")
 
-REMOVE_DELAY = 30  # 5 minutes
+REMOVE_DELAY = 300  # 5 minutes
 
 
 def get_mds() -> dict[str, str]:
