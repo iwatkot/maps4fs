@@ -13,4 +13,5 @@ geopy
 fast-simplification
 pyproj
 trimesh
+pympler
 streamlit-stl==0.0.2

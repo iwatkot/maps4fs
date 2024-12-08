@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "maps4fs"
-version = "0.9.91"
+version = "0.9.92"
 description = "Generate map templates for Farming Simulator from real places."
 authors = [{name = "iwatkot", email = "iwatkot@gmail.com"}]
 license = {text = "MIT License"}
@@ -25,6 +25,7 @@ dependencies = [
     "trimesh",
     "imageio",
     "tifffile",
+    "pympler",
 ]
 
 [project.urls]

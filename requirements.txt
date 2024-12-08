@@ -8,4 +8,5 @@ trimesh
 pyproj
 fast-simplification
 streamlit-stl==0.0.2
+pympler
 maps4fs
