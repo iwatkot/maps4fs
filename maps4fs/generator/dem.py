@@ -14,7 +14,7 @@ from pympler import asizeof  # type: ignore
 from maps4fs.generator.component import Component
 
 SRTM = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
-DEFAULT_MULTIPLIER = 1.0
+DEFAULT_MULTIPLIER = 1
 DEFAULT_BLUR_RADIUS = 35
 DEFAULT_PLATEAU = 0
 
@@ -146,9 +146,10 @@ class DEM(Component):
         self.logger.debug("Size of resampled data: %s MB.", size_of_resampled_data)
 
         self.logger.debug(
-            "Maximum value in resampled data: %s, minimum value: %s.",
+            "Maximum value in resampled data: %s, minimum value: %s. Data type: %s.",
             resampled_data.max(),
             resampled_data.min(),
+            resampled_data.dtype,
         )
 
         if self.auto_process:
@@ -159,10 +160,11 @@ class DEM(Component):
             resampled_data = resampled_data * self.multiplier
 
             self.logger.debug(
-                "DEM data was multiplied by %s. Min: %s, max: %s.",
+                "DEM data was multiplied by %s. Min: %s, max: %s. Data type: %s.",
                 self.multiplier,
                 resampled_data.min(),
                 resampled_data.max(),
+                resampled_data.dtype,
             )
 
             size_of_resampled_data = asizeof.asizeof(resampled_data) / 1024 / 1024

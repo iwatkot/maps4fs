@@ -52,7 +52,6 @@ class Messages:
         "This multiplier can be used to make the terrain more pronounced. "
         "By default the DEM file will be exact copy of the real terrain. "
         "If you want to make it more steep, you can increase this value. "
-        "Or make it smaller to make the terrain more flat."
     )
     DEM_BLUR_RADIUS_INFO = (
         "This value is used to blur the elevation map. Without blurring the terrain "
