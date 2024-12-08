@@ -116,15 +116,19 @@ class Map:
                 )
         return previews
 
-    def pack(self, archive_name: str) -> str:
+    def pack(self, archive_path: str, remove_source: bool = True) -> str:
         """Pack map directory to zip archive.
 
         Args:
-            archive_name (str): Name of the archive.
+            archive_path (str): Path to the archive.
+            remove_source (bool, optional): Remove source directory after packing.
 
         Returns:
             str: Path to the archive.
         """
-        archive_path = shutil.make_archive(archive_name, "zip", self.map_directory)
-        self.logger.info("Map packed to %s.zip", archive_name)
+        archive_path = shutil.make_archive(archive_path, "zip", self.map_directory)
+        self.logger.info("Map packed to %s.zip", archive_path)
+        if remove_source:
+            shutil.rmtree(self.map_directory)
+            self.logger.info("Map directory removed: %s", self.map_directory)
         return archive_path

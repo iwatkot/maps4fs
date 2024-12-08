@@ -196,7 +196,16 @@ class GeneratorUI:
 
             # Add checkbox for advanced settings.
             st.write("Advanced settings (do not change if you are not sure):")
-            self.advanced_settings = st.checkbox("Show advanced settings", key="advanced_settings")
+
+            if self.community:
+                st.warning(Messages.COMMUNITY_ADVANCED_SETTINGS)
+                disabled = True
+            else:
+                disabled = False
+
+            self.advanced_settings = st.checkbox(
+                "Show advanced settings", key="advanced_settings", disabled=disabled
+            )
 
             if self.advanced_settings:
                 self.logger.info("Advanced settings are enabled.")
@@ -267,6 +276,9 @@ class GeneratorUI:
                         mime="application/zip",
                         icon="📥",
                     )
+
+            # st.info(f"The file will be removed in {int(config.REMOVE_DELAY / 60)} minutes.")
+            config.remove_with_delay_without_blocking(self.download_path, self.logger)
 
             st.session_state.generated = False
             self.logger.info("Generated was set to False in the session state.")
