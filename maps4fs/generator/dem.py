@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 import rasterio  # type: ignore
 import requests
-from pympler import asizeof
+from pympler import asizeof  # type: ignore
 
 from maps4fs.generator.component import Component
 
