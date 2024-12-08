@@ -222,9 +222,9 @@ class GeneratorUI:
                 self.multiplier_input = st.number_input(
                     "Multiplier",
                     value=DEFAULT_MULTIPLIER,
-                    min_value=0.0,
-                    max_value=10000.0,
-                    step=0.01,
+                    min_value=0,
+                    max_value=10000,
+                    step=1,
                     key="multiplier",
                     label_visibility="collapsed",
                 )
