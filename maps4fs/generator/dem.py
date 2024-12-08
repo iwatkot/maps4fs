@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 import rasterio  # type: ignore
 import requests
+from pympler import asizeof  # type: ignore
 
 from maps4fs.generator.component import Component
 
@@ -141,6 +142,9 @@ class DEM(Component):
             data, dem_output_resolution, interpolation=cv2.INTER_LINEAR
         ).astype("uint16")
 
+        size_of_resampled_data = asizeof.asizeof(resampled_data) / 1024 / 1024
+        self.logger.debug("Size of resampled data: %s MB.", size_of_resampled_data)
+
         self.logger.debug(
             "Maximum value in resampled data: %s, minimum value: %s.",
             resampled_data.max(),
@@ -153,6 +157,17 @@ class DEM(Component):
         else:
             self.logger.debug("Auto processing is disabled, DEM data will not be normalized.")
             resampled_data = resampled_data * self.multiplier
+
+            self.logger.debug(
+                "DEM data was multiplied by %s. Min: %s, max: %s.",
+                self.multiplier,
+                resampled_data.min(),
+                resampled_data.max(),
+            )
+
+            size_of_resampled_data = asizeof.asizeof(resampled_data) / 1024 / 1024
+            self.logger.debug("Size of resampled data: %s MB.", size_of_resampled_data)
+
             # Clip values to 16-bit unsigned integer range.
             resampled_data = np.clip(resampled_data, 0, 65535)
             resampled_data = resampled_data.astype("uint16")
