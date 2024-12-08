@@ -1,0 +1,32 @@
+name: Issue FAQ
+on:
+  issues:
+    types:
+      - opened
+jobs:
+  add-comment:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Add comment
+        run: gh issue comment "$NUMBER" --body "$BODY"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.issue.number }}
+          BODY: >
+            Thank you for opening an issue!<br>
+            Please, first check the [FAQ](https://github.com/iwatkot/maps4fs/blob/main/docs/FAQ.md) to see if your question has already been answered.<br>
+            Note, that all issues regarding the availabality of the StreamLit community app will be closed automatically. Please use the [Docker version](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version) of the tool. Thank you!<br>
+
+            If you want to proceed with the issue, please provide the following information:<br>
+            - Coordinates of the cetral point of the map<br>
+            - Map size<br>
+            - Was auto preset enabled?<br>
+            - Any additional settings if where enabled<br>
+            - Error message if any<br>
+            - Screenshots if possible<br>
+            - Any additional information that you think might be useful<br>
+
+            Thank you!
