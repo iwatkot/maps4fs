@@ -18,7 +18,7 @@ jobs:
           BODY: >
             Thank you for opening an issue!<br>
             Please, first check the [FAQ](https://github.com/iwatkot/maps4fs/blob/main/docs/FAQ.md) to see if your question has already been answered.<br>
-            Note, that all issues regarding the availabality of the StreamLit community app will be closed automatically. Please use the [Docker version](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version) of the tool. Thank you!<br>
+            Note, that all issues regarding the availability of the StreamLit community app will be closed automatically. Please use the [Docker version](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version) of the tool. Thank you!<br>
 
             If you want to proceed with the issue, please provide the following information:<br>
             - Coordinates of the cetral point of the map<br>
