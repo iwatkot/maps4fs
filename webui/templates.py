@@ -29,6 +29,12 @@ class Messages:
     #     "that suits your map. Learn more about it in repo's "
     #     "[README](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#For-advanced-users)."
     # )
+    COMMUNITY_ADVANCED_SETTINGS = (
+        "💡 Advanced settings are disabled on StreamLit community hosting.  \n"
+        "If you want to have more control over the terrain generation, consider running the "
+        "application locally."
+    )
+
     AUTO_PRESET_INFO = (
         "Auto preset will automatically apply different algorithms to make terrain more "
         "realistic. It's recommended for most cases. If you want to have more control over the "
