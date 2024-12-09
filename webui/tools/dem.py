@@ -2,7 +2,7 @@ import os
 
 import streamlit as st
 import streamlit.components.v1 as components
-from config import INPUT_DIRECTORY
+from config import INPUT_DIRECTORY, is_on_community_server
 from osmp import get_bbox, get_center, get_preview
 from tools.tool import Tool
 
@@ -23,6 +23,12 @@ class GeoTIFFWindowingTool(Tool):
     download_path = None
 
     def content(self):
+        if is_on_community_server():
+            st.warning(
+                "💡 This tool is disabled on StreamLit community hosting.  \n"
+                "If you want to use it, consider running the application locally."
+            )
+            return
         if "windowed" not in st.session_state:
             st.session_state.windowed = False
         uploaded_file = st.file_uploader("Upload a GeoTIFF file", type=["tif", "tiff"])
