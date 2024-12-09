@@ -34,13 +34,13 @@ class Tile(DEM):
         if not self.code:
             raise ValueError("Tile code was not provided")
 
-        self.logger.debug(f"Generating tile {self.code}")
+        self.logger.debug("Generating tile for code %s", self.code)
 
         tiles_directory = os.path.join(self.map_directory, "objects", "tiles")
         os.makedirs(tiles_directory, exist_ok=True)
 
         self._dem_path = os.path.join(tiles_directory, f"{self.code}.png")
-        self.logger.debug(f"DEM path for tile {self.code} is {self._dem_path}")
+        self.logger.debug("DEM path for tile %s is %s", self.code, self._dem_path)
 
     def get_output_resolution(self) -> tuple[int, int]:
         """Return the resolution of the output image.
