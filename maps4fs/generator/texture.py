@@ -110,7 +110,51 @@ class Texture(Component):
             weight_postfix = "_weight" if not self.exclude_weight else ""
             return os.path.join(weights_directory, f"{self.name}{idx}{weight_postfix}.png")
 
+        def path_preview(self, previews_directory: str) -> str:
+            """Returns path to the preview of the first texture of the layer.
+
+            Arguments:
+                previews_directory (str): Path to the directory with previews.
+
+            Returns:
+                str: Path to the preview.
+            """
+            return self.path(previews_directory).replace(".png", "_preview.png")
+
+        def get_preview_or_path(self, previews_directory: str) -> str:
+            """Returns path to the preview of the first texture of the layer if it exists,
+            otherwise returns path to the texture.
+
+            Arguments:
+                previews_directory (str): Path to the directory with previews.
+
+            Returns:
+                str: Path to the preview or texture.
+            """
+            preview_path = self.path_preview(previews_directory)
+            return preview_path if os.path.isfile(preview_path) else self.path(previews_directory)
+
+        def paths(self, weights_directory: str) -> list[str]:
+            """Returns a list of paths to the textures of the layer.
+            NOTE: Works only after the textures are generated, since it just lists the directory.
+
+            Arguments:
+                weights_directory (str): Path to the directory with weights.
+
+            Returns:
+                list[str]: List of paths to the textures.
+            """
+            weight_files = os.listdir(weights_directory)
+            return [
+                os.path.join(weights_directory, weight_file)
+                for weight_file in weight_files
+                if weight_file.startswith(self.name)
+            ]
+
     def preprocess(self) -> None:
+        self.light_version = self.kwargs.get("light_version", False)
+        self.logger.debug("Light version: %s.", self.light_version)
+
         if not os.path.isfile(self.game.texture_schema):
             raise FileNotFoundError(f"Texture layers schema not found: {self.game.texture_schema}")
 
@@ -285,6 +329,68 @@ class Texture(Component):
         if cumulative_image is not None:
             self.draw_base_layer(cumulative_image)
 
+        if not self.light_version:
+            self.dissolve()
+        else:
+            self.logger.info("Skipping dissolve in light version of the map.")
+
+    def dissolve(self) -> None:
+        """Dissolves textures of the layers with tags into sublayers for them to look more
+        natural in the game.
+        Iterates over all layers with tags and reads the first texture, checks if the file
+        contains any non-zero values (255), splits those non-values between different weight
+        files of the corresponding layer and saves the changes to the files.
+        """
+        for layer in self.layers:
+            if not layer.tags:
+                self.logger.debug("Layer %s has no tags, there's nothing to dissolve.", layer.name)
+                continue
+            layer_path = layer.path(self._weights_dir)
+            layer_paths = layer.paths(self._weights_dir)
+
+            if len(layer_paths) < 2:
+                self.logger.debug("Layer %s has only one texture, skipping.", layer.name)
+                continue
+
+            self.logger.debug("Dissolving layer from %s to %s.", layer_path, layer_paths)
+
+            # Check if the image contains any non-zero values, otherwise continue.
+            layer_image = cv2.imread(layer_path, cv2.IMREAD_UNCHANGED)
+
+            if not np.any(layer_image):
+                self.logger.debug(
+                    "Layer %s does not contain any non-zero values, skipping.", layer.name
+                )
+                continue
+
+            # Save the original image to use it for preview later, without combining the sublayers.
+            cv2.imwrite(layer.path_preview(self._weights_dir), layer_image.copy())
+
+            # Get the coordinates of non-zero values.
+            non_zero_coords = np.column_stack(np.where(layer_image > 0))
+
+            # Prepare sublayers.
+            sublayers = [np.zeros_like(layer_image) for _ in range(layer.count)]
+
+            # Randomly assign non-zero values to sublayers.
+            for coord in non_zero_coords:
+                sublayers[np.random.randint(0, layer.count)][coord[0], coord[1]] = 255
+
+            # # ! Debug test if the sublayers are correct.
+            # if True:
+            #     combined = cv2.bitwise_or(*sublayers)
+            #     # Match the original image with the combined sublayers.
+            #     assert np.array_equal(layer_image, combined), "Sublayers are not correct."
+
+            # Save the sublayers.
+            for sublayer, sublayer_path in zip(sublayers, layer_paths):
+                cv2.imwrite(sublayer_path, sublayer)
+                self.logger.debug("Sublayer %s saved.", sublayer_path)
+
+            self.logger.info("Dissolved layer %s.", layer.name)
+
+        self.logger.info("Dissolving finished.")
+
     def draw_base_layer(self, cumulative_image: np.ndarray) -> None:
         """Draws base layer and saves it into the png file.
         Base layer is the last layer to be drawn, it fills the remaining area of the map.
@@ -455,7 +561,8 @@ class Texture(Component):
 
         images = [
             cv2.resize(
-                cv2.imread(layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED), preview_size
+                cv2.imread(layer.get_preview_or_path(self._weights_dir), cv2.IMREAD_UNCHANGED),
+                preview_size,
             )
             for layer in active_layers
         ]

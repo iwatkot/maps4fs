@@ -129,6 +129,9 @@ class Map:
         archive_path = shutil.make_archive(archive_path, "zip", self.map_directory)
         self.logger.info("Map packed to %s.zip", archive_path)
         if remove_source:
-            shutil.rmtree(self.map_directory)
-            self.logger.info("Map directory removed: %s", self.map_directory)
+            try:
+                shutil.rmtree(self.map_directory)
+                self.logger.info("Map directory removed: %s", self.map_directory)
+            except Exception as e:  # pylint: disable=W0718
+                self.logger.error("Error removing map directory %s: %s", self.map_directory, e)
         return archive_path

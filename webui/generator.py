@@ -356,6 +356,7 @@ class GeneratorUI:
             blur_radius=self.blur_radius_input,
             auto_process=self.auto_process,
             plateau=self.plateau_height_input,
+            light_version=self.community,
         )
 
         step = int(100 / (len(game.components) + 2))
