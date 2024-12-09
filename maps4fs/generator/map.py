@@ -35,7 +35,6 @@ class Map:
         **kwargs,
     ):
         self.game = game
-        self.components: list[Component] = []
         self.coordinates = coordinates
         self.height = height
         self.width = width
@@ -49,11 +48,52 @@ class Map:
         self.kwargs = kwargs
         self.logger.debug("Additional arguments: %s", kwargs)
 
+        self.components: list[Component] = []
+
+    def to_json(self) -> dict[str, str | tuple[float, float] | int | list[dict[str, Any]]]:
+        """Convert map to dictionary.
+
+        Returns:
+            dict[str, Any]: Map as dictionary.
+        """
+        return {
+            "game_code": self.game.code,
+            "coordinates": self.coordinates,
+            "height": self.height,
+            "width": self.width,
+            "map_directory": self.map_directory,
+            "kwargs": self.kwargs,
+        }
+
+    @classmethod
+    def from_json(
+        cls, data: dict[str, str | tuple[float, float] | int | list[dict[str, Any]]]
+    ) -> Map:
+        """Create map from dictionary.
+
+        Args:
+            data (dict[str, Any]): Map as dictionary.
+            logger (Any, optional): Logger instance.
+
+        Returns:
+            Map: Map instance.
+        """
+        game = Game.get_game(data["game_code"])
+        return cls(
+            game,
+            data["coordinates"],
+            data["height"],
+            data["width"],
+            data["map_directory"],
+            **data["kwargs"],
+        )
+
+    def prepare_archive(self) -> None:
+        """Prepare map archive for packing."""
         os.makedirs(self.map_directory, exist_ok=True)
         self.logger.debug("Map directory created: %s", self.map_directory)
-
         try:
-            shutil.unpack_archive(game.template_path, self.map_directory)
+            shutil.unpack_archive(self.game.template_path, self.map_directory)
             self.logger.info("Map template unpacked to %s", self.map_directory)
         except Exception as e:
             raise RuntimeError(f"Can not unpack map template due to error: {e}") from e
@@ -64,6 +104,8 @@ class Map:
         Yields:
             Generator[str, None, None]: Component names.
         """
+        self.prepare_archive()
+
         for game_component in self.game.components:
             component = game_component(
                 self.game,
