@@ -17,7 +17,6 @@ from maps4fs.generator.dem import (
 )
 from maps4fs.generator.path_steps import DEFAULT_DISTANCE, PATH_FULL_NAME, get_steps
 from maps4fs.generator.tile import Tile
-from maps4fs.logger import timeit
 
 RESIZE_FACTOR = 1 / 4
 SIMPLIFY_FACTOR = 10
@@ -151,10 +150,9 @@ class Background(Component):
             self.logger.debug("Generating obj file for tile %s in path: %s", tile.code, save_path)
 
             dem_data = cv2.imread(tile.dem_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
-            self.plane_from_np(tile.code, dem_data, save_path)
+            self.plane_from_np(tile.code, dem_data, save_path)  # type: ignore
 
     # pylint: disable=too-many-locals
-    @timeit
     def plane_from_np(self, tile_code: str, dem_data: np.ndarray, save_path: str) -> None:
         """Generates a 3D obj file based on DEM data.
 

@@ -18,3 +18,5 @@ run.sh
 maps4fs.zip
 .DS_Store
 maps/
+osmps/
+queue.json
