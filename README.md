@@ -8,6 +8,7 @@
   <a href="#Overview">Overview</a> • 
   <a href="#How-To-Run">How-To-Run</a> •
   <a href="docs/FAQ.md">FAQ</a> •
+  <a href="docs/map_structure.md">FAQ</a> •
   <a href="#Modder-Toolbox">Modder Toolbox</a><br>
   <a href="#Supported-objects">Supported objects</a> •
   <a href="#Generation-info">Generation info</a> •
@@ -351,7 +352,7 @@ Let's have a closer look at the fields:
 
 ## Background terrain
 The tool now supports the generation of the background terrain. If you don't know what it is, here's a brief explanation. The background terrain is the world around the map. It's important to create it, because if you don't, the map will look like it's floating in the void. The background terrain is a simple plane which can (and should) be texture to look fine.<br>
-So, the tool generates the background terrain in the form of the 8 tiles, which surround the map. The tiles are named as the cardinal points, e.g. "N", "NE", "E" and so on. All those tiles will be saved in the `objects/tiles` directory with corresponding names: `N.obj`, `NE.obj`, `E.obj` and so on.<br>
+So, the tool generates the background terrain in the form of the 8 tiles, which surround the map. The tiles are named as the cardinal points, e.g. "N", "NE", "E" and so on. All those tiles will be saved in the `background` directory with corresponding names: `N.obj`, `NE.obj`, `E.obj` and so on.<br>
 If you don't want to work with separate tiles, the tool also generates the `FULL.obj` file, which includes everything around the map and the map itself. It may be a convinient approach to work with one file, one texture and then just cut the map from it.<br>
 
 ![Complete background terrain in Blender](https://github.com/user-attachments/assets/7266b8f1-bfa2-4c14-a740-1c84b1030a66)
