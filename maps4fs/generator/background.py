@@ -150,7 +150,7 @@ class Background(Component):
             self.logger.debug("Generating obj file for tile %s in path: %s", tile.code, save_path)
 
             dem_data = cv2.imread(tile.dem_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
-            self.plane_from_np(tile.code, dem_data, save_path)
+            self.plane_from_np(tile.code, dem_data, save_path)  # type: ignore
 
     # pylint: disable=too-many-locals
     def plane_from_np(self, tile_code: str, dem_data: np.ndarray, save_path: str) -> None:
