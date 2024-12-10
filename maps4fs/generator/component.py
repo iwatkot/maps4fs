@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 class Component:
     """Base class for all map generation components.
 
-    Args:
+    Arguments:
         game (Game): The game instance for which the map is generated.
         coordinates (tuple[float, float]): The latitude and longitude of the center of the map.
         map_height (int): The height of the map in pixels.
@@ -50,6 +50,7 @@ class Component:
 
         os.makedirs(self.previews_directory, exist_ok=True)
         os.makedirs(self.scripts_directory, exist_ok=True)
+        os.makedirs(self.info_layers_directory, exist_ok=True)
 
         self.save_bbox()
         self.preprocess()
@@ -88,6 +89,15 @@ class Component:
         return os.path.join(self.map_directory, "previews")
 
     @property
+    def info_layers_directory(self) -> str:
+        """The directory where the info layers are stored.
+
+        Returns:
+            str: The directory where the info layers are stored.
+        """
+        return os.path.join(self.map_directory, "info_layers")
+
+    @property
     def scripts_directory(self) -> str:
         """The directory where the scripts are stored.
 
@@ -123,7 +133,7 @@ class Component:
         """Updates the generation info with the provided data.
         If the generation info file does not exist, it will be created.
 
-        Args:
+        Arguments:
             data (dict[Any, Any]): The data to update the generation info with.
         """
         if os.path.isfile(self.generation_info_path):
@@ -158,7 +168,7 @@ class Component:
         width of the map.
         If coordinates and distance are not provided, the instance variables are used.
 
-        Args:
+        Arguments:
             coordinates (tuple[float, float], optional): The latitude and longitude of the center of
                 the map. Defaults to None.
             height_distance (int, optional): The distance from the center of the map to the edge of
@@ -219,7 +229,7 @@ class Component:
         """Converts the bounding box to EPSG:3857.
         If the bounding box is not provided, the instance variable is used.
 
-        Args:
+        Arguments:
             bbox (tuple[float, float, float, float], optional): The bounding box to convert.
             add_margin (bool, optional): Whether to add a margin to the bounding box.
 
@@ -247,7 +257,7 @@ class Component:
         """Converts the bounding box to EPSG:3857 string.
         If the bounding box is not provided, the instance variable is used.
 
-        Args:
+        Arguments:
             bbox (tuple[float, float, float, float], optional): The bounding box to convert.
             add_margin (bool, optional): Whether to add a margin to the bounding box.
 
@@ -265,7 +275,7 @@ class Component:
         bounding box coordinates in EPSG:3857.
         For filenames, the class name is used as a prefix.
 
-        Args:
+        Arguments:
             qgis_layers (list[tuple[str, float, float, float, float]]): The list of layers to
                 create scripts for.
         """

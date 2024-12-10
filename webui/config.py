@@ -23,10 +23,19 @@ DOCS_DIRECTORY = os.path.join(WORKING_DIRECTORY, "docs")
 MD_FILES = {"⛰️ DEM": "dem.md"}
 FAQ_MD = os.path.join(DOCS_DIRECTORY, "FAQ.md")
 
+QUEUE_FILE = os.path.join(WORKING_DIRECTORY, "queue.json")
+QUEUE_TIMEOUT = 180  # 3 minutes
+QUEUE_INTERVAL = 10
+
 REMOVE_DELAY = 300  # 5 minutes
 
 
 def get_mds() -> dict[str, str]:
+    """Get the paths to the Markdown files in the docs directory.
+
+    Returns:
+        dict[str, str]: The paths to the Markdown files in the docs directory.
+    """
     return {
         md_file: os.path.join(DOCS_DIRECTORY, filename) for md_file, filename in MD_FILES.items()
     }
@@ -48,14 +57,14 @@ def remove_with_delay_without_blocking(
 ) -> None:
     """Remove a file with a delay without blocking the main thread.
 
-    Args:
+    Arguments:
         file_path (str): The path to the file to remove.
         logger (mfs.Logger): The logger instance.
         delay (int): The delay in seconds before removing the file.
     """
 
     def remove_file() -> None:
-        logger.info("Removing file from %s in %d seconds.", file_path, delay)
+        logger.info("Removing file from %s in %s seconds.", file_path, delay)
         sleep(delay)
         try:
             os.remove(file_path)

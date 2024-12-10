@@ -6,6 +6,7 @@ import osmp
 import streamlit as st
 import streamlit.components.v1 as components
 from PIL import Image
+from queuing import add_to_queue, remove_from_queue, wait_in_queue
 from streamlit_stl import stl_from_file
 from templates import Messages
 
@@ -286,7 +287,7 @@ class GeneratorUI:
     def get_sesion_name(self, coordinates: tuple[float, float]) -> str:
         """Return a session name for the map, using the coordinates and the current timestamp.
 
-        Args:
+        Arguments:
             coordinates (tuple[float, float]): The latitude and longitude of the center point of
                 the map.
 
@@ -300,7 +301,7 @@ class GeneratorUI:
     def shorten_coordinate(self, coordinate: float) -> str:
         """Shorten a coordinate to a string.
 
-        Args:
+        Arguments:
             coordinate (float): The coordinate to shorten.
 
         Returns:
@@ -340,7 +341,6 @@ class GeneratorUI:
 
         session_name = self.get_sesion_name(coordinates)
 
-        # self.status_container.info("Starting...", icon="⏳")
         map_directory = os.path.join(config.MAPS_DIRECTORY, session_name)
         os.makedirs(map_directory, exist_ok=True)
 
@@ -359,41 +359,49 @@ class GeneratorUI:
             light_version=self.community,
         )
 
-        step = int(100 / (len(game.components) + 2))
-        completed = 0
-        progress_bar = st.progress(0)
-        for component_name in mp.generate():
-            # self.status_container.info(f"Generating {component_name}...", icon="⏳")
-            progress_bar.progress(completed, f"⏳ Generating {component_name}...")
+        if self.community:
+            add_to_queue(session_name)
+            for position in wait_in_queue(session_name):
+                self.status_container.info(
+                    f"Your position in the queue: {position}. Please wait...", icon="⏳"
+                )
+
+            self.status_container.info("Started the map generation...", icon="🔄")
+
+        try:
+            step = int(100 / (len(game.components) + 2))
+            completed = 0
+            progress_bar = st.progress(0)
+            for component_name in mp.generate():
+                progress_bar.progress(completed, f"⏳ Generating {component_name}...")
+                completed += step
+
             completed += step
+            progress_bar.progress(completed, "🖼️ Creating previews...")
 
-        # self.status_container.info("Creating previews...", icon="⏳")
+            # Create a preview image.
+            self.show_preview(mp)
+            self.map_preview()
 
-        completed += step
-        progress_bar.progress(completed, "🖼️ Creating previews...")
+            completed += step
+            progress_bar.progress(completed, "🗃️ Packing the map...")
 
-        # Create a preview image.
-        self.show_preview(mp)
-        self.map_preview()
+            # Pack the generated map into a zip archive.
+            archive_path = mp.pack(os.path.join(config.ARCHIVES_DIRECTORY, session_name))
 
-        completed += step
-        progress_bar.progress(completed, "🗃️ Packing the map...")
+            self.download_path = archive_path
 
-        # self.status_container.info("Packing the map...", icon="⏳")
+            st.session_state.generated = True
 
-        # Pack the generated map into a zip archive.
-        archive_path = mp.pack(os.path.join(config.ARCHIVES_DIRECTORY, session_name))
-
-        self.download_path = archive_path
-
-        st.session_state.generated = True
-
-        self.status_container.success("Map generation completed!", icon="✅")
+            self.status_container.success("Map generation completed!", icon="✅")
+        finally:
+            if self.community:
+                remove_from_queue(session_name)
 
     def show_preview(self, mp: mfs.Map) -> None:
         """Show the preview of the generated map.
 
-        Args:
+        Arguments:
             mp (Map): The generated map.
         """
         # Get a list of all preview images.

@@ -138,7 +138,8 @@
     "count": 2,
     "tags": { "landuse": "farmland" },
     "color": [47, 107, 85],
-    "priority": 4
+    "priority": 4,
+    "info_layer": "fields"
   },
   {
     "name": "mudDarkGrassPatchy",
