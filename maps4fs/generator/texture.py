@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import warnings
+from collections import defaultdict
 from typing import Any, Callable, Generator, Optional
 
 import cv2
@@ -41,6 +42,9 @@ class Texture(Component):
             tags (dict[str, str | list[str]]): Dictionary of tags to search for.
             width (int | None): Width of the polygon in meters (only for LineString).
             color (tuple[int, int, int]): Color of the layer in BGR format.
+            exclude_weight (bool): Flag to exclude weight from the texture.
+            priority (int | None): Priority of the layer.
+            info_layer (str | None): Name of the corresnponding info layer.
 
         Attributes:
             name (str): Name of the layer.
@@ -58,6 +62,7 @@ class Texture(Component):
             color: tuple[int, int, int] | list[int] | None = None,
             exclude_weight: bool = False,
             priority: int | None = None,
+            info_layer: str | None = None,
         ):
             self.name = name
             self.count = count
@@ -66,6 +71,7 @@ class Texture(Component):
             self.color = color if color else (255, 255, 255)
             self.exclude_weight = exclude_weight
             self.priority = priority
+            self.info_layer = info_layer
 
         def to_json(self) -> dict[str, str | list[str] | bool]:  # type: ignore
             """Returns dictionary with layer data.
@@ -80,6 +86,7 @@ class Texture(Component):
                 "color": list(self.color),
                 "exclude_weight": self.exclude_weight,
                 "priority": self.priority,
+                "info_layer": self.info_layer,
             }
 
             data = {k: v for k, v in data.items() if v is not None}
@@ -177,6 +184,9 @@ class Texture(Component):
         self.logger.debug("Weights directory: %s.", self._weights_dir)
         self.info_save_path = os.path.join(self.map_directory, "generation_info.json")
         self.logger.debug("Generation info save path: %s.", self.info_save_path)
+
+        self.info_layer_path = os.path.join(self.info_layers_directory, "textures.json")
+        self.logger.debug("Info layer path: %s.", self.info_layer_path)
 
     def get_base_layer(self) -> Layer | None:
         """Returns base layer.
@@ -297,6 +307,10 @@ class Texture(Component):
 
         cumulative_image = None
 
+        # Dictionary to store info layer data.
+        # Key is a layer.info_layer, value is a list of polygon points as tuples (x, y).
+        info_layer_data = defaultdict(list)
+
         for layer in layers:
             if not layer.tags:
                 self.logger.debug("Layer %s has no tags, there's nothing to draw.", layer.name)
@@ -317,6 +331,8 @@ class Texture(Component):
             mask = cv2.bitwise_not(cumulative_image)
 
             for polygon in self.polygons(layer.tags, layer.width):  # type: ignore
+                if layer.info_layer:
+                    info_layer_data[layer.info_layer].append(self.np_to_polygon_points(polygon))
                 cv2.fillPoly(layer_image, [polygon], color=255)  # type: ignore
 
             output_image = cv2.bitwise_and(layer_image, mask)
@@ -325,6 +341,10 @@ class Texture(Component):
 
             cv2.imwrite(layer_path, output_image)
             self.logger.debug("Texture %s saved.", layer_path)
+
+        # Save info layer data.
+        with open(self.info_layer_path, "w", encoding="utf-8") as f:
+            json.dump(info_layer_data, f, ensure_ascii=False, indent=4)
 
         if cumulative_image is not None:
             self.draw_base_layer(cumulative_image)
@@ -427,6 +447,17 @@ class Texture(Component):
             int: Relative Y coordinate in map image.
         """
         return int(self.map_height * (1 - (y - self.minimum_y) / (self.maximum_y - self.minimum_y)))
+
+    def np_to_polygon_points(self, np_array: np.ndarray) -> list[tuple[int, int]]:
+        """Converts numpy array of polygon points to list of tuples.
+
+        Arguments:
+            np_array (np.ndarray): Numpy array of polygon points.
+
+        Returns:
+            list[tuple[int, int]]: List of tuples.
+        """
+        return [(int(x), int(y)) for x, y in np_array.reshape(-1, 2)]
 
     # pylint: disable=W0613
     def _to_np(self, geometry: shapely.geometry.polygon.Polygon, *args) -> np.ndarray:
