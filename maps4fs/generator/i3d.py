@@ -6,7 +6,7 @@ import json
 import os
 from xml.etree import ElementTree as ET
 
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, box
 
 from maps4fs.generator.component import Component
 
@@ -134,7 +134,10 @@ class I3d(Component):
 
                 for field_id, field in enumerate(fields, start=1):
                     # Convert the top-left coordinates to the center coordinates system.
-                    field_ccs = [self.top_left_coordinates_to_center(point) for point in field]
+                    fitted_field = self.fit_polygon_into_bounds(field)
+                    field_ccs = [
+                        self.top_left_coordinates_to_center(point) for point in fitted_field
+                    ]
 
                     # Creating the main field node.
                     field_node = ET.Element("TransformGroup")
@@ -272,12 +275,33 @@ class I3d(Component):
         cs_x = x - self.map_width // 2
         cs_y = y - self.map_height // 2
 
-        def to_bounds(value: int) -> int:
-            # TODO: This is incorrect, because it leads to coordinate shifting.
-            half_width = self.map_width // 2
-            return max(-half_width, min(half_width, value))
+        return cs_x, cs_y
 
-        return to_bounds(cs_x), to_bounds(cs_y)
+    def fit_polygon_into_bounds(
+        self, polygon_points: list[tuple[int, int]]
+    ) -> list[tuple[int, int]]:
+        """Fits a polygon into the bounds of the map.
+
+        Arguments:
+            polygon_points (list[tuple[int, int]]): The points of the polygon.
+
+        Returns:
+            list[tuple[int, int]]: The points of the polygon fitted into the map bounds.
+        """
+        min_x = min_y = 0
+        max_x, max_y = self.map_width, self.map_height
+
+        # Create a polygon from the given points
+        polygon = Polygon(polygon_points)
+
+        # Create a bounding box for the map bounds
+        bounds = box(min_x, min_y, max_x, max_y)
+
+        # Intersect the polygon with the bounds to fit it within the map
+        fitted_polygon = polygon.intersection(bounds)
+
+        # Return the fitted polygon points
+        return list(fitted_polygon.exterior.coords)
 
     @staticmethod
     def create_user_attribute_node(node_id: int) -> ET.Element:
