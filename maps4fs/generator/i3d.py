@@ -134,7 +134,14 @@ class I3d(Component):
 
                 for field_id, field in enumerate(fields, start=1):
                     # Convert the top-left coordinates to the center coordinates system.
-                    fitted_field = self.fit_polygon_into_bounds(field)
+                    try:
+                        fitted_field = self.fit_polygon_into_bounds(field)
+                    except ValueError as e:
+                        self.logger.warning(
+                            "Field %s could not be fitted into the map bounds.", field_id
+                        )
+                        self.logger.debug("Error: %s", e)
+                        continue
                     field_ccs = [
                         self.top_left_coordinates_to_center(point) for point in fitted_field
                     ]
@@ -207,7 +214,7 @@ class I3d(Component):
         note_node = ET.Element("Note")
         note_node.set("name", "Note")
         note_node.set("nodeId", str(node_id))
-        note_node.set("text", f"field{field_id}&#xA;2.58 ha")
+        note_node.set("text", f"field{field_id}&#xA;0.00 ha")
         note_node.set("color", "4278190080")
         note_node.set("fixedSize", "true")
 
@@ -299,6 +306,9 @@ class I3d(Component):
 
         # Intersect the polygon with the bounds to fit it within the map
         fitted_polygon = polygon.intersection(bounds)
+
+        if not isinstance(fitted_polygon, Polygon):
+            raise ValueError("The fitted polygon is not a valid polygon.")
 
         # Return the fitted polygon points
         return list(fitted_polygon.exterior.coords)
