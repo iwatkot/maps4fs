@@ -24,7 +24,7 @@ MD_FILES = {"⛰️ DEM": "dem.md"}
 FAQ_MD = os.path.join(DOCS_DIRECTORY, "FAQ.md")
 
 QUEUE_FILE = os.path.join(WORKING_DIRECTORY, "queue.json")
-QUEUE_TIMEOUT = 120  # 2 minutes
+QUEUE_TIMEOUT = 180  # 3 minutes
 QUEUE_INTERVAL = 10
 
 REMOVE_DELAY = 300  # 5 minutes
@@ -64,7 +64,7 @@ def remove_with_delay_without_blocking(
     """
 
     def remove_file() -> None:
-        logger.info("Removing file from %s in %d seconds.", file_path, delay)
+        logger.info("Removing file from %s in %s seconds.", file_path, delay)
         sleep(delay)
         try:
             os.remove(file_path)

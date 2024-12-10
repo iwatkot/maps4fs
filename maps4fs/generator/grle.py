@@ -58,7 +58,7 @@ class GRLE(Component):
                 data_type = info_layer["data_type"]
 
                 self.logger.debug(
-                    "Creating InfoLayer PNG file %s with dimensions %dx%d, %d channels, "
+                    "Creating InfoLayer PNG file %s with dimensions %sx%s, %s channels, "
                     "and data type %s.",
                     file_path,
                     height,

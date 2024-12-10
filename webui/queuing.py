@@ -102,7 +102,7 @@ def wait_in_queue(session: str) -> Generator[int, None, None]:
     """
     retries = QUEUE_TIMEOUT // QUEUE_INTERVAL
     logger.debug(
-        "Starting to wait in the queue for session %s with maximum retries %d.", session, retries
+        "Starting to wait in the queue for session %s with maximum retries %s.", session, retries
     )
 
     termiation_thread = threading.Thread(target=start_termination, args=(session,))
@@ -113,7 +113,7 @@ def wait_in_queue(session: str) -> Generator[int, None, None]:
         if position == 0 or position is None:
             logger.debug("Session %s is the first item in the queue.", session)
             return
-        logger.debug("Session %s is in position %d in the queue.", session, position)
+        logger.debug("Session %s is in position %s in the queue.", session, position)
         yield position
         sleep(QUEUE_INTERVAL)
 
@@ -126,7 +126,7 @@ def start_termination(session: str) -> None:
     Arguments:
         session (str): The session to terminate.
     """
-    logger.debug("Session %s will be terminated after %d seconds.", session, QUEUE_TIMEOUT)
+    logger.debug("Session %s will be terminated after %s seconds.", session, QUEUE_TIMEOUT)
     sleep(QUEUE_TIMEOUT)
     remove_from_queue(session)
 
