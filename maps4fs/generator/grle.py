@@ -73,3 +73,12 @@ class GRLE(Component):
                 self.logger.info("InfoLayer PNG file %s created.", file_path)
             else:
                 self.logger.warning("Invalid InfoLayer schema: %s.", info_layer)
+
+    def previews(self) -> list[str]:
+        """Returns a list of paths to the preview images (empty list).
+        The component does not generate any preview images so it returns an empty list.
+
+        Returns:
+            list[str]: An empty list.
+        """
+        return []
