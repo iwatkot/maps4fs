@@ -57,15 +57,6 @@ class GRLE(Component):
                 width = int(self.map_width * info_layer["width_multiplier"])
                 data_type = info_layer["data_type"]
 
-                self.logger.debug(
-                    "Creating InfoLayer PNG file %s with dimensions %sx%s, %s channels, "
-                    "and data type %s.",
-                    file_path,
-                    height,
-                    width,
-                    data_type,
-                )
-
                 # Create the InfoLayer PNG file with zeros.
                 info_layer_data = np.zeros((height, width), dtype=data_type)
                 print(info_layer_data.shape)
