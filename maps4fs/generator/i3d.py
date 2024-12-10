@@ -16,7 +16,7 @@ DEFAULT_MAX_LOD_OCCLUDER_DISTANCE = 10000
 class I3d(Component):
     """Component for map i3d file settings and configuration.
 
-    Args:
+    Arguments:
         coordinates (tuple[float, float]): The latitude and longitude of the center of the map.
         map_height (int): The height of the map in pixels.
         map_width (int): The width of the map in pixels.

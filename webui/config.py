@@ -24,7 +24,7 @@ MD_FILES = {"⛰️ DEM": "dem.md"}
 FAQ_MD = os.path.join(DOCS_DIRECTORY, "FAQ.md")
 
 QUEUE_FILE = os.path.join(WORKING_DIRECTORY, "queue.json")
-QUEUE_TIMEOUT = 600  # 10 minutes
+QUEUE_TIMEOUT = 300  # 5 minutes
 QUEUE_INTERVAL = 15
 
 REMOVE_DELAY = 300  # 5 minutes
@@ -57,7 +57,7 @@ def remove_with_delay_without_blocking(
 ) -> None:
     """Remove a file with a delay without blocking the main thread.
 
-    Args:
+    Arguments:
         file_path (str): The path to the file to remove.
         logger (mfs.Logger): The logger instance.
         delay (int): The delay in seconds before removing the file.

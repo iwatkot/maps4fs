@@ -287,7 +287,7 @@ class GeneratorUI:
     def get_sesion_name(self, coordinates: tuple[float, float]) -> str:
         """Return a session name for the map, using the coordinates and the current timestamp.
 
-        Args:
+        Arguments:
             coordinates (tuple[float, float]): The latitude and longitude of the center point of
                 the map.
 
@@ -301,7 +301,7 @@ class GeneratorUI:
     def shorten_coordinate(self, coordinate: float) -> str:
         """Shorten a coordinate to a string.
 
-        Args:
+        Arguments:
             coordinate (float): The coordinate to shorten.
 
         Returns:
@@ -401,7 +401,7 @@ class GeneratorUI:
     def show_preview(self, mp: mfs.Map) -> None:
         """Show the preview of the generated map.
 
-        Args:
+        Arguments:
             mp (Map): The generated map.
         """
         # Get a list of all preview images.

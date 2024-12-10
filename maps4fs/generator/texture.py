@@ -36,7 +36,7 @@ class Texture(Component):
         """Class which represents a layer with textures and tags.
         It's using to obtain data from OSM using tags and make changes into corresponding textures.
 
-        Args:
+        Arguments:
             name (str): Name of the layer.
             tags (dict[str, str | list[str]]): Dictionary of tags to search for.
             width (int | None): Width of the polygon in meters (only for LineString).
@@ -89,7 +89,7 @@ class Texture(Component):
         def from_json(cls, data: dict[str, str | list[str] | bool]) -> Texture.Layer:
             """Creates a new instance of the class from dictionary.
 
-            Args:
+            Arguments:
                 data (dict[str, str | list[str] | bool]): Dictionary with layer data.
 
             Returns:
@@ -236,7 +236,7 @@ class Texture(Component):
         """Generates weight files for textures. Each file is a numpy array of zeros and
             dtype uint8 (0-255).
 
-        Args:
+        Arguments:
             layer (Layer): Layer with textures and tags.
         """
         size = (self.map_height, self.map_width)
@@ -266,7 +266,7 @@ class Texture(Component):
     def layers(self, layers: list[Layer]) -> None:
         """Sets list of layers with textures and tags.
 
-        Args:
+        Arguments:
             layers (list[Layer]): List of layers.
         """
         self._layers = layers
@@ -395,7 +395,7 @@ class Texture(Component):
         """Draws base layer and saves it into the png file.
         Base layer is the last layer to be drawn, it fills the remaining area of the map.
 
-        Args:
+        Arguments:
             cumulative_image (np.ndarray): Cumulative image with all layers.
         """
         base_layer = self.get_base_layer()
@@ -409,7 +409,7 @@ class Texture(Component):
     def get_relative_x(self, x: float) -> int:
         """Converts UTM X coordinate to relative X coordinate in map image.
 
-        Args:
+        Arguments:
             x (float): UTM X coordinate.
 
         Returns:
@@ -420,7 +420,7 @@ class Texture(Component):
     def get_relative_y(self, y: float) -> int:
         """Converts UTM Y coordinate to relative Y coordinate in map image.
 
-        Args:
+        Arguments:
             y (float): UTM Y coordinate.
 
         Returns:
@@ -432,9 +432,9 @@ class Texture(Component):
     def _to_np(self, geometry: shapely.geometry.polygon.Polygon, *args) -> np.ndarray:
         """Converts Polygon geometry to numpy array of polygon points.
 
-        Args:
+        Arguments:
             geometry (shapely.geometry.polygon.Polygon): Polygon geometry.
-            *args: Additional arguments:
+            *Arguments: Additional arguments:
                 - width (int | None): Width of the polygon in meters.
 
         Returns:
@@ -449,7 +449,7 @@ class Texture(Component):
     def _to_polygon(self, obj: pd.core.series.Series, width: int | None) -> np.ndarray | None:
         """Converts OSM object to numpy array of polygon points.
 
-        Args:
+        Arguments:
             obj (pd.core.series.Series): OSM object.
             width (int | None): Width of the polygon in meters.
 
@@ -471,7 +471,7 @@ class Texture(Component):
     ) -> np.ndarray:
         """Converts LineString or Point geometry to numpy array of polygon points.
 
-        Args:
+        Arguments:
             geometry (shapely.geometry.linestring.LineString | shapely.geometry.point.Point):
                 LineString or Point geometry.
             width (int | None): Width of the polygon in meters.
@@ -487,7 +487,7 @@ class Texture(Component):
     ) -> Optional[Callable[[BaseGeometry, Optional[int]], np.ndarray]]:
         """Returns a converter function for a given geometry type.
 
-        Args:
+        Arguments:
             geom_type (str): Geometry type.
 
         Returns:
@@ -501,7 +501,7 @@ class Texture(Component):
     ) -> Generator[np.ndarray, None, None]:
         """Generator which yields numpy arrays of polygons from OSM data.
 
-        Args:
+        Arguments:
             tags (dict[str, str | list[str]]): Dictionary of tags to search for.
             width (int | None): Width of the polygon in meters (only for LineString).
 

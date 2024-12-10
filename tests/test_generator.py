@@ -57,7 +57,7 @@ def map_directory(game_code: str) -> str:
 def load_textures_schema(json_path: str) -> dict:
     """Load textures schema from JSON file.
 
-    Args:
+    Arguments:
         json_path (str): Path to the JSON file.
 
     Returns:

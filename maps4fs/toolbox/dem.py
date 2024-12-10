@@ -11,7 +11,7 @@ from rasterio.windows import from_bounds  # type: ignore
 def read_geo_tiff(file_path: str) -> DatasetReader:
     """Read a GeoTIFF file and return the DatasetReader object.
 
-    Args:
+    Arguments:
         file_path (str): The path to the GeoTIFF file.
 
     Raises:
@@ -43,7 +43,7 @@ def get_geo_tiff_bbox(
 ) -> tuple[float, float, float, float]:
     """Return the bounding box of a GeoTIFF file in the destination CRS.
 
-    Args:
+    Arguments:
         src (DatasetReader): The DatasetReader object for the GeoTIFF file.
         dst_crs (str, optional): The destination CRS. Defaults to "EPSG:4326".
 
@@ -65,7 +65,7 @@ def get_geo_tiff_bbox(
 def extract_roi(file_path: str, bbox: tuple[float, float, float, float]) -> str:
     """Extract a region of interest (ROI) from a GeoTIFF file and save it as a new file.
 
-    Args:
+    Arguments:
         file_path (str): The path to the GeoTIFF file.
         bbox (tuple[float, float, float, float]): The bounding box of the region of interest
             as (north, south, east, west).

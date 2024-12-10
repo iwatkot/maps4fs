@@ -23,7 +23,7 @@ DEFAULT_PLATEAU = 0
 class DEM(Component):
     """Component for processing Digital Elevation Model data.
 
-    Args:
+    Arguments:
         coordinates (tuple[float, float]): The latitude and longitude of the center of the map.
         map_height (int): The height of the map in pixels.
         map_width (int): The width of the map in pixels.
@@ -231,7 +231,7 @@ class DEM(Component):
     def make_copy(self, dem_name: str) -> None:
         """Copies DEM data to additional DEM file.
 
-        Args:
+        Arguments:
             dem_name (str): Name of the additional DEM file.
         """
         dem_directory = os.path.dirname(self._dem_path)
@@ -244,7 +244,7 @@ class DEM(Component):
     def _tile_info(self, lat: float, lon: float) -> tuple[str, str]:
         """Returns latitude band and tile name for SRTM tile from coordinates.
 
-        Args:
+        Arguments:
             lat (float): Latitude.
             lon (float): Longitude.
 
@@ -392,7 +392,7 @@ class DEM(Component):
         """Calculate scaling factor for DEM data normalization.
         NOTE: Needs reconsideration for the implementation.
 
-        Args:
+        Arguments:
             maximum_deviation (int): Maximum deviation in DEM data.
 
         Returns:
@@ -404,7 +404,7 @@ class DEM(Component):
 
     def _normalize_dem(self, data: np.ndarray) -> np.ndarray:
         """Normalize DEM data to 16-bit unsigned integer using max height from settings.
-        Args:
+        Arguments:
             data (np.ndarray): DEM data from SRTM file after cropping.
         Returns:
             np.ndarray: Normalized DEM data.
