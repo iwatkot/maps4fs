@@ -43,6 +43,7 @@
 🔷 Generates *.obj files for background terrain based on the real-world height map<br>
 📄 Generates scripts to download high-resolution satellite images from [QGIS](https://qgis.org/download/) in one click<br>
 🧰 Modder Toolbox to help you with various of tasks 🆕<br>
+🌾 Automatically generates fields 🆕<br>
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/cf8f5752-9c69-4018-bead-290f59ba6976"><br>
