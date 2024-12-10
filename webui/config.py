@@ -24,7 +24,7 @@ MD_FILES = {"⛰️ DEM": "dem.md"}
 FAQ_MD = os.path.join(DOCS_DIRECTORY, "FAQ.md")
 
 QUEUE_FILE = os.path.join(WORKING_DIRECTORY, "queue.json")
-QUEUE_TIMEOUT = 600  # 10 minutes
+QUEUE_TIMEOUT = 300  # 5 minutes
 QUEUE_INTERVAL = 15
 
 REMOVE_DELAY = 300  # 5 minutes

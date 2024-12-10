@@ -1,5 +1,6 @@
 import json
 import os
+import threading
 from time import sleep
 from typing import Generator
 
@@ -18,7 +19,7 @@ def get_queue(force: bool = False) -> list[str]:
         force (bool): Whether to force the creation of a new queue file.
 
     Returns:
-        list[dict[str, str]]: The queue.
+        list[str]: The queue.
     """
     if not os.path.isfile(QUEUE_FILE) or force:
         logger.debug("Queue will be reset.")
@@ -89,6 +90,8 @@ def remove_from_queue(session: str) -> None:
         queue.remove(session)
         save_queue(queue)
         logger.debug("Session %s removed from the queue.", session)
+    else:
+        logger.debug("Session %s not found in the queue.", session)
 
 
 def wait_in_queue(session: str) -> Generator[int, None, None]:
@@ -102,6 +105,9 @@ def wait_in_queue(session: str) -> Generator[int, None, None]:
         "Starting to wait in the queue for session %s with maximum retries %d.", session, retries
     )
 
+    termiation_thread = threading.Thread(target=start_termination, args=(session,))
+    termiation_thread.start()
+
     for _ in range(retries):
         position = get_position(session)
         if position == 0 or position is None:
@@ -110,6 +116,19 @@ def wait_in_queue(session: str) -> Generator[int, None, None]:
         logger.debug("Session %s is in position %d in the queue.", session, position)
         yield position
         sleep(QUEUE_INTERVAL)
+
+
+def start_termination(session: str) -> None:
+    """Start the termination of a session.
+    No matter if it was awaited, in queue or not, after a timeout it will be removed
+    from the queue.
+
+    Arguments:
+        session (str): The session to terminate.
+    """
+    logger.debug("Session %s will be terminated after %d seconds.", session, QUEUE_TIMEOUT)
+    sleep(QUEUE_TIMEOUT)
+    remove_from_queue(session)
 
 
 get_queue(force=True)
