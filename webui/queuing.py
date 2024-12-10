@@ -42,7 +42,7 @@ def save_queue(queue: list[str]) -> None:
 def add_to_queue(session: str) -> None:
     """Add a session to the queue.
 
-    Args:
+    Arguments:
         session (str): The session to add to the queue.
     """
     queue = get_queue()
@@ -66,7 +66,7 @@ def get_first_item() -> str | None:
 def get_position(session: str) -> int | None:
     """Get the position of a session in the queue.
 
-    Args:
+    Arguments:
         session (str): The session to get the position of.
 
     Returns:
@@ -81,7 +81,7 @@ def get_position(session: str) -> int | None:
 def remove_from_queue(session: str) -> None:
     """Remove a session from the queue.
 
-    Args:
+    Arguments:
         session (str): The session to remove from the queue.
     """
     queue = get_queue()
@@ -94,7 +94,7 @@ def remove_from_queue(session: str) -> None:
 def wait_in_queue(session: str) -> Generator[int, None, None]:
     """Wait in the queue until the session is the first item.
 
-    Args:
+    Arguments:
         session (str): The session to wait for.
     """
     retries = QUEUE_TIMEOUT // QUEUE_INTERVAL

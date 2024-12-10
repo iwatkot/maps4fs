@@ -115,7 +115,7 @@ for layer in layers:
 def _get_template(layers: list[tuple[str, float, float, float, float]], template: str) -> str:
     """Returns a template for creating layers in QGIS.
 
-    Args:
+    Arguments:
         layers (list[tuple[str, float, float, float, float]]): A list of tuples containing the
             layer name and the bounding box coordinates.
         template (str): The template for creating layers in QGIS.
@@ -136,7 +136,7 @@ def _get_template(layers: list[tuple[str, float, float, float, float]], template
 def get_bbox_template(layers: list[tuple[str, float, float, float, float]]) -> str:
     """Returns a template for creating bounding box layers in QGIS.
 
-    Args:
+    Arguments:
         layers (list[tuple[str, float, float, float, float]]): A list of tuples containing the
             layer name and the bounding box coordinates.
 
@@ -149,7 +149,7 @@ def get_bbox_template(layers: list[tuple[str, float, float, float, float]]) -> s
 def get_point_template(layers: list[tuple[str, float, float, float, float]]) -> str:
     """Returns a template for creating point layers in QGIS.
 
-    Args:
+    Arguments:
         layers (list[tuple[str, float, float, float, float]]): A list of tuples containing the
             layer name and the bounding box coordinates.
 
@@ -162,7 +162,7 @@ def get_point_template(layers: list[tuple[str, float, float, float, float]]) -> 
 def get_rasterize_template(layers: list[tuple[str, float, float, float, float]]) -> str:
     """Returns a template for rasterizing bounding box layers in QGIS.
 
-    Args:
+    Arguments:
         layers (list[tuple[str, float, float, float, float]]): A list of tuples containing the
             layer name and the bounding box coordinates.
 
@@ -177,7 +177,7 @@ def save_scripts(
 ) -> None:
     """Saves QGIS scripts for creating bounding box, point, and raster layers.
 
-    Args:
+    Arguments:
         layers (list[tuple[str, float, float, float, float]]): A list of tuples containing the
             layer name and the bounding box coordinates.
         save_dir (str): The directory to save the scripts.

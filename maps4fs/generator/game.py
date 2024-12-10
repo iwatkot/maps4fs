@@ -9,6 +9,7 @@ import os
 from maps4fs.generator.background import Background
 from maps4fs.generator.config import Config
 from maps4fs.generator.dem import DEM
+from maps4fs.generator.grle import GRLE
 from maps4fs.generator.i3d import I3d
 from maps4fs.generator.texture import Texture
 
@@ -35,8 +36,9 @@ class Game:
     _additional_dem_name: str | None = None
     _map_template_path: str | None = None
     _texture_schema: str | None = None
+    _grle_schema: str | None = None
 
-    components = [Config, Texture, DEM, I3d, Background]
+    components = [Config, Texture, GRLE, DEM, I3d, Background]
 
     def __init__(self, map_template_path: str | None = None):
         if map_template_path:
@@ -93,6 +95,19 @@ class Game:
         if not self._texture_schema:
             raise ValueError("Texture layers schema path not set.")
         return self._texture_schema
+
+    @property
+    def grle_schema(self) -> str:
+        """Returns the path to the GRLE layers schema file.
+
+        Raises:
+            ValueError: If the GRLE layers schema path is not set.
+
+        Returns:
+            str: The path to the GRLE layers schema file."""
+        if not self._grle_schema:
+            raise ValueError("GRLE layers schema path not set.")
+        return self._grle_schema
 
     def dem_file_path(self, map_directory: str) -> str:
         """Returns the path to the DEM file.
@@ -171,6 +186,7 @@ class FS25(Game):
     _additional_dem_name = "unprocessedHeightMap.png"
     _map_template_path = os.path.join(working_directory, "data", "fs25-map-template.zip")
     _texture_schema = os.path.join(working_directory, "data", "fs25-texture-schema.json")
+    _grle_schema = os.path.join(working_directory, "data", "fs25-grle-schema.json")
 
     def dem_file_path(self, map_directory: str) -> str:
         """Returns the path to the DEM file.

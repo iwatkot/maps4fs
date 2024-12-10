@@ -15,7 +15,7 @@ from maps4fs.logger import Logger
 class Map:
     """Class used to generate map using all components.
 
-    Args:
+    Arguments:
         game (Type[Game]): Game for which the map is generated.
         coordinates (tuple[float, float]): Coordinates of the center of the map.
         height (int): Height of the map in pixels.
@@ -119,7 +119,7 @@ class Map:
     def pack(self, archive_path: str, remove_source: bool = True) -> str:
         """Pack map directory to zip archive.
 
-        Args:
+        Arguments:
             archive_path (str): Path to the archive.
             remove_source (bool, optional): Remove source directory after packing.
 

@@ -57,7 +57,7 @@ def remove_with_delay_without_blocking(
 ) -> None:
     """Remove a file with a delay without blocking the main thread.
 
-    Args:
+    Arguments:
         file_path (str): The path to the file to remove.
         logger (mfs.Logger): The logger instance.
         delay (int): The delay in seconds before removing the file.

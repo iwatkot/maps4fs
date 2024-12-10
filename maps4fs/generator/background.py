@@ -27,7 +27,7 @@ FULL_SIMPLIFY_FACTOR = 20
 class Background(Component):
     """Component for creating 3D obj files based on DEM data around the map.
 
-    Args:
+    Arguments:
         coordinates (tuple[float, float]): The latitude and longitude of the center of the map.
         map_height (int): The height of the map in pixels.
         map_width (int): The width of the map in pixels.
