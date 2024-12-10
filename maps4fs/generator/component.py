@@ -50,6 +50,7 @@ class Component:
 
         os.makedirs(self.previews_directory, exist_ok=True)
         os.makedirs(self.scripts_directory, exist_ok=True)
+        os.makedirs(self.info_layers_directory, exist_ok=True)
 
         self.save_bbox()
         self.preprocess()
@@ -86,6 +87,15 @@ class Component:
             str: The directory where the preview images are stored.
         """
         return os.path.join(self.map_directory, "previews")
+
+    @property
+    def info_layers_directory(self) -> str:
+        """The directory where the info layers are stored.
+
+        Returns:
+            str: The directory where the info layers are stored.
+        """
+        return os.path.join(self.map_directory, "info_layers")
 
     @property
     def scripts_directory(self) -> str:

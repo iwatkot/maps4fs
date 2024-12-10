@@ -38,7 +38,8 @@ class Game:
     _texture_schema: str | None = None
     _grle_schema: str | None = None
 
-    components = [Config, Texture, GRLE, DEM, I3d, Background]
+    # Order matters! Some components depend on others.
+    components = [Texture, I3d, DEM, Config, GRLE, Background]
 
     def __init__(self, map_template_path: str | None = None):
         if map_template_path:
