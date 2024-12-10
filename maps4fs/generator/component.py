@@ -87,7 +87,7 @@ class Component:
             str: The directory where the preview images are stored.
         """
         return os.path.join(self.map_directory, "previews")
-    
+
     @property
     def info_layers_directory(self) -> str:
         """The directory where the info layers are stored.

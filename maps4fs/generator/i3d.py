@@ -6,7 +6,7 @@ import json
 import os
 from xml.etree import ElementTree as ET
 
-from shapely.geometry import Polygon, box
+from shapely.geometry import Polygon, box  # type: ignore
 
 from maps4fs.generator.component import Component
 
@@ -88,7 +88,7 @@ class I3d(Component):
 
                 self.logger.debug("TerrainTransformGroup element updated in I3D file.")
 
-        tree.write(self._map_i3d_path)
+        tree.write(self._map_i3d_path)  # type: ignore
         self.logger.debug("Map I3D file saved to: %s.", self._map_i3d_path)
 
     def previews(self) -> list[str]:
@@ -100,6 +100,7 @@ class I3d(Component):
         """
         return []
 
+    # pylint: disable=R0914, R0915
     def _add_fields(self) -> None:
         """Adds fields to the map I3D file."""
         tree = self._get_tree()
@@ -111,7 +112,7 @@ class I3d(Component):
             self.logger.warning("Textures info layer not found: %s.", textures_info_layer_path)
             return
 
-        with open(textures_info_layer_path, "r") as textures_info_layer_file:
+        with open(textures_info_layer_path, "r", encoding="utf-8") as textures_info_layer_file:
             textures_info_layer = json.load(textures_info_layer_file)
 
         fields: list[tuple[int, int]] | None = textures_info_layer.get("fields")
@@ -135,7 +136,7 @@ class I3d(Component):
                 for field_id, field in enumerate(fields, start=1):
                     # Convert the top-left coordinates to the center coordinates system.
                     try:
-                        fitted_field = self.fit_polygon_into_bounds(field)
+                        fitted_field = self.fit_polygon_into_bounds(field)  # type: ignore
                     except ValueError as e:
                         self.logger.warning(
                             "Field %s could not be fitted into the map bounds.", field_id
@@ -155,7 +156,7 @@ class I3d(Component):
 
                     # Adding UserAttributes to the field node.
                     user_attribute_node = self.create_user_attribute_node(node_id)
-                    user_attributes_node.append(user_attribute_node)
+                    user_attributes_node.append(user_attribute_node)  # type: ignore
 
                     node_id += 1
 
@@ -192,7 +193,7 @@ class I3d(Component):
 
                     node_id += 1
 
-            tree.write(self._map_i3d_path)
+            tree.write(self._map_i3d_path)  # type: ignore
             self.logger.debug("Map I3D file saved to: %s.", self._map_i3d_path)
 
     def get_name_indicator_node(self, node_id: int, field_id: int) -> tuple[ET.Element, int]:

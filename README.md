@@ -51,6 +51,8 @@
 🛰️ Realistic background terrain objects with satellite images.<br><br>
 <img src="https://github.com/user-attachments/assets/80e5923c-22c7-4dc0-8906-680902511f3a"><br>
 🗒️ True-to-life blueprints for fast and precise modding.<br><br>
+<img width="480" src="https://github.com/user-attachments/assets/1a8802d2-6a3b-4bfa-af2b-7c09478e199b"><br>
+🗒️ Field generation with one click.<br><br>
 <img src="https://github.com/user-attachments/assets/cce45575-c917-4a1b-bdc0-6368e32ccdff"><br>
 📏 Almost any possible map sizes.
 </p>
