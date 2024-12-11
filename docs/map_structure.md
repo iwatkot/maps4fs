@@ -55,7 +55,8 @@ You MUST fill out this file with data corresponding to the `farmlands` InfoLayer
     </farmlands>
 ```
 
-So, the keys here are kinda obvious, if you want to change the global price for the lands, you can do it in the `pricePerHa` attribute. The `farmland` tag contains the information about the lands. The `id` attribute is the ID of the land, the `priceScale` is the multiplier for the price of the land, and the `npcName` is the name of the NPC who owns the land.
+So, the keys here are kinda obvious, if you want to change the global price for the lands, you can do it in the `pricePerHa` attribute. The `farmland` tag contains the information about the lands. The `id` attribute is the ID of the land, the `priceScale` is the multiplier for the price of the land, and the `npcName` is the name of the NPC who owns the land.  
+Learn more about this file in the [Farmlands](ttps://github.com/iwatkot/maps4fs/blob/main/docs/farmlands.md) section.
 
 ### Data
 This is the most important directory in the map structure. It contains all the textures, DEM and InfoLayer images. Basically, if any file is missing here, the map will crash when try opening it in the Giants Editor.  
