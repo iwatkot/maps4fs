@@ -6,7 +6,8 @@
 <p align="center">
   <a href="#Quick-Start">Quick Start</a> •
   <a href="#Overview">Overview</a> • 
-  <a href="#How-To-Run">How-To-Run</a> •
+  <a href="#Step-by-step">Create a map in 10 steps</a> •
+  <a href="#How-To-Run">How-To-Run</a><br>
   <a href="docs/FAQ.md">FAQ</a> •
   <a href="docs/map_structure.md">Map Structure</a> •
   <a href="#Modder-Toolbox">Modder Toolbox</a><br>
@@ -105,6 +106,9 @@ Parameters:
 - coordinates: 45.15, 19.71
 - size: 16 x 16 km
 
+## Step by step
+Don't know where to start? Don't worry, just follow this [step-by-step guide](docs/step_by_step.md) to create your first map in 10 simple steps.<br>
+
 ## How-To-Run
 
 You'll find detailed instructions on how to run the project below. But if you prefer video tutorials, here's one for you:
@@ -181,12 +185,15 @@ The map will be saved in the `map_directory` directory.
 ## Modder Toolbox
 The tool now has a Modder Toolbox, which is a set of tools to help you with various tasks. You can open the toolbox by switching to the `🧰 Modder Toolbox` tab in the StreamLit app.<br>
 
-![Modder Toolbox](https://github.com/user-attachments/assets/18f169e9-1a5b-474c-b488-6becfffadcea)
+![Modder Toolbox](https://github.com/user-attachments/assets/dffb252f-f5c0-4021-9d45-31e5bccc0d9b)
 
 ### Tool categories
 Tools are divided into categories, which are listed below.
 #### Textures and DEM
-- **GeoTIFF windowing** - allows you to upload your GeoTIFF file and select the region of interest to extract it from the image.
+- **GeoTIFF windowing** - allows you to upload your GeoTIFF file and select the region of interest to extract it from the image. It's useful when you have high-resolution DEM data and want to create the height map using it.
+
+#### Background terrain
+- **Convert image to obj model** - allows you to convert the image to the obj model. You can use this tool to create the background terrain for your map. It can be extremely useful if you have access to the sources of high-resolution DEM data and want to create the background terrain using it.
 
 ## Supported objects
 The project is based on the [OpenStreetMap](https://www.openstreetmap.org/) data. So, refer to [this page](https://wiki.openstreetmap.org/wiki/Map_Features) to understand the list below.

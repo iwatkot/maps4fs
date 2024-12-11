@@ -1,4 +1,4 @@
-## Step by Step
+## Create a Farming Simulator in 10 steps
 
 Hey, farmer!  
 So, you're ready to create your own map for Farming Simulator? Great, the `maps4fs` tool will save you a lot of time and effort. In this section, I'll guide you through the process of creating a map from scratch using the generator.  
