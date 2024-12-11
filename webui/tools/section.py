@@ -1,5 +1,6 @@
 from typing import Type
 
+from tools.background import ConvertImageToObj
 from tools.dem import GeoTIFFWindowingTool
 from tools.tool import Tool
 
@@ -23,3 +24,9 @@ class TexturesAndDEM(Section):
     title = "🖼️ Textures and DEM"
     description = "Tools to work with textures and digital elevation models."
     tools = [GeoTIFFWindowingTool]
+
+
+class Background(Section):
+    title = "🏔️ Background"
+    description = "Tools to work with background terrain."
+    tools = [ConvertImageToObj]

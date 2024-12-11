@@ -1,6 +1,7 @@
-import streamlit as st
 import os
-from config import FAQ_MD, get_mds, DOCS_DIRECTORY
+
+import streamlit as st
+from config import DOCS_DIRECTORY, FAQ_MD, get_mds
 from generator import GeneratorUI
 from templates import Messages
 from toolbox import ToolboxUI
@@ -24,7 +25,7 @@ class WebUI:
 
         with step_by_step_tab:
             step_by_step_tab_path = os.path.join(DOCS_DIRECTORY, "step_by_step.md")
-            st.write(open(step_by_step_tab_path, "r").read())
+            st.write(open(step_by_step_tab_path, "r", encoding="utf-8").read())
 
         with toolbox_tab:
             self.toolbox = ToolboxUI()
@@ -38,10 +39,10 @@ class WebUI:
 
             for tab, md_path in zip(tabs, mds.values()):
                 with tab:
-                    st.write(open(md_path, "r").read())
+                    st.write(open(md_path, "r", encoding="utf-8").read())
 
         with faq_tab:
-            st.write(open(FAQ_MD, "r").read())
+            st.write(open(FAQ_MD, "r", encoding="utf-8").read())
 
 
 WebUI()
