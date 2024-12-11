@@ -9,7 +9,6 @@ from tools.tool import Tool
 from maps4fs.toolbox.dem import extract_roi, get_geo_tiff_bbox, read_geo_tiff
 
 DEFAULT_SIZE = 2048
-COMMUNITY_SIZE_LIMIT = 200
 
 
 class GeoTIFFWindowingTool(Tool):
@@ -36,27 +35,19 @@ class GeoTIFFWindowingTool(Tool):
         with self.right_column:
             self.html_preview_container = st.empty()
 
+        # if uploaded_file is not None:
+        #     self.save_path = self.get_save_path(uploaded_file.name)
+        #     with open(self.save_path, "wb") as f:
+        #         f.write(uploaded_file.read())
+
         if uploaded_file is not None:
             if not uploaded_file.name.lower().endswith((".tif", ".tiff")):
                 st.error("Please upload correct GeoTIFF file.")
                 return
 
-            size_in_mb = round(uploaded_file.size / 1024 / 1024, 2)
-
-            if True and size_in_mb > COMMUNITY_SIZE_LIMIT:
-                st.error(
-                    f"The application is launched on Streamlit community server "
-                    f"and file exceeds the size limit of {COMMUNITY_SIZE_LIMIT} MB.  \n"
-                    f"Please run the application locally to process larger files."
-                    "Learn more about the Docker version in the repo's "
-                    "[README](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version)."
-                )
-                return
-
             self.save_path = self.get_save_path(uploaded_file.name)
             with open(self.save_path, "wb") as f:
                 f.write(uploaded_file.read())
-            st.session_state.uploaded = True
 
             with self.left_column:
                 self.read_geo_tiff(self.save_path)
