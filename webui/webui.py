@@ -1,5 +1,6 @@
 import streamlit as st
-from config import FAQ_MD, get_mds
+import os
+from config import FAQ_MD, get_mds, DOCS_DIRECTORY
 from generator import GeneratorUI
 from templates import Messages
 from toolbox import ToolboxUI
@@ -8,12 +9,22 @@ from toolbox import ToolboxUI
 class WebUI:
     def __init__(self):
         st.set_page_config(page_title="maps4FS", page_icon="🚜", layout="wide")
-        generator_tab, toolbox_tab, knowledge_tab, faq_tab = st.tabs(
-            ["🗺️ Map Generator", "🧰 Modder Toolbox", "📖 Knowledge base", "📝 FAQ"]
+        generator_tab, step_by_step_tab, toolbox_tab, knowledge_tab, faq_tab = st.tabs(
+            [
+                "🗺️ Map Generator",
+                "🔢 Step by step",
+                "🧰 Modder Toolbox",
+                "📖 Knowledge base",
+                "📝 FAQ",
+            ]
         )
 
         with generator_tab:
             self.generator = GeneratorUI()
+
+        with step_by_step_tab:
+            step_by_step_tab_path = os.path.join(DOCS_DIRECTORY, "step_by_step.md")
+            st.write(open(step_by_step_tab_path, "r").read())
 
         with toolbox_tab:
             self.toolbox = ToolboxUI()
