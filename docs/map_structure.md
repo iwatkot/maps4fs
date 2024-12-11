@@ -4,12 +4,40 @@ The name of the archive (folder) but default contains the following information:
 - FS25: Game name (Farming Simulator 25 or Farming Simulator 22)
 - Latitude: Latitude of the center of the map (45.28571)
 - Longitude: Longitude of the center of the map (20.23743)
-- Date: Date of the map creation (2024-12-09)
-- Time: Time of the map creation (09-39-05)
+- Date: Date of the map creation (2024-12-10)
+- Time: Time of the map creation (23-43-55)
 
 ### Background
 This directory contains components for creating the background terrain of the map. PNG images are just DEM files and the OBJ files were generated based on these DEM files. You can safely remove the PNG files if you don't need them.<br>
 The background directory contains of tiles, representing the cardinal directions (N, NE, E, SE, S, SW, W, NW) and the full tile. If you want to combine the background terrain from pieces, you can use them, or you can use the full tile for the whole map (in this case you probably need to cut out the center for the actual terrain).
+
+### Info Layers
+Thid directory mostly for internal use to store some data between different components. At the moment only one component - `Texture` stores here the generation data in JSON format.<br>
+At the moment, it's completely safe to remove this directory if you don't need to store any generation data.
+
+#### textures.json
+This file contains a list of textures which associated with InfoLayers, so at the moment it's only for fields. It's a simple lists of coordinates of Polygons which represents the field on maps. This list is being used by the `I3d` component to generate the actual fields in the map.
+
+```json
+{
+    "fields": [
+        [
+            [
+                458,
+                580
+            ],
+            [
+                390,
+                758
+            ],
+        ...
+        ]
+    ...
+    ]
+...
+}
+```
+This file can be safely removed if you don't need to generate fields on the map.
 
 ### Map
 This directory contains the actual map files. Let's talk about each component in more details.
@@ -29,8 +57,17 @@ You MUST fill out this file with data corresponding to the `farmlands` InfoLayer
 
 So, the keys here are kinda obvious, if you want to change the global price for the lands, you can do it in the `pricePerHa` attribute. The `farmland` tag contains the information about the lands. The `id` attribute is the ID of the land, the `priceScale` is the multiplier for the price of the land, and the `npcName` is the name of the NPC who owns the land.
 
+### Data
+This is the most important directory in the map structure. It contains all the textures, DEM and InfoLayer images. Basically, if any file is missing here, the map will crash when try opening it in the Giants Editor.<br>
+
+#### Texture weight files
+Those files represent the textures on the map, read more about them in the [Textures](./textures.md) section.
+
+#### InfoLayer images
+Those images represent the InfoLayers on the map, such as fields, farmlands, etc. Actually, you don't need to know anything about the files themvselves, since the generator will handle them for you, but you definetely need to edit those InfoLayers in the Giants Editor at least to create the [FarmLands](./farmlands.md).
+
 ```text
-📦FS25_45_28571_20_23743_2024-12-09_09-39-05
+📦FS25_45_28571_20_23743_2024-12-10_23-43-55
  ┣ 📂background
  ┃ ┣ 📄E.obj
  ┃ ┣ 📄E.png
@@ -50,6 +87,8 @@ So, the keys here are kinda obvious, if you want to change the global price for 
  ┃ ┣ 📄SW.png
  ┃ ┣ 📄W.obj
  ┃ ┗ 📄W.png
+ ┣ 📂info_layers
+ ┃ ┗ 📄textures.json
  ┣ 📂map
  ┃ ┣ 📂config
  ┃ ┃ ┣ 📄aiSystem.xml
@@ -135,21 +174,21 @@ So, the keys here are kinda obvious, if you want to change the global price for 
  ┃ ┃ ┣ 📄gravelPebblesMossPatchy02_weight.png
  ┃ ┃ ┣ 📄gravelSmall01_weight.png
  ┃ ┃ ┣ 📄gravelSmall02_weight.png
- ┃ ┃ ┣ 📄infoLayer_environment.grle
- ┃ ┃ ┣ 📄infoLayer_farmlands.grle
- ┃ ┃ ┣ 📄infoLayer_fieldType.grle
- ┃ ┃ ┣ 📄infoLayer_indoorMask.grle
- ┃ ┃ ┣ 📄infoLayer_limeLevel.grle
- ┃ ┃ ┣ 📄infoLayer_navigationCollision.grle
- ┃ ┃ ┣ 📄infoLayer_placementCollision.grle
- ┃ ┃ ┣ 📄infoLayer_placementCollisionGenerated.grle
- ┃ ┃ ┣ 📄infoLayer_plowLevel.grle
- ┃ ┃ ┣ 📄infoLayer_rollerLevel.grle
- ┃ ┃ ┣ 📄infoLayer_sprayLevel.grle
- ┃ ┃ ┣ 📄infoLayer_stubbleShredLevel.grle
- ┃ ┃ ┣ 📄infoLayer_tipCollision.grle
- ┃ ┃ ┣ 📄infoLayer_tipCollisionGenerated.grle
- ┃ ┃ ┣ 📄infoLayer_weed.grle
+ ┃ ┃ ┣ 📄infoLayer_environment.png
+ ┃ ┃ ┣ 📄infoLayer_farmlands.png
+ ┃ ┃ ┣ 📄infoLayer_fieldType.png
+ ┃ ┃ ┣ 📄infoLayer_indoorMask.png
+ ┃ ┃ ┣ 📄infoLayer_limeLevel.png
+ ┃ ┃ ┣ 📄infoLayer_navigationCollision.png
+ ┃ ┃ ┣ 📄infoLayer_placementCollision.png
+ ┃ ┃ ┣ 📄infoLayer_placementCollisionGenerated.png
+ ┃ ┃ ┣ 📄infoLayer_plowLevel.png
+ ┃ ┃ ┣ 📄infoLayer_rollerLevel.png
+ ┃ ┃ ┣ 📄infoLayer_sprayLevel.png
+ ┃ ┃ ┣ 📄infoLayer_stubbleShredLevel.png
+ ┃ ┃ ┣ 📄infoLayer_tipCollision.png
+ ┃ ┃ ┣ 📄infoLayer_tipCollisionGenerated.png
+ ┃ ┃ ┣ 📄infoLayer_weed.png
  ┃ ┃ ┣ 📄mudDark01_weight.png
  ┃ ┃ ┣ 📄mudDark01_weight_preview.png
  ┃ ┃ ┣ 📄mudDark02_weight.png

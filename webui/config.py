@@ -20,7 +20,7 @@ STREAMLIT_COMMUNITY_KEY = "HOSTNAME"
 STREAMLIT_COMMUNITY_VALUE = "streamlit"
 
 DOCS_DIRECTORY = os.path.join(WORKING_DIRECTORY, "docs")
-MD_FILES = {"⛰️ DEM": "dem.md"}
+MD_FILES = {"⛰️ DEM": "dem.md", "🎨 Textures": "textures.md", "🌾 Farmlands": "farmlands.md"}
 FAQ_MD = os.path.join(DOCS_DIRECTORY, "FAQ.md")
 
 QUEUE_FILE = os.path.join(WORKING_DIRECTORY, "queue.json")
