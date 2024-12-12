@@ -607,6 +607,8 @@ class Texture(Component):
             merged.dtype,
         )
         preview_path = os.path.join(self.previews_directory, "textures_osm.png")
+
+        # type: ignore
         cv2.imwrite(preview_path, merged)  # pylint: disable=no-member
         self.logger.info("Preview saved to %s.", preview_path)
         return preview_path
