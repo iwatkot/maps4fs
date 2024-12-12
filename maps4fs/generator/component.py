@@ -184,10 +184,10 @@ class Component:
         height_distance = height_distance or int(self.map_height / 2)
         width_distance = width_distance or int(self.map_width / 2)
 
-        north, south, _, _ = ox.utils_geo.bbox_from_point(
+        west, south, _, _ = ox.utils_geo.bbox_from_point(  # type: ignore
             coordinates, dist=height_distance, project_utm=project_utm
         )
-        _, _, east, west = ox.utils_geo.bbox_from_point(
+        _, _, east, north = ox.utils_geo.bbox_from_point(  # type: ignore
             coordinates, dist=width_distance, project_utm=project_utm
         )
         bbox = north, south, east, west

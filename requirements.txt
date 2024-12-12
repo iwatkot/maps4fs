@@ -1,5 +1,5 @@
 opencv-python
-osmnx<2.0.0
+osmnx>=2.0.0
 rasterio
 streamlit
 folium
