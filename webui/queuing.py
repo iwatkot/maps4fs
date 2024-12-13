@@ -8,7 +8,7 @@ from config import QUEUE_FILE, QUEUE_INTERVAL, QUEUE_TIMEOUT
 
 from maps4fs import Logger
 
-logger = Logger(level="DEBUG", to_file=False)
+logger = Logger(level="INFO", to_file=False)
 
 
 def get_queue(force: bool = False) -> list[str]:
@@ -49,7 +49,7 @@ def add_to_queue(session: str) -> None:
     queue = get_queue()
     queue.append(session)
     save_queue(queue)
-    logger.debug("Session %s added to the queue.", session)
+    logger.info("Session %s added to the queue.", session)
 
 
 def get_first_item() -> str | None:
@@ -89,7 +89,7 @@ def remove_from_queue(session: str) -> None:
     if session in queue:
         queue.remove(session)
         save_queue(queue)
-        logger.debug("Session %s removed from the queue.", session)
+        logger.info("Session %s removed from the queue.", session)
     else:
         logger.debug("Session %s not found in the queue.", session)
 
