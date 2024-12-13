@@ -15,7 +15,7 @@ class Messages:
         "2. Advanced settings are disabled.  \n"
         "3. Texure dissolving is disabled (they will look worse).  \n  \n"
         "If you run the application locally, you won't have any of these limitations "
-        "and will be able to generate maps of any size with any settings you want and nice looking textures."
+        "and will be able to generate maps of any size with any settings you want and nice looking textures.  \n"
         "Learn more about the Docker version in the repo's "
         "[README](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version).  \n"
         "Also, if you are familiar with Python, you can use the "
