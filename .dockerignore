@@ -12,7 +12,6 @@ temp/
 .gitignore
 LICENSE.md
 README.md
-requirements.txt
 run.ps1
 run.sh
 maps4fs.zip
