@@ -239,7 +239,7 @@ class Texture(Component):
 
         for layer in self.layers:
             self._generate_weights(layer)
-        self.logger.debug("Prepared weights for %s layers.", len(self.layers))
+        self.logger.info("Prepared weights for %s layers.", len(self.layers))
 
     def _generate_weights(self, layer: Layer) -> None:
         """Generates weight files for textures. Each file is a numpy array of zeros and
@@ -339,7 +339,7 @@ class Texture(Component):
             cumulative_image = cv2.bitwise_or(cumulative_image, output_image)
 
             cv2.imwrite(layer_path, output_image)
-            self.logger.debug("Texture %s saved.", layer_path)
+            self.logger.info("Texture %s saved.", layer_path)
 
         # Save info layer data.
         with open(self.info_layer_path, "w", encoding="utf-8") as f:
@@ -351,7 +351,7 @@ class Texture(Component):
         if not self.light_version:
             self.dissolve()
         else:
-            self.logger.info("Skipping dissolve in light version of the map.")
+            self.logger.debug("Skipping dissolve in light version of the map.")
 
     def dissolve(self) -> None:
         """Dissolves textures of the layers with tags into sublayers for them to look more
@@ -423,7 +423,7 @@ class Texture(Component):
             self.logger.debug("Drawing base layer %s.", layer_path)
             img = cv2.bitwise_not(cumulative_image)
             cv2.imwrite(layer_path, img)
-            self.logger.debug("Base texture %s saved.", layer_path)
+            self.logger.info("Base texture %s saved.", layer_path)
 
     def get_relative_x(self, x: float) -> int:
         """Converts UTM X coordinate to relative X coordinate in map image.

@@ -103,7 +103,7 @@ class DEM(Component):
         north, south, east, west = self.bbox
 
         dem_output_resolution = self.get_output_resolution()
-        self.logger.debug("DEM output resolution: %s.", dem_output_resolution)
+        self.logger.info("DEM output resolution: %s.", dem_output_resolution)
 
         tile_path = self._srtm_tile()
         if not tile_path:
@@ -223,7 +223,7 @@ class DEM(Component):
             )
 
         cv2.imwrite(self._dem_path, resampled_data)
-        self.logger.debug("DEM data was saved to %s.", self._dem_path)
+        self.logger.info("DEM data was saved to %s.", self._dem_path)
 
         if self.game.additional_dem_name is not None:
             self.make_copy(self.game.additional_dem_name)
@@ -239,7 +239,7 @@ class DEM(Component):
         additional_dem_path = os.path.join(dem_directory, dem_name)
 
         shutil.copyfile(self._dem_path, additional_dem_path)
-        self.logger.debug("Additional DEM data was copied to %s.", additional_dem_path)
+        self.logger.info("Additional DEM data was copied to %s.", additional_dem_path)
 
     def _tile_info(self, lat: float, lon: float) -> tuple[str, str]:
         """Returns latitude band and tile name for SRTM tile from coordinates.
@@ -260,7 +260,7 @@ class DEM(Component):
         else:
             tile_name = f"{latitude_band}E{abs(tile_longitude):03d}"
 
-        self.logger.debug(
+        self.logger.info(
             "Detected tile name: %s for coordinates: lat %s, lon %s.", tile_name, lat, lon
         )
         return latitude_band, tile_name
@@ -421,14 +421,18 @@ class DEM(Component):
 
         scaling_factor = self._get_scaling_factor(max_dev)
         adjusted_max_height = int(65535 * scaling_factor)
-        self.logger.debug(
-            f"Maximum deviation: {max_dev}. Scaling factor: {scaling_factor}. "
-            f"Adjusted max height: {adjusted_max_height}."
+        self.logger.info(
+            "Maximum deviation: %s. Scaling factor: %s. Adjusted max height: %s.",
+            max_dev,
+            scaling_factor,
+            adjusted_max_height,
         )
         normalized_data = (
             (data - data.min()) / (data.max() - data.min()) * adjusted_max_height
         ).astype("uint16")
         self.logger.debug(
-            f"DEM data was normalized to {normalized_data.min()} - {normalized_data.max()}."
+            "DEM data was normalized to %s - %s.",
+            normalized_data.min(),
+            normalized_data.max(),
         )
         return normalized_data

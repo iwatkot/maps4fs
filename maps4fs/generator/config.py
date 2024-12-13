@@ -36,7 +36,7 @@ class Config(Component):
             self.logger.warning("Map XML file not found: %s.", self._map_xml_path)
             return
         tree = ET.parse(self._map_xml_path)
-        self.logger.debug("Map XML file loaded from: %s.", self._map_xml_path)
+        self.logger.info("Map XML file loaded from: %s.", self._map_xml_path)
         root = tree.getroot()
         for map_elem in root.iter("map"):
             map_elem.set("width", str(self.map_width))

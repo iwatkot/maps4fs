@@ -70,13 +70,13 @@ def remove_with_delay_without_blocking(
     """
 
     def remove_file() -> None:
-        logger.info("Removing file from %s in %s seconds.", file_path, delay)
+        logger.debug("Removing file from %s in %s seconds.", file_path, delay)
         sleep(delay)
         try:
             os.remove(file_path)
             logger.info("File %s removed.", file_path)
         except FileNotFoundError:
-            logger.warning("File %s not found.", file_path)
+            logger.debug("File %s not found.", file_path)
 
     logger.debug("Starting a new thread to remove the file %s.", file_path)
     threading.Thread(target=remove_file).start()
