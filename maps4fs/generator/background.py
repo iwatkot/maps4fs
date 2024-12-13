@@ -213,7 +213,7 @@ class Background(Component):
         mesh.apply_transform(rotation_matrix_y)
         mesh.apply_transform(rotation_matrix_z)
 
-        self.logger.info("Mesh generated with %s faces, will be simplified", len(mesh.faces))
+        self.logger.debug("Mesh generated with %s faces, will be simplified", len(mesh.faces))
 
         # Simplify the mesh to reduce the number of faces.
         mesh = mesh.simplify_quadric_decimation(face_count=len(faces) // simplify_factor)
@@ -223,7 +223,7 @@ class Background(Component):
             self.mesh_to_stl(mesh)
 
         mesh.export(save_path)
-        self.logger.info("Obj file saved: %s", save_path)
+        self.logger.debug("Obj file saved: %s", save_path)
 
     def mesh_to_stl(self, mesh: trimesh.Trimesh) -> None:
         """Converts the mesh to an STL file and saves it in the previews directory.

@@ -59,7 +59,6 @@ class GRLE(Component):
 
                 # Create the InfoLayer PNG file with zeros.
                 info_layer_data = np.zeros((height, width), dtype=data_type)
-                print(info_layer_data.shape)
                 cv2.imwrite(file_path, info_layer_data)  # pylint: disable=no-member
                 self.logger.debug("InfoLayer PNG file %s created.", file_path)
             else:
