@@ -47,7 +47,7 @@ def get_center(bbox: tuple[float, float, float, float]) -> tuple[float, float]:
 
 def get_bbox(center: tuple[float, float], size_meters: int) -> tuple[float, float, float, float]:
     center_lat, center_lon = center
-    north, south, east, west = ox.utils_geo.bbox_from_point(
+    west, south, east, north = ox.utils_geo.bbox_from_point(
         (center_lat, center_lon), size_meters / 2, project_utm=False
     )
     return north, south, east, west

@@ -319,7 +319,7 @@ class DEM(Component):
     def _save_empty_dem(self, dem_output_resolution: tuple[int, int]) -> None:
         """Saves empty DEM file filled with zeros."""
         dem_data = np.zeros(dem_output_resolution, dtype="uint16")
-        cv2.imwrite(self._dem_path, dem_data)  # pylint: disable=no-member
+        cv2.imwrite(self._dem_path, dem_data)
         self.logger.warning("DEM data filled with zeros and saved to %s.", self._dem_path)
 
     def grayscale_preview(self) -> str:
@@ -329,7 +329,6 @@ class DEM(Component):
         Returns:
             str: Path to the preview image.
         """
-        # rgb_dem_path = self._dem_path.replace(".png", "_grayscale.png")
         grayscale_dem_path = os.path.join(self.previews_directory, "dem_grayscale.png")
 
         self.logger.debug("Creating grayscale preview of DEM data in %s.", grayscale_dem_path)
@@ -346,8 +345,6 @@ class DEM(Component):
         Returns:
             list[str]: List with a single path to the DEM file
         """
-
-        # colored_dem_path = self._dem_path.replace(".png", "_colored.png")
         colored_dem_path = os.path.join(self.previews_directory, "dem_colored.png")
 
         self.logger.debug("Creating colored preview of DEM data in %s.", colored_dem_path)

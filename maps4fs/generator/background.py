@@ -15,7 +15,7 @@ from maps4fs.generator.dem import (
     DEFAULT_MULTIPLIER,
     DEFAULT_PLATEAU,
 )
-from maps4fs.generator.path_steps import DEFAULT_DISTANCE, PATH_FULL_NAME, get_steps
+from maps4fs.generator.path_steps import PATH_FULL_NAME, get_steps
 from maps4fs.generator.tile import Tile
 
 RESIZE_FACTOR = 1 / 4
@@ -242,119 +242,21 @@ class Background(Component):
 
         self.stl_preview_path = preview_path  # pylint: disable=attribute-defined-outside-init
 
+    # pylint: disable=no-member
     def previews(self) -> list[str]:
-        """Generates a preview by combining all tiles into one image.
-        NOTE: The map itself is not included in the preview, so it will be empty.
+        """Returns the path to the image of full tile and the path to the STL preview file.
 
         Returns:
-            list[str] -- A list of paths to the preview images."""
-
-        self.logger.info("Generating a preview image for the background DEM")
-
-        image_height = self.map_height + DEFAULT_DISTANCE * 2
-        image_width = self.map_width + DEFAULT_DISTANCE * 2
-        self.logger.debug("Full size of the preview image: %s x %s", image_width, image_height)
-
-        image = np.zeros((image_height, image_width), np.uint16)  # pylint: disable=no-member
-        self.logger.debug("Empty image created: %s", image.shape)
-
-        for tile in self.tiles:
-            # pylint: disable=no-member
-            if tile.code == PATH_FULL_NAME:
-                continue
-            tile_image = cv2.imread(tile.dem_path, cv2.IMREAD_UNCHANGED)
-
-            self.logger.debug(
-                "Tile %s image shape: %s, dtype: %s, max: %s, min: %s",
-                tile.code,
-                tile_image.shape,
-                tile_image.dtype,
-                tile_image.max(),
-                tile_image.min(),
+            list[str] -- A list of paths to the previews.
+        """
+        full_tile = next((tile for tile in self.tiles if tile.code == PATH_FULL_NAME), None)
+        if full_tile:
+            preview_path = os.path.join(self.previews_directory, "background_dem.png")
+            full_tile_image = cv2.imread(full_tile.dem_path, cv2.IMREAD_UNCHANGED)
+            full_tile_image = cv2.normalize(  # type: ignore
+                full_tile_image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U
             )
-
-            tile_height, tile_width = tile_image.shape
-            self.logger.debug("Tile %s size: %s x %s", tile.code, tile_width, tile_height)
-
-            # Calculate the position based on the tile code
-            if tile.code == "N":
-                x = DEFAULT_DISTANCE
-                y = 0
-            elif tile.code == "NE":
-                x = self.map_width + DEFAULT_DISTANCE
-                y = 0
-            elif tile.code == "E":
-                x = self.map_width + DEFAULT_DISTANCE
-                y = DEFAULT_DISTANCE
-            elif tile.code == "SE":
-                x = self.map_width + DEFAULT_DISTANCE
-                y = self.map_height + DEFAULT_DISTANCE
-            elif tile.code == "S":
-                x = DEFAULT_DISTANCE
-                y = self.map_height + DEFAULT_DISTANCE
-            elif tile.code == "SW":
-                x = 0
-                y = self.map_height + DEFAULT_DISTANCE
-            elif tile.code == "W":
-                x = 0
-                y = DEFAULT_DISTANCE
-            elif tile.code == "NW":
-                x = 0
-                y = 0
-
-            # pylint: disable=possibly-used-before-assignment
-            x2 = x + tile_width
-            y2 = y + tile_height
-
-            self.logger.debug(
-                "Tile %s position. X from %s to %s, Y from %s to %s", tile.code, x, x2, y, y2
-            )
-
-            # pylint: disable=possibly-used-before-assignment
-            image[y:y2, x:x2] = tile_image
-
-        # Save image to the map directory.
-        preview_path = os.path.join(self.previews_directory, "background_dem.png")
-
-        # pylint: disable=no-member
-        image = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)  # type: ignore
-        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)  # type: ignore
-        cv2.imwrite(preview_path, image)
-
-        return [preview_path, self.stl_preview_path]
-
-
-# Creates tiles around the map.
-# The one on corners 2048x2048, on sides and in the middle map_size x 2048.
-# So 2048 is a distance FROM the edge of the map, but the other size depends on the map size.
-# But for corner tiles it's always 2048.
-
-# In the beginning we have coordinates of the central point of the map and it's size.
-# We need to calculate the coordinates of central points all 8 tiles around the map.
-
-# Latitude is a vertical line, Longitude is a horizontal line.
-
-#                         2048
-#                     |         |
-# ____________________|_________|___
-# |         |         |         |
-# |    NW   |    N    |    NE   |    2048
-# |_________|_________|_________|___
-# |         |         |         |
-# |    W    |    C    |    E    |
-# |_________|_________|_________|
-# |         |         |         |
-# |    SW   |    S    |    SE   |
-# |_________|_________|_________|
-#
-# N = C map_height / 2 + 1024; N_width = map_width; N_height = 2048
-# NW = N - map_width / 2 - 1024; NW_width = 2048; NW_height = 2048
-# and so on...
-
-# lat, lon = 45.28565000315636, 20.237121355049904
-# dst = 1024
-
-# # N
-# destination = distance(meters=dst).destination((lat, lon), 0)
-# lat, lon = destination.latitude, destination.longitude
-# print(lat, lon)
+            full_tile_image = cv2.cvtColor(full_tile_image, cv2.COLOR_GRAY2BGR)
+            cv2.imwrite(preview_path, full_tile_image)
+            return [preview_path, self.stl_preview_path]
+        return [self.stl_preview_path]

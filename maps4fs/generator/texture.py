@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import warnings
 from collections import defaultdict
 from typing import Any, Callable, Generator, Optional
 
@@ -540,14 +539,12 @@ class Texture(Component):
             Generator[np.ndarray, None, None]: Numpy array of polygon points.
         """
         try:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", DeprecationWarning)
-                objects = ox.features_from_bbox(bbox=self.bbox, tags=tags)
+            objects = ox.features_from_bbox(bbox=self.new_bbox, tags=tags)
         except Exception as e:  # pylint: disable=W0718
             self.logger.warning("Error fetching objects for tags: %s.", tags)
             self.logger.warning(e)
             return
-        objects_utm = ox.project_gdf(objects, to_latlong=False)
+        objects_utm = ox.projection.project_gdf(objects, to_latlong=False)
         self.logger.debug("Fetched %s elements for tags: %s.", len(objects_utm), tags)
 
         for _, obj in objects_utm.iterrows():
@@ -610,6 +607,7 @@ class Texture(Component):
             merged.dtype,
         )
         preview_path = os.path.join(self.previews_directory, "textures_osm.png")
-        cv2.imwrite(preview_path, merged)  # pylint: disable=no-member
+
+        cv2.imwrite(preview_path, merged)  # type: ignore
         self.logger.info("Preview saved to %s.", preview_path)
         return preview_path
