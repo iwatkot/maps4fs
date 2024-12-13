@@ -13,7 +13,7 @@ class Messages:
         "StreamLit community hosting has some limitations, such as:  \n"
         "1. Maximum map size is 4096x4096 meters.  \n"
         "2. Advanced settings are disabled.  \n"
-        "3. Texure dissolving is disabled (they will look worse).  \n"
+        "3. Texure dissolving is disabled (they will look worse).  \n  \n"
         "If you run the application locally, you won't have any of these limitations "
         "and will be able to generate maps of any size with any settings you want and nice looking textures."
         "Learn more about the Docker version in the repo's "

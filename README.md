@@ -64,6 +64,13 @@
 There are several ways to use the tool. You obviously need the **first one**, but you can choose any of the others depending on your needs.<br>
 ### 🚜 For most users
 **Option 1:** open the [maps4fs](https://maps4fs.streamlit.app) on StreamLit and generate a map template in a few clicks.<br>
+<i>Note, that StreamLit community hosting has some limitations, such as:  <br>
+1. Maximum map size is 4096x4096 meters.  <br>
+2. Advanced settings are disabled.  <br>
+3. Texure dissolving is disabled (they will look worse).  </i><br>
+
+If you run the application locally, you won't have any of these limitations and will be able to generate maps of any size with any settings you want and nice looking textures.<br>
+So, jump to [Docker version](#option-2-docker-version) to launch the tool with one command and get the full experience.<br>
 
 ![Basic WebUI](https://github.com/user-attachments/assets/52f499cc-f28a-4da3-abef-0e818abe8dbe)
 
@@ -116,14 +123,22 @@ You'll find detailed instructions on how to run the project below. But if you pr
 <i>Video tutorial: How to generate a Farming Simulator 22 map from real-world data.</i>
 
 ### Option 1: StreamLit
-🟢 Recommended for all users, you don't need to install anything.<br>
+🟢 Recommended for all users.
+🛠️ Don't need to install anything.  
+🗺️ Supported map sizes: 2x2, 4x4 km.  
+⚙️ Advanced settings: disabled.  
+🖼️ Texture dissolving: disabled.  
 Using the [StreamLit](https://maps4fs.streamlit.app) version of the tool is the easiest way to generate a map template. Just open the link and follow the instructions.
 Note: due to CPU and RAM limitations of the hosting, the generation may take some time. If you need faster processing, use the [Docker version](#option-2-docker-version).<br>
 
 Using it is easy and doesn't require any guides. Enjoy!
 
 ### Option 2: Docker version
-🟠 Recommended for users who want faster processing, very simple installation.<br>
+🟠 Recommended for users who want bigger maps, fast generation, nice looking textures and advanced settings.  
+🛠️ Launch with one single command.  
+🗺️ Supported map sizes: 2x2, 4x4, 8x8, 16x16 km and any custom size.  
+⚙️ Advanced settings: enabled.   
+🖼️ Texture dissolving: enabled.  
 You can launch the project with minimalistic UI in your browser using Docker. Follow these steps:
 
 1. Install [Docker](https://docs.docker.com/get-docker/) for your OS.
@@ -136,7 +151,10 @@ docker run -d -p 8501:8501 iwatkot/maps4fs
 5. When the map is generated click on the `Download` button to get the map.
 
 ### Option 3: Python package
-🔴 Recommended for developers.<br>
+🔴 Recommended for developers.  
+🗺️ Supported map sizes: 2x2, 4x4, 8x8, 16x16 km and any custom size.  
+⚙️ Advanced settings: enabled.   
+🖼️ Texture dissolving: enabled.  
 You can use the Python package to generate maps. Follow these steps:
 
 1. Install the package from PyPI:
