@@ -143,7 +143,7 @@ class Background(Component):
                 self.logger.warning("DEM file not found, generation will be stopped: %s", dem_path)
                 return
 
-            self.logger.info("DEM file for tile %s found: %s", tile.code, dem_path)
+            self.logger.debug("DEM file for tile %s found: %s", tile.code, dem_path)
 
             base_directory = os.path.dirname(dem_path)
             save_path = os.path.join(base_directory, f"{tile.code}.obj")
@@ -164,7 +164,6 @@ class Background(Component):
         if tile_code == PATH_FULL_NAME:
             resize_factor = FULL_RESIZE_FACTOR
             simplify_factor = FULL_SIMPLIFY_FACTOR
-            self.logger.info("Generating a full map obj file")
         else:
             resize_factor = RESIZE_FACTOR
             simplify_factor = SIMPLIFY_FACTOR

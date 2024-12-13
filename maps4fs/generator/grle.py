@@ -61,7 +61,7 @@ class GRLE(Component):
                 info_layer_data = np.zeros((height, width), dtype=data_type)
                 print(info_layer_data.shape)
                 cv2.imwrite(file_path, info_layer_data)  # pylint: disable=no-member
-                self.logger.info("InfoLayer PNG file %s created.", file_path)
+                self.logger.debug("InfoLayer PNG file %s created.", file_path)
             else:
                 self.logger.warning("Invalid InfoLayer schema: %s.", info_layer)
 

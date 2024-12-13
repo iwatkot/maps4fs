@@ -89,7 +89,7 @@ class I3d(Component):
                 self.logger.debug("TerrainTransformGroup element updated in I3D file.")
 
         tree.write(self._map_i3d_path)  # type: ignore
-        self.logger.debug("Map I3D file saved to: %s.", self._map_i3d_path)
+        self.logger.info("Map I3D file saved to: %s.", self._map_i3d_path)
 
     def previews(self) -> list[str]:
         """Returns a list of paths to the preview images (empty list).
@@ -120,13 +120,11 @@ class I3d(Component):
             self.logger.warning("Fields data not found in textures info layer.")
             return
 
-        self.logger.debug("Found %s fields in textures info layer.", len(fields))
+        self.logger.info("Found %s fields in textures info layer.", len(fields))
 
         root = tree.getroot()
         gameplay_node = root.find(".//TransformGroup[@name='gameplay']")
         if gameplay_node is not None:
-            self.logger.debug("Found the gameplay node.")
-
             fields_node = gameplay_node.find(".//TransformGroup[@name='fields']")
             user_attributes_node = root.find(".//UserAttributes")
 
@@ -194,7 +192,7 @@ class I3d(Component):
                     node_id += 1
 
             tree.write(self._map_i3d_path)  # type: ignore
-            self.logger.debug("Map I3D file saved to: %s.", self._map_i3d_path)
+            self.logger.info("Map I3D file saved to: %s.", self._map_i3d_path)
 
     def get_name_indicator_node(self, node_id: int, field_id: int) -> tuple[ET.Element, int]:
         """Creates a name indicator node with given node ID and field ID.

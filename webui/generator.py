@@ -44,10 +44,10 @@ class GeneratorUI:
 
     def __init__(self):
         self.download_path = None
-        self.logger = mfs.Logger(level="DEBUG", to_file=False)
+        self.logger = mfs.Logger(level="INFO", to_file=False)
 
         self.community = config.is_on_community_server()
-        self.logger.info("The application launched on the community server: %s", self.community)
+        self.logger.debug("The application launched on the community server: %s", self.community)
 
         self.left_column, self.right_column = st.columns(2, gap="large")
 
@@ -94,7 +94,7 @@ class GeneratorUI:
         except ValueError:
             return
 
-        self.logger.info(
+        self.logger.debug(
             "Generating map preview for lat=%s, lon=%s, map_size=%s", lat, lon, map_size
         )
 
@@ -106,14 +106,14 @@ class GeneratorUI:
 
     def add_right_widgets(self) -> None:
         """Add widgets to the right column."""
-        self.logger.info("Adding widgets to the right column...")
+        self.logger.debug("Adding widgets to the right column...")
         self.html_preview_container = st.empty()
         self.map_selector_container = st.container()
         self.preview_container = st.container()
 
     def add_left_widgets(self) -> None:
         """Add widgets to the left column."""
-        self.logger.info("Adding widgets to the left column...")
+        self.logger.debug("Adding widgets to the left column...")
 
         st.title(Messages.TITLE)
         st.write(Messages.MAIN_PAGE_DESCRIPTION)
@@ -158,7 +158,7 @@ class GeneratorUI:
         )
 
         if self.map_size_input == "Custom":
-            self.logger.info("Custom map size selected.")
+            self.logger.debug("Custom map size selected.")
 
             st.info("ℹ️ Map size can be only a power of 2. For example: 2, 4, ... 2048, 4096, ...")
             st.warning("⚠️ Large map sizes can crash on generation or import in the game.")
@@ -209,7 +209,7 @@ class GeneratorUI:
             )
 
             if self.advanced_settings:
-                self.logger.info("Advanced settings are enabled.")
+                self.logger.debug("Advanced settings are enabled.")
 
                 st.warning("⚠️ Changing these settings can lead to unexpected results.")
                 st.info(
@@ -267,7 +267,7 @@ class GeneratorUI:
 
         # Download button.
         if st.session_state.generated:
-            self.logger.info("Generated was set to True in the session state.")
+            self.logger.debug("Generated was set to True in the session state.")
             with open(self.download_path, "rb") as f:
                 with self.buttons_container:
                     st.download_button(
@@ -282,7 +282,7 @@ class GeneratorUI:
             config.remove_with_delay_without_blocking(self.download_path, self.logger)
 
             st.session_state.generated = False
-            self.logger.info("Generated was set to False in the session state.")
+            self.logger.debug("Generated was set to False in the session state.")
 
     def get_sesion_name(self, coordinates: tuple[float, float]) -> str:
         """Return a session name for the map, using the coordinates and the current timestamp.

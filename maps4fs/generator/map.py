@@ -44,17 +44,17 @@ class Map:
         if not logger:
             logger = Logger(to_stdout=True, to_file=False)
         self.logger = logger
-        self.logger.debug("Game was set to %s", game.code)
+        self.logger.info("Game was set to %s", game.code)
 
         self.kwargs = kwargs
-        self.logger.debug("Additional arguments: %s", kwargs)
+        self.logger.info("Additional arguments: %s", kwargs)
 
         os.makedirs(self.map_directory, exist_ok=True)
         self.logger.debug("Map directory created: %s", self.map_directory)
 
         try:
             shutil.unpack_archive(game.template_path, self.map_directory)
-            self.logger.info("Map template unpacked to %s", self.map_directory)
+            self.logger.debug("Map template unpacked to %s", self.map_directory)
         except Exception as e:
             raise RuntimeError(f"Can not unpack map template due to error: {e}") from e
 
