@@ -32,5 +32,5 @@ jobs:
         push: true
         tags: |
           iwatkot/maps4fs:latest
-          iwatkot/maps4fs:${{ github.ref }}
+          iwatkot/maps4fs:${{ github.ref_name }}
         file: ./Dockerfile
