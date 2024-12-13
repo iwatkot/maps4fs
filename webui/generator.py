@@ -183,7 +183,7 @@ class GeneratorUI:
 
         self.auto_process = st.checkbox("Use auto preset", value=True, key="auto_process")
         if self.auto_process:
-            self.logger.info("Auto preset is enabled.")
+            self.logger.debug("Auto preset is enabled.")
             st.info(Messages.AUTO_PRESET_INFO)
 
         self.multiplier_input = DEFAULT_MULTIPLIER

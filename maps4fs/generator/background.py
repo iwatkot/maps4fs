@@ -183,7 +183,7 @@ class Background(Component):
         x, y = np.meshgrid(x, y)
         z = dem_data
 
-        self.logger.info(
+        self.logger.debug(
             "Starting to generate a mesh for tile %s with shape: %s x %s. "
             "This may take a while...",
             tile_code,

@@ -103,7 +103,7 @@ class DEM(Component):
         north, south, east, west = self.bbox
 
         dem_output_resolution = self.get_output_resolution()
-        self.logger.info("DEM output resolution: %s.", dem_output_resolution)
+        self.logger.debug("DEM output resolution: %s.", dem_output_resolution)
 
         tile_path = self._srtm_tile()
         if not tile_path:
@@ -260,7 +260,7 @@ class DEM(Component):
         else:
             tile_name = f"{latitude_band}E{abs(tile_longitude):03d}"
 
-        self.logger.info(
+        self.logger.debug(
             "Detected tile name: %s for coordinates: lat %s, lon %s.", tile_name, lat, lon
         )
         return latitude_band, tile_name
@@ -300,7 +300,7 @@ class DEM(Component):
 
         decompressed_file_path = os.path.join(self.hgt_dir, f"{tile_name}.hgt")
         if os.path.isfile(decompressed_file_path):
-            self.logger.info(
+            self.logger.debug(
                 "Decompressed tile already exists: %s, skipping download.",
                 decompressed_file_path,
             )
