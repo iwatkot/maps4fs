@@ -6,7 +6,7 @@
 <p align="center">
   <a href="#Quick-Start">Quick Start</a> •
   <a href="#Overview">Overview</a> • 
-  <a href="#Step-by-step">Create a map in 10 steps</a> •
+  <a href="docs/step_by_step.md">Create a map in 10 steps</a> •
   <a href="#How-To-Run">How-To-Run</a><br>
   <a href="docs/FAQ.md">FAQ</a> •
   <a href="docs/map_structure.md">Map Structure</a> •
@@ -44,12 +44,12 @@
 🚜 Supports Farming Simulator 22 and 25<br>
 🔷 Generates *.obj files for background terrain based on the real-world height map<br>
 📄 Generates scripts to download high-resolution satellite images from [QGIS](https://qgis.org/download/) in one click<br>
-🧰 Modder Toolbox to help you with various of tasks 🆕<br>
+🧰 Modder Toolbox to help you with various tasks 🆕<br>
 🌾 Automatically generates fields 🆕<br>
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/cf8f5752-9c69-4018-bead-290f59ba6976"><br>
-🌎 Detailed terrain based on real world data.<br><br>
+🌎 Detailed terrain based on real-world data.<br><br>
 <img src="https://github.com/user-attachments/assets/7f238ab4-9ff4-4c6e-ba07-5796be012baa"><br>
 🛰️ Realistic background terrain objects with satellite images.<br><br>
 <img src="https://github.com/user-attachments/assets/80e5923c-22c7-4dc0-8906-680902511f3a"><br>
@@ -60,14 +60,18 @@
 📏 Almost any possible map sizes.
 </p>
 
+📹 A complete step-by-step video tutorial is here!  
+<a href="https://www.youtube.com/watch?v=Nl_aqXJ5nAk" target="_blank"><img src="https://github.com/user-attachments/assets/4845e030-0e73-47ab-a5a3-430308913060"/></a>
+<i>How to Generate a Map for Farming Simulator 25 and 22 from a real place using maps4FS</i>
+
 ## Quick Start
 There are several ways to use the tool. You obviously need the **first one**, but you can choose any of the others depending on your needs.<br>
 ### 🚜 For most users
-**Option 1:** open the [maps4fs](https://maps4fs.streamlit.app) on StreamLit and generate a map template in a few clicks.<br>
+**Option 1:** Open the [maps4fs](https://maps4fs.streamlit.app) on StreamLit and generate a map template in a few clicks.<br>
 <i>Note, that StreamLit community hosting has some limitations, such as:  <br>
 1. Maximum map size is 4096x4096 meters.  <br>
 2. Advanced settings are disabled.  <br>
-3. Texure dissolving is disabled (they will look worse).  </i><br>
+3. Texture dissolving is disabled (they will look worse).  </i><br>
 
 If you run the application locally, you won't have any of these limitations and will be able to generate maps of any size with any settings you want and nice looking textures.<br>
 So, jump to [Docker version](#option-2-docker-version) to launch the tool with one command and get the full experience.<br>
@@ -75,7 +79,7 @@ So, jump to [Docker version](#option-2-docker-version) to launch the tool with o
 ![Basic WebUI](https://github.com/user-attachments/assets/52f499cc-f28a-4da3-abef-0e818abe8dbe)
 
 ### 😎 For advanced users
-**Option 2:** run the Docker version in your browser. Launch the following command in your terminal:
+**Option 2:** Run the Docker version in your browser. Launch the following command in your terminal:
 ```bash
 docker run -d -p 8501:8501 iwatkot/maps4fs
 ```
@@ -101,7 +105,7 @@ So, if you're new to map making, here's a quick overview of the process:
 
 ### Previews
 
-The generator also creates a multiple previews of the map. Here's the list of them:
+The generator also creates multiple previews of the map. Here's the list of them:
 1. General preview - merging all the layers into one image with different colors.
 2. Grayscale DEM preview - a grayscale image of the height map (as it is).
 3. Colored DEM preview - a colored image of the height map (from blue to red). The blue color represents the lowest point, and the red color represents the highest point.
@@ -118,10 +122,6 @@ Don't know where to start? Don't worry, just follow this [step-by-step guide](do
 
 ## How-To-Run
 
-You'll find detailed instructions on how to run the project below. But if you prefer video tutorials, here's one for you:
-<a href="https://www.youtube.com/watch?v=ujwWKHVKsw8" target="_blank"><img src="https://github.com/user-attachments/assets/6dbbbc71-d04f-40b2-9fba-81e5e4857407"/></a>
-<i>Video tutorial: How to generate a Farming Simulator 22 map from real-world data.</i>
-
 ### Option 1: StreamLit
 🟢 Recommended for all users.
 🛠️ Don't need to install anything.  
@@ -134,7 +134,7 @@ Note: due to CPU and RAM limitations of the hosting, the generation may take som
 Using it is easy and doesn't require any guides. Enjoy!
 
 ### Option 2: Docker version
-🟠 Recommended for users who want bigger maps, fast generation, nice looking textures and advanced settings.  
+🟠 Recommended for users who want bigger maps, fast generation, nice-looking textures, and advanced settings.  
 🛠️ Launch with one single command.  
 🗺️ Supported map sizes: 2x2, 4x4, 8x8, 16x16 km and any custom size.  
 ⚙️ Advanced settings: enabled.   
@@ -167,7 +167,7 @@ import maps4fs as mfs
 
 game = mfs.Game.from_code("FS25")
 ```
-In this case the library will use the default templates, which should be present in the `data` directory, which should be placed in the current working directory.<br>
+In this case, the library will use the default templates, which should be present in the `data` directory, which should be placed in the current working directory.<br>
 Structure example:<br>
 
 ```text
@@ -205,12 +205,12 @@ The tool now has a Modder Toolbox, which is a set of tools to help you with vari
 
 ![Modder Toolbox](https://github.com/user-attachments/assets/dffb252f-f5c0-4021-9d45-31e5bccc0d9b)
 
-### Tool categories
+### Tool Categories
 Tools are divided into categories, which are listed below.
-#### Textures and DEM
-- **GeoTIFF windowing** - allows you to upload your GeoTIFF file and select the region of interest to extract it from the image. It's useful when you have high-resolution DEM data and want to create the height map using it.
+#### For Textures and DEM
+- **GeoTIFF windowing** - allows you to upload your GeoTIFF file and select the region of interest to extract it from the image. It's useful when you have high-resolution DEM data and want to create a height map using it.
 
-#### Background terrain
+#### For Background terrain
 - **Convert image to obj model** - allows you to convert the image to the obj model. You can use this tool to create the background terrain for your map. It can be extremely useful if you have access to the sources of high-resolution DEM data and want to create the background terrain using it.
 
 ## Supported objects
@@ -229,13 +229,13 @@ The project is based on the [OpenStreetMap](https://www.openstreetmap.org/) data
 The list will be updated as the project develops.
 
 ## Generation info
-The script will generate the `generation_info.json` file in the `output` folder. It splitted to the different sections, which represents the components of the map generator. You may need this information to use some other tools and services to obtain additional data for your map.<br>
+The script will generate the `generation_info.json` file in the `output` folder. It is split into different sections, which represent the components of the map generator. You may need this information to use some other tools and services to obtain additional data for your map.<br>
 
 List of components:
 - `Config` - this component handles the `map.xml` file, where the basic description of the map is stored.
 - `Texture` -  this component describes the textures, that were used to generate the map.
 - `DEM` - this component describes the Digital Elevation Model (the one which creates terrain on your map), which was used to generate the height map and related to the `dem.png` file.
-- `I3d` - this component describes the i3d file, where some specific attributes properties and path to the files are stored.
+- `I3d` - this component describes the i3d file, where some specific attributes properties, and paths to the files are stored.
 - `Background` - this component describes the 8 tiles, that surround the map.
 
 Below you'll find descriptions of the components and the fields that they contain.<br>
@@ -256,9 +256,9 @@ Example of the `Config` component:
     }
 },
 ```
-The `Overview` section contains information to create an overview image, which represents the in-game map. You can use the `epsg3857_string` to obtain the satellite images in the QGIS. So this section describes the region of the map plus the borders. Usually, it's exact 2X the size of the map.<br>
+The `Overview` section contains information to create an overview image, which represents the in-game map. You can use the `epsg3857_string` to obtain the satellite images in the QGIS. So this section describes the region of the map plus the borders. Usually, it's exactly 2X the size of the map.<br>
 And here's the list of the fields:
-- `"epsg3857_string"` - the string representation of the bounding box in the EPSG:3857 projection, it's required to obtain the satellite images in the QGIS,<br>
+- `"epsg3857_string"` - the string representation of the bounding box in the EPSG:3857 projection, it is required to obtain the satellite images in the QGIS,<br>
 - `"south"` - the southern border of overview region,<br>
 - `"west"` - the western border of overview region,<br>
 - `"north"` - the northern border of overview region,<br>
@@ -303,7 +303,7 @@ And here's the list of the fields:
 
 ### Background
 
-The background component consist of the 8 tiles, each one represents the tile, that surrounds the map. The tiles are named as the cardinal points, e.g. "N", "NE", "E" and so on.<br>
+The background component consists of the 8 tiles, each one representing the tile, that surrounds the map. The tiles are named as the cardinal points, e.g. "N", "NE", "E" and so on.<br>
 Example of the `Background` component:
 
 ```json
@@ -325,7 +325,7 @@ Example of the `Background` component:
 And here's the list of the fields:
 - `"center_latitude"` - the latitude of the center of the tile,<br>
 - `"center_longitude"` - the longitude of the center of the tile,<br>
-- `"epsg3857_string"` - the string representation of the bounding box in the EPSG:3857 projection, it's required to obtain the satellite images in the QGIS,<br>
+- `"epsg3857_string"` - the string representation of the bounding box in the EPSG:3857 projection, it is required to obtain the satellite images in the QGIS,<br>
 - `"height"` - the height of the tile in meters,<br>
 - `"width"` - the width of the tile in meters,<br>
 - `"north"` - the northern border of the tile,<br>
@@ -334,7 +334,7 @@ And here's the list of the fields:
 - `"west"` - the western border of the tile,<br>
 
 ## Texture schema
-maps4fs uses a simple JSON file to define the texture schema. For each of supported games this file has unique entries, but the structure is the same. Here's an example of the schema for Farming Simulator 25:
+maps4fs uses a simple JSON file to define the texture schema. For each ofthe  supported games, this file has unique entries, but the structure is the same. Here's an example of the schema for Farming Simulator 25:
 
 ```json
 [
@@ -370,39 +370,39 @@ maps4fs uses a simple JSON file to define the texture schema. For each of suppor
 Let's have a closer look at the fields:
 - `name` - the name of the texture. Just the way the file will be named.
 - `count` - the number of textures of this type. For example, for the **dirtMedium** texture there will be two textures: **dirtMedium01_weight.png** and **dirtMedium02_weight.png**.
-ℹ️ There's one texture that have count `0`, it's the waterPuddle texture from FS22, which not present in FS25.
+ℹ️ There's one texture that has count `0`, it's the waterPuddle texture from FS22, which is not present in FS25.
 - `tags` - the tags from the OpenStreetMap data. Refer to the section [Supported objects](#supported-objects) to see the list of supported tags. If there are no tags, the texture file will be generated empty and no objects will be placed on it.
 - `width` - the width of the texture in meters. Some of the objects from OSM (roads, for example) are lines, not areas. So, to draw them correctly, the tool needs to know the width of the line.
-- `color` - the color of the texture. It's used only in the preview images and have no effect on the map itself. But remember that previews are crucial for the map making process, so it's better to set the color to something that represents the texture.
+- `color` - the color of the texture. It's used only in the preview images and has no effect on the map itself. But remember that previews are crucial for the map-making process, so it's better to set the color to something that represents the texture.
 - `priority` - the priority of the texture for overlapping. Textures with higher priorities will be drawn over the textures with lower priorities.
 ℹ️ The texture with 0 priority considers the base layer, which means that all empty areas will be filled with this texture.
-- `exclude_weight` - this only used for the forestRockRoots texture from FS25. It's just means that this texture has no `weight` postfix, that's all.
+- `exclude_weight` - this is only used for the forestRockRoots texture from FS25. It just means that this texture has no `weight` postfix, that's all.
 
 ## Background terrain
-The tool now supports the generation of the background terrain. If you don't know what it is, here's a brief explanation. The background terrain is the world around the map. It's important to create it, because if you don't, the map will look like it's floating in the void. The background terrain is a simple plane which can (and should) be texture to look fine.<br>
-So, the tool generates the background terrain in the form of the 8 tiles, which surround the map. The tiles are named as the cardinal points, e.g. "N", "NE", "E" and so on. All those tiles will be saved in the `background` directory with corresponding names: `N.obj`, `NE.obj`, `E.obj` and so on.<br>
-If you don't want to work with separate tiles, the tool also generates the `FULL.obj` file, which includes everything around the map and the map itself. It may be a convinient approach to work with one file, one texture and then just cut the map from it.<br>
+The tool now supports the generation of the background terrain. If you don't know what it is, here's a brief explanation. The background terrain is the world around the map. It's important to create it because if you don't, the map will look like it's floating in the void. The background terrain is a simple plane that can (and should) be textured to look fine.<br>
+So, the tool generates the background terrain in the form of the 8 tiles, which surround the map. The tiles are named as the cardinal points, e.g. "N", "NE", "E" and so on. All those tiles will be saved in the `background` directory with corresponding names: `N.obj`, `NE.obj`, `E.obj`, and so on.<br>
+If you don't want to work with separate tiles, the tool also generates the `FULL.obj` file, which includes everything around the map and the map itself. It may be a convenient approach to work with one file, one texture, and then just cut the map from it.<br>
 
 ![Complete background terrain in Blender](https://github.com/user-attachments/assets/7266b8f1-bfa2-4c14-a740-1c84b1030a66)
 
-➡️ *No matter which approach you choose, you still need to adjust the background terrain to connect it to the map without any gaps. But with a sinlge file it's much easier to do.*
+➡️ *No matter which approach you choose, you still need to adjust the background terrain to connect it to the map without any gaps. But with a single file, it's much easier to do.*
 
-If you're willing to create a background terrain, you will need: Blender, the Blender Exporter Plugins and the QGIS. You'll find the download links in the [Resources](#resources) section.<br>
+If you're willing to create a background terrain, you will need Blender, the Blender Exporter Plugins, and the QGIS. You'll find the download links in the [Resources](#resources) section.<br>
 
-If you're afraid of this task, please don't be. It's really simple and I've prepaired detailed step-by-step instructions for you, you'll find them in the separate README files. Here are the steps you need to follow:
+If you're afraid of this task, please don't be. It's really simple and I've prepared detailed step-by-step instructions for you, you'll find them in the separate README files. Here are the steps you need to follow:
 
 1. [Download high-resolution satellite images](docs/download_satellite_images.md).
 2. [Prepare the i3d files](docs/create_background_terrain.md).
 3. [Import the i3d files to Giants Editor](docs/import_to_giants_editor.md).
 
 ## Overview image
-The overview image is an image that is used as in-game map. No matter what the size of the map, this file is always `4096x4096 pixels`, while the region of your map is `2048x2048 pixels` in center of this file. The rest of the image is just here for nice view, but you still may add satellite pictures to this region.<br>
+The overview image is an image that is used as an in-game map. No matter what the size of the map, this file is always `4096x4096 pixels`, while the region of your map is `2048x2048 pixels` in the center of this file. The rest of the image is just here for a nice view, but you still may add satellite pictures to this region.<br>
 
 <img width="400" src="https://github.com/user-attachments/assets/ede9ea81-ef97-4914-9dbf-9761ef1eb7ca">
 
 Cool image by [@ZenJakey](https://github.com/ZenJakey).
 
-So, the same way you've downloaded the satellite images for the background terrain, you can download them for the overview image. Just use the `epsg3857_string` from the `generation_info.json` file. You'll find the needed string in the `Config` component in the `Overview` section:
+So, in the same way, you've downloaded the satellite images for the background terrain, you can download them for the overview image. Just use the `epsg3857_string` from the `generation_info.json` file. You'll find the needed string in the `Config` component in the `Overview` section:
 
 ```json
 "Config": {
@@ -412,20 +412,20 @@ So, the same way you've downloaded the satellite images for the background terra
 },
 ```
 
-After it you need to resize the image to 4096x4096 pixels and convert it to the `.dds` format.
+After that, you need to resize the image to 4096x4096 pixels and convert it to the `.dds` format.
 
 ## DDS conversion
-The `.dds` format is the format used in the Farming Simulator for the textures, icons, overview and preview images. There's a plenty of options to convert the images to the `.dds` format, you can just google something like `png to dds` and the first link probably will help you with it.<br>
+The `.dds` format is the format used in the Farming Simulator for the textures, icons, overview, and preview images. There a plenty of options to convert the images to the `.dds` format, you can just google something like `png to dds`, and the first link probably will help you with it.<br>
 
 List of the important DDS files:
 - `icon.dds` - 256x256 pixels, the icon of the map,
-- `preview.dds` - 2048x2048 pixels, the preview image of the map on loading screen,
+- `preview.dds` - 2048x2048 pixels, the preview image of the map on the loading screen,
 - `mapsUS/overview.dds` - 4096x4096 pixels, the overview image of the map (in-game map)
 
 ## For advanced users
 The tool supports the custom size of the map. To use this feature select `Custom` in the `Map size` dropdown and enter the desired size. The tool will generate a map with the size you entered.<br>
 
-⛔️ Do not use this feature, if you don't know what you're doing. In most cases the Giants Editor will just crash on opening the file, because you need to enter a specific values for the map size.<br><br>
+⛔️ Do not use this feature, if you don't know what you're doing. In most cases, the Giants Editor will just crash on opening the file, because you need to enter specific values for the map size.<br><br>
 
 ![Advanced settings](https://github.com/user-attachments/assets/e7406adf-6b82-41a0-838a-13dd8877bebf)
 
@@ -433,14 +433,14 @@ You can also apply some advanced settings to the map generation process. Note th
 
 Here's the list of the advanced settings:
 
-- DEM multiplier: the height of the map is multiplied by this value. So the DEM map is just a 16-bit grayscale image, which means that the maximum avaiable value there is 65535, while the actual difference between the deepest and the highest point on Earth is about 20 km. Just note that this setting mostly does not matter, because you can always adjust it in the Giants Editor, learn more about the DEM file and the heightScale paramter in [docs](docs/dem.md). By default, it's set to 1.
+- DEM multiplier: the height of the map is multiplied by this value. So the DEM map is just a 16-bit grayscale image, which means that the maximum available value there is 65535, while the actual difference between the deepest and the highest point on Earth is about 20 km. Just note that this setting mostly does not matter, because you can always adjust it in the Giants Editor, learn more about the DEM file and the heightScale parameter in [docs](docs/dem.md). By default, it's set to 1.
 
-- DEM Blur radius: the radius of the Gaussian blur filter applied to the DEM map. By default, it's set to 21. This filter just makes the DEM map smoother, so the height transitions will be more natural. You can set it to 1 to disable the filter, but it will result as a Minecraft-like map.
+- DEM Blur radius: the radius of the Gaussian blur filter applied to the DEM map. By default, it's set to 21. This filter just makes the DEM map smoother, so the height transitions will be more natural. You can set it to 1 to disable the filter, but it will result in a Minecraft-like map.
 
-- DEM Plateau height: this value will be added to each pixel of the DEM image, making it "higher". It's useful when you want to add some negative heights on the map, which appears to be in a "low" place. By default, it's set to 0.
+- DEM Plateau height: this value will be added to each pixel of the DEM image, making it "higher". It's useful when you want to add some negative heights on the map, that appear to be in a "low" place. By default, it's set to 0.
 
 ## Resources
-In this section you'll find a list of the resources that you need to create a map for the Farming Simulator.<br>
+In this section, you'll find a list of the resources that you need to create a map for the Farming Simulator.<br>
 To create a basic map, you only need the Giants Editor. But if you want to create a background terrain - the world around the map, so it won't look like it's floating in the void - you also need Blender and the Blender Exporter Plugins. To create realistic textures for the background terrain, the QGIS is required to obtain high-resolution satellite images.<br>
 
 1. [Giants Editor](https://gdn.giants-software.com/downloads.php) - the official tool for creating maps for the Farming Simulator.
@@ -448,7 +448,7 @@ To create a basic map, you only need the Giants Editor. But if you want to creat
 3. [Blender Exporter Plugins](https://gdn.giants-software.com/downloads.php) - the official plugins for exporting models from Blender to i3d format (the format used in the Farming Simulator).
 4. [QGIS](https://qgis.org/download/) - the open-source GIS software that you can use to obtain high-resolution satellite images for your map.
 5. [CompressPngCom](https://www.compresspng.com/) - the online tool to compress the PNG images. May be useful to reduce the size of the satellite images.
-6. [AnyConv](https://anyconv.com/png-to-dds-converter/) - the online tool to convert the PNG images to the DDS format. You'll need this format for the textures, icons, overview and preview images.
+6. [AnyConv](https://anyconv.com/png-to-dds-converter/) - the online tool to convert the PNG images to the DDS format. You'll need this format for the textures, icons, overview, and preview images.
 
 ## Bugs and feature requests
 ➡️ Please, before creating an issue or asking some questions, check the [FAQ](docs/FAQ.md) section.<br>
