@@ -1,5 +1,7 @@
 ## Create a Farming Simulator map in 10 steps
 
+📹 A complete step-by-step video tutorial is on [YouTube](https://www.youtube.com/watch?v=Nl_aqXJ5nAk&)!  
+
 Hey, farmer!  
 So, you're ready to create your own map for the Farming Simulator? Great, the `maps4fs` tool will save you a lot of time and effort. In this section, I'll guide you through the process of creating a map from scratch using the generator.  
 This tutorial will contain a short description of each step, but you'll find detailed tutorials in the [docs](https://github.com/iwatkot/maps4fs/tree/main/docs) directory of the project.  
@@ -7,7 +9,6 @@ This tutorial will contain a short description of each step, but you'll find det
 Just in case: remember to check the [FAQ](https://github.com/iwatkot/maps4fs/blob/main/docs/FAQ.md) if you have any questions when working with the generator. It's possible that the answer is already there.  
 
 Let's roll!
-
 
 ### 1. 📍 Get the coordinates of the center of your map
 It should be easy to do with [Google Maps](https://www.google.com/maps) or [OpenStreetMap](https://www.openstreetmap.org). The coordinates are latitude and longitude values, for example, `51.5074, -0.1278` for London.  
