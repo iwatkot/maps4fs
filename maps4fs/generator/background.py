@@ -170,10 +170,11 @@ class Background(Component):
             self.plane_from_np(tile.code, dem_data, save_path)  # type: ignore
 
     def cutout(self, dem_path: str) -> None:
-        # 1. Extract from the dem_data the 4096x406 from the center
-        # 2. Resize it to 4097x4097
-        # 3. save as a png file
+        """Cuts out the center of the DEM (the actual map) and saves it as a separate file.
 
+        Arguments:
+            dem_path (str): The path to the DEM file.
+        """
         dem_data = cv2.imread(dem_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
 
         center = (dem_data.shape[0] // 2, dem_data.shape[1] // 2)
@@ -186,9 +187,8 @@ class Background(Component):
 
         output_size = self.map_height + 1
 
-        dem_data = cv2.resize(  # pylint: disable=no-member
-            dem_data, (output_size, output_size), interpolation=cv2.INTER_LINEAR
-        )
+        # pylint: disable=no-member
+        dem_data = cv2.resize(dem_data, (output_size, output_size), interpolation=cv2.INTER_LINEAR)
 
         main_dem_path = self.game.dem_file_path(self.map_directory)
 
@@ -197,7 +197,7 @@ class Background(Component):
         except FileNotFoundError:
             pass
 
-        cv2.imwrite(main_dem_path, dem_data)
+        cv2.imwrite(main_dem_path, dem_data)  # pylint: disable=no-member
         self.logger.info("DEM cutout saved: %s", main_dem_path)
 
     # pylint: disable=too-many-locals
