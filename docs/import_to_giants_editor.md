@@ -14,29 +14,30 @@ Here's what you need to do:
 
 ![Import](https://github.com/user-attachments/assets/32145805-6583-4147-ac04-4c69d041b554)
 
-4. Postition the terrain in the correct place. You can use the `Transform` panel to move, rotate, and scale the terrain.
-
-![Position](https://github.com/user-attachments/assets/8202b2f5-2286-4213-8785-c3779e9ad88a)
-
-5. If after the import you can't see the texture on the terrain, you need to add the texture manually.
+4. If after the import you can't see the texture on the terrain, you need to add the texture manually.
 Open the `Material Editing` panel (if it's not visible click on the `Window` menu and select `Material Editing`) and ensure that you've selected the correct object in the `Scenegraph` panel. Find the `Albedo map` and click on the `...` button to select the texture for the terrain. 
 
 ![Albedo map](https://github.com/user-attachments/assets/20a197cd-dadf-4e61-8ad2-c6752d60fb17)
 
-6. The new window will appear, click on the `...` button and select the texture for the terrain.
+5. The new window will appear, click on the `...` button and select the texture for the terrain.
 
 ![Select the texture](https://github.com/user-attachments/assets/29940c6d-1c18-4077-a0f0-ce525a9bc503)
 
-7. If you did not convert the textures to the `.dds` format, you will see the warning message asking you `Convert now?`. Click on the `Yes` button to convert the texture to the `.dds` format.
+6. If you did not convert the textures to the `.dds` format, you will see the warning message asking you `Convert now?`. Click on the `Yes` button to convert the texture to the `.dds` format.
 
 ![Convert now](https://github.com/user-attachments/assets/1778363a-1701-4c49-9fc7-67a1e67b3257)
 
-8. You should be able to see the texture on the terrain now. So now you only need to adjust the position of the terrain in the world.
+7. You should be able to see the texture on the terrain now.
 
-![Terrain with texture](https://github.com/user-attachments/assets/a5da03a6-42b3-4010-997e-787c0d9bee38)
+8. If you have used the method of cutting out the center of the map from the previous tutorial, you only need to adjust the `Translate Y` and `Scale Y` values which will be different for each terrain.  
 
-So, we'are done here.<br>
-ℹ️ Please note, that is almost no way to align all background terrain with map perfectly without editing them in the 3D editor, Blender for example. You can find a lot of tutorials on YouTube on how to do it, this won't be covered here. Or you can just leave it as is and find the best possible position for the terrain, and maybe hiding the edges with some objects. It's up to you.<br>
+ℹ️ This examples were added later, so they will contain different untexutred terrain, don't be scared of it!  
+
+![Adjust the terrain](https://github.com/user-attachments/assets/d5b6aec2-8e81-47e4-92f1-752a8df7fd69)
+
+And it should be perfectly aligned with the rest of the map.  
+
+![Aligned terrain](https://github.com/user-attachments/assets/e31e8f27-032c-4096-8043-20e94dfed6ac)
 
 If you want, you can go back to the previous step: [Prepare the i3d files](create_background_terrain.md).<br>
 
