@@ -6,6 +6,7 @@ from geopy.distance import distance  # type: ignore
 
 DEFAULT_DISTANCE = 2048
 PATH_FULL_NAME = "FULL"
+PATH_FULL_PREVIEW_NAME = "FULL_PREVIEW"
 
 
 class PathStep(NamedTuple):
@@ -40,44 +41,57 @@ class PathStep(NamedTuple):
         return destination.latitude, destination.longitude
 
 
-def get_steps(map_height: int, map_width: int) -> list[PathStep]:
+def get_steps(map_height: int, map_width: int, only_full_tiles: bool = True) -> list[PathStep]:
     """Return a list of PathStep objects for each tile, which represent a step in the path.
     Moving from the center of the map to North, then clockwise.
 
     Arguments:
         map_height {int} -- Height of the map in pixels
         map_width {int} -- Width of the map in pixels
+        only_full_tiles {bool} -- Whether to return only full tiles or all tiles
 
     Returns:
         list[PathStep] -- List of PathStep objects
     """
     # Move clockwise from N and calculate coordinates and sizes for each tile.
-    # half_width = int(map_width / 2)
-    # half_height = int(map_height / 2)
+    half_width = int(map_width / 2)
+    half_height = int(map_height / 2)
 
-    # half_default_distance = int(DEFAULT_DISTANCE / 2)
+    half_default_distance = int(DEFAULT_DISTANCE / 2)
 
-    return [
-        # PathStep("N", 0, half_height + half_default_distance, (map_width, DEFAULT_DISTANCE)),
-        # PathStep(
-        #     "NE", 90, half_width + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
-        # ),
-        # PathStep("E", 180, half_height + half_default_distance, (DEFAULT_DISTANCE, map_height)),
-        # PathStep(
-        #     "SE", 180, half_height + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
-        # ),
-        # PathStep("S", 270, half_width + half_default_distance, (map_width, DEFAULT_DISTANCE)),
-        # PathStep(
-        #     "SW", 270, half_width + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
-        # ),
-        # PathStep("W", 0, half_height + half_default_distance, (DEFAULT_DISTANCE, map_height)),
-        # PathStep(
-        #     "NW", 0, half_height + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
-        # ),
+    tiles = [
+        PathStep("N", 0, half_height + half_default_distance, (map_width, DEFAULT_DISTANCE)),
+        PathStep(
+            "NE", 90, half_width + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
+        ),
+        PathStep("E", 180, half_height + half_default_distance, (DEFAULT_DISTANCE, map_height)),
+        PathStep(
+            "SE", 180, half_height + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
+        ),
+        PathStep("S", 270, half_width + half_default_distance, (map_width, DEFAULT_DISTANCE)),
+        PathStep(
+            "SW", 270, half_width + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
+        ),
+        PathStep("W", 0, half_height + half_default_distance, (DEFAULT_DISTANCE, map_height)),
+        PathStep(
+            "NW", 0, half_height + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
+        ),
+    ]
+    full_tiles = [
         PathStep(
             PATH_FULL_NAME,
             None,
             None,
             (map_width + DEFAULT_DISTANCE * 2, map_height + DEFAULT_DISTANCE * 2),
         ),
+        PathStep(
+            PATH_FULL_PREVIEW_NAME,
+            None,
+            None,
+            (map_width + DEFAULT_DISTANCE * 2, map_height + DEFAULT_DISTANCE * 2),
+        ),
     ]
+
+    if only_full_tiles:
+        return full_tiles
+    return tiles + full_tiles

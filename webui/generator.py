@@ -189,6 +189,7 @@ class GeneratorUI:
         self.multiplier_input = DEFAULT_MULTIPLIER
         self.blur_radius_input = DEFAULT_BLUR_RADIUS
         self.plateau_height_input = DEFAULT_PLATEAU
+        self.only_full_tiles = True
 
         if not self.auto_process:
             self.logger.info("Auto preset is disabled.")
@@ -252,6 +253,21 @@ class GeneratorUI:
                     max_value=10000,
                     key="plateau_height",
                     label_visibility="collapsed",
+                )
+
+                st.info(
+                    "ℹ️ [Background Terrain] is for settings related to the background terrain "
+                    "which is a simple mesh around the playable area. "
+                )
+
+                st.write(
+                    "[Background Terrain] Generate only full tiles (recommended) or all tiles:"
+                )
+                st.write(Messages.ONLY_FULL_TILES_INFO)
+                self.only_full_tiles = st.checkbox(
+                    "Only Full Background Tiles",
+                    key="only_full_tiles",
+                    value=True,
                 )
 
         # Add an empty container for status messages.
@@ -357,6 +373,7 @@ class GeneratorUI:
             auto_process=self.auto_process,
             plateau=self.plateau_height_input,
             light_version=self.community,
+            only_full_tiles=self.only_full_tiles,
         )
 
         if self.community:

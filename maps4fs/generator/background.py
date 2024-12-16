@@ -16,7 +16,11 @@ from maps4fs.generator.dem import (
     DEFAULT_MULTIPLIER,
     DEFAULT_PLATEAU,
 )
-from maps4fs.generator.path_steps import PATH_FULL_NAME, get_steps
+from maps4fs.generator.path_steps import (
+    PATH_FULL_NAME,
+    PATH_FULL_PREVIEW_NAME,
+    get_steps,
+)
 from maps4fs.generator.tile import Tile
 
 RESIZE_FACTOR = 1 / 4
@@ -41,8 +45,10 @@ class Background(Component):
         self.tiles: list[Tile] = []
         origin = self.coordinates
 
+        only_full_tiles = self.kwargs.get("only_full_tiles", True)
+
         # Getting a list of 8 tiles around the map starting from the N(North) tile.
-        for path_step in get_steps(self.map_height, self.map_width):
+        for path_step in get_steps(self.map_height, self.map_width, only_full_tiles):
             # Getting the destination coordinates for the current tile.
             if path_step.angle is None:
                 # For the case when generating the overview map, which has the same
@@ -50,6 +56,11 @@ class Background(Component):
                 tile_coordinates = self.coordinates
             else:
                 tile_coordinates = path_step.get_destination(origin)
+
+            if path_step.code == PATH_FULL_PREVIEW_NAME:
+                auto_process = False
+            else:
+                auto_process = self.kwargs.get("auto_process", False)
 
             # Create a Tile component, which is needed to save the DEM image.
             tile = Tile(
@@ -60,7 +71,7 @@ class Background(Component):
                 map_directory=self.map_directory,
                 logger=self.logger,
                 tile_code=path_step.code,
-                auto_process=self.kwargs.get("auto_process", False),
+                auto_process=auto_process,
                 blur_radius=self.kwargs.get("blur_radius", DEFAULT_BLUR_RADIUS),
                 multiplier=self.kwargs.get("multiplier", DEFAULT_MULTIPLIER),
                 plateau=self.kwargs.get("plateau", DEFAULT_PLATEAU),
@@ -264,10 +275,18 @@ class Background(Component):
         mesh.apply_transform(rotation_matrix_y)
         mesh.apply_transform(rotation_matrix_z)
 
-        self.logger.debug("Mesh generated with %s faces, will be simplified", len(mesh.faces))
+        if tile_code == PATH_FULL_PREVIEW_NAME:
+            # Simplify the preview mesh to reduce the size of the file.
+            mesh = mesh.simplify_quadric_decimation(face_count=len(mesh.faces) // 2**7)
 
-        if tile_code == PATH_FULL_NAME:
+            # Apply scale to make the preview mesh smaller in the UI.
+            mesh.apply_scale([0.5, 0.5, 0.5])
             self.mesh_to_stl(mesh)
+        else:
+            # Apply scale to make the mesh realistic size.
+            # mesh.apply_scale([1 / resize_factor, 1 / resize_factor, 1])
+            # * Not sure if this impact the actual data in the mesh.
+            pass
 
         mesh.export(save_path)
         self.logger.debug("Obj file saved: %s", save_path)
@@ -281,7 +300,6 @@ class Background(Component):
             mesh (trimesh.Trimesh) -- The mesh to convert to an STL file.
         """
         preview_path = os.path.join(self.previews_directory, "background_dem.stl")
-        mesh = mesh.simplify_quadric_decimation(percent=0.05)
         mesh.export(preview_path)
 
         self.logger.info("STL file saved: %s", preview_path)

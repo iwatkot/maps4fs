@@ -76,3 +76,9 @@ class Messages:
         "Here you can find some useful information about the different aspects of map modding."
     )
     FAQ_INFO = "Here you can find answers to the most frequently asked questions."
+    ONLY_FULL_TILES_INFO = (
+        "If checked only full tiles will be generated. If unchecked, the background terrain will "
+        "be also generated as splitted tiles, e.g. N, NE, E, SE, S, SW, W, NW.  \n"
+        "In most cases you don't need splitted tiles, so it's recommended to keep this option "
+        "checked."
+    )
