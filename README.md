@@ -439,6 +439,8 @@ Here's the list of the advanced settings:
 
 - DEM Plateau height: this value will be added to each pixel of the DEM image, making it "higher". It's useful when you want to add some negative heights on the map, that appear to be in a "low" place. By default, it's set to 0.
 
+- Background Terrain: generate only full tiles: if checked (by default) the small tiles (N, NE, E, and so on) will not be generated, only the full tile will be created. It's useful when you don't want to work with separate tiles, but with one big file. Since the new method of cutting the map from the background terrain added to the documentation, and now it's possible to perfectly align the map with the background terrain, this option will remain just as a legacy one.
+
 ## Resources
 In this section, you'll find a list of the resources that you need to create a map for the Farming Simulator.<br>
 To create a basic map, you only need the Giants Editor. But if you want to create a background terrain - the world around the map, so it won't look like it's floating in the void - you also need Blender and the Blender Exporter Plugins. To create realistic textures for the background terrain, the QGIS is required to obtain high-resolution satellite images.<br>
