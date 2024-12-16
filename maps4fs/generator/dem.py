@@ -225,22 +225,6 @@ class DEM(Component):
         cv2.imwrite(self._dem_path, resampled_data)
         self.logger.info("DEM data was saved to %s.", self._dem_path)
 
-        if self.game.additional_dem_name is not None:
-            self.make_copy(self.game.additional_dem_name)
-
-    def make_copy(self, dem_name: str) -> None:
-        """Copies DEM data to additional DEM file.
-
-        Arguments:
-            dem_name (str): Name of the additional DEM file.
-        """
-        dem_directory = os.path.dirname(self._dem_path)
-
-        additional_dem_path = os.path.join(dem_directory, dem_name)
-
-        shutil.copyfile(self._dem_path, additional_dem_path)
-        self.logger.info("Additional DEM data was copied to %s.", additional_dem_path)
-
     def _tile_info(self, lat: float, lon: float) -> tuple[str, str]:
         """Returns latitude band and tile name for SRTM tile from coordinates.
 

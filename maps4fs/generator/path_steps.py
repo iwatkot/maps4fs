@@ -52,28 +52,28 @@ def get_steps(map_height: int, map_width: int) -> list[PathStep]:
         list[PathStep] -- List of PathStep objects
     """
     # Move clockwise from N and calculate coordinates and sizes for each tile.
-    half_width = int(map_width / 2)
-    half_height = int(map_height / 2)
+    # half_width = int(map_width / 2)
+    # half_height = int(map_height / 2)
 
-    half_default_distance = int(DEFAULT_DISTANCE / 2)
+    # half_default_distance = int(DEFAULT_DISTANCE / 2)
 
     return [
-        PathStep("N", 0, half_height + half_default_distance, (map_width, DEFAULT_DISTANCE)),
-        PathStep(
-            "NE", 90, half_width + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
-        ),
-        PathStep("E", 180, half_height + half_default_distance, (DEFAULT_DISTANCE, map_height)),
-        PathStep(
-            "SE", 180, half_height + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
-        ),
-        PathStep("S", 270, half_width + half_default_distance, (map_width, DEFAULT_DISTANCE)),
-        PathStep(
-            "SW", 270, half_width + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
-        ),
-        PathStep("W", 0, half_height + half_default_distance, (DEFAULT_DISTANCE, map_height)),
-        PathStep(
-            "NW", 0, half_height + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
-        ),
+        # PathStep("N", 0, half_height + half_default_distance, (map_width, DEFAULT_DISTANCE)),
+        # PathStep(
+        #     "NE", 90, half_width + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
+        # ),
+        # PathStep("E", 180, half_height + half_default_distance, (DEFAULT_DISTANCE, map_height)),
+        # PathStep(
+        #     "SE", 180, half_height + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
+        # ),
+        # PathStep("S", 270, half_width + half_default_distance, (map_width, DEFAULT_DISTANCE)),
+        # PathStep(
+        #     "SW", 270, half_width + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
+        # ),
+        # PathStep("W", 0, half_height + half_default_distance, (DEFAULT_DISTANCE, map_height)),
+        # PathStep(
+        #     "NW", 0, half_height + half_default_distance, (DEFAULT_DISTANCE, DEFAULT_DISTANCE)
+        # ),
         PathStep(
             PATH_FULL_NAME,
             None,

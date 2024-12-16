@@ -49,7 +49,3 @@ class Tile(DEM):
             tuple[int, int]: The width and height of the output image.
         """
         return self.map_width, self.map_height
-
-    def make_copy(self, *args, **kwargs) -> None:
-        """Override the method to prevent copying the tile."""
-        pass  # pylint: disable=unnecessary-pass

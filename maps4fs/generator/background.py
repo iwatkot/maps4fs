@@ -4,6 +4,7 @@ around the map."""
 from __future__ import annotations
 
 import os
+import shutil
 
 import cv2
 import numpy as np
@@ -19,9 +20,7 @@ from maps4fs.generator.path_steps import PATH_FULL_NAME, get_steps
 from maps4fs.generator.tile import Tile
 
 RESIZE_FACTOR = 1 / 4
-SIMPLIFY_FACTOR = 10
 FULL_RESIZE_FACTOR = 1 / 8
-FULL_SIMPLIFY_FACTOR = 20
 
 
 class Background(Component):
@@ -61,7 +60,7 @@ class Background(Component):
                 map_directory=self.map_directory,
                 logger=self.logger,
                 tile_code=path_step.code,
-                auto_process=False,
+                auto_process=self.kwargs.get("auto_process", False),
                 blur_radius=self.kwargs.get("blur_radius", DEFAULT_BLUR_RADIUS),
                 multiplier=self.kwargs.get("multiplier", DEFAULT_MULTIPLIER),
                 plateau=self.kwargs.get("plateau", DEFAULT_PLATEAU),
@@ -83,8 +82,26 @@ class Background(Component):
         generated."""
         for tile in self.tiles:
             tile.process()
+            if tile.code == PATH_FULL_NAME:
+                self.cutout(tile.dem_path)
+                if self.game.additional_dem_name is not None:
+                    self.make_copy(tile.dem_path, self.game.additional_dem_name)
 
         self.generate_obj_files()
+
+    def make_copy(self, dem_path: str, dem_name: str) -> None:
+        """Copies DEM data to additional DEM file.
+
+        Arguments:
+            dem_path (str): Path to the DEM file.
+            dem_name (str): Name of the additional DEM file.
+        """
+        dem_directory = os.path.dirname(dem_path)
+
+        additional_dem_path = os.path.join(dem_directory, dem_name)
+
+        shutil.copyfile(dem_path, additional_dem_path)
+        self.logger.info("Additional DEM data was copied to %s.", additional_dem_path)
 
     def info_sequence(self) -> dict[str, dict[str, str | float | int]]:
         """Returns a dictionary with information about the tiles around the map.
@@ -152,6 +169,37 @@ class Background(Component):
             dem_data = cv2.imread(tile.dem_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
             self.plane_from_np(tile.code, dem_data, save_path)  # type: ignore
 
+    def cutout(self, dem_path: str) -> None:
+        # 1. Extract from the dem_data the 4096x406 from the center
+        # 2. Resize it to 4097x4097
+        # 3. save as a png file
+
+        dem_data = cv2.imread(dem_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
+
+        center = (dem_data.shape[0] // 2, dem_data.shape[1] // 2)
+        half_size = self.map_height // 2
+        x1 = center[0] - half_size
+        x2 = center[0] + half_size
+        y1 = center[1] - half_size
+        y2 = center[1] + half_size
+        dem_data = dem_data[x1:x2, y1:y2]
+
+        output_size = self.map_height + 1
+
+        dem_data = cv2.resize(  # pylint: disable=no-member
+            dem_data, (output_size, output_size), interpolation=cv2.INTER_LINEAR
+        )
+
+        main_dem_path = self.game.dem_file_path(self.map_directory)
+
+        try:
+            os.remove(main_dem_path)
+        except FileNotFoundError:
+            pass
+
+        cv2.imwrite(main_dem_path, dem_data)
+        self.logger.info("DEM cutout saved: %s", main_dem_path)
+
     # pylint: disable=too-many-locals
     def plane_from_np(self, tile_code: str, dem_data: np.ndarray, save_path: str) -> None:
         """Generates a 3D obj file based on DEM data.
@@ -163,10 +211,8 @@ class Background(Component):
         """
         if tile_code == PATH_FULL_NAME:
             resize_factor = FULL_RESIZE_FACTOR
-            simplify_factor = FULL_SIMPLIFY_FACTOR
         else:
             resize_factor = RESIZE_FACTOR
-            simplify_factor = SIMPLIFY_FACTOR
         dem_data = cv2.resize(  # pylint: disable=no-member
             dem_data, (0, 0), fx=resize_factor, fy=resize_factor
         )
@@ -214,10 +260,6 @@ class Background(Component):
         mesh.apply_transform(rotation_matrix_z)
 
         self.logger.debug("Mesh generated with %s faces, will be simplified", len(mesh.faces))
-
-        # Simplify the mesh to reduce the number of faces.
-        mesh = mesh.simplify_quadric_decimation(face_count=len(faces) // simplify_factor)
-        self.logger.debug("Mesh simplified to %s faces", len(mesh.faces))
 
         if tile_code == PATH_FULL_NAME:
             self.mesh_to_stl(mesh)
