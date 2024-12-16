@@ -83,9 +83,9 @@ class Background(Component):
         for tile in self.tiles:
             tile.process()
             if tile.code == PATH_FULL_NAME:
-                self.cutout(tile.dem_path)
+                cutted_dem_path = self.cutout(tile.dem_path)
                 if self.game.additional_dem_name is not None:
-                    self.make_copy(tile.dem_path, self.game.additional_dem_name)
+                    self.make_copy(cutted_dem_path, self.game.additional_dem_name)
 
         self.generate_obj_files()
 
@@ -169,11 +169,14 @@ class Background(Component):
             dem_data = cv2.imread(tile.dem_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
             self.plane_from_np(tile.code, dem_data, save_path)  # type: ignore
 
-    def cutout(self, dem_path: str) -> None:
+    def cutout(self, dem_path: str) -> str:
         """Cuts out the center of the DEM (the actual map) and saves it as a separate file.
 
         Arguments:
             dem_path (str): The path to the DEM file.
+
+        Returns:
+            str -- The path to the cutout DEM file.
         """
         dem_data = cv2.imread(dem_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
 
@@ -199,6 +202,8 @@ class Background(Component):
 
         cv2.imwrite(main_dem_path, dem_data)  # pylint: disable=no-member
         self.logger.info("DEM cutout saved: %s", main_dem_path)
+
+        return main_dem_path
 
     # pylint: disable=too-many-locals
     def plane_from_np(self, tile_code: str, dem_data: np.ndarray, save_path: str) -> None:
