@@ -8,6 +8,7 @@ import os
 
 from maps4fs.generator.background import Background
 from maps4fs.generator.config import Config
+from maps4fs.generator.dem import DEM
 from maps4fs.generator.grle import GRLE
 from maps4fs.generator.i3d import I3d
 from maps4fs.generator.texture import Texture
@@ -38,7 +39,7 @@ class Game:
     _grle_schema: str | None = None
 
     # Order matters! Some components depend on others.
-    components = [Texture, I3d, Config, GRLE, Background]
+    components = [Texture, DEM, I3d, Config, GRLE, Background]
 
     def __init__(self, map_template_path: str | None = None):
         if map_template_path:

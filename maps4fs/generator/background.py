@@ -283,10 +283,13 @@ class Background(Component):
             mesh.apply_scale([0.5, 0.5, 0.5])
             self.mesh_to_stl(mesh)
         else:
-            # Apply scale to make the mesh realistic size.
-            # mesh.apply_scale([1 / resize_factor, 1 / resize_factor, 1])
-            # * Not sure if this impact the actual data in the mesh.
-            pass
+            multiplier = self.kwargs.get("multiplier", DEFAULT_MULTIPLIER)
+            if multiplier != 1:
+                z_scaling_factor = 1 / multiplier
+            else:
+                z_scaling_factor = 1 / 2**5
+            self.logger.debug("Z scaling factor: %s", z_scaling_factor)
+            mesh.apply_scale([1 / resize_factor, 1 / resize_factor, z_scaling_factor])
 
         mesh.export(save_path)
         self.logger.debug("Obj file saved: %s", save_path)
