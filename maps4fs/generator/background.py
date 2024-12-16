@@ -4,6 +4,7 @@ around the map."""
 from __future__ import annotations
 
 import os
+import shutil
 
 import cv2
 import numpy as np
@@ -15,13 +16,15 @@ from maps4fs.generator.dem import (
     DEFAULT_MULTIPLIER,
     DEFAULT_PLATEAU,
 )
-from maps4fs.generator.path_steps import PATH_FULL_NAME, get_steps
+from maps4fs.generator.path_steps import (
+    PATH_FULL_NAME,
+    PATH_FULL_PREVIEW_NAME,
+    get_steps,
+)
 from maps4fs.generator.tile import Tile
 
 RESIZE_FACTOR = 1 / 4
-SIMPLIFY_FACTOR = 10
 FULL_RESIZE_FACTOR = 1 / 8
-FULL_SIMPLIFY_FACTOR = 20
 
 
 class Background(Component):
@@ -42,8 +45,10 @@ class Background(Component):
         self.tiles: list[Tile] = []
         origin = self.coordinates
 
+        only_full_tiles = self.kwargs.get("only_full_tiles", True)
+
         # Getting a list of 8 tiles around the map starting from the N(North) tile.
-        for path_step in get_steps(self.map_height, self.map_width):
+        for path_step in get_steps(self.map_height, self.map_width, only_full_tiles):
             # Getting the destination coordinates for the current tile.
             if path_step.angle is None:
                 # For the case when generating the overview map, which has the same
@@ -51,6 +56,11 @@ class Background(Component):
                 tile_coordinates = self.coordinates
             else:
                 tile_coordinates = path_step.get_destination(origin)
+
+            if path_step.code == PATH_FULL_PREVIEW_NAME:
+                auto_process = False
+            else:
+                auto_process = self.kwargs.get("auto_process", False)
 
             # Create a Tile component, which is needed to save the DEM image.
             tile = Tile(
@@ -61,7 +71,7 @@ class Background(Component):
                 map_directory=self.map_directory,
                 logger=self.logger,
                 tile_code=path_step.code,
-                auto_process=False,
+                auto_process=auto_process,
                 blur_radius=self.kwargs.get("blur_radius", DEFAULT_BLUR_RADIUS),
                 multiplier=self.kwargs.get("multiplier", DEFAULT_MULTIPLIER),
                 plateau=self.kwargs.get("plateau", DEFAULT_PLATEAU),
@@ -83,8 +93,26 @@ class Background(Component):
         generated."""
         for tile in self.tiles:
             tile.process()
+            if tile.code == PATH_FULL_NAME:
+                cutted_dem_path = self.cutout(tile.dem_path)
+                if self.game.additional_dem_name is not None:
+                    self.make_copy(cutted_dem_path, self.game.additional_dem_name)
 
         self.generate_obj_files()
+
+    def make_copy(self, dem_path: str, dem_name: str) -> None:
+        """Copies DEM data to additional DEM file.
+
+        Arguments:
+            dem_path (str): Path to the DEM file.
+            dem_name (str): Name of the additional DEM file.
+        """
+        dem_directory = os.path.dirname(dem_path)
+
+        additional_dem_path = os.path.join(dem_directory, dem_name)
+
+        shutil.copyfile(dem_path, additional_dem_path)
+        self.logger.info("Additional DEM data was copied to %s.", additional_dem_path)
 
     def info_sequence(self) -> dict[str, dict[str, str | float | int]]:
         """Returns a dictionary with information about the tiles around the map.
@@ -152,6 +180,42 @@ class Background(Component):
             dem_data = cv2.imread(tile.dem_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
             self.plane_from_np(tile.code, dem_data, save_path)  # type: ignore
 
+    def cutout(self, dem_path: str) -> str:
+        """Cuts out the center of the DEM (the actual map) and saves it as a separate file.
+
+        Arguments:
+            dem_path (str): The path to the DEM file.
+
+        Returns:
+            str -- The path to the cutout DEM file.
+        """
+        dem_data = cv2.imread(dem_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
+
+        center = (dem_data.shape[0] // 2, dem_data.shape[1] // 2)
+        half_size = self.map_height // 2
+        x1 = center[0] - half_size
+        x2 = center[0] + half_size
+        y1 = center[1] - half_size
+        y2 = center[1] + half_size
+        dem_data = dem_data[x1:x2, y1:y2]
+
+        output_size = self.map_height + 1
+
+        # pylint: disable=no-member
+        dem_data = cv2.resize(dem_data, (output_size, output_size), interpolation=cv2.INTER_LINEAR)
+
+        main_dem_path = self.game.dem_file_path(self.map_directory)
+
+        try:
+            os.remove(main_dem_path)
+        except FileNotFoundError:
+            pass
+
+        cv2.imwrite(main_dem_path, dem_data)  # pylint: disable=no-member
+        self.logger.info("DEM cutout saved: %s", main_dem_path)
+
+        return main_dem_path
+
     # pylint: disable=too-many-locals
     def plane_from_np(self, tile_code: str, dem_data: np.ndarray, save_path: str) -> None:
         """Generates a 3D obj file based on DEM data.
@@ -163,10 +227,8 @@ class Background(Component):
         """
         if tile_code == PATH_FULL_NAME:
             resize_factor = FULL_RESIZE_FACTOR
-            simplify_factor = FULL_SIMPLIFY_FACTOR
         else:
             resize_factor = RESIZE_FACTOR
-            simplify_factor = SIMPLIFY_FACTOR
         dem_data = cv2.resize(  # pylint: disable=no-member
             dem_data, (0, 0), fx=resize_factor, fy=resize_factor
         )
@@ -213,14 +275,21 @@ class Background(Component):
         mesh.apply_transform(rotation_matrix_y)
         mesh.apply_transform(rotation_matrix_z)
 
-        self.logger.debug("Mesh generated with %s faces, will be simplified", len(mesh.faces))
+        if tile_code == PATH_FULL_PREVIEW_NAME:
+            # Simplify the preview mesh to reduce the size of the file.
+            mesh = mesh.simplify_quadric_decimation(face_count=len(mesh.faces) // 2**7)
 
-        # Simplify the mesh to reduce the number of faces.
-        mesh = mesh.simplify_quadric_decimation(face_count=len(faces) // simplify_factor)
-        self.logger.debug("Mesh simplified to %s faces", len(mesh.faces))
-
-        if tile_code == PATH_FULL_NAME:
+            # Apply scale to make the preview mesh smaller in the UI.
+            mesh.apply_scale([0.5, 0.5, 0.5])
             self.mesh_to_stl(mesh)
+        else:
+            multiplier = self.kwargs.get("multiplier", DEFAULT_MULTIPLIER)
+            if multiplier != 1:
+                z_scaling_factor = 1 / multiplier
+            else:
+                z_scaling_factor = 1 / 2**5
+            self.logger.debug("Z scaling factor: %s", z_scaling_factor)
+            mesh.apply_scale([1 / resize_factor, 1 / resize_factor, z_scaling_factor])
 
         mesh.export(save_path)
         self.logger.debug("Obj file saved: %s", save_path)
@@ -234,7 +303,6 @@ class Background(Component):
             mesh (trimesh.Trimesh) -- The mesh to convert to an STL file.
         """
         preview_path = os.path.join(self.previews_directory, "background_dem.stl")
-        mesh = mesh.simplify_quadric_decimation(percent=0.05)
         mesh.export(preview_path)
 
         self.logger.info("STL file saved: %s", preview_path)

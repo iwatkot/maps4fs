@@ -39,7 +39,7 @@ class Game:
     _grle_schema: str | None = None
 
     # Order matters! Some components depend on others.
-    components = [Texture, I3d, DEM, Config, GRLE, Background]
+    components = [Texture, DEM, I3d, Config, GRLE, Background]
 
     def __init__(self, map_template_path: str | None = None):
         if map_template_path:
