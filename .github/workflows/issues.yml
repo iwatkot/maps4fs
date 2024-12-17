@@ -9,8 +9,22 @@ jobs:
     permissions:
       issues: write
     steps:
+      - name: Check issue body
+        id: check_body
+        run: |
+          if echo "${{ github.event.issue.body }}" | grep -q "maps4fs.streamlit.app"; then
+            echo "close_issue=true" >> $GITHUB_ENV
+          else
+            echo "close_issue=false" >> $GITHUB_ENV
+          fi
+      - name: Close issue if condition met
+        if: env.close_issue == 'true'
+        run: gh issue close ${{ github.event.issue.number }} --comment "This issue is being closed automatically because it contains a question about the availability of the StreamLit community app. Please use the Docker version of the tool. Thank you!"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Add comment
-        run: gh issue comment "$NUMBER" --body "$BODY"
+        if: env.close_issue == 'false'
+        run: gh issue comment "${{ github.event.issue.number }}" --body "$BODY"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
