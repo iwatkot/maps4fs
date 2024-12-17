@@ -46,6 +46,7 @@ class Background(Component):
         origin = self.coordinates
 
         only_full_tiles = self.kwargs.get("only_full_tiles", True)
+        self.light_version = self.kwargs.get("light_version", False)
 
         # Getting a list of 8 tiles around the map starting from the N(North) tile.
         for path_step in get_steps(self.map_height, self.map_width, only_full_tiles):
@@ -98,7 +99,10 @@ class Background(Component):
                 if self.game.additional_dem_name is not None:
                     self.make_copy(cutted_dem_path, self.game.additional_dem_name)
 
-        self.generate_obj_files()
+        if not self.light_version:
+            self.generate_obj_files()
+        else:
+            self.logger.info("Light version is enabled, obj files will not be generated.")
 
     def make_copy(self, dem_path: str, dem_name: str) -> None:
         """Copies DEM data to additional DEM file.
