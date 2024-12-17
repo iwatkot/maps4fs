@@ -29,9 +29,21 @@ You can find the detailed tutorial [here](https://github.com/iwatkot/maps4fs/blo
 You can find the detailed tutorial [here](https://github.com/iwatkot/maps4fs/blob/main/docs/import_to_giants_editor.md).
 
 
-### I have some graphic glitches in Giants Editor: screen keeps blinking black, and the terrain become purple at some angles, what should I do?
+### I have some graphic glitches in Giants Editor: the terrain become purple at some angles, what should I do?
 
 To fix this issue, select the **terrain** object, open the **Terrain** tab in the **Attributes** window, scroll down to the end and press the **Reload material** button. It should help.
+
+### I have some graphic glitches in Giants Editor: the screen keeps flickering black, what should I do?
+
+To fix this issue, in the Giants Editor click on **Scripts** -> **Create new script**, give it a name and paste the code below:
+
+```
+setAudioCullingWorldProperties(-8192, -100, -8192, 8192, 500, 8192, 16, 0, 9000)
+setLightCullingWorldProperties(-8192, -100, -8192, 8192, 500, 8192, 16, 0, 9000)
+setShapeCullingWorldProperties(-8192, -100, -8192, 8192, 500, 8192, 16, 0, 9000)
+```
+
+Make sure that **Always loaded** checkbox is checked, then save it and execute. It should help.
 
 
 If you think that some question should be added here, please, contact me in [Discord](https://discord.gg/Sj5QKKyE42) or open an issue on GitHub. Thank you! 
