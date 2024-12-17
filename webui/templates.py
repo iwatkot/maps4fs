@@ -12,7 +12,7 @@ class Messages:
         "Do you know what **Docker** is? If yes, please consider running the application "
         "locally.  \n"
         "StreamLit community hosting has some limitations, such as:  \n"
-        "1. Maximum map size is 4096x4096 meters.  \n"
+        "1. Maximum map size is 2048x2048 meters.  \n"
         "2. Advanced settings are disabled.  \n"
         "3. Texure dissolving is disabled (they will look worse).  \n  \n"
         "If you run the application locally, you won't have any of these limitations "

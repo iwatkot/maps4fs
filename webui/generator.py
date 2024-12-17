@@ -146,7 +146,7 @@ class GeneratorUI:
 
         size_options = ["2048x2048", "4096x4096", "8192x8192", "16384x16384", "Custom"]
         if self.community:
-            size_options = size_options[:2]
+            size_options = size_options[:1]
 
         # Map size selection.
         st.write("Select size of the map:")
