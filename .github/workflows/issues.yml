@@ -1,4 +1,3 @@
-name: Issue FAQ
 on:
   issues:
     types:
@@ -9,6 +8,9 @@ jobs:
     permissions:
       issues: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - name: Check issue body
         id: check_body
         run: |
@@ -17,11 +19,13 @@ jobs:
           else
             echo "close_issue=false" >> $GITHUB_ENV
           fi
+
       - name: Close issue if condition met
         if: env.close_issue == 'true'
         run: gh issue close ${{ github.event.issue.number }} --comment "This issue is being closed automatically because it contains a question about the availability of the StreamLit community app. Please use the Docker version of the tool. Thank you!"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Add comment
         if: env.close_issue == 'false'
         run: gh issue comment "${{ github.event.issue.number }}" --body "$BODY"
