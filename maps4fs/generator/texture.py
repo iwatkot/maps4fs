@@ -159,6 +159,7 @@ class Texture(Component):
 
     def preprocess(self) -> None:
         self.light_version = self.kwargs.get("light_version", False)
+        self.fields_padding = self.kwargs.get("fields_padding", 0)
         self.logger.debug("Light version: %s.", self.light_version)
 
         if not os.path.isfile(self.game.texture_schema):
@@ -476,7 +477,9 @@ class Texture(Component):
         pairs = list(zip(xs, ys))
         return np.array(pairs, dtype=np.int32).reshape((-1, 1, 2))
 
-    def _to_polygon(self, obj: pd.core.series.Series, width: int | None) -> np.ndarray | None:
+    def _to_polygon(
+        self, obj: pd.core.series.Series, width: int | None
+    ) -> shapely.geometry.polygon.Polygon:
         """Converts OSM object to numpy array of polygon points.
 
         Arguments:
@@ -484,7 +487,7 @@ class Texture(Component):
             width (int | None): Width of the polygon in meters.
 
         Returns:
-            np.ndarray | None: Numpy array of polygon points.
+            shapely.geometry.polygon.Polygon: Polygon geometry.
         """
         geometry = obj["geometry"]
         geometry_type = geometry.geom_type
@@ -498,7 +501,7 @@ class Texture(Component):
         self,
         geometry: shapely.geometry.linestring.LineString | shapely.geometry.point.Point,
         width: int | None,
-    ) -> np.ndarray:
+    ) -> shapely.geometry.polygon.Polygon:
         """Converts LineString or Point geometry to numpy array of polygon points.
 
         Arguments:
@@ -507,10 +510,23 @@ class Texture(Component):
             width (int | None): Width of the polygon in meters.
 
         Returns:
-            np.ndarray: Numpy array of polygon points.
+            shapely.geometry.polygon.Polygon: Polygon geometry.
         """
         polygon = geometry.buffer(width)
-        return self._to_np(polygon)
+        return polygon
+
+    def _skip(
+        self, geometry: shapely.geometry.polygon.Polygon, *args, **kwargs
+    ) -> shapely.geometry.polygon.Polygon:
+        """Returns the same geometry.
+
+        Arguments:
+            geometry (shapely.geometry.polygon.Polygon): Polygon geometry.
+
+        Returns:
+            shapely.geometry.polygon.Polygon: Polygon geometry.
+        """
+        return geometry
 
     def _converters(
         self, geom_type: str
@@ -523,7 +539,7 @@ class Texture(Component):
         Returns:
             Callable[[shapely.geometry, int | None], np.ndarray]: Converter function.
         """
-        converters = {"Polygon": self._to_np, "LineString": self._sequence, "Point": self._sequence}
+        converters = {"Polygon": self._skip, "LineString": self._sequence, "Point": self._sequence}
         return converters.get(geom_type)  # type: ignore
 
     def polygons(
@@ -538,6 +554,7 @@ class Texture(Component):
         Yields:
             Generator[np.ndarray, None, None]: Numpy array of polygon points.
         """
+        is_fieds = "farmland" in tags.values()
         try:
             objects = ox.features_from_bbox(bbox=self.new_bbox, tags=tags)
         except Exception as e:  # pylint: disable=W0718
@@ -551,7 +568,17 @@ class Texture(Component):
             polygon = self._to_polygon(obj, width)
             if polygon is None:
                 continue
-            yield polygon
+
+            if is_fieds and self.fields_padding > 0:
+                padded_polygon = polygon.buffer(-self.fields_padding)
+
+                if not isinstance(padded_polygon, shapely.geometry.polygon.Polygon):
+                    self.logger.warning("The padding value is too high, field will not padded.")
+                else:
+                    polygon = padded_polygon
+
+            polygon_np = self._to_np(polygon)
+            yield polygon_np
 
     def previews(self) -> list[str]:
         """Invokes methods to generate previews. Returns list of paths to previews.

@@ -2,7 +2,7 @@ class Messages:
     TITLE = "maps4FS"
     MAIN_PAGE_DESCRIPTION = (
         "Generate map templates for Farming Simulator from real places.  \n\n"
-        "If some objects (buidings, fields, etc.) are missing or misplaced,  \nyou can edit them"
+        "If some objects (buidings, fields, etc.) are missing or misplaced,  \nyou can edit them "
         "by yourself on the 🌎 [OpenStreetMap](https://www.openstreetmap.org/) website. \n\n"
         "💬 Join our [Discord server](https://discord.gg/Sj5QKKyE42) to get help, share your "
         "maps, or just chat.  \n"
