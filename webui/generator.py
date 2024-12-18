@@ -192,6 +192,7 @@ class GeneratorUI:
         self.plateau_height_input = DEFAULT_PLATEAU
         self.only_full_tiles = True
         self.fields_padding = 0
+        self.farmland_margin = 10
 
         if not self.auto_process:
             self.logger.info("Auto preset is disabled.")
@@ -287,6 +288,24 @@ class GeneratorUI:
                         min_value=0,
                         max_value=100,
                         key="field_padding",
+                        label_visibility="collapsed",
+                    )
+
+                with st.expander("Farmlands Advanced Settings", icon="🌾"):
+                    st.info(
+                        "ℹ️ Settings related to the farmlands of the map, which represent the lands "
+                        "that can be bought in the game by the player."
+                    )
+
+                    st.write("Enter the farmland margin (in meters):")
+                    st.write(Messages.FARMLAND_MARGIN_INFO)
+
+                    self.farmland_margin = st.number_input(
+                        "Farmland Margin",
+                        value=10,
+                        min_value=0,
+                        max_value=100,
+                        key="farmland_margin",
                         label_visibility="collapsed",
                     )
 
@@ -395,6 +414,7 @@ class GeneratorUI:
             light_version=self.community,
             only_full_tiles=self.only_full_tiles,
             fields_padding=self.fields_padding,
+            farmland_margin=self.farmland_margin,
         )
 
         if self.community:
