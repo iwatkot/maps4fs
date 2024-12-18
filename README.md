@@ -44,8 +44,9 @@
 🚜 Supports Farming Simulator 22 and 25<br>
 🔷 Generates *.obj files for background terrain based on the real-world height map<br>
 📄 Generates scripts to download high-resolution satellite images from [QGIS](https://qgis.org/download/) in one click<br>
-🧰 Modder Toolbox to help you with various tasks 🆕<br>
+🧰 Modder Toolbox to help you with various tasks <br>
 🌾 Automatically generates fields 🆕<br>
+🌽 Automatically generates farmlands 🆕<br>
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/cf8f5752-9c69-4018-bead-290f59ba6976"><br>
@@ -56,6 +57,8 @@
 🗒️ True-to-life blueprints for fast and precise modding.<br><br>
 <img width="480" src="https://github.com/user-attachments/assets/1a8802d2-6a3b-4bfa-af2b-7c09478e199b"><br>
 🌾 Field generation with one click.<br><br>
+<img width="480" src="https://github.com/user-attachments/assets/4d1fa879-5d60-438b-a84e-16883bcef0ec"><br>
+🌽 Automatic farmlands generation based on the fields.<br><br>
 <img src="https://github.com/user-attachments/assets/cce45575-c917-4a1b-bdc0-6368e32ccdff"><br>
 📏 Almost any possible map sizes.
 </p>
@@ -446,6 +449,10 @@ You can also apply some advanced settings to the map generation process. Note th
 ### Texture Advanced settings
 
 - Fields padding - this value (in meters) will be applied to each field, making it smaller. It's useful when the fields are too close to each other and you want to make them smaller. By default, it's set to 0.
+
+### Farmlands Advanced settings
+
+- Farmlands margin - this value (in meters) will be applied to each farmland, making it bigger. You can use the value to adjust how much the farmland should be bigger than the actual field. By default, it's set to 3.
 
 ## Resources
 In this section, you'll find a list of the resources that you need to create a map for the Farming Simulator.<br>

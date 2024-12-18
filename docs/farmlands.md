@@ -1,6 +1,7 @@
 ## Farmlands
 
-It's a pretty simple component of the map, but it's also one of the most important. If you do not define the farmlands InfoLayer in Giants Editor, you will not be able to buy any land in the game. But, lucky for us, it's simple and straightforward to set up.
+It's a pretty simple component of the map, but it's also one of the most important. If you do not define the farmlands InfoLayer in Giants Editor, you will not be able to buy any land in the game. But, lucky for us, it's simple and straightforward to set up.  
+➡️ The generator automatically draws farmlands and adds them to the `farmlands.xml` file. But, if you need to adjust them, you can do it manually.
 
 ### Setting up the Farmlands InfoLayer
 
