@@ -184,6 +184,7 @@ class Background(Component):
             dem_data = cv2.imread(tile.dem_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
             self.plane_from_np(tile.code, dem_data, save_path)  # type: ignore
 
+    # pylint: disable=too-many-locals
     def cutout(self, dem_path: str) -> str:
         """Cuts out the center of the DEM (the actual map) and saves it as a separate file.
 
@@ -205,20 +206,40 @@ class Background(Component):
 
         output_size = self.map_height + 1
 
-        # pylint: disable=no-member
-        dem_data = cv2.resize(dem_data, (output_size, output_size), interpolation=cv2.INTER_LINEAR)
-
         main_dem_path = self.game.dem_file_path(self.map_directory)
+        dem_directory = os.path.dirname(main_dem_path)
 
         try:
             os.remove(main_dem_path)
         except FileNotFoundError:
             pass
 
-        cv2.imwrite(main_dem_path, dem_data)  # pylint: disable=no-member
-        self.logger.info("DEM cutout saved: %s", main_dem_path)
+        # pylint: disable=no-member
+        resized_dem_data = cv2.resize(
+            dem_data, (output_size, output_size), interpolation=cv2.INTER_LINEAR
+        )
 
-        return main_dem_path
+        # Giant Editor contains a bug for large maps, where the DEM should not match
+        # the UnitsPerPixel value. For example, for map 8192x8192, without bug
+        # the DEM image should be 8193x8193, but it does not work, so we need to
+        # resize the DEM to 4097x4097.
+        if self.map_height > 4096:
+            correct_dem_path = os.path.join(dem_directory, "correct_dem.png")
+            save_path = correct_dem_path
+
+            output_size = self.map_height // 2 + 1
+            bugged_dem_data = cv2.resize(
+                dem_data, (output_size, output_size), interpolation=cv2.INTER_LINEAR
+            )
+            # pylint: disable=no-member
+            cv2.imwrite(main_dem_path, bugged_dem_data)
+        else:
+            save_path = main_dem_path
+
+        cv2.imwrite(save_path, resized_dem_data)  # pylint: disable=no-member
+        self.logger.info("DEM cutout saved: %s", save_path)
+
+        return save_path
 
     # pylint: disable=too-many-locals
     def plane_from_np(self, tile_code: str, dem_data: np.ndarray, save_path: str) -> None:

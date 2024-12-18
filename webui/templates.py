@@ -1,7 +1,9 @@
 class Messages:
     TITLE = "maps4FS"
     MAIN_PAGE_DESCRIPTION = (
-        "Generate map templates for Farming Simulator from real places.  \n"
+        "Generate map templates for Farming Simulator from real places.  \n\n"
+        "If some objects (buidings, fields, etc.) are missing or misplaced,  \nyou can edit them "
+        "by yourself on the 🌎 [OpenStreetMap](https://www.openstreetmap.org/) website. \n\n"
         "💬 Join our [Discord server](https://discord.gg/Sj5QKKyE42) to get help, share your "
         "maps, or just chat.  \n"
         "🤗 If you like the project, consider supporting it on [Buy Me a Coffee](https://www.buymeacoffee.com/iwatkot).  \n"
@@ -83,4 +85,8 @@ class Messages:
         "be also generated as splitted tiles, e.g. N, NE, E, SE, S, SW, W, NW.  \n"
         "In most cases you don't need splitted tiles, so it's recommended to keep this option "
         "checked."
+    )
+    FIELD_PADDING_INFO = (
+        "This value is used to add some padding around the fields. "
+        "It will make the fields smaller, can be useful if they are too close to each other."
     )

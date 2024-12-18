@@ -19,6 +19,7 @@ from maps4fs.generator.dem import (
 
 DEFAULT_LAT = 45.28571409289627
 DEFAULT_LON = 20.237433441210115
+Image.MAX_IMAGE_PIXELS = None
 
 
 class GeneratorUI:
@@ -190,6 +191,7 @@ class GeneratorUI:
         self.blur_radius_input = DEFAULT_BLUR_RADIUS
         self.plateau_height_input = DEFAULT_PLATEAU
         self.only_full_tiles = True
+        self.fields_padding = 0
 
         if not self.auto_process:
             self.logger.info("Auto preset is disabled.")
@@ -213,62 +215,80 @@ class GeneratorUI:
                 self.logger.debug("Advanced settings are enabled.")
 
                 st.warning("⚠️ Changing these settings can lead to unexpected results.")
-                st.info(
-                    "ℹ️ [DEM] is for settings related to the Digital Elevation Model (elevation map). "
-                    "This file is used to generate the terrain of the map (hills, valleys, etc.)."
-                )
-                # Show multiplier and blur radius inputs.
-                st.write("[DEM] Enter multiplier for the elevation map:")
-                st.write(Messages.DEM_MULTIPLIER_INFO)
 
-                self.multiplier_input = st.number_input(
-                    "Multiplier",
-                    value=DEFAULT_MULTIPLIER,
-                    min_value=0,
-                    max_value=10000,
-                    step=1,
-                    key="multiplier",
-                    label_visibility="collapsed",
-                )
+                with st.expander("DEM Advanced Settings", icon="⛰️"):
+                    st.info(
+                        "ℹ️ Settings related to the Digital Elevation Model (elevation map). "
+                        "This file is used to generate the terrain of the map (hills, valleys, etc.)."
+                    )
+                    # Show multiplier and blur radius inputs.
+                    st.write("Enter the multiplier for the elevation map:")
+                    st.write(Messages.DEM_MULTIPLIER_INFO)
 
-                st.write("[DEM] Enter blur radius for the elevation map:")
-                st.write(Messages.DEM_BLUR_RADIUS_INFO)
+                    self.multiplier_input = st.number_input(
+                        "Multiplier",
+                        value=DEFAULT_MULTIPLIER,
+                        min_value=0,
+                        max_value=10000,
+                        step=1,
+                        key="multiplier",
+                        label_visibility="collapsed",
+                    )
 
-                self.blur_radius_input = st.number_input(
-                    "Blur Radius",
-                    value=DEFAULT_BLUR_RADIUS,
-                    min_value=0,
-                    max_value=300,
-                    key="blur_radius",
-                    label_visibility="collapsed",
-                    step=2,
-                )
+                    st.write("Enter the blur radius for the elevation map:")
+                    st.write(Messages.DEM_BLUR_RADIUS_INFO)
 
-                st.write("[DEM] Enter the plateau height (which will be added to the whole map):")
-                st.write(Messages.DEM_PLATEAU_INFO)
-                self.plateau_height_input = st.number_input(
-                    "Plateau Height",
-                    value=0,
-                    min_value=0,
-                    max_value=10000,
-                    key="plateau_height",
-                    label_visibility="collapsed",
-                )
+                    self.blur_radius_input = st.number_input(
+                        "Blur Radius",
+                        value=DEFAULT_BLUR_RADIUS,
+                        min_value=0,
+                        max_value=300,
+                        key="blur_radius",
+                        label_visibility="collapsed",
+                        step=2,
+                    )
 
-                st.info(
-                    "ℹ️ [Background Terrain] is for settings related to the background terrain "
-                    "which is a simple mesh around the playable area. "
-                )
+                    st.write("Enter the plateau height (which will be added to the whole map):")
+                    st.write(Messages.DEM_PLATEAU_INFO)
+                    self.plateau_height_input = st.number_input(
+                        "Plateau Height",
+                        value=0,
+                        min_value=0,
+                        max_value=10000,
+                        key="plateau_height",
+                        label_visibility="collapsed",
+                    )
 
-                st.write(
-                    "[Background Terrain] Generate only full tiles (recommended) or all tiles:"
-                )
-                st.write(Messages.ONLY_FULL_TILES_INFO)
-                self.only_full_tiles = st.checkbox(
-                    "Only Full Background Tiles",
-                    key="only_full_tiles",
-                    value=True,
-                )
+                with st.expander("Background Terrain Advanced Settings", icon="🏞️"):
+                    st.info(
+                        "ℹ️ Settings related to the background terrain "
+                        "which is a simple mesh around the playable area. "
+                    )
+
+                    st.write("Generate only full tiles (recommended) or all tiles:")
+                    st.write(Messages.ONLY_FULL_TILES_INFO)
+                    self.only_full_tiles = st.checkbox(
+                        "Only Full Background Tiles",
+                        key="only_full_tiles",
+                        value=True,
+                    )
+
+                with st.expander("Textures Advanced Settings", icon="🎨"):
+                    st.info(
+                        "ℹ️ Settings related to the textures of the map, which represent different "
+                        "types of terrain, such as grass, dirt, etc."
+                    )
+
+                    st.write("Enter the field padding (in meters):")
+                    st.write(Messages.FIELD_PADDING_INFO)
+                    self.fields_padding = st.number_input(
+                        "Field Padding",
+                        value=0,
+                        min_value=0,
+                        max_value=100,
+                        key="field_padding",
+                        label_visibility="collapsed",
+                    )
 
         # Add an empty container for status messages.
         self.status_container = st.empty()
@@ -374,6 +394,7 @@ class GeneratorUI:
             plateau=self.plateau_height_input,
             light_version=self.community,
             only_full_tiles=self.only_full_tiles,
+            fields_padding=self.fields_padding,
         )
 
         if self.community:
