@@ -19,6 +19,7 @@ from maps4fs.generator.dem import (
 
 DEFAULT_LAT = 45.28571409289627
 DEFAULT_LON = 20.237433441210115
+Image.MAX_IMAGE_PIXELS = None
 
 
 class GeneratorUI:
