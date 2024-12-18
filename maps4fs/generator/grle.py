@@ -84,7 +84,7 @@ class GRLE(Component):
         """
         return []
 
-    # pylint: disable=R0801
+    # pylint: disable=R0801, R0914
     def _add_farmlands(self) -> None:
         """Adds farmlands to the InfoLayer PNG file."""
 
@@ -139,7 +139,7 @@ class GRLE(Component):
             cv2.fillPoly(image, [field_np], field_id)  # type: ignore
 
             # Add the field to the farmlands XML.
-            farmland = ET.SubElement(farmlands_xml, "farmland")
+            farmland = ET.SubElement(farmlands_xml, "farmland")  # type: ignore
             farmland.set("id", str(field_id))
             farmland.set("priceScale", "1")
             farmland.set("npcName", "FORESTER")
