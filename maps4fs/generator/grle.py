@@ -2,6 +2,7 @@
 
 import json
 import os
+from xml.etree import ElementTree as ET
 
 import cv2
 import numpy as np
@@ -27,6 +28,9 @@ class GRLE(Component):
     def preprocess(self) -> None:
         """Gets the path to the map I3D file from the game instance and saves it to the instance
         attribute. If the game does not support I3D files, the attribute is set to None."""
+
+        self.farmland_margin = self.kwargs.get("farmland_margin", 0)
+
         try:
             grle_schema_path = self.game.grle_schema
         except ValueError:
@@ -55,14 +59,21 @@ class GRLE(Component):
 
                 height = int(self.map_height * info_layer["height_multiplier"])
                 width = int(self.map_width * info_layer["width_multiplier"])
+                channels = info_layer["channels"]
                 data_type = info_layer["data_type"]
 
                 # Create the InfoLayer PNG file with zeros.
-                info_layer_data = np.zeros((height, width), dtype=data_type)
+                if channels == 1:
+                    info_layer_data = np.zeros((height, width), dtype=data_type)
+                else:
+                    info_layer_data = np.zeros((height, width, channels), dtype=data_type)
+                self.logger.debug("Shape of %s: %s.", info_layer["name"], info_layer_data.shape)
                 cv2.imwrite(file_path, info_layer_data)  # pylint: disable=no-member
                 self.logger.debug("InfoLayer PNG file %s created.", file_path)
             else:
                 self.logger.warning("Invalid InfoLayer schema: %s.", info_layer)
+
+        self._add_farmlands()
 
     def previews(self) -> list[str]:
         """Returns a list of paths to the preview images (empty list).
@@ -72,3 +83,72 @@ class GRLE(Component):
             list[str]: An empty list.
         """
         return []
+
+    # pylint: disable=R0801, R0914
+    def _add_farmlands(self) -> None:
+        """Adds farmlands to the InfoLayer PNG file."""
+
+        textures_info_layer_path = self.get_infolayer_path("textures")
+        if not textures_info_layer_path:
+            return
+
+        with open(textures_info_layer_path, "r", encoding="utf-8") as textures_info_layer_file:
+            textures_info_layer = json.load(textures_info_layer_file)
+
+        fields: list[list[tuple[int, int]]] | None = textures_info_layer.get("fields")
+        if not fields:
+            self.logger.warning("Fields data not found in textures info layer.")
+            return
+
+        self.logger.info("Found %s fields in textures info layer.", len(fields))
+
+        info_layer_farmlands_path = os.path.join(
+            self.game.weights_dir_path(self.map_directory), "infoLayer_farmlands.png"
+        )
+
+        if not os.path.isfile(info_layer_farmlands_path):
+            self.logger.warning("InfoLayer PNG file %s not found.", info_layer_farmlands_path)
+            return
+
+        # pylint: disable=no-member
+        image = cv2.imread(info_layer_farmlands_path, cv2.IMREAD_UNCHANGED)
+        farmlands_xml_path = os.path.join(self.map_directory, "map/config/farmlands.xml")
+        if not os.path.isfile(farmlands_xml_path):
+            self.logger.warning("Farmlands XML file %s not found.", farmlands_xml_path)
+            return
+
+        tree = ET.parse(farmlands_xml_path)
+        farmlands_xml = tree.find("farmlands")
+
+        for field_id, field in enumerate(fields, start=1):
+            try:
+                fitted_field = self.fit_polygon_into_bounds(field, self.farmland_margin)
+            except ValueError as e:
+                self.logger.warning("Field %s could not be fitted into the map bounds.", field_id)
+                self.logger.debug("Error: %s", e)
+                continue
+
+            field_np = np.array(fitted_field, np.int32)
+            field_np = field_np.reshape((-1, 1, 2))
+
+            # Infolayer image is 1/2 of the size of the map image, that's why we need to divide
+            # the coordinates by 2.
+            field_np = field_np // 2
+
+            # pylint: disable=no-member
+            cv2.fillPoly(image, [field_np], field_id)  # type: ignore
+
+            # Add the field to the farmlands XML.
+            farmland = ET.SubElement(farmlands_xml, "farmland")  # type: ignore
+            farmland.set("id", str(field_id))
+            farmland.set("priceScale", "1")
+            farmland.set("npcName", "FORESTER")
+
+        tree.write(farmlands_xml_path)
+
+        self.logger.info("Farmlands added to the farmlands XML file: %s.", farmlands_xml_path)
+
+        cv2.imwrite(info_layer_farmlands_path, image)  # pylint: disable=no-member
+        self.logger.info(
+            "Farmlands added to the InfoLayer PNG file: %s.", info_layer_farmlands_path
+        )

@@ -90,3 +90,8 @@ class Messages:
         "This value is used to add some padding around the fields. "
         "It will make the fields smaller, can be useful if they are too close to each other."
     )
+    FARMLAND_MARGIN_INFO = (
+        "This value is used to add some margin around the farmland. "
+        "It can be useful because without the margin, the farmland will end exact on the same "
+        "position as the field ends. This can cause some issues with gameplay."
+    )

@@ -103,5 +103,47 @@
     "width_multiplier": 2.0,
     "channels": 1,
     "data_type": "uint8"
+  },
+  {
+    "name": "densityMap_fruits.png",
+    "height_multiplier": 2.0,
+    "width_multiplier": 2.0,
+    "channels": 3,
+    "data_type": "uint8"
+  },
+  {
+    "name": "densityMap_ground.png",
+    "height_multiplier": 2.0,
+    "width_multiplier": 2.0,
+    "channels": 3,
+    "data_type": "uint8"
+  },
+  {
+    "name": "densityMap_groundFoliage.png",
+    "height_multiplier": 1.0,
+    "width_multiplier": 1.0,
+    "channels": 1,
+    "data_type": "uint8"
+  },
+  {
+    "name": "densityMap_height.png",
+    "height_multiplier": 2.0,
+    "width_multiplier": 2.0,
+    "channels": 3,
+    "data_type": "uint8"
+  },
+  {
+    "name": "densityMap_stones.png",
+    "height_multiplier": 2.0,
+    "width_multiplier": 2.0,
+    "channels": 1,
+    "data_type": "uint8"
+  },
+  {
+    "name": "densityMap_weed.png",
+    "height_multiplier": 2.0,
+    "width_multiplier": 2.0,
+    "channels": 1,
+    "data_type": "uint8"
   }
 ]
