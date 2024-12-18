@@ -86,3 +86,7 @@ class Messages:
         "In most cases you don't need splitted tiles, so it's recommended to keep this option "
         "checked."
     )
+    FIELD_PADDING_INFO = (
+        "This value is used to add some padding around the fields. "
+        "It will make the fields smaller, can be useful if they are too close to each other."
+    )

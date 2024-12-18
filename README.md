@@ -427,19 +427,25 @@ The tool supports the custom size of the map. To use this feature select `Custom
 
 ⛔️ Do not use this feature, if you don't know what you're doing. In most cases, the Giants Editor will just crash on opening the file, because you need to enter specific values for the map size.<br><br>
 
-![Advanced settings](https://github.com/user-attachments/assets/e7406adf-6b82-41a0-838a-13dd8877bebf)
+![Advanced settings](https://github.com/user-attachments/assets/9e8e178a-58d9-4aa6-aefd-4ed53408701d)
 
 You can also apply some advanced settings to the map generation process. Note that they're ADVANCED, so you don't need to use them if you're not sure what they do.<br>
 
-Here's the list of the advanced settings:
+### DEM Advanced settings
 
-- DEM multiplier: the height of the map is multiplied by this value. So the DEM map is just a 16-bit grayscale image, which means that the maximum available value there is 65535, while the actual difference between the deepest and the highest point on Earth is about 20 km. Just note that this setting mostly does not matter, because you can always adjust it in the Giants Editor, learn more about the DEM file and the heightScale parameter in [docs](docs/dem.md). By default, it's set to 1.
+- Multiplier: the height of the map is multiplied by this value. So the DEM map is just a 16-bit grayscale image, which means that the maximum available value there is 65535, while the actual difference between the deepest and the highest point on Earth is about 20 km. Just note that this setting mostly does not matter, because you can always adjust it in the Giants Editor, learn more about the DEM file and the heightScale parameter in [docs](docs/dem.md). By default, it's set to 1.
 
-- DEM Blur radius: the radius of the Gaussian blur filter applied to the DEM map. By default, it's set to 21. This filter just makes the DEM map smoother, so the height transitions will be more natural. You can set it to 1 to disable the filter, but it will result in a Minecraft-like map.
+- Blur radius: the radius of the Gaussian blur filter applied to the DEM map. By default, it's set to 21. This filter just makes the DEM map smoother, so the height transitions will be more natural. You can set it to 1 to disable the filter, but it will result in a Minecraft-like map.
 
-- DEM Plateau height: this value will be added to each pixel of the DEM image, making it "higher". It's useful when you want to add some negative heights on the map, that appear to be in a "low" place. By default, it's set to 0.
+- Plateau height: this value will be added to each pixel of the DEM image, making it "higher". It's useful when you want to add some negative heights on the map, that appear to be in a "low" place. By default, it's set to 0.
+
+### Background Terrain Advanced settings
 
 - Background Terrain Generate only full tiles: if checked (by default) the small tiles (N, NE, E, and so on) will not be generated, only the full tile will be created. It's useful when you don't want to work with separate tiles, but with one big file. Since the new method of cutting the map from the background terrain added to the documentation, and now it's possible to perfectly align the map with the background terrain, this option will remain just as a legacy one.
+
+### Texture Advanced settings
+
+- Fields padding - this value (in meters) will be applied to each field, making it smaller. It's useful when the fields are too close to each other and you want to make them smaller. By default, it's set to 0.
 
 ## Resources
 In this section, you'll find a list of the resources that you need to create a map for the Farming Simulator.<br>
