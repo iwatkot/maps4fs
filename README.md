@@ -39,11 +39,12 @@
 
 🗺️ Supports 2x2, 4x4, 8x8, 16x16 and any custom size maps<br>
 🌍 Based on real-world data from OpenStreetMap<br>
-🏞️ Generates height using SRTM dataset<br>
+🏞️ Generates height map using SRTM dataset<br>
 📦 Provides a ready-to-use map template for the Giants Editor<br>
 🚜 Supports Farming Simulator 22 and 25<br>
 🔷 Generates *.obj files for background terrain based on the real-world height map<br>
 📄 Generates scripts to download high-resolution satellite images from [QGIS](https://qgis.org/download/) in one click<br>
+📕 Detailed [documentation](/docs) and tutorials <br>
 🧰 Modder Toolbox to help you with various tasks <br>
 🌾 Automatically generates fields 🆕<br>
 🌽 Automatically generates farmlands 🆕<br>

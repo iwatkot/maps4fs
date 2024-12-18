@@ -17,7 +17,7 @@ class Messages:
         "🔸 Maximum map size is 2048x2048 meters.  \n"
         "🔸 Background terrain will not be generated.  \n"
         "🔸 Advanced settings are disabled.  \n"
-        "🔸 Texure dissolving is disabled (they will look worse).  \n  \n"
+        "🔸 Texture dissolving is disabled (they will look worse).  \n  \n"
         "If you run the application locally, you won't have any of these limitations "
         "and will be able to generate maps of any size with any settings you want and nice looking textures.  \n"
         "Learn more about the Docker version in the repo's "
