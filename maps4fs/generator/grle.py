@@ -83,6 +83,7 @@ class GRLE(Component):
         """
         return []
 
+    # pylint: disable=R0801
     def _add_farmlands(self) -> None:
         """Adds farmlands to the InfoLayer PNG file."""
 
@@ -93,7 +94,7 @@ class GRLE(Component):
         with open(textures_info_layer_path, "r", encoding="utf-8") as textures_info_layer_file:
             textures_info_layer = json.load(textures_info_layer_file)
 
-        fields: list[tuple[int, int]] | None = textures_info_layer.get("fields")
+        fields: list[list[tuple[int, int]]] | None = textures_info_layer.get("fields")
         if not fields:
             self.logger.warning("Fields data not found in textures info layer.")
             return
@@ -108,13 +109,12 @@ class GRLE(Component):
             self.logger.warning("InfoLayer PNG file %s not found.", info_layer_farmlands_path)
             return
 
-        image = cv2.imread(
-            info_layer_farmlands_path, cv2.IMREAD_UNCHANGED
-        )  # pylint: disable=no-member
+        # pylint: disable=no-member
+        image = cv2.imread(info_layer_farmlands_path, cv2.IMREAD_UNCHANGED)
 
         for field_id, field in enumerate(fields, start=1):
             try:
-                fitted_field = self.fit_polygon_into_bounds(field, self.farmland_margin)  # type: ignore
+                fitted_field = self.fit_polygon_into_bounds(field, self.farmland_margin)
             except ValueError as e:
                 self.logger.warning("Field %s could not be fitted into the map bounds.", field_id)
                 self.logger.debug("Error: %s", e)
@@ -127,8 +127,8 @@ class GRLE(Component):
             # the coordinates by 2.
             field_np = field_np // 2
 
-            # Draw the polygon on the image
-            cv2.fillPoly(image, [field_np], field_id)
+            # pylint: disable=no-member
+            cv2.fillPoly(image, [field_np], field_id)  # type: ignore
 
         cv2.imwrite(info_layer_farmlands_path, image)  # pylint: disable=no-member
         self.logger.info(

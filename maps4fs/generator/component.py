@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from maps4fs.generator.game import Game
 
 
-# pylint: disable=R0801, R0903, R0902
+# pylint: disable=R0801, R0903, R0902, R0904
 class Component:
     """Base class for all map generation components.
 
@@ -374,5 +374,5 @@ class Component:
         info_layer_path = os.path.join(self.info_layers_directory, f"{layer_name}.json")
         if not os.path.isfile(info_layer_path):
             self.logger.warning("Info layer %s does not exist", info_layer_path)
-            return
+            return None
         return info_layer_path

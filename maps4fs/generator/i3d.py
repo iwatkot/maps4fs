@@ -108,7 +108,7 @@ class I3d(Component):
         with open(textures_info_layer_path, "r", encoding="utf-8") as textures_info_layer_file:
             textures_info_layer = json.load(textures_info_layer_file)
 
-        fields: list[tuple[int, int]] | None = textures_info_layer.get("fields")
+        fields: list[list[tuple[int, int]]] | None = textures_info_layer.get("fields")
         if not fields:
             self.logger.warning("Fields data not found in textures info layer.")
             return
@@ -127,7 +127,7 @@ class I3d(Component):
                 for field_id, field in enumerate(fields, start=1):
                     # Convert the top-left coordinates to the center coordinates system.
                     try:
-                        fitted_field = self.fit_polygon_into_bounds(field)  # type: ignore
+                        fitted_field = self.fit_polygon_into_bounds(field)
                     except ValueError as e:
                         self.logger.warning(
                             "Field %s could not be fitted into the map bounds.", field_id
