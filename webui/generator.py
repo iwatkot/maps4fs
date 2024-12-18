@@ -192,7 +192,7 @@ class GeneratorUI:
         self.plateau_height_input = DEFAULT_PLATEAU
         self.only_full_tiles = True
         self.fields_padding = 0
-        self.farmland_margin = 10
+        self.farmland_margin = 3
 
         if not self.auto_process:
             self.logger.info("Auto preset is disabled.")
@@ -302,7 +302,7 @@ class GeneratorUI:
 
                     self.farmland_margin = st.number_input(
                         "Farmland Margin",
-                        value=10,
+                        value=3,
                         min_value=0,
                         max_value=100,
                         key="farmland_margin",

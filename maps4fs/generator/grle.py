@@ -2,6 +2,7 @@
 
 import json
 import os
+from xml.etree import ElementTree as ET
 
 import cv2
 import numpy as np
@@ -111,6 +112,13 @@ class GRLE(Component):
 
         # pylint: disable=no-member
         image = cv2.imread(info_layer_farmlands_path, cv2.IMREAD_UNCHANGED)
+        farmlands_xml_path = os.path.join(self.map_directory, "map/config/farmlands.xml")
+        if not os.path.isfile(farmlands_xml_path):
+            self.logger.warning("Farmlands XML file %s not found.", farmlands_xml_path)
+            return
+
+        tree = ET.parse(farmlands_xml_path)
+        farmlands_xml = tree.find("farmlands")
 
         for field_id, field in enumerate(fields, start=1):
             try:
@@ -129,6 +137,16 @@ class GRLE(Component):
 
             # pylint: disable=no-member
             cv2.fillPoly(image, [field_np], field_id)  # type: ignore
+
+            # Add the field to the farmlands XML.
+            farmland = ET.SubElement(farmlands_xml, "farmland")
+            farmland.set("id", str(field_id))
+            farmland.set("priceScale", "1")
+            farmland.set("npcName", "FORESTER")
+
+        tree.write(farmlands_xml_path)
+
+        self.logger.info("Farmlands added to the farmlands XML file: %s.", farmlands_xml_path)
 
         cv2.imwrite(info_layer_farmlands_path, image)  # pylint: disable=no-member
         self.logger.info(
