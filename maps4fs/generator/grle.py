@@ -27,6 +27,9 @@ class GRLE(Component):
     def preprocess(self) -> None:
         """Gets the path to the map I3D file from the game instance and saves it to the instance
         attribute. If the game does not support I3D files, the attribute is set to None."""
+
+        self.farmland_margin = self.kwargs.get("farmland_margin", 0)
+
         try:
             grle_schema_path = self.game.grle_schema
         except ValueError:
@@ -69,6 +72,8 @@ class GRLE(Component):
             else:
                 self.logger.warning("Invalid InfoLayer schema: %s.", info_layer)
 
+        self._add_farmlands()
+
     def previews(self) -> list[str]:
         """Returns a list of paths to the preview images (empty list).
         The component does not generate any preview images so it returns an empty list.
@@ -77,3 +82,55 @@ class GRLE(Component):
             list[str]: An empty list.
         """
         return []
+
+    def _add_farmlands(self) -> None:
+        """Adds farmlands to the InfoLayer PNG file."""
+
+        textures_info_layer_path = self.get_infolayer_path("textures")
+        if not textures_info_layer_path:
+            return
+
+        with open(textures_info_layer_path, "r", encoding="utf-8") as textures_info_layer_file:
+            textures_info_layer = json.load(textures_info_layer_file)
+
+        fields: list[tuple[int, int]] | None = textures_info_layer.get("fields")
+        if not fields:
+            self.logger.warning("Fields data not found in textures info layer.")
+            return
+
+        self.logger.info("Found %s fields in textures info layer.", len(fields))
+
+        info_layer_farmlands_path = os.path.join(
+            self.game.weights_dir_path(self.map_directory), "infoLayer_farmlands.png"
+        )
+
+        if not os.path.isfile(info_layer_farmlands_path):
+            self.logger.warning("InfoLayer PNG file %s not found.", info_layer_farmlands_path)
+            return
+
+        image = cv2.imread(
+            info_layer_farmlands_path, cv2.IMREAD_UNCHANGED
+        )  # pylint: disable=no-member
+
+        for field_id, field in enumerate(fields, start=1):
+            try:
+                fitted_field = self.fit_polygon_into_bounds(field, self.farmland_margin)  # type: ignore
+            except ValueError as e:
+                self.logger.warning("Field %s could not be fitted into the map bounds.", field_id)
+                self.logger.debug("Error: %s", e)
+                continue
+
+            field_np = np.array(fitted_field, np.int32)
+            field_np = field_np.reshape((-1, 1, 2))
+
+            # Infolayer image is 1/2 of the size of the map image, that's why we need to divide
+            # the coordinates by 2.
+            field_np = field_np // 2
+
+            # Draw the polygon on the image
+            cv2.fillPoly(image, [field_np], field_id)
+
+        cv2.imwrite(info_layer_farmlands_path, image)  # pylint: disable=no-member
+        self.logger.info(
+            "Farmlands added to the InfoLayer PNG file: %s.", info_layer_farmlands_path
+        )

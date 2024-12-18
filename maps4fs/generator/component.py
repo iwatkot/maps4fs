@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 import osmnx as ox  # type: ignore
 from pyproj import Transformer
+from shapely.geometry import Polygon, box  # type: ignore
 
 from maps4fs.generator.qgis import save_scripts
 
@@ -281,3 +282,97 @@ class Component:
         """
         class_name = self.__class__.__name__.lower()
         save_scripts(qgis_layers, class_name, self.scripts_directory)
+
+    def get_polygon_center(self, polygon_points: list[tuple[int, int]]) -> tuple[int, int]:
+        """Calculates the center of a polygon defined by a list of points.
+
+        Arguments:
+            polygon_points (list[tuple[int, int]]): The points of the polygon.
+
+        Returns:
+            tuple[int, int]: The center of the polygon.
+        """
+        polygon = Polygon(polygon_points)
+        center = polygon.centroid
+        return int(center.x), int(center.y)
+
+    def absolute_to_relative(
+        self, point: tuple[int, int], center: tuple[int, int]
+    ) -> tuple[int, int]:
+        """Converts a pair of absolute coordinates to relative coordinates.
+
+        Arguments:
+            point (tuple[int, int]): The absolute coordinates.
+            center (tuple[int, int]): The center coordinates.
+
+        Returns:
+            tuple[int, int]: The relative coordinates.
+        """
+        cx, cy = center
+        x, y = point
+        return x - cx, y - cy
+
+    def top_left_coordinates_to_center(self, top_left: tuple[int, int]) -> tuple[int, int]:
+        """Converts a pair of coordinates from the top-left system to the center system.
+        In top-left system, the origin (0, 0) is in the top-left corner of the map, while in the
+        center system, the origin is in the center of the map.
+
+        Arguments:
+            top_left (tuple[int, int]): The coordinates in the top-left system.
+
+        Returns:
+            tuple[int, int]: The coordinates in the center system.
+        """
+        x, y = top_left
+        cs_x = x - self.map_width // 2
+        cs_y = y - self.map_height // 2
+
+        return cs_x, cs_y
+
+    def fit_polygon_into_bounds(
+        self, polygon_points: list[tuple[int, int]], margin: int = 0
+    ) -> list[tuple[int, int]]:
+        """Fits a polygon into the bounds of the map.
+
+        Arguments:
+            polygon_points (list[tuple[int, int]]): The points of the polygon.
+            margin (int, optional): The margin to add to the polygon. Defaults to 0.
+
+        Returns:
+            list[tuple[int, int]]: The points of the polygon fitted into the map bounds.
+        """
+        min_x = min_y = 0
+        max_x, max_y = self.map_width, self.map_height
+
+        # Create a polygon from the given points
+        polygon = Polygon(polygon_points)
+
+        if margin:
+            polygon = polygon.buffer(margin, join_style="mitre")
+
+        # Create a bounding box for the map bounds
+        bounds = box(min_x, min_y, max_x, max_y)
+
+        # Intersect the polygon with the bounds to fit it within the map
+        fitted_polygon = polygon.intersection(bounds)
+
+        if not isinstance(fitted_polygon, Polygon):
+            raise ValueError("The fitted polygon is not a valid polygon.")
+
+        # Return the fitted polygon points
+        return list(fitted_polygon.exterior.coords)
+
+    def get_infolayer_path(self, layer_name: str) -> str | None:
+        """Returns the path to the info layer file.
+
+        Arguments:
+            layer_name (str): The name of the layer.
+
+        Returns:
+            str | None: The path to the info layer file or None if the layer does not exist.
+        """
+        info_layer_path = os.path.join(self.info_layers_directory, f"{layer_name}.json")
+        if not os.path.isfile(info_layer_path):
+            self.logger.warning("Info layer %s does not exist", info_layer_path)
+            return
+        return info_layer_path

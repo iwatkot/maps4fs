@@ -6,8 +6,6 @@ import json
 import os
 from xml.etree import ElementTree as ET
 
-from shapely.geometry import Polygon, box  # type: ignore
-
 from maps4fs.generator.component import Component
 
 DEFAULT_HEIGHT_SCALE = 2000
@@ -103,9 +101,8 @@ class I3d(Component):
         if tree is None:
             return
 
-        textures_info_layer_path = os.path.join(self.info_layers_directory, "textures.json")
-        if not os.path.isfile(textures_info_layer_path):
-            self.logger.warning("Textures info layer not found: %s.", textures_info_layer_path)
+        textures_info_layer_path = self.get_infolayer_path("textures")
+        if not textures_info_layer_path:
             return
 
         with open(textures_info_layer_path, "r", encoding="utf-8") as textures_info_layer_file:
@@ -232,81 +229,6 @@ class I3d(Component):
         teleport_indicator_node.set("nodeId", str(node_id))
 
         return teleport_indicator_node, node_id
-
-    def get_polygon_center(self, polygon_points: list[tuple[int, int]]) -> tuple[int, int]:
-        """Calculates the center of a polygon defined by a list of points.
-
-        Arguments:
-            polygon_points (list[tuple[int, int]]): The points of the polygon.
-
-        Returns:
-            tuple[int, int]: The center of the polygon.
-        """
-        polygon = Polygon(polygon_points)
-        center = polygon.centroid
-        return int(center.x), int(center.y)
-
-    def absolute_to_relative(
-        self, point: tuple[int, int], center: tuple[int, int]
-    ) -> tuple[int, int]:
-        """Converts a pair of absolute coordinates to relative coordinates.
-
-        Arguments:
-            point (tuple[int, int]): The absolute coordinates.
-            center (tuple[int, int]): The center coordinates.
-
-        Returns:
-            tuple[int, int]: The relative coordinates.
-        """
-        cx, cy = center
-        x, y = point
-        return x - cx, y - cy
-
-    def top_left_coordinates_to_center(self, top_left: tuple[int, int]) -> tuple[int, int]:
-        """Converts a pair of coordinates from the top-left system to the center system.
-        In top-left system, the origin (0, 0) is in the top-left corner of the map, while in the
-        center system, the origin is in the center of the map.
-
-        Arguments:
-            top_left (tuple[int, int]): The coordinates in the top-left system.
-
-        Returns:
-            tuple[int, int]: The coordinates in the center system.
-        """
-        x, y = top_left
-        cs_x = x - self.map_width // 2
-        cs_y = y - self.map_height // 2
-
-        return cs_x, cs_y
-
-    def fit_polygon_into_bounds(
-        self, polygon_points: list[tuple[int, int]]
-    ) -> list[tuple[int, int]]:
-        """Fits a polygon into the bounds of the map.
-
-        Arguments:
-            polygon_points (list[tuple[int, int]]): The points of the polygon.
-
-        Returns:
-            list[tuple[int, int]]: The points of the polygon fitted into the map bounds.
-        """
-        min_x = min_y = 0
-        max_x, max_y = self.map_width, self.map_height
-
-        # Create a polygon from the given points
-        polygon = Polygon(polygon_points)
-
-        # Create a bounding box for the map bounds
-        bounds = box(min_x, min_y, max_x, max_y)
-
-        # Intersect the polygon with the bounds to fit it within the map
-        fitted_polygon = polygon.intersection(bounds)
-
-        if not isinstance(fitted_polygon, Polygon):
-            raise ValueError("The fitted polygon is not a valid polygon.")
-
-        # Return the fitted polygon points
-        return list(fitted_polygon.exterior.coords)
 
     @staticmethod
     def create_user_attribute_node(node_id: int) -> ET.Element:
