@@ -55,10 +55,15 @@ class GRLE(Component):
 
                 height = int(self.map_height * info_layer["height_multiplier"])
                 width = int(self.map_width * info_layer["width_multiplier"])
+                channels = info_layer["channels"]
                 data_type = info_layer["data_type"]
 
                 # Create the InfoLayer PNG file with zeros.
-                info_layer_data = np.zeros((height, width), dtype=data_type)
+                if channels == 1:
+                    info_layer_data = np.zeros((height, width), dtype=data_type)
+                else:
+                    info_layer_data = np.zeros((height, width, channels), dtype=data_type)
+                self.logger.debug("Shape of %s: %s.", info_layer["name"], info_layer_data.shape)
                 cv2.imwrite(file_path, info_layer_data)  # pylint: disable=no-member
                 self.logger.debug("InfoLayer PNG file %s created.", file_path)
             else:
