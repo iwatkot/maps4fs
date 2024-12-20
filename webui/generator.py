@@ -180,12 +180,7 @@ class GeneratorUI:
             )
 
         # Rotation input.
-        st.write("Enter the rotation of the map:")
-        if self.community:
-            st.warning("💡 This feature is available in local version of the tool.")
-            rotation_disabled = True
-        else:
-            rotation_disabled = False
+        st.write("[BETA] Enter the rotation of the map:")
 
         self.rotation = st.slider(
             "Rotation",
@@ -195,9 +190,11 @@ class GeneratorUI:
             step=1,
             key="rotation",
             label_visibility="collapsed",
-            disabled=rotation_disabled,
+            disabled=self.community,
             on_change=self.map_preview,
         )
+        if self.community:
+            st.warning("💡 This feature is available in local version of the tool.")
 
         self.auto_process = st.checkbox("Use auto preset", value=True, key="auto_process")
         if self.auto_process:
