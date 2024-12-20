@@ -226,13 +226,17 @@ class Texture(Component):
                 if layer.tags:
                     self.logger.debug("Rotating layer %s.", layer.name)
                     layer_paths = layer.paths(self._weights_dir)
+                    layer_paths += [layer.path_preview(self._weights_dir)]
                     for layer_path in layer_paths:
-                        self.rotate_image(
-                            layer_path,
-                            self.rotation,
-                            output_height=self.map_size,
-                            output_width=self.map_size,
-                        )
+                        if os.path.isfile(layer_path):
+                            self.rotate_image(
+                                layer_path,
+                                self.rotation,
+                                output_height=self.map_size,
+                                output_width=self.map_size,
+                            )
+                        else:
+                            self.logger.warning("Layer path %s not found.", layer_path)
                 else:
                     self.logger.debug(
                         "Skipping rotation of layer %s because it has no tags.", layer.name
