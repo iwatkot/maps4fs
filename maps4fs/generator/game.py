@@ -31,7 +31,7 @@ class Game:
     """
 
     code: str | None = None
-    dem_multipliyer: int = 1
+    dem_multipliyer: int = 2
     _additional_dem_name: str | None = None
     _map_template_path: str | None = None
     _texture_schema: str | None = None
