@@ -86,7 +86,6 @@ class I3d(Component):
                 self.logger.debug("TerrainTransformGroup element updated in I3D file.")
 
         if self.map_size > 4096:
-            print("Map size is greater than 4096")
             displacement_layer = terrain_elem.find(".//DisplacementLayer")  # pylint: disable=W0631
 
             if displacement_layer is not None:
