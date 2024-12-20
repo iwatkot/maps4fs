@@ -352,7 +352,7 @@ class Component:
                 center_x,
                 center_y,
             )
-            polygon = rotate(polygon, angle, origin=(center_x, center_y))
+            polygon = rotate(polygon, -angle, origin=(center_x, center_y))
             offset = (self.map_size / 2) - (self.map_rotated_size / 2)
             self.logger.debug("Translating the polygon by %s", offset)
             polygon = translate(polygon, xoff=offset, yoff=offset)
@@ -433,7 +433,7 @@ class Component:
             width,
         )
 
-        rotation_matrix = cv2.getRotationMatrix2D(center, -angle, 1.0)
+        rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
         rotated = cv2.warpAffine(image, rotation_matrix, (width, height))
 
         start_x = center[0] - output_width // 2

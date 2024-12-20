@@ -45,7 +45,7 @@ class GeneratorUI:
 
     def __init__(self):
         self.download_path = None
-        self.logger = mfs.Logger(level="INFO", to_file=False)
+        self.logger = mfs.Logger(level="DEBUG", to_file=False)
 
         self.community = config.is_on_community_server()
         self.logger.debug("The application launched on the community server: %s", self.community)
@@ -99,8 +99,7 @@ class GeneratorUI:
             "Generating map preview for lat=%s, lon=%s, map_size=%s", lat, lon, map_size
         )
 
-        bbox = osmp.get_bbox((lat, lon), map_size)
-        html_file = osmp.get_preview([bbox])
+        html_file = osmp.get_rotated_preview(lat, lon, map_size, angle=-self.rotation)
 
         with self.html_preview_container:
             components.html(open(html_file).read(), height=600)
