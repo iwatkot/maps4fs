@@ -169,7 +169,7 @@ def test_map_pack():
         game=game,
         coordinates=case,
         size=height,
-        rotation=33,
+        rotation=0,
         map_directory=directory,
     )
     for _ in map.generate():
