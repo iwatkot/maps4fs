@@ -20,8 +20,8 @@ def get_rotated_preview(lat: float, lon: float, distance: int, angle: int):
         str: Path to the HTML file.
     """
     save_path = get_rotated_save_path(lat, lon, distance, angle)
-    # if os.path.isfile(save_path):
-    #     return save_path
+    if os.path.isfile(save_path):
+        return save_path
 
     m = folium.Map(zoom_control=False)
 
@@ -46,6 +46,9 @@ def get_rotated_preview(lat: float, lon: float, distance: int, angle: int):
         locations=corners, color=color, fill=True, fill_opacity=0.1, fill_color=color
     ).add_to(m)
     folium.ClickForMarker("<b>${lat}, ${lng}</b>").add_to(m)
+
+    center = get_center(bbox)
+    folium.CircleMarker(center, radius=1, color=color, fill=True).add_to(m)
 
     m.save(save_path)
     return save_path
