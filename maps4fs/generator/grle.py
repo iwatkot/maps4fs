@@ -149,7 +149,7 @@ class GRLE(Component):
             # pylint: disable=no-member
             try:
                 cv2.fillPoly(image, [field_np], farmland_id)  # type: ignore
-            except cv2.error as e:  # pylint: disable=E0712
+            except Exception as e:  # pylint: disable=W0718
                 self.logger.warning(
                     "Farmland %s could not be added to the InfoLayer PNG file with error: %s",
                     farmland_id,
