@@ -38,6 +38,9 @@
 </div>
 
 🗺️ Supports 2x2, 4x4, 8x8, 16x16 and any custom size maps<br>
+🔄 Support map rotation 🆕<br>
+🌾 Automatically generates fields 🆕<br>
+🌽 Automatically generates farmlands 🆕<br>
 🌍 Based on real-world data from OpenStreetMap<br>
 🏞️ Generates height map using SRTM dataset<br>
 📦 Provides a ready-to-use map template for the Giants Editor<br>
@@ -46,8 +49,6 @@
 📄 Generates scripts to download high-resolution satellite images from [QGIS](https://qgis.org/download/) in one click<br>
 📕 Detailed [documentation](/docs) and tutorials <br>
 🧰 Modder Toolbox to help you with various tasks <br>
-🌾 Automatically generates fields 🆕<br>
-🌽 Automatically generates farmlands 🆕<br>
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/cf8f5752-9c69-4018-bead-290f59ba6976"><br>
