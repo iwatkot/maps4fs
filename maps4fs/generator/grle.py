@@ -108,6 +108,10 @@ class GRLE(Component):
             self.game.weights_dir_path(self.map_directory), "infoLayer_farmlands.png"
         )
 
+        self.logger.info(
+            "Adding farmlands to the InfoLayer PNG file: %s.", info_layer_farmlands_path
+        )
+
         if not os.path.isfile(info_layer_farmlands_path):
             self.logger.warning("InfoLayer PNG file %s not found.", info_layer_farmlands_path)
             return
@@ -139,12 +143,19 @@ class GRLE(Component):
                 )
                 continue
 
+            self.logger.debug("Fitted field %s contains %s points.", farmland_id, len(fitted_field))
+
             field_np = np.array(fitted_field, np.int32)
             field_np = field_np.reshape((-1, 1, 2))
+
+            self.logger.debug(
+                "Created a numpy array and reshaped it. Number of points: %s", len(field_np)
+            )
 
             # Infolayer image is 1/2 of the size of the map image, that's why we need to divide
             # the coordinates by 2.
             field_np = field_np // 2
+            self.logger.debug("Divided the coordinates by 2.")
 
             # pylint: disable=no-member
             try:
