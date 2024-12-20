@@ -180,7 +180,25 @@ class GeneratorUI:
                 "💡 If you run the tool locally, you can generate larger maps, even with the custom size.  \n"
             )
 
-        # st.info(Messages.HEIGHT_SCALE_INFO)
+        # Rotation input.
+        st.write("Enter the rotation of the map:")
+        if self.community:
+            st.warning("💡 This feature is available in local version of the tool.")
+            rotation_disabled = True
+        else:
+            rotation_disabled = False
+
+        self.rotation = st.slider(
+            "Rotation",
+            min_value=-180,
+            max_value=180,
+            value=0,
+            step=1,
+            key="rotation",
+            label_visibility="collapsed",
+            disabled=rotation_disabled,
+            on_change=self.map_preview,
+        )
 
         self.auto_process = st.checkbox("Use auto preset", value=True, key="auto_process")
         if self.auto_process:
@@ -404,7 +422,7 @@ class GeneratorUI:
             game,
             coordinates,
             height,
-            width,
+            self.rotation,
             map_directory,
             logger=self.logger,
             multiplier=self.multiplier_input,

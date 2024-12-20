@@ -18,8 +18,7 @@ class Map:
     Arguments:
         game (Type[Game]): Game for which the map is generated.
         coordinates (tuple[float, float]): Coordinates of the center of the map.
-        height (int): Height of the map in pixels.
-        width (int): Width of the map in pixels.
+        size (int): Height and width of the map in pixels (it's a square).
         map_directory (str): Path to the directory where map files will be stored.
         logger (Any): Logger instance
     """
@@ -28,22 +27,30 @@ class Map:
         self,
         game: Game,
         coordinates: tuple[float, float],
-        height: int,
-        width: int,
+        size: int,
+        rotation: int,
         map_directory: str,
         logger: Any = None,
         **kwargs,
     ):
-        self.game = game
-        self.components: list[Component] = []
-        self.coordinates = coordinates
-        self.height = height
-        self.width = width
-        self.map_directory = map_directory
-
         if not logger:
             logger = Logger(to_stdout=True, to_file=False)
         self.logger = logger
+        self.size = size
+
+        if rotation:
+            rotation_multiplier = 1.5
+        else:
+            rotation_multiplier = 1
+
+        self.rotation = rotation
+        self.rotated_size = int(size * rotation_multiplier)
+
+        self.game = game
+        self.components: list[Component] = []
+        self.coordinates = coordinates
+        self.map_directory = map_directory
+
         self.logger.info("Game was set to %s", game.code)
 
         self.kwargs = kwargs
@@ -68,8 +75,9 @@ class Map:
             component = game_component(
                 self.game,
                 self.coordinates,
-                self.height,
-                self.width,
+                self.size,
+                self.rotated_size,
+                self.rotation,
                 self.map_directory,
                 self.logger,
                 **self.kwargs,

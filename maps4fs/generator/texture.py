@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from collections import defaultdict
 from typing import Any, Callable, Generator, Optional
 
@@ -151,10 +152,22 @@ class Texture(Component):
                 list[str]: List of paths to the textures.
             """
             weight_files = os.listdir(weights_directory)
+
+            # Inconsistent names are the name of textures that are not following the pattern
+            # of texture_name{idx}_weight.png.
+            inconsistent_names = ["forestRockRoot", "waterPuddle"]
+
+            if self.name in inconsistent_names:
+                return [
+                    os.path.join(weights_directory, weight_file)
+                    for weight_file in weight_files
+                    if weight_file.startswith(self.name)
+                ]
+
             return [
                 os.path.join(weights_directory, weight_file)
                 for weight_file in weight_files
-                if weight_file.startswith(self.name)
+                if re.match(rf"{self.name}\d{{2}}_weight.png", weight_file)
             ]
 
     def preprocess(self) -> None:
@@ -203,6 +216,27 @@ class Texture(Component):
         self._prepare_weights()
         self._read_parameters()
         self.draw()
+        self.rotate_textures()
+
+    def rotate_textures(self) -> None:
+        """Rotates textures of the layers which have tags."""
+        if self.rotation:
+            # Iterate over the layers which have tags and rotate them.
+            for layer in self.layers:
+                if layer.tags:
+                    self.logger.debug("Rotating layer %s.", layer.name)
+                    layer_paths = layer.paths(self._weights_dir)
+                    for layer_path in layer_paths:
+                        self.rotate_image(
+                            layer_path,
+                            self.rotation,
+                            output_height=self.map_size,
+                            output_width=self.map_size,
+                        )
+                else:
+                    self.logger.debug(
+                        "Skipping rotation of layer %s because it has no tags.", layer.name
+                    )
 
     # pylint: disable=W0201
     def _read_parameters(self) -> None:
@@ -249,7 +283,7 @@ class Texture(Component):
         Arguments:
             layer (Layer): Layer with textures and tags.
         """
-        size = (self.map_height, self.map_width)
+        size = (self.map_rotated_size, self.map_rotated_size)
         postfix = "_weight.png" if not layer.exclude_weight else ".png"
         if layer.count == 0:
             filepaths = [os.path.join(self._weights_dir, layer.name + postfix)]
@@ -396,12 +430,6 @@ class Texture(Component):
             for coord in non_zero_coords:
                 sublayers[np.random.randint(0, layer.count)][coord[0], coord[1]] = 255
 
-            # # ! Debug test if the sublayers are correct.
-            # if True:
-            #     combined = cv2.bitwise_or(*sublayers)
-            #     # Match the original image with the combined sublayers.
-            #     assert np.array_equal(layer_image, combined), "Sublayers are not correct."
-
             # Save the sublayers.
             for sublayer, sublayer_path in zip(sublayers, layer_paths):
                 cv2.imwrite(sublayer_path, sublayer)
@@ -435,7 +463,7 @@ class Texture(Component):
         Returns:
             int: Relative X coordinate in map image.
         """
-        return int(self.map_width * (x - self.minimum_x) / (self.maximum_x - self.minimum_x))
+        return int(self.map_rotated_size * (x - self.minimum_x) / (self.maximum_x - self.minimum_x))
 
     def get_relative_y(self, y: float) -> int:
         """Converts UTM Y coordinate to relative Y coordinate in map image.
@@ -446,7 +474,9 @@ class Texture(Component):
         Returns:
             int: Relative Y coordinate in map image.
         """
-        return int(self.map_height * (1 - (y - self.minimum_y) / (self.maximum_y - self.minimum_y)))
+        return int(
+            self.map_rotated_size * (1 - (y - self.minimum_y) / (self.maximum_y - self.minimum_y))
+        )
 
     def np_to_polygon_points(self, np_array: np.ndarray) -> list[tuple[int, int]]:
         """Converts numpy array of polygon points to list of tuples.
@@ -597,13 +627,11 @@ class Texture(Component):
         Returns:
             str: Path to the preview.
         """
-        scaling_factor = min(
-            PREVIEW_MAXIMUM_SIZE / self.map_width, PREVIEW_MAXIMUM_SIZE / self.map_height
-        )
+        scaling_factor = PREVIEW_MAXIMUM_SIZE / self.map_size
 
         preview_size = (
-            int(self.map_width * scaling_factor),
-            int(self.map_height * scaling_factor),
+            int(self.map_size * scaling_factor),
+            int(self.map_size * scaling_factor),
         )
         self.logger.debug(
             "Scaling factor: %s. Preview size: %s.",

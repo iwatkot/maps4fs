@@ -13,9 +13,11 @@ class Config(Component):
     """Component for map settings and configuration.
 
     Arguments:
+        game (Game): The game instance for which the map is generated.
         coordinates (tuple[float, float]): The latitude and longitude of the center of the map.
-        map_height (int): The height of the map in pixels.
-        map_width (int): The width of the map in pixels.
+        map_size (int): The size of the map in pixels (it's a square).
+        map_rotated_size (int): The size of the map in pixels after rotation.
+        rotation (int): The rotation angle of the map.
         map_directory (str): The directory where the map files are stored.
         logger (Any, optional): The logger to use. Must have at least three basic methods: debug,
             info, warning. If not provided, default logging will be used.
@@ -39,10 +41,12 @@ class Config(Component):
         self.logger.info("Map XML file loaded from: %s.", self._map_xml_path)
         root = tree.getroot()
         for map_elem in root.iter("map"):
-            map_elem.set("width", str(self.map_width))
-            map_elem.set("height", str(self.map_height))
+            map_elem.set("width", str(self.map_size))
+            map_elem.set("height", str(self.map_size))
             self.logger.debug(
-                "Map size set to %sx%s in Map XML file.", self.map_width, self.map_height
+                "Map size set to %sx%s in Map XML file.",
+                self.map_size,
+                self.map_size,
             )
         tree.write(self._map_xml_path)
         self.logger.debug("Map XML file saved to: %s.", self._map_xml_path)
@@ -67,7 +71,7 @@ class Config(Component):
         # if the map is 2048x2048 or 4096x4096, the overview will be 4096x4096
         # and the map will be in the center of the overview.
         # That's why the distance is set to the map height not as a half of it.
-        bbox = self.get_bbox(height_distance=self.map_height, width_distance=self.map_width)
+        bbox = self.get_bbox(distance=self.map_size)
         south, west, north, east = bbox
         epsg3857_string = self.get_epsg3857_string(bbox=bbox)
         epsg3857_string_with_margin = self.get_epsg3857_string(bbox=bbox, add_margin=True)
@@ -81,8 +85,8 @@ class Config(Component):
             "west": west,
             "north": north,
             "east": east,
-            "height": self.map_height * 2,
-            "width": self.map_width * 2,
+            "height": self.map_size * 2,
+            "width": self.map_size * 2,
         }
 
         data = {
@@ -93,7 +97,7 @@ class Config(Component):
 
     def qgis_sequence(self) -> None:
         """Generates QGIS scripts for creating bounding box layers and rasterizing them."""
-        bbox = self.get_bbox(height_distance=self.map_height, width_distance=self.map_width)
+        bbox = self.get_bbox(distance=self.map_size)
         espg3857_bbox = self.get_espg3857_bbox(bbox=bbox)
         espg3857_bbox_with_margin = self.get_espg3857_bbox(bbox=bbox, add_margin=True)
 
