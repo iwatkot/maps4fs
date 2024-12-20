@@ -7,8 +7,10 @@ import os
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
+import cv2
 import osmnx as ox  # type: ignore
 from pyproj import Transformer
+from shapely.affinity import rotate, translate  # type: ignore
 from shapely.geometry import Polygon, box  # type: ignore
 
 from maps4fs.generator.qgis import save_scripts
@@ -24,8 +26,9 @@ class Component:
     Arguments:
         game (Game): The game instance for which the map is generated.
         coordinates (tuple[float, float]): The latitude and longitude of the center of the map.
-        map_height (int): The height of the map in pixels.
-        map_width (int): The width of the map in pixels.
+        map_size (int): The size of the map in pixels.
+        map_rotated_size (int): The size of the map in pixels after rotation.
+        rotation (int): The rotation angle of the map.
         map_directory (str): The directory where the map files are stored.
         logger (Any, optional): The logger to use. Must have at least three basic methods: debug,
             info, warning. If not provided, default logging will be used.
@@ -35,16 +38,18 @@ class Component:
         self,
         game: Game,
         coordinates: tuple[float, float],
-        map_height: int,
-        map_width: int,
+        map_size: int,
+        map_rotated_size: int,
+        rotation: int,
         map_directory: str,
         logger: Any = None,
         **kwargs,  # pylint: disable=W0613, R0913, R0917
     ):
         self.game = game
         self.coordinates = coordinates
-        self.map_height = map_height
-        self.map_width = map_width
+        self.map_size = map_size
+        self.map_rotated_size = map_rotated_size
+        self.rotation = rotation
         self.map_directory = map_directory
         self.logger = logger
         self.kwargs = kwargs
@@ -161,8 +166,7 @@ class Component:
     def get_bbox(
         self,
         coordinates: tuple[float, float] | None = None,
-        height_distance: int | None = None,
-        width_distance: int | None = None,
+        distance: int | None = None,
         project_utm: bool = False,
     ) -> tuple[int, int, int, int]:
         """Calculates the bounding box of the map from the coordinates and the height and
@@ -170,36 +174,29 @@ class Component:
         If coordinates and distance are not provided, the instance variables are used.
 
         Arguments:
-            coordinates (tuple[float, float], optional): The latitude and longitude of the center of
-                the map. Defaults to None.
-            height_distance (int, optional): The distance from the center of the map to the edge of
-                the map in the north-south direction. Defaults to None.
-            width_distance (int, optional): The distance from the center of the map to the edge of
-                the map in the east-west direction. Defaults to None.
+            coordinates (tuple[float, float], optional): The latitude and longitude of the center
+                of the map. Defaults to None.
+            distance (int, optional): The distance from the center of the map to the edge of the
+                map in all directions. Defaults to None.
             project_utm (bool, optional): Whether to project the bounding box to UTM.
 
         Returns:
             tuple[int, int, int, int]: The bounding box of the map.
         """
         coordinates = coordinates or self.coordinates
-        height_distance = height_distance or int(self.map_height / 2)
-        width_distance = width_distance or int(self.map_width / 2)
+        distance = distance or int(self.map_rotated_size / 2)
 
-        west, south, _, _ = ox.utils_geo.bbox_from_point(  # type: ignore
-            coordinates, dist=height_distance, project_utm=project_utm
+        west, south, east, north = ox.utils_geo.bbox_from_point(  # type: ignore
+            coordinates, dist=distance, project_utm=project_utm
         )
-        _, _, east, north = ox.utils_geo.bbox_from_point(  # type: ignore
-            coordinates, dist=width_distance, project_utm=project_utm
-        )
+
         bbox = north, south, east, west
         self.logger.debug(
-            "Calculated bounding box for component: %s: %s, project_utm: %s, "
-            "height_distance: %s, width_distance: %s",
+            "Calculated bounding box for component: %s: %s, project_utm: %s, distance: %s",
             self.__class__.__name__,
             bbox,
             project_utm,
-            height_distance,
-            width_distance,
+            distance,
         )
         return bbox
 
@@ -324,31 +321,46 @@ class Component:
             tuple[int, int]: The coordinates in the center system.
         """
         x, y = top_left
-        cs_x = x - self.map_width // 2
-        cs_y = y - self.map_height // 2
+        cs_x = x - self.map_size // 2
+        cs_y = y - self.map_size // 2
 
         return cs_x, cs_y
 
     def fit_polygon_into_bounds(
-        self, polygon_points: list[tuple[int, int]], margin: int = 0
+        self, polygon_points: list[tuple[int, int]], margin: int = 0, angle: int = 0
     ) -> list[tuple[int, int]]:
         """Fits a polygon into the bounds of the map.
 
         Arguments:
             polygon_points (list[tuple[int, int]]): The points of the polygon.
             margin (int, optional): The margin to add to the polygon. Defaults to 0.
+            angle (int, optional): The angle to rotate the polygon by. Defaults to 0.
 
         Returns:
             list[tuple[int, int]]: The points of the polygon fitted into the map bounds.
         """
         min_x = min_y = 0
-        max_x, max_y = self.map_width, self.map_height
+        max_x = max_y = self.map_size
 
-        # Create a polygon from the given points
         polygon = Polygon(polygon_points)
+
+        if angle:
+            center_x = center_y = self.map_rotated_size // 2
+            self.logger.debug(
+                "Rotating the polygon by %s degrees with center at %sx%s",
+                angle,
+                center_x,
+                center_y,
+            )
+            polygon = rotate(polygon, -angle, origin=(center_x, center_y))
+            offset = (self.map_size / 2) - (self.map_rotated_size / 2)
+            self.logger.debug("Translating the polygon by %s", offset)
+            polygon = translate(polygon, xoff=offset, yoff=offset)
 
         if margin:
             polygon = polygon.buffer(margin, join_style="mitre")
+            if polygon.is_empty:
+                raise ValueError("The polygon is empty after adding the margin.")
 
         # Create a bounding box for the map bounds
         bounds = box(min_x, min_y, max_x, max_y)
@@ -376,3 +388,69 @@ class Component:
             self.logger.warning("Info layer %s does not exist", info_layer_path)
             return None
         return info_layer_path
+
+    # pylint: disable=R0913, R0917, R0914
+    def rotate_image(
+        self,
+        image_path: str,
+        angle: int,
+        output_height: int,
+        output_width: int,
+        output_path: str | None = None,
+    ) -> None:
+        """Rotates an image by a given angle around its center and cuts out the center to match
+        the output size.
+
+        Arguments:
+            image_path (str): The path to the image to rotate.
+            angle (int): The angle to rotate the image by.
+            output_height (int): The height of the output image.
+            output_width (int): The width of the output image.
+        """
+        if not os.path.isfile(image_path):
+            self.logger.warning("Image %s does not exist", image_path)
+            return
+
+        # pylint: disable=no-member
+        image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+        if image is None:
+            self.logger.warning("Image %s could not be read", image_path)
+            return
+
+        self.logger.debug("Read image from %s with shape: %s", image_path, image.shape)
+
+        if not output_path:
+            output_path = image_path
+
+        height, width = image.shape[:2]
+        center = (width // 2, height // 2)
+
+        self.logger.debug(
+            "Rotating the image... Angle: %s, center: %s, height: %s, width: %s",
+            angle,
+            center,
+            height,
+            width,
+        )
+
+        rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
+        rotated = cv2.warpAffine(image, rotation_matrix, (width, height))
+
+        start_x = center[0] - output_width // 2
+        start_y = center[1] - output_height // 2
+        end_x = start_x + output_width
+        end_y = start_y + output_height
+
+        self.logger.debug(
+            "Cropping the rotated image: start_x: %s, start_y: %s, end_x: %s, end_y: %s",
+            start_x,
+            start_y,
+            end_x,
+            end_y,
+        )
+
+        cropped = rotated[start_y:end_y, start_x:end_x]
+
+        self.logger.debug("Shape of the cropped image: %s", cropped.shape)
+
+        cv2.imwrite(output_path, cropped)

@@ -99,8 +99,7 @@ class GeneratorUI:
             "Generating map preview for lat=%s, lon=%s, map_size=%s", lat, lon, map_size
         )
 
-        bbox = osmp.get_bbox((lat, lon), map_size)
-        html_file = osmp.get_preview([bbox])
+        html_file = osmp.get_rotated_preview(lat, lon, map_size, angle=-self.rotation)
 
         with self.html_preview_container:
             components.html(open(html_file).read(), height=600)
@@ -180,7 +179,22 @@ class GeneratorUI:
                 "💡 If you run the tool locally, you can generate larger maps, even with the custom size.  \n"
             )
 
-        # st.info(Messages.HEIGHT_SCALE_INFO)
+        # Rotation input.
+        st.write("[BETA] Enter the rotation of the map:")
+
+        self.rotation = st.slider(
+            "Rotation",
+            min_value=-180,
+            max_value=180,
+            value=0,
+            step=1,
+            key="rotation",
+            label_visibility="collapsed",
+            disabled=self.community,
+            on_change=self.map_preview,
+        )
+        if self.community:
+            st.warning("💡 This feature is available in local version of the tool.")
 
         self.auto_process = st.checkbox("Use auto preset", value=True, key="auto_process")
         if self.auto_process:
@@ -190,7 +204,6 @@ class GeneratorUI:
         self.multiplier_input = DEFAULT_MULTIPLIER
         self.blur_radius_input = DEFAULT_BLUR_RADIUS
         self.plateau_height_input = DEFAULT_PLATEAU
-        self.only_full_tiles = True
         self.fields_padding = 0
         self.farmland_margin = 3
 
@@ -258,20 +271,6 @@ class GeneratorUI:
                         max_value=10000,
                         key="plateau_height",
                         label_visibility="collapsed",
-                    )
-
-                with st.expander("Background Terrain Advanced Settings", icon="🏞️"):
-                    st.info(
-                        "ℹ️ Settings related to the background terrain "
-                        "which is a simple mesh around the playable area. "
-                    )
-
-                    st.write("Generate only full tiles (recommended) or all tiles:")
-                    st.write(Messages.ONLY_FULL_TILES_INFO)
-                    self.only_full_tiles = st.checkbox(
-                        "Only Full Background Tiles",
-                        key="only_full_tiles",
-                        value=True,
                     )
 
                 with st.expander("Textures Advanced Settings", icon="🎨"):
@@ -404,7 +403,7 @@ class GeneratorUI:
             game,
             coordinates,
             height,
-            width,
+            self.rotation,
             map_directory,
             logger=self.logger,
             multiplier=self.multiplier_input,
@@ -412,7 +411,6 @@ class GeneratorUI:
             auto_process=self.auto_process,
             plateau=self.plateau_height_input,
             light_version=self.community,
-            only_full_tiles=self.only_full_tiles,
             fields_padding=self.fields_padding,
             farmland_margin=self.farmland_margin,
         )

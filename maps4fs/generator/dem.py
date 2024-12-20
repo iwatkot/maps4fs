@@ -24,9 +24,11 @@ class DEM(Component):
     """Component for processing Digital Elevation Model data.
 
     Arguments:
+        game (Game): The game instance for which the map is generated.
         coordinates (tuple[float, float]): The latitude and longitude of the center of the map.
-        map_height (int): The height of the map in pixels.
-        map_width (int): The width of the map in pixels.
+        map_size (int): The size of the map in pixels.
+        map_rotated_size (int): The size of the map in pixels after rotation.
+        rotation (int): The rotation angle of the map.
         map_directory (str): The directory where the map files are stored.
         logger (Any, optional): The logger to use. Must have at least three basic methods: debug,
             info, warning. If not provided, default logging will be used.
@@ -39,6 +41,14 @@ class DEM(Component):
         self.gz_dir = os.path.join(self.temp_dir, "gz")
         os.makedirs(self.hgt_dir, exist_ok=True)
         os.makedirs(self.gz_dir, exist_ok=True)
+
+        self.logger.debug("Map size: %s x %s.", self.map_size, self.map_size)
+        self.logger.debug(
+            "Map rotated size: %s x %s.", self.map_rotated_size, self.map_rotated_size
+        )
+
+        self.output_resolution = self.get_output_resolution()
+        self.logger.debug("Output resolution for DEM data: %s.", self.output_resolution)
 
         self.multiplier = self.kwargs.get("multiplier", DEFAULT_MULTIPLIER)
         blur_radius = self.kwargs.get("blur_radius", DEFAULT_BLUR_RADIUS)
@@ -64,21 +74,45 @@ class DEM(Component):
         """
         return self._dem_path
 
-    def get_output_resolution(self) -> tuple[int, int]:
+    # pylint: disable=W0201
+    def set_dem_path(self, dem_path: str) -> None:
+        """Set path to the DEM file.
+
+        Arguments:
+            dem_path (str): Path to the DEM file.
+        """
+        self._dem_path = dem_path
+
+    # pylint: disable=W0201
+    def set_output_resolution(self, output_resolution: tuple[int, int]) -> None:
+        """Set output resolution for DEM data (width, height).
+
+        Arguments:
+            output_resolution (tuple[int, int]): Output resolution for DEM data.
+        """
+        self.output_resolution = output_resolution
+
+    def get_output_resolution(self, use_original: bool = False) -> tuple[int, int]:
         """Get output resolution for DEM data.
+
+        Arguments:
+            use_original (bool, optional): If True, will use original map size. Defaults to False.
 
         Returns:
             tuple[int, int]: Output resolution for DEM data.
         """
-        dem_height = int((self.map_height / 2) * self.game.dem_multipliyer + 1)
-        dem_width = int((self.map_width / 2) * self.game.dem_multipliyer + 1)
+        map_size = self.map_size if use_original else self.map_rotated_size
+
+        dem_size = int((map_size / 2) * self.game.dem_multipliyer)
+
         self.logger.debug(
-            "DEM size multiplier is %s, DEM height is %s, DEM width is %s.",
+            "DEM size multiplier is %s, DEM size: %sx%s, use original: %s.",
             self.game.dem_multipliyer,
-            dem_height,
-            dem_width,
+            dem_size,
+            dem_size,
+            use_original,
         )
-        return dem_width, dem_height
+        return dem_size, dem_size
 
     def to_ground(self, data: np.ndarray) -> np.ndarray:
         """Receives the signed 16-bit integer array and converts it to the ground level.
@@ -102,7 +136,7 @@ class DEM(Component):
         saves to map directory."""
         north, south, east, west = self.bbox
 
-        dem_output_resolution = self.get_output_resolution()
+        dem_output_resolution = self.output_resolution
         self.logger.debug("DEM output resolution: %s.", dem_output_resolution)
 
         tile_path = self._srtm_tile()
@@ -225,6 +259,25 @@ class DEM(Component):
         cv2.imwrite(self._dem_path, resampled_data)
         self.logger.info("DEM data was saved to %s.", self._dem_path)
 
+        if self.rotation:
+            self.rotate_dem()
+
+    def rotate_dem(self) -> None:
+        """Rotate DEM image."""
+        self.logger.debug("Rotating DEM image by %s degrees.", self.rotation)
+        output_width, output_height = self.get_output_resolution(use_original=True)
+
+        self.logger.debug(
+            "Output resolution for rotated DEM: %s x %s.", output_width, output_height
+        )
+
+        self.rotate_image(
+            self._dem_path,
+            self.rotation,
+            output_height=output_height,
+            output_width=output_width,
+        )
+
     def _tile_info(self, lat: float, lon: float) -> tuple[str, str]:
         """Returns latitude band and tile name for SRTM tile from coordinates.
 
@@ -306,68 +359,13 @@ class DEM(Component):
         cv2.imwrite(self._dem_path, dem_data)
         self.logger.warning("DEM data filled with zeros and saved to %s.", self._dem_path)
 
-    def grayscale_preview(self) -> str:
-        """Converts DEM image to grayscale RGB image and saves it to the map directory.
-        Returns path to the preview image.
+    def previews(self) -> list:
+        """This component does not have previews, returns empty list.
 
         Returns:
-            str: Path to the preview image.
+            list: Empty list.
         """
-        grayscale_dem_path = os.path.join(self.previews_directory, "dem_grayscale.png")
-
-        self.logger.debug("Creating grayscale preview of DEM data in %s.", grayscale_dem_path)
-
-        dem_data = cv2.imread(self._dem_path, cv2.IMREAD_GRAYSCALE)
-        dem_data_rgb = cv2.cvtColor(dem_data, cv2.COLOR_GRAY2RGB)
-        cv2.imwrite(grayscale_dem_path, dem_data_rgb)
-        return grayscale_dem_path
-
-    def colored_preview(self) -> str:
-        """Converts DEM image to colored RGB image and saves it to the map directory.
-        Returns path to the preview image.
-
-        Returns:
-            list[str]: List with a single path to the DEM file
-        """
-        colored_dem_path = os.path.join(self.previews_directory, "dem_colored.png")
-
-        self.logger.debug("Creating colored preview of DEM data in %s.", colored_dem_path)
-
-        dem_data = cv2.imread(self._dem_path, cv2.IMREAD_GRAYSCALE)
-
-        self.logger.debug(
-            "DEM data before normalization. Shape: %s, dtype: %s. Min: %s, max: %s.",
-            dem_data.shape,
-            dem_data.dtype,
-            dem_data.min(),
-            dem_data.max(),
-        )
-
-        # Create an empty array with the same shape and type as dem_data.
-        dem_data_normalized = np.empty_like(dem_data)
-
-        # Normalize the DEM data to the range [0, 255]
-        cv2.normalize(dem_data, dem_data_normalized, 0, 255, cv2.NORM_MINMAX)
-        self.logger.debug(
-            "DEM data after normalization. Shape: %s, dtype: %s. Min: %s, max: %s.",
-            dem_data_normalized.shape,
-            dem_data_normalized.dtype,
-            dem_data_normalized.min(),
-            dem_data_normalized.max(),
-        )
-        dem_data_colored = cv2.applyColorMap(dem_data_normalized, cv2.COLORMAP_JET)
-
-        cv2.imwrite(colored_dem_path, dem_data_colored)
-        return colored_dem_path
-
-    def previews(self) -> list[str]:
-        """Get list of preview images.
-
-        Returns:
-            list[str]: List of preview images.
-        """
-        self.logger.debug("Starting DEM previews generation.")
-        return [self.grayscale_preview(), self.colored_preview()]
+        return []
 
     def _get_scaling_factor(self, maximum_deviation: int) -> float:
         """Calculate scaling factor for DEM data normalization.
@@ -393,9 +391,9 @@ class DEM(Component):
         self.logger.debug("Starting DEM data normalization.")
         # Calculate the difference between the maximum and minimum values in the DEM data.
 
-        max_height = data.max()  # 1800
-        min_height = data.min()  # 1700
-        max_dev = max_height - min_height  # 100
+        max_height = data.max()
+        min_height = data.min()
+        max_dev = max_height - min_height
         self.logger.debug(
             "Maximum deviation: %s with maximum at %s and minimum at %s.",
             max_dev,

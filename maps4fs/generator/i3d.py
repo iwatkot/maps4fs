@@ -19,9 +19,11 @@ class I3d(Component):
     """Component for map i3d file settings and configuration.
 
     Arguments:
+        game (Game): The game instance for which the map is generated.
         coordinates (tuple[float, float]): The latitude and longitude of the center of the map.
-        map_height (int): The height of the map in pixels.
-        map_width (int): The width of the map in pixels.
+        map_size (int): The size of the map in pixels.
+        map_rotated_size (int): The size of the map in pixels after rotation.
+        rotation (int): The rotation angle of the map.
         map_directory (str): The directory where the map files are stored.
         logger (Any, optional): The logger to use. Must have at least three basic methods: debug,
             info, warning. If not provided, default logging will be used.
@@ -124,24 +126,37 @@ class I3d(Component):
             if fields_node is not None:
                 node_id = NODE_ID_STARTING_VALUE
 
-                for field_id, field in enumerate(fields, start=1):
-                    # Convert the top-left coordinates to the center coordinates system.
+                # Not using enumerate because in case of the error, we do not increment
+                # the field_id. So as a result we do not have a gap in the field IDs.
+                field_id = 1
+
+                for field in fields:
                     try:
-                        fitted_field = self.fit_polygon_into_bounds(field)
+                        fitted_field = self.fit_polygon_into_bounds(field, angle=self.rotation)
                     except ValueError as e:
+                        self.logger.warning(
+                            "Field %s could not be fitted into the map bounds with error: %s",
+                            field_id,
+                            e,
+                        )
+                        continue
+
+                    field_ccs = [
+                        self.top_left_coordinates_to_center(point) for point in fitted_field
+                    ]
+
+                    try:
+                        cx, cy = self.get_polygon_center(field_ccs)
+                    except Exception as e:  # pylint: disable=W0718
                         self.logger.warning(
                             "Field %s could not be fitted into the map bounds.", field_id
                         )
                         self.logger.debug("Error: %s", e)
                         continue
-                    field_ccs = [
-                        self.top_left_coordinates_to_center(point) for point in fitted_field
-                    ]
 
                     # Creating the main field node.
                     field_node = ET.Element("TransformGroup")
                     field_node.set("name", f"field{field_id}")
-                    cx, cy = self.get_polygon_center(field_ccs)
                     field_node.set("translation", f"{cx} 0 {cy}")
                     field_node.set("nodeId", str(node_id))
 
@@ -183,6 +198,7 @@ class I3d(Component):
                     self.logger.debug("Field %s added to the I3D file.", field_id)
 
                     node_id += 1
+                    field_id += 1
 
             tree.write(self._map_i3d_path)  # type: ignore
             self.logger.info("Map I3D file saved to: %s.", self._map_i3d_path)

@@ -15,9 +15,11 @@ class GRLE(Component):
     """Component for to generate InfoLayer PNG files based on GRLE schema.
 
     Arguments:
+        game (Game): The game instance for which the map is generated.
         coordinates (tuple[float, float]): The latitude and longitude of the center of the map.
-        map_height (int): The height of the map in pixels.
-        map_width (int): The width of the map in pixels.
+        map_size (int): The size of the map in pixels.
+        map_rotated_size (int): The size of the map in pixels after rotation.
+        rotation (int): The rotation angle of the map.
         map_directory (str): The directory where the map files are stored.
         logger (Any, optional): The logger to use. Must have at least three basic methods: debug,
             info, warning. If not provided, default logging will be used.
@@ -57,8 +59,8 @@ class GRLE(Component):
                     self.game.weights_dir_path(self.map_directory), info_layer["name"]
                 )
 
-                height = int(self.map_height * info_layer["height_multiplier"])
-                width = int(self.map_width * info_layer["width_multiplier"])
+                height = int(self.map_size * info_layer["height_multiplier"])
+                width = int(self.map_size * info_layer["width_multiplier"])
                 channels = info_layer["channels"]
                 data_type = info_layer["data_type"]
 
@@ -120,12 +122,21 @@ class GRLE(Component):
         tree = ET.parse(farmlands_xml_path)
         farmlands_xml = tree.find("farmlands")
 
-        for field_id, field in enumerate(fields, start=1):
+        # Not using enumerate because in case of the error, we do not increment
+        # the farmland_id. So as a result we do not have a gap in the farmland IDs.
+        farmland_id = 1
+
+        for field in fields:
             try:
-                fitted_field = self.fit_polygon_into_bounds(field, self.farmland_margin)
+                fitted_field = self.fit_polygon_into_bounds(
+                    field, self.farmland_margin, angle=self.rotation
+                )
             except ValueError as e:
-                self.logger.warning("Field %s could not be fitted into the map bounds.", field_id)
-                self.logger.debug("Error: %s", e)
+                self.logger.warning(
+                    "Farmland %s could not be fitted into the map bounds with error: %s",
+                    farmland_id,
+                    e,
+                )
                 continue
 
             field_np = np.array(fitted_field, np.int32)
@@ -136,13 +147,23 @@ class GRLE(Component):
             field_np = field_np // 2
 
             # pylint: disable=no-member
-            cv2.fillPoly(image, [field_np], field_id)  # type: ignore
+            try:
+                cv2.fillPoly(image, [field_np], farmland_id)  # type: ignore
+            except cv2.error as e:  # pylint: disable=E0712
+                self.logger.warning(
+                    "Farmland %s could not be added to the InfoLayer PNG file with error: %s",
+                    farmland_id,
+                    e,
+                )
+                continue
 
             # Add the field to the farmlands XML.
             farmland = ET.SubElement(farmlands_xml, "farmland")  # type: ignore
-            farmland.set("id", str(field_id))
+            farmland.set("id", str(farmland_id))
             farmland.set("priceScale", "1")
             farmland.set("npcName", "FORESTER")
+
+            farmland_id += 1
 
         tree.write(farmlands_xml_path)
 

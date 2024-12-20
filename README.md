@@ -38,6 +38,9 @@
 </div>
 
 🗺️ Supports 2x2, 4x4, 8x8, 16x16 and any custom size maps<br>
+🔄 Support map rotation 🆕<br>
+🌾 Automatically generates fields 🆕<br>
+🌽 Automatically generates farmlands 🆕<br>
 🌍 Based on real-world data from OpenStreetMap<br>
 🏞️ Generates height map using SRTM dataset<br>
 📦 Provides a ready-to-use map template for the Giants Editor<br>
@@ -46,8 +49,6 @@
 📄 Generates scripts to download high-resolution satellite images from [QGIS](https://qgis.org/download/) in one click<br>
 📕 Detailed [documentation](/docs) and tutorials <br>
 🧰 Modder Toolbox to help you with various tasks <br>
-🌾 Automatically generates fields 🆕<br>
-🌽 Automatically generates farmlands 🆕<br>
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/cf8f5752-9c69-4018-bead-290f59ba6976"><br>
@@ -442,10 +443,6 @@ You can also apply some advanced settings to the map generation process. Note th
 - Blur radius: the radius of the Gaussian blur filter applied to the DEM map. By default, it's set to 21. This filter just makes the DEM map smoother, so the height transitions will be more natural. You can set it to 1 to disable the filter, but it will result in a Minecraft-like map.
 
 - Plateau height: this value will be added to each pixel of the DEM image, making it "higher". It's useful when you want to add some negative heights on the map, that appear to be in a "low" place. By default, it's set to 0.
-
-### Background Terrain Advanced settings
-
-- Background Terrain Generate only full tiles: if checked (by default) the small tiles (N, NE, E, and so on) will not be generated, only the full tile will be created. It's useful when you don't want to work with separate tiles, but with one big file. Since the new method of cutting the map from the background terrain added to the documentation, and now it's possible to perfectly align the map with the background terrain, this option will remain just as a legacy one.
 
 ### Texture Advanced settings
 
