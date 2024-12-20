@@ -43,6 +43,7 @@ class Background(Component):
     def preprocess(self) -> None:
         """Registers the DEMs for the background terrain."""
         self.light_version = self.kwargs.get("light_version", False)
+        self.stl_preview_path: str | None = None
 
         if self.rotation:
             self.logger.debug("Rotation is enabled: %s.", self.rotation)
@@ -335,7 +336,8 @@ class Background(Component):
                 cv2.imwrite(background_dem_preview_path, background_dem_preview_image)
                 preview_paths.append(background_dem_preview_path)
 
-        preview_paths.append(self.stl_preview_path)
+        if self.stl_preview_path:
+            preview_paths.append(self.stl_preview_path)
 
         return preview_paths
 
