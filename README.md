@@ -10,6 +10,7 @@
   <a href="#How-To-Run">How-To-Run</a><br>
   <a href="docs/FAQ.md">FAQ</a> •
   <a href="docs/map_structure.md">Map Structure</a> •
+  <a href="docs/tips_and_hints.md">Tips and Hints</a> •
   <a href="#Modder-Toolbox">Modder Toolbox</a><br>
   <a href="#Supported-objects">Supported objects</a> •
   <a href="#Generation-info">Generation info</a> •
@@ -19,7 +20,8 @@
   <a href="#DDS-conversion">DDS conversion</a> •
   <a href="#For-advanced-users">For advanced users</a> •
   <a href="#Resources">Resources</a> •
-  <a href="#Bugs-and-feature-requests">Bugs and feature requests</a>
+  <a href="#Bugs-and-feature-requests">Bugs and feature requests</a><br>
+  <a href="#Special-thanks">Special thanks</a>
 </p>
 
 
@@ -466,3 +468,12 @@ To create a basic map, you only need the Giants Editor. But if you want to creat
 ## Bugs and feature requests
 ➡️ Please, before creating an issue or asking some questions, check the [FAQ](docs/FAQ.md) section.<br>
 If you find a bug or have an idea for a new feature, please create an issue [here](https://github.com/iwatkot/maps4fs/issues) or contact me directly on [Telegram](https://t.me/iwatkot) or on Discord: `iwatkot`.
+
+## Special thanks
+
+Of course, first of all, thanks to the direct [contributors](https://github.com/iwatkot/maps4fs/graphs/contributors) of the project.  
+
+But also, I want to thank the people who helped me with the project in some way, even if they didn't contribute directly. Here's the list of them:
+
+- [Ka5tis](https://github.com/Ka5tis) - for investigating the issue with a "spiky terrain" and finding a solution - changing the `DisplacementLayer` size to a higher value.
+- [Kalderone](https://www.youtube.com/@Kalderone_FS22) - for useful feedback, suggestions, expert advice on the map-making process and highlihting some important settings in the Giants Editor.

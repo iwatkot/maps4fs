@@ -9,6 +9,7 @@ from xml.etree import ElementTree as ET
 from maps4fs.generator.component import Component
 
 DEFAULT_HEIGHT_SCALE = 2000
+DISPLACEMENT_LAYER_SIZE_FOR_BIG_MAPS = 32768
 DEFAULT_MAX_LOD_DISTANCE = 10000
 DEFAULT_MAX_LOD_OCCLUDER_DISTANCE = 10000
 NODE_ID_STARTING_VALUE = 500
@@ -83,6 +84,15 @@ class I3d(Component):
                     )
 
                 self.logger.debug("TerrainTransformGroup element updated in I3D file.")
+
+        if self.map_size > 4096:
+            displacement_layer = terrain_elem.find(".//DisplacementLayer")  # pylint: disable=W0631
+
+            if displacement_layer is not None:
+                displacement_layer.set("size", str(DISPLACEMENT_LAYER_SIZE_FOR_BIG_MAPS))
+                self.logger.debug(
+                    "Map size is greater than 4096, DisplacementLayer size set to %s.",
+                )
 
         tree.write(self._map_i3d_path)  # type: ignore
         self.logger.info("Map I3D file saved to: %s.", self._map_i3d_path)
