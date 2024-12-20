@@ -79,8 +79,8 @@ def test_map():
                 map = Map(
                     game=game,
                     coordinates=coordinates,
-                    height=height,
-                    width=width,
+                    size=height,
+                    rotation=0,
                     map_directory=directory,
                     auto_process=autoprocess_case,
                 )
@@ -140,8 +140,8 @@ def test_map_preview():
     map = Map(
         game=game,
         coordinates=case,
-        height=height,
-        width=width,
+        size=height,
+        rotation=0,
         map_directory=directory,
     )
     for _ in map.generate():
@@ -168,8 +168,8 @@ def test_map_pack():
     map = Map(
         game=game,
         coordinates=case,
-        height=height,
-        width=width,
+        size=height,
+        rotation=33,
         map_directory=directory,
     )
     for _ in map.generate():
