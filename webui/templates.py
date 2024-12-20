@@ -16,6 +16,7 @@ class Messages:
         "StreamLit community hosting has some limitations, such as:  \n"
         "🔸 Maximum map size is 2048x2048 meters.  \n"
         "🔸 Background terrain will not be generated.  \n"
+        "🔸 Map rotation is disabled.  \n"
         "🔸 Advanced settings are disabled.  \n"
         "🔸 Texture dissolving is disabled (they will look worse).  \n  \n"
         "If you run the application locally, you won't have any of these limitations "
