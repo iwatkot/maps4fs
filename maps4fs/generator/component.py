@@ -356,6 +356,7 @@ class Component:
             offset = (self.map_size / 2) - (self.map_rotated_size / 2)
             self.logger.debug("Translating the polygon by %s", offset)
             polygon = translate(polygon, xoff=offset, yoff=offset)
+            self.logger.debug("Rotated and translated polygon.")
 
         if margin:
             polygon = polygon.buffer(margin, join_style="mitre")
@@ -367,12 +368,16 @@ class Component:
 
         # Intersect the polygon with the bounds to fit it within the map
         fitted_polygon = polygon.intersection(bounds)
+        self.logger.debug("Fitted the polygon into the bounds: %s", bounds)
 
         if not isinstance(fitted_polygon, Polygon):
             raise ValueError("The fitted polygon is not a valid polygon.")
 
         # Return the fitted polygon points
-        return list(fitted_polygon.exterior.coords)
+        as_list = list(fitted_polygon.exterior.coords)
+        if not as_list:
+            raise ValueError("The fitted polygon has no points.")
+        return as_list
 
     def get_infolayer_path(self, layer_name: str) -> str | None:
         """Returns the path to the info layer file.

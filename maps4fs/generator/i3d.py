@@ -126,6 +126,7 @@ class I3d(Component):
             return
 
         self.logger.info("Found %s fields in textures info layer.", len(fields))
+        self.logger.debug("Starging to add fields to the I3D file.")
 
         root = tree.getroot()
         gameplay_node = root.find(".//TransformGroup[@name='gameplay']")
