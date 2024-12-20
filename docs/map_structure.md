@@ -9,7 +9,7 @@ The name of the archive (folder) but default contains the following information:
 
 ### Background
 This directory contains components for creating the background terrain of the map. PNG images are just DEM files and the OBJ files were generated based on these DEM files. You can safely remove the PNG files if you don't need them.  
-The background directory contains of tiles, representing the cardinal directions (N, NE, E, SE, S, SW, W, NW) and the full tile. If you want to combine the background terrain from pieces, you can use them, or you can use the full tile for the whole map (in this case you probably need to cut out the center for the actual terrain).
+You can use the `FULL.obj` file for the whole background terrain. You need to cut out the center for the actual terrain using this [tutorial](https://github.com/iwatkot/maps4fs/blob/main/docs/create_background_terrain.md#cutting-out-the-center-of-the-map).
 
 ### Info Layers
 This directory mostly for internal use to store some data between different components. At the moment only one component - `Texture` stores here the generation data in JSON format.  
@@ -101,24 +101,8 @@ Yes, it's a description of your mod, something like name, description, author an
 ```text
 📦FS25_45_28571_20_23743_2024-12-10_23-43-55
  ┣ 📂background
- ┃ ┣ 📄E.obj
- ┃ ┣ 📄E.png
  ┃ ┣ 📄FULL.obj
- ┃ ┣ 📄FULL.png
- ┃ ┣ 📄N.obj
- ┃ ┣ 📄N.png
- ┃ ┣ 📄NE.obj
- ┃ ┣ 📄NE.png
- ┃ ┣ 📄NW.obj
- ┃ ┣ 📄NW.png
- ┃ ┣ 📄S.obj
- ┃ ┣ 📄S.png
- ┃ ┣ 📄SE.obj
- ┃ ┣ 📄SE.png
- ┃ ┣ 📄SW.obj
- ┃ ┣ 📄SW.png
- ┃ ┣ 📄W.obj
- ┃ ┗ 📄W.png
+ ┃ ┗ 📄FULL.png
  ┣ 📂info_layers
  ┃ ┗ 📄textures.json
  ┣ 📂map

@@ -204,7 +204,6 @@ class GeneratorUI:
         self.multiplier_input = DEFAULT_MULTIPLIER
         self.blur_radius_input = DEFAULT_BLUR_RADIUS
         self.plateau_height_input = DEFAULT_PLATEAU
-        self.only_full_tiles = True
         self.fields_padding = 0
         self.farmland_margin = 3
 
@@ -272,20 +271,6 @@ class GeneratorUI:
                         max_value=10000,
                         key="plateau_height",
                         label_visibility="collapsed",
-                    )
-
-                with st.expander("Background Terrain Advanced Settings", icon="🏞️"):
-                    st.info(
-                        "ℹ️ Settings related to the background terrain "
-                        "which is a simple mesh around the playable area. "
-                    )
-
-                    st.write("Generate only full tiles (recommended) or all tiles:")
-                    st.write(Messages.ONLY_FULL_TILES_INFO)
-                    self.only_full_tiles = st.checkbox(
-                        "Only Full Background Tiles",
-                        key="only_full_tiles",
-                        value=True,
                     )
 
                 with st.expander("Textures Advanced Settings", icon="🎨"):
@@ -426,7 +411,6 @@ class GeneratorUI:
             auto_process=self.auto_process,
             plateau=self.plateau_height_input,
             light_version=self.community,
-            only_full_tiles=self.only_full_tiles,
             fields_padding=self.fields_padding,
             farmland_margin=self.farmland_margin,
         )

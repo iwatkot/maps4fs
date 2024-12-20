@@ -443,10 +443,6 @@ You can also apply some advanced settings to the map generation process. Note th
 
 - Plateau height: this value will be added to each pixel of the DEM image, making it "higher". It's useful when you want to add some negative heights on the map, that appear to be in a "low" place. By default, it's set to 0.
 
-### Background Terrain Advanced settings
-
-- Background Terrain Generate only full tiles: if checked (by default) the small tiles (N, NE, E, and so on) will not be generated, only the full tile will be created. It's useful when you don't want to work with separate tiles, but with one big file. Since the new method of cutting the map from the background terrain added to the documentation, and now it's possible to perfectly align the map with the background terrain, this option will remain just as a legacy one.
-
 ### Texture Advanced settings
 
 - Fields padding - this value (in meters) will be applied to each field, making it smaller. It's useful when the fields are too close to each other and you want to make them smaller. By default, it's set to 0.
