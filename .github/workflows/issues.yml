@@ -1,3 +1,5 @@
+name: Answer issues
+
 on:
   issues:
     types:

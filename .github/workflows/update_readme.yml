@@ -1,0 +1,24 @@
+name: Update docker tag in README
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Update README.md
+      run: |
+        sed -i "s|docker run -d -p 8501:8501 --name maps4fs iwatkot/maps4fs.*|docker run -d -p 8501:8501 --name maps4fs iwatkot/maps4fs:${{ github.ref_name }}|g" README.md
+
+    - name: Commit changes
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        git add README.md
+        git commit -m "Update Docker tag in README to ${{ github.ref_name }}"
+        git push

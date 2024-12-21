@@ -55,8 +55,8 @@
 <p align="center">
 <img src="https://github.com/user-attachments/assets/cf8f5752-9c69-4018-bead-290f59ba6976"><br>
 🌎 Detailed terrain based on real-world data.<br><br>
-<img src="https://github.com/user-attachments/assets/7f238ab4-9ff4-4c6e-ba07-5796be012baa"><br>
-🛰️ Realistic background terrain objects with satellite images.<br><br>
+<img src="https://github.com/user-attachments/assets/dc40d0bb-c20b-411c-8833-9925d0389452"><br>
+🛰️ Realistic background terrain with satellite images.<br><br>
 <img src="https://github.com/user-attachments/assets/80e5923c-22c7-4dc0-8906-680902511f3a"><br>
 🗒️ True-to-life blueprints for fast and precise modding.<br><br>
 <img width="480" src="https://github.com/user-attachments/assets/1a8802d2-6a3b-4bfa-af2b-7c09478e199b"><br>
@@ -88,7 +88,7 @@ So, jump to [Docker version](#option-2-docker-version) to launch the tool with o
 ### 😎 For advanced users
 **Option 2:** Run the Docker version in your browser. Launch the following command in your terminal:
 ```bash
-docker run -d -p 8501:8501 iwatkot/maps4fs
+docker run -d -p 8501:8501 --name maps4fs iwatkot/maps4fs
 ```
 And open [http://localhost:8501](http://localhost:8501) in your browser.<br>
 If you don't know how to use Docker, navigate to the [Docker version](#option-2-docker-version), it's really simple.<br>
@@ -151,7 +151,7 @@ You can launch the project with minimalistic UI in your browser using Docker. Fo
 1. Install [Docker](https://docs.docker.com/get-docker/) for your OS.
 2. Run the following command in your terminal:
 ```bash
-docker run -d -p 8501:8501 iwatkot/maps4fs
+docker run -d -p 8501:8501 --name maps4fs iwatkot/maps4fs
 ```
 3. Open your browser and go to [http://localhost:8501](http://localhost:8501).
 4. Fill in the required fields and click on the `Generate` button.

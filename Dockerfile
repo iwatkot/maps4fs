@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /usr/src/app
 
+COPY .streamlit /usr/src/app/.streamlit
 COPY data /usr/src/app/data
 COPY docs /usr/src/app/docs
 COPY webui /usr/src/app/webui

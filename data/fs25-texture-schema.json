@@ -82,7 +82,7 @@
   {
     "name": "grassDirtPatchy",
     "count": 2,
-    "tags": { "natural": ["wood", "tree_row"] },
+    "tags": { "natural": ["wood", "tree_row", "forest"] },
     "width": 2,
     "color": [0, 252, 124]
   },
@@ -199,7 +199,7 @@
   {
     "name": "sand",
     "count": 2,
-    "tags": { "natural": "water", "waterway": true },
+    "tags": { "natural": "water", "waterway": true, "landuse": "basin" },
     "width": 10,
     "color": [255, 20, 20]
   }
