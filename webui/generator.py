@@ -120,7 +120,7 @@ class GeneratorUI:
         try:
             if versions:
                 latest_version, current_version = versions
-                if current_version != latest_version:
+                if current_version != latest_version and len(current_version) > 0:
                     st.warning(
                         f"🆕 New version is available!   \n"
                         f"Your current version: `{current_version}`, "
