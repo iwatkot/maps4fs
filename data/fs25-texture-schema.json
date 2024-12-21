@@ -166,7 +166,10 @@
   },
   {
     "name": "mudPebblesLight",
-    "count": 2
+    "count": 2,
+    "tags": { "waterway": ["ditch", "drain"] },
+    "width": 2,
+    "color": [33, 67, 101]
   },
   {
     "name": "mudTracks",
@@ -199,7 +202,11 @@
   {
     "name": "sand",
     "count": 2,
-    "tags": { "natural": "water", "waterway": true, "landuse": "basin" },
+    "tags": {
+      "natural": "water",
+      "waterway": ["river", "stream", "flowline", "tidal_channel", "canal"],
+      "landuse": "basin"
+    },
     "width": 10,
     "color": [255, 20, 20]
   }

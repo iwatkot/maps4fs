@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 from collections import defaultdict
 from typing import Any, Callable, Generator, Optional
 
@@ -241,6 +242,17 @@ class Texture(Component):
                     self.logger.debug(
                         "Skipping rotation of layer %s because it has no tags.", layer.name
                     )
+
+        base_path = self.game.base_image_path(self.map_directory)
+        if base_path:
+            base_layer = self.get_base_layer()
+            if base_layer:
+                base_layer_path = base_layer.get_preview_or_path(self._weights_dir)
+                self.logger.debug(
+                    "Copying base layer to use it later for density map to %s.", base_path
+                )
+                # Make a copy of a base layer to the fruits density map.
+                shutil.copy(base_layer_path, base_path)
 
     # pylint: disable=W0201
     def _read_parameters(self) -> None:

@@ -85,6 +85,21 @@ class I3d(Component):
 
                 self.logger.debug("TerrainTransformGroup element updated in I3D file.")
 
+            sun_elem = map_elem.find(".//Light[@name='sun']")
+
+            if sun_elem is not None:
+                self.logger.debug("Sun element found in I3D file.")
+
+                distance = self.map_size // 2
+
+                sun_elem.set("lastShadowMapSplitBboxMin", f"-{distance},-128,-{distance}")
+                sun_elem.set("lastShadowMapSplitBboxMax", f"{distance},148,{distance}")
+
+                self.logger.debug(
+                    "Sun BBOX updated with half of the map size: %s.",
+                    distance,
+                )
+
         if self.map_size > 4096:
             displacement_layer = terrain_elem.find(".//DisplacementLayer")  # pylint: disable=W0631
 

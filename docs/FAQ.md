@@ -46,4 +46,8 @@ setShapeCullingWorldProperties(-8192, -100, -8192, 8192, 500, 8192, 16, 0, 9000)
 Make sure that **Always loaded** checkbox is checked, then save it and execute. It should help.
 
 
+### I launched the script to download satellite images from QGIS, but it's taking too long, what should I do?
+
+The script is downloading a huge GeoTIFF image, so it can take a while depending on the region size and hardware. Some guys reported that on old CPUs it can take up to 30 minutes. Just wait, and it will finish eventually.
+
 If you think that some question should be added here, please, contact me in [Discord](https://discord.gg/Sj5QKKyE42) or open an issue on GitHub. Thank you! 
