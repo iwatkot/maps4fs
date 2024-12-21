@@ -57,15 +57,14 @@
 🌎 Detailed terrain based on real-world data.<br><br>
 <img src="https://github.com/user-attachments/assets/dc40d0bb-c20b-411c-8833-9925d0389452"><br>
 🛰️ Realistic background terrain with satellite images.<br><br>
+<img src="https://github.com/user-attachments/assets/6e3c0e99-2cce-46ac-82db-5cb60bba7a30"><br>
+📐 Perfectly aligned background terrain.<br><br>
 <img src="https://github.com/user-attachments/assets/80e5923c-22c7-4dc0-8906-680902511f3a"><br>
 🗒️ True-to-life blueprints for fast and precise modding.<br><br>
 <img width="480" src="https://github.com/user-attachments/assets/1a8802d2-6a3b-4bfa-af2b-7c09478e199b"><br>
 🌾 Field generation with one click.<br><br>
 <img width="480" src="https://github.com/user-attachments/assets/4d1fa879-5d60-438b-a84e-16883bcef0ec"><br>
 🌽 Automatic farmlands generation based on the fields.<br><br>
-<img src="https://github.com/user-attachments/assets/cce45575-c917-4a1b-bdc0-6368e32ccdff"><br>
-📏 Almost any possible map sizes.
-</p>
 
 📹 A complete step-by-step video tutorial is here!  
 <a href="https://www.youtube.com/watch?v=Nl_aqXJ5nAk" target="_blank"><img src="https://github.com/user-attachments/assets/4845e030-0e73-47ab-a5a3-430308913060"/></a>
