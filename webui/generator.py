@@ -128,6 +128,7 @@ class GeneratorUI:
                         "Use the following commands to upgrade:   \n"
                         "```bash   \n"
                         "docker stop maps4fs   \n"
+                        "docker rm maps4fs   \n"
                         "docker run -d -p 8501:8501 --name maps4fs "
                         f"iwatkot/maps4fs:{latest_version}   \n"
                         "```"
