@@ -116,6 +116,25 @@ class GeneratorUI:
         self.logger.debug("Adding widgets to the left column...")
 
         st.title(Messages.TITLE)
+        versions = config.get_versions(self.logger)
+        try:
+            if versions:
+                latest_version, current_version = versions
+                if current_version != latest_version:
+                    st.warning(
+                        f"🆕 New version is available!   \n"
+                        f"Your current version: `{current_version}`, "
+                        f"latest version: `{latest_version}`.   \n"
+                        "Use the following commands to upgrade:   \n"
+                        "```bash   \n"
+                        "docker stop maps4fs   \n"
+                        "docker run -d -p 8501:8501 --name maps4fs "
+                        f"iwatkot/maps4fs:{latest_version}   \n"
+                        "```"
+                    )
+        except Exception as e:
+            self.logger.error("An error occurred while checking the package version: %s", e)
+
         st.write(Messages.MAIN_PAGE_DESCRIPTION)
         if self.community:
             st.info(Messages.MAIN_PAGE_COMMUNITY_WARNING)

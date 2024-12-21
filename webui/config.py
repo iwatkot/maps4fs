@@ -2,6 +2,8 @@ import os
 import threading
 from time import sleep
 
+import requests
+
 import maps4fs as mfs
 
 WORKING_DIRECTORY = os.getcwd()
@@ -80,3 +82,39 @@ def remove_with_delay_without_blocking(
 
     logger.debug("Starting a new thread to remove the file %s.", file_path)
     threading.Thread(target=remove_file).start()
+
+
+def get_versions(logger: mfs.Logger) -> tuple[str, str] | None:
+    """Get the latest version and the current version of the package.
+
+    Returns:
+        tuple[str, str] | None: The latest version and the current version if the package is not
+            the latest version, None otherwise
+    """
+    try:
+        response = requests.get("https://pypi.org/pypi/maps4fs/json")
+        response.raise_for_status()
+
+        latest_version = response.json()["info"]["version"]
+        logger.debug("Latest version on PyPI: %s. Length: %s", latest_version, len(latest_version))
+
+        current_version = get_package_version("shapely", logger)
+        logger.debug("Current version: %s. Length: %s", current_version, len(current_version))
+
+        return latest_version, current_version
+    except Exception as e:
+        logger.error("An error occurred while checking the package version: %s", e)
+        return
+
+
+def get_package_version(package_name: str, logger: mfs.Logger) -> str:
+    """Get the package version.
+
+    Returns:
+        str: The package version.
+    """
+    response = os.popen(f"pip list | grep {package_name}").read()
+    logger.debug("Grepped response: %s", response)
+    cleared_response = response.replace(" ", "")
+    logger.debug("Cleared response: %s", cleared_response)
+    return response.replace(package_name, "").strip()
