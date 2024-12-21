@@ -98,7 +98,7 @@ def get_versions(logger: mfs.Logger) -> tuple[str, str] | None:
         latest_version = response.json()["info"]["version"]
         logger.debug("Latest version on PyPI: %s. Length: %s", latest_version, len(latest_version))
 
-        current_version = get_package_version("shapely", logger)
+        current_version = get_package_version("maps4fs", logger)
         logger.debug("Current version: %s. Length: %s", current_version, len(current_version))
 
         return latest_version, current_version
