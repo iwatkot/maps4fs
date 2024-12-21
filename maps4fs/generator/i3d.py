@@ -85,9 +85,6 @@ class I3d(Component):
 
                 self.logger.debug("TerrainTransformGroup element updated in I3D file.")
 
-            # Find element: <Light name="sun"
-            # Change following values of it: lastShadowMapSplitBboxMin="-1024,-128,-1024" lastShadowMapSplitBboxMax="1024,148,1024"
-
             sun_elem = map_elem.find(".//Light[@name='sun']")
 
             if sun_elem is not None:
