@@ -2,12 +2,16 @@
 
 import json
 import os
+from random import choice, randint
 from xml.etree import ElementTree as ET
 
 import cv2
 import numpy as np
 
 from maps4fs.generator.component import Component
+
+ISLAND_SIZE_MIN = 10
+ISLAND_SIZE_MAX = 200
 
 
 # pylint: disable=W0223
@@ -76,6 +80,11 @@ class GRLE(Component):
                 self.logger.warning("Invalid InfoLayer schema: %s.", info_layer)
 
         self._add_farmlands()
+        if self.game.code == "FS25":
+            self.logger.info("Game is %s, plants will be added.", self.game.code)
+            self._add_plants()
+        else:
+            self.logger.warning("Adding plants it's not supported for the %s.", self.game.code)
 
     def previews(self) -> list[str]:
         """Returns a list of paths to the preview images (empty list).
@@ -184,3 +193,123 @@ class GRLE(Component):
         self.logger.info(
             "Farmlands added to the InfoLayer PNG file: %s.", info_layer_farmlands_path
         )
+
+    def _add_plants(self) -> None:
+        """Adds plants to the InfoLayer PNG file."""
+        # 1. Get the path to the densityMap_fruits.png.
+        # 2. Get the path to the base layer (grass).
+        # 3. Detect non-zero areas in the base layer (it's where the plants will be placed).
+        base_image_path = self.game.base_image_path(self.map_directory)
+        if not base_image_path or not os.path.isfile(base_image_path):
+            self.logger.warning("Base image not found in %s.", base_image_path)
+            return
+
+        density_map_fruit_path = os.path.join(
+            self.game.weights_dir_path(self.map_directory), "densityMap_fruits.png"
+        )
+
+        if not os.path.isfile(density_map_fruit_path):
+            self.logger.warning("Density map for fruits not found in %s.", density_map_fruit_path)
+            return
+
+        # Single channeled 8-bit image, where non-zero values (255) are where the grass is.
+        base_image = cv2.imread(base_image_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
+
+        # Density map of the fruits is 2X size of the base image, so we need to resize it.
+        # We'll resize the base image to make it bigger, so we can compare the values.
+        base_image = cv2.resize(  # pylint: disable=no-member
+            base_image,
+            (base_image.shape[1] * 2, base_image.shape[0] * 2),
+            interpolation=cv2.INTER_NEAREST,  # pylint: disable=no-member
+        )
+
+        # B and G channels remain the same (zeros), while we change the R channel.
+        possible_R_values = [33, 65, 97, 129, 161, 193, 225]  # pylint: disable=C0103
+
+        # 1st approach: Change the non zero values in the base image to 33 (for debug).
+        # And use the base image as R channel in the density map.
+
+        # pylint: disable=no-member
+        def create_island_of_plants(image: np.ndarray, count: int) -> np.ndarray:
+            """Create an island of plants in the image.
+
+            Arguments:
+                image (np.ndarray): The image where the island of plants will be created.
+                count (int): The number of islands of plants to create.
+
+            Returns:
+                np.ndarray: The image with the islands of plants.
+            """
+            for _ in range(count):
+                # Randomly choose the value for the island.
+                plant_value = choice(possible_R_values)
+                # Randomly choose the size of the island.
+                island_size = randint(ISLAND_SIZE_MIN, ISLAND_SIZE_MAX)
+                # Randomly choose the position of the island.
+                # x = np.random.randint(0, image.shape[1] - island_size)
+                # y = np.random.randint(0, image.shape[0] - island_size)
+                x = randint(0, image.shape[1] - island_size)
+                y = randint(0, image.shape[0] - island_size)
+
+                # Randomly choose the shape of the island.
+                shapes = ["circle", "ellipse", "polygon"]
+                shape = choice(shapes)
+
+                try:
+                    if shape == "circle":
+                        center = (x + island_size // 2, y + island_size // 2)
+                        radius = island_size // 2
+                        cv2.circle(image, center, radius, plant_value, -1)  # type: ignore
+                    elif shape == "ellipse":
+                        center = (x + island_size // 2, y + island_size // 2)
+                        axes = (island_size // 2, island_size // 4)
+                        angle = 0
+                        cv2.ellipse(  # type: ignore
+                            image, center, axes, angle, 0, 360, plant_value, -1
+                        )
+                    elif shape == "polygon":
+                        nodes_count = randint(20, 50)
+                        nodes = []
+                        for _ in range(nodes_count):
+                            node = (randint(x, x + island_size), randint(y, y + island_size))
+                            nodes.append(node)
+                        nodes = np.array(nodes, np.int32)  # type: ignore
+                        cv2.fillPoly(image, [nodes], plant_value)  # type: ignore
+                except Exception:  # pylint: disable=W0703
+                    continue
+
+            return image
+
+        updated_base_image = base_image.copy()
+        # Set all the non-zero values to 33.
+        updated_base_image[base_image != 0] = 33
+
+        # Add islands of plants to the base image.
+        island_count = self.map_size
+        self.logger.info("Adding %s islands of plants to the base image.", island_count)
+        updated_base_image = create_island_of_plants(updated_base_image, island_count)
+        self.logger.debug("Islands of plants added to the base image.")
+
+        # Remove the values where the base image has zeros.
+        updated_base_image[base_image == 0] = 0
+        self.logger.debug("Removed the values where the base image has zeros.")
+
+        # Value of 33 represents the base grass plant.
+        # After painting it with base grass, we'll create multiple islands of different plants.
+        # On the final step, we'll remove all the values which in pixels
+        # where zerons in the original base image (so we don't paint grass where it should not be).
+
+        # Three channeled 8-bit image, where non-zero values are the
+        # different types of plants (only in the R channel).
+        density_map_fruits = cv2.imread(density_map_fruit_path, cv2.IMREAD_UNCHANGED)
+        self.logger.debug("Density map for fruits loaded, shape: %s.", density_map_fruits.shape)
+
+        # Put the updated base image as the B channel in the density map.
+        density_map_fruits[:, :, 0] = updated_base_image
+        self.logger.debug("Updated base image added as the B channel in the density map.")
+
+        # Save the updated density map.
+        # Ensure that order of channels is correct because CV2 uses BGR and we need RGB.
+        density_map_fruits = cv2.cvtColor(density_map_fruits, cv2.COLOR_BGR2RGB)
+        cv2.imwrite(density_map_fruit_path, density_map_fruits)
+        self.logger.info("Updated density map for fruits saved in %s.", density_map_fruit_path)

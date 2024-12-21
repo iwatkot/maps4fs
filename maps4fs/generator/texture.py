@@ -458,6 +458,14 @@ class Texture(Component):
             cv2.imwrite(layer_path, img)
             self.logger.info("Base texture %s saved.", layer_path)
 
+            base_path = self.game.base_image_path(self.map_directory)
+            if base_path:
+                self.logger.debug(
+                    "Copying base layer to use it later for density map to %s.", base_path
+                )
+                # Make a copy of a base layer to the fruits density map.
+                cv2.imwrite(base_path, img)
+
     def get_relative_x(self, x: float) -> int:
         """Converts UTM X coordinate to relative X coordinate in map image.
 
