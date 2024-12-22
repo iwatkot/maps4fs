@@ -63,6 +63,7 @@ class Background(Component):
         for name, autoprocess in zip(ELEMENTS, autoprocesses):
             dem = DEM(
                 self.game,
+                self.map,
                 self.coordinates,
                 background_size,
                 rotated_size,

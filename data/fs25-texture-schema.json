@@ -69,7 +69,8 @@
     "count": 2,
     "tags": { "natural": "grassland" },
     "color": [34, 255, 34],
-    "priority": 0
+    "priority": 0,
+    "usage": "grass"
   },
   {
     "name": "grassClovers",
@@ -84,7 +85,8 @@
     "count": 2,
     "tags": { "natural": ["wood", "tree_row", "forest"] },
     "width": 2,
-    "color": [0, 252, 124]
+    "color": [0, 252, 124],
+    "usage": "forest"
   },
   {
     "name": "grassDirtPatchyDry",

@@ -10,6 +10,7 @@ import numpy as np
 from shapely.geometry import Polygon
 
 from maps4fs.generator.component import Component
+from maps4fs.generator.texture import Texture
 
 ISLAND_SIZE_MIN = 10
 ISLAND_SIZE_MAX = 200
@@ -203,27 +204,44 @@ class GRLE(Component):
         # 1. Get the path to the densityMap_fruits.png.
         # 2. Get the path to the base layer (grass).
         # 3. Detect non-zero areas in the base layer (it's where the plants will be placed).
-        base_image_path = self.game.base_image_path(self.map_directory)
-        if not base_image_path or not os.path.isfile(base_image_path):
-            self.logger.warning("Base image not found in %s.", base_image_path)
+        texture_component: Texture | None = self.map.get_component("Texture")
+        if not texture_component:
+            self.logger.warning("Texture component not found in the map.")
+            return
+
+        grass_layer = texture_component.get_layer_by_usage("grass")
+        if not grass_layer:
+            self.logger.warning("Grass layer not found in the texture component.")
+            return
+
+        weights_directory = self.game.weights_dir_path(self.map_directory)
+        grass_image_path = grass_layer.get_preview_or_path(weights_directory)
+        self.logger.debug("Grass image path: %s.", grass_image_path)
+
+        if not grass_image_path or not os.path.isfile(grass_image_path):
+            self.logger.warning("Base image not found in %s.", grass_image_path)
             return
 
         density_map_fruit_path = os.path.join(
             self.game.weights_dir_path(self.map_directory), "densityMap_fruits.png"
         )
 
+        self.logger.debug("Density map for fruits path: %s.", density_map_fruit_path)
+
         if not os.path.isfile(density_map_fruit_path):
             self.logger.warning("Density map for fruits not found in %s.", density_map_fruit_path)
             return
 
         # Single channeled 8-bit image, where non-zero values (255) are where the grass is.
-        base_image = cv2.imread(base_image_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
+        grass_image = cv2.imread(
+            grass_image_path, cv2.IMREAD_UNCHANGED
+        )  # pylint: disable=no-member
 
         # Density map of the fruits is 2X size of the base image, so we need to resize it.
         # We'll resize the base image to make it bigger, so we can compare the values.
-        base_image = cv2.resize(  # pylint: disable=no-member
-            base_image,
-            (base_image.shape[1] * 2, base_image.shape[0] * 2),
+        grass_image = cv2.resize(  # pylint: disable=no-member
+            grass_image,
+            (grass_image.shape[1] * 2, grass_image.shape[0] * 2),
             interpolation=cv2.INTER_NEAREST,  # pylint: disable=no-member
         )
 
@@ -310,22 +328,22 @@ class GRLE(Component):
                 return None
             return rounded_polygon
 
-        updated_base_image = base_image.copy()
+        grass_image_copy = grass_image.copy()
         # Set all the non-zero values to 33.
-        updated_base_image[base_image != 0] = 33
+        grass_image_copy[grass_image != 0] = 33
 
         # Add islands of plants to the base image.
         island_count = self.map_size
         self.logger.info("Adding %s islands of plants to the base image.", island_count)
-        updated_base_image = create_island_of_plants(updated_base_image, island_count)
+        grass_image_copy = create_island_of_plants(grass_image_copy, island_count)
         self.logger.debug("Islands of plants added to the base image.")
 
-        # Sligtly reduce the size of the base_image, that we'll use as mask.
+        # Sligtly reduce the size of the grass_image, that we'll use as mask.
         kernel = np.ones((3, 3), np.uint8)
-        base_image = cv2.erode(base_image, kernel, iterations=1)
+        grass_image = cv2.erode(grass_image, kernel, iterations=1)
 
         # Remove the values where the base image has zeros.
-        updated_base_image[base_image == 0] = 0
+        grass_image_copy[grass_image == 0] = 0
         self.logger.debug("Removed the values where the base image has zeros.")
 
         # Value of 33 represents the base grass plant.
@@ -339,7 +357,7 @@ class GRLE(Component):
         self.logger.debug("Density map for fruits loaded, shape: %s.", density_map_fruits.shape)
 
         # Put the updated base image as the B channel in the density map.
-        density_map_fruits[:, :, 0] = updated_base_image
+        density_map_fruits[:, :, 0] = grass_image_copy
         self.logger.debug("Updated base image added as the B channel in the density map.")
 
         # Save the updated density map.
@@ -347,6 +365,3 @@ class GRLE(Component):
         density_map_fruits = cv2.cvtColor(density_map_fruits, cv2.COLOR_BGR2RGB)
         cv2.imwrite(density_map_fruit_path, density_map_fruits)
         self.logger.info("Updated density map for fruits saved in %s.", density_map_fruit_path)
-
-        debug_save_path = "debug.png"
-        cv2.imwrite(debug_save_path, density_map_fruits)

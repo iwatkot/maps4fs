@@ -17,6 +17,7 @@ from maps4fs.generator.qgis import save_scripts
 
 if TYPE_CHECKING:
     from maps4fs.generator.game import Game
+    from maps4fs.generator.map import Map
 
 
 # pylint: disable=R0801, R0903, R0902, R0904
@@ -25,6 +26,7 @@ class Component:
 
     Arguments:
         game (Game): The game instance for which the map is generated.
+        map (Map): The map instance for which the component is generated.
         coordinates (tuple[float, float]): The latitude and longitude of the center of the map.
         map_size (int): The size of the map in pixels.
         map_rotated_size (int): The size of the map in pixels after rotation.
@@ -37,6 +39,7 @@ class Component:
     def __init__(
         self,
         game: Game,
+        map: Map,
         coordinates: tuple[float, float],
         map_size: int,
         map_rotated_size: int,
@@ -46,6 +49,7 @@ class Component:
         **kwargs,  # pylint: disable=W0613, R0913, R0917
     ):
         self.game = game
+        self.map = map
         self.coordinates = coordinates
         self.map_size = map_size
         self.map_rotated_size = map_rotated_size

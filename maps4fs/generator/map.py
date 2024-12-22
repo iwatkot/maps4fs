@@ -74,6 +74,7 @@ class Map:
         for game_component in self.game.components:
             component = game_component(
                 self.game,
+                self,
                 self.coordinates,
                 self.size,
                 self.rotated_size,
@@ -82,6 +83,7 @@ class Map:
                 self.logger,
                 **self.kwargs,
             )
+            self.components.append(component)
 
             yield component.__class__.__name__
 
@@ -104,7 +106,20 @@ class Map:
                     e,
                 )
                 raise e
-            self.components.append(component)
+
+    def get_component(self, component_name: str) -> Component | None:
+        """Get component by name.
+
+        Arguments:
+            component_name (str): Name of the component.
+
+        Returns:
+            Component | None: Component instance or None if not found.
+        """
+        for component in self.components:
+            if component.__class__.__name__ == component_name:
+                return component
+        return None
 
     def previews(self) -> list[str]:
         """Get list of preview images.
