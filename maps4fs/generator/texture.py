@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import shutil
 from collections import defaultdict
 from typing import Any, Callable, Generator, Optional
 
@@ -64,6 +63,7 @@ class Texture(Component):
             exclude_weight: bool = False,
             priority: int | None = None,
             info_layer: str | None = None,
+            usage: str | None = None,
         ):
             self.name = name
             self.count = count
@@ -73,6 +73,7 @@ class Texture(Component):
             self.exclude_weight = exclude_weight
             self.priority = priority
             self.info_layer = info_layer
+            self.usage = usage
 
         def to_json(self) -> dict[str, str | list[str] | bool]:  # type: ignore
             """Returns dictionary with layer data.
@@ -88,6 +89,7 @@ class Texture(Component):
                 "exclude_weight": self.exclude_weight,
                 "priority": self.priority,
                 "info_layer": self.info_layer,
+                "usage": self.usage,
             }
 
             data = {k: v for k, v in data.items() if v is not None}
@@ -118,29 +120,29 @@ class Texture(Component):
             weight_postfix = "_weight" if not self.exclude_weight else ""
             return os.path.join(weights_directory, f"{self.name}{idx}{weight_postfix}.png")
 
-        def path_preview(self, previews_directory: str) -> str:
+        def path_preview(self, weights_directory: str) -> str:
             """Returns path to the preview of the first texture of the layer.
 
             Arguments:
-                previews_directory (str): Path to the directory with previews.
+                weights_directory (str): Path to the directory with weights.
 
             Returns:
                 str: Path to the preview.
             """
-            return self.path(previews_directory).replace(".png", "_preview.png")
+            return self.path(weights_directory).replace(".png", "_preview.png")
 
-        def get_preview_or_path(self, previews_directory: str) -> str:
+        def get_preview_or_path(self, weights_directory: str) -> str:
             """Returns path to the preview of the first texture of the layer if it exists,
             otherwise returns path to the texture.
 
             Arguments:
-                previews_directory (str): Path to the directory with previews.
+                weights_directory (str): Path to the directory with weights.
 
             Returns:
                 str: Path to the preview or texture.
             """
-            preview_path = self.path_preview(previews_directory)
-            return preview_path if os.path.isfile(preview_path) else self.path(previews_directory)
+            preview_path = self.path_preview(weights_directory)
+            return preview_path if os.path.isfile(preview_path) else self.path(weights_directory)
 
         def paths(self, weights_directory: str) -> list[str]:
             """Returns a list of paths to the textures of the layer.
@@ -213,6 +215,20 @@ class Texture(Component):
                 return layer
         return None
 
+    def get_layer_by_usage(self, usage: str) -> Layer | None:
+        """Returns layer by usage.
+
+        Arguments:
+            usage (str): Usage of the layer.
+
+        Returns:
+            Layer | None: Layer.
+        """
+        for layer in self.layers:
+            if layer.usage == usage:
+                return layer
+        return None
+
     def process(self):
         self._prepare_weights()
         self._read_parameters()
@@ -242,17 +258,6 @@ class Texture(Component):
                     self.logger.debug(
                         "Skipping rotation of layer %s because it has no tags.", layer.name
                     )
-
-        base_path = self.game.base_image_path(self.map_directory)
-        if base_path:
-            base_layer = self.get_base_layer()
-            if base_layer:
-                base_layer_path = base_layer.get_preview_or_path(self._weights_dir)
-                self.logger.debug(
-                    "Copying base layer to use it later for density map to %s.", base_path
-                )
-                # Make a copy of a base layer to the fruits density map.
-                shutil.copy(base_layer_path, base_path)
 
     # pylint: disable=W0201
     def _read_parameters(self) -> None:
@@ -299,7 +304,10 @@ class Texture(Component):
         Arguments:
             layer (Layer): Layer with textures and tags.
         """
-        size = (self.map_rotated_size, self.map_rotated_size)
+        if layer.tags is None:
+            size = (self.map_size, self.map_size)
+        else:
+            size = (self.map_rotated_size, self.map_rotated_size)
         postfix = "_weight.png" if not layer.exclude_weight else ".png"
         if layer.count == 0:
             filepaths = [os.path.join(self._weights_dir, layer.name + postfix)]

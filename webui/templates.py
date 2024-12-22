@@ -17,7 +17,6 @@ class Messages:
         "🔸 Maximum map size is 2048x2048 meters.  \n"
         "🔸 Background terrain will not be generated.  \n"
         "🔸 Map rotation is disabled.  \n"
-        "🔸 Advanced settings are disabled.  \n"
         "🔸 Texture dissolving is disabled (they will look worse).  \n  \n"
         "If you run the application locally, you won't have any of these limitations "
         "and will be able to generate maps of any size with any settings you want and nice looking textures.  \n"
@@ -95,4 +94,11 @@ class Messages:
         "This value is used to add some margin around the farmland. "
         "It can be useful because without the margin, the farmland will end exact on the same "
         "position as the field ends. This can cause some issues with gameplay."
+    )
+    FOREST_DENSITY_INFO = (
+        "This value represents the distance between trees in the forest. "
+        "The higher the value, the more sparse the forest will be and less trees will be "
+        "generated. Be careful with low values, because depending on the amount of forest areas "
+        "and the map size, it may generate dozens of thousands of trees, which can cause "
+        "performance issues."
     )

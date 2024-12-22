@@ -234,101 +234,117 @@ class GeneratorUI:
 
             st.info(Messages.AUTO_PRESET_DISABLED)
 
-            # Add checkbox for advanced settings.
-            st.write("Advanced settings (do not change if you are not sure):")
+        # Add checkbox for advanced settings.
+        st.write("Advanced settings (do not change if you are not sure):")
+        self.advanced_settings = st.checkbox(
+            "Show advanced settings",
+            key="advanced_settings",
+        )
 
-            if self.community:
-                st.warning(Messages.COMMUNITY_ADVANCED_SETTINGS)
-                disabled = True
-            else:
-                disabled = False
+        if self.advanced_settings:
+            self.logger.debug("Advanced settings are enabled.")
 
-            self.advanced_settings = st.checkbox(
-                "Show advanced settings", key="advanced_settings", disabled=disabled
-            )
+            st.warning("⚠️ Changing these settings can lead to unexpected results.")
 
-            if self.advanced_settings:
-                self.logger.debug("Advanced settings are enabled.")
+            with st.expander("DEM Advanced Settings", icon="⛰️"):
+                st.info(
+                    "ℹ️ Settings related to the Digital Elevation Model (elevation map). "
+                    "This file is used to generate the terrain of the map (hills, valleys, etc.)."
+                )
+                # Show multiplier and blur radius inputs.
+                st.write("Enter the multiplier for the elevation map:")
+                st.write(Messages.DEM_MULTIPLIER_INFO)
 
-                st.warning("⚠️ Changing these settings can lead to unexpected results.")
+                if self.auto_process:
+                    st.info("When the auto preset is enabled, the multiplier is set to 1.")
 
-                with st.expander("DEM Advanced Settings", icon="⛰️"):
-                    st.info(
-                        "ℹ️ Settings related to the Digital Elevation Model (elevation map). "
-                        "This file is used to generate the terrain of the map (hills, valleys, etc.)."
-                    )
-                    # Show multiplier and blur radius inputs.
-                    st.write("Enter the multiplier for the elevation map:")
-                    st.write(Messages.DEM_MULTIPLIER_INFO)
+                self.multiplier_input = st.number_input(
+                    "Multiplier",
+                    value=DEFAULT_MULTIPLIER,
+                    min_value=0,
+                    max_value=10000,
+                    step=1,
+                    key="multiplier",
+                    label_visibility="collapsed",
+                    disabled=self.auto_process,
+                )
 
-                    self.multiplier_input = st.number_input(
-                        "Multiplier",
-                        value=DEFAULT_MULTIPLIER,
-                        min_value=0,
-                        max_value=10000,
-                        step=1,
-                        key="multiplier",
-                        label_visibility="collapsed",
-                    )
+                st.write("Enter the blur radius for the elevation map:")
+                st.write(Messages.DEM_BLUR_RADIUS_INFO)
 
-                    st.write("Enter the blur radius for the elevation map:")
-                    st.write(Messages.DEM_BLUR_RADIUS_INFO)
+                self.blur_radius_input = st.number_input(
+                    "Blur Radius",
+                    value=DEFAULT_BLUR_RADIUS,
+                    min_value=0,
+                    max_value=300,
+                    key="blur_radius",
+                    label_visibility="collapsed",
+                    step=2,
+                )
 
-                    self.blur_radius_input = st.number_input(
-                        "Blur Radius",
-                        value=DEFAULT_BLUR_RADIUS,
-                        min_value=0,
-                        max_value=300,
-                        key="blur_radius",
-                        label_visibility="collapsed",
-                        step=2,
-                    )
+                st.write("Enter the plateau height (which will be added to the whole map):")
+                st.write(Messages.DEM_PLATEAU_INFO)
+                self.plateau_height_input = st.number_input(
+                    "Plateau Height",
+                    value=0,
+                    min_value=0,
+                    max_value=10000,
+                    key="plateau_height",
+                    label_visibility="collapsed",
+                )
 
-                    st.write("Enter the plateau height (which will be added to the whole map):")
-                    st.write(Messages.DEM_PLATEAU_INFO)
-                    self.plateau_height_input = st.number_input(
-                        "Plateau Height",
-                        value=0,
-                        min_value=0,
-                        max_value=10000,
-                        key="plateau_height",
-                        label_visibility="collapsed",
-                    )
+            with st.expander("Textures Advanced Settings", icon="🎨"):
+                st.info(
+                    "ℹ️ Settings related to the textures of the map, which represent different "
+                    "types of terrain, such as grass, dirt, etc."
+                )
 
-                with st.expander("Textures Advanced Settings", icon="🎨"):
-                    st.info(
-                        "ℹ️ Settings related to the textures of the map, which represent different "
-                        "types of terrain, such as grass, dirt, etc."
-                    )
+                st.write("Enter the field padding (in meters):")
+                st.write(Messages.FIELD_PADDING_INFO)
+                self.fields_padding = st.number_input(
+                    "Field Padding",
+                    value=0,
+                    min_value=0,
+                    max_value=100,
+                    key="field_padding",
+                    label_visibility="collapsed",
+                )
 
-                    st.write("Enter the field padding (in meters):")
-                    st.write(Messages.FIELD_PADDING_INFO)
-                    self.fields_padding = st.number_input(
-                        "Field Padding",
-                        value=0,
-                        min_value=0,
-                        max_value=100,
-                        key="field_padding",
-                        label_visibility="collapsed",
-                    )
+            with st.expander("Farmlands Advanced Settings", icon="🌾"):
+                st.info(
+                    "ℹ️ Settings related to the farmlands of the map, which represent the lands "
+                    "that can be bought in the game by the player."
+                )
 
-                with st.expander("Farmlands Advanced Settings", icon="🌾"):
-                    st.info(
-                        "ℹ️ Settings related to the farmlands of the map, which represent the lands "
-                        "that can be bought in the game by the player."
-                    )
+                st.write("Enter the farmland margin (in meters):")
+                st.write(Messages.FARMLAND_MARGIN_INFO)
 
-                    st.write("Enter the farmland margin (in meters):")
-                    st.write(Messages.FARMLAND_MARGIN_INFO)
+                self.farmland_margin = st.number_input(
+                    "Farmland Margin",
+                    value=3,
+                    min_value=0,
+                    max_value=100,
+                    key="farmland_margin",
+                    label_visibility="collapsed",
+                )
 
-                    self.farmland_margin = st.number_input(
-                        "Farmland Margin",
-                        value=3,
-                        min_value=0,
-                        max_value=100,
-                        key="farmland_margin",
-                        label_visibility="collapsed",
-                    )
+            with st.expander("Vegetation Advanced Settings", icon="🌲"):
+                st.info(
+                    "ℹ️ Settings related to the vegetation of the map, which represent the trees, "
+                    "grass, etc."
+                )
+
+                st.write("Enter the forest density (in meters):")
+                st.write(Messages.FOREST_DENSITY_INFO)
+
+                self.forest_density = st.number_input(
+                    "Forest Density",
+                    value=10,
+                    min_value=2,
+                    max_value=50,
+                    key="forest_density",
+                    label_visibility="collapsed",
+                )
 
         # Add an empty container for status messages.
         self.status_container = st.empty()
@@ -421,6 +437,8 @@ class GeneratorUI:
         os.makedirs(map_directory, exist_ok=True)
 
         # Create an instance of the Map class and generate the map.
+        multiplier = self.multiplier_input if not self.auto_process else 1
+
         mp = mfs.Map(
             game,
             coordinates,
@@ -428,7 +446,7 @@ class GeneratorUI:
             self.rotation,
             map_directory,
             logger=self.logger,
-            multiplier=self.multiplier_input,
+            multiplier=multiplier,
             blur_radius=self.blur_radius_input,
             auto_process=self.auto_process,
             plateau=self.plateau_height_input,

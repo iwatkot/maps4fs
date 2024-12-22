@@ -7,11 +7,16 @@ from xml.etree import ElementTree as ET
 
 import cv2
 import numpy as np
+from shapely.geometry import Polygon  # type: ignore
 
 from maps4fs.generator.component import Component
+from maps4fs.generator.texture import Texture
 
 ISLAND_SIZE_MIN = 10
 ISLAND_SIZE_MAX = 200
+ISLAND_DISTORTION = 0.3
+ISLAND_VERTEX_COUNT = 30
+ISLAND_ROUNDING_RADIUS = 15
 
 
 # pylint: disable=W0223
@@ -194,34 +199,70 @@ class GRLE(Component):
             "Farmlands added to the InfoLayer PNG file: %s.", info_layer_farmlands_path
         )
 
+    # pylint: disable=R0915
     def _add_plants(self) -> None:
         """Adds plants to the InfoLayer PNG file."""
         # 1. Get the path to the densityMap_fruits.png.
         # 2. Get the path to the base layer (grass).
         # 3. Detect non-zero areas in the base layer (it's where the plants will be placed).
-        base_image_path = self.game.base_image_path(self.map_directory)
-        if not base_image_path or not os.path.isfile(base_image_path):
-            self.logger.warning("Base image not found in %s.", base_image_path)
+        texture_component: Texture | None = self.map.get_component("Texture")  # type: ignore
+        if not texture_component:
+            self.logger.warning("Texture component not found in the map.")
+            return
+
+        grass_layer = texture_component.get_layer_by_usage("grass")
+        if not grass_layer:
+            self.logger.warning("Grass layer not found in the texture component.")
+            return
+
+        weights_directory = self.game.weights_dir_path(self.map_directory)
+        grass_image_path = grass_layer.get_preview_or_path(weights_directory)
+        self.logger.debug("Grass image path: %s.", grass_image_path)
+
+        forest_layer = texture_component.get_layer_by_usage("forest")
+        forest_image = None
+        if forest_layer:
+            forest_image_path = forest_layer.get_preview_or_path(weights_directory)
+            self.logger.debug("Forest image path: %s.", forest_image_path)
+            if forest_image_path:
+                # pylint: disable=no-member
+                forest_image = cv2.imread(forest_image_path, cv2.IMREAD_UNCHANGED)
+
+        if not grass_image_path or not os.path.isfile(grass_image_path):
+            self.logger.warning("Base image not found in %s.", grass_image_path)
             return
 
         density_map_fruit_path = os.path.join(
             self.game.weights_dir_path(self.map_directory), "densityMap_fruits.png"
         )
 
+        self.logger.debug("Density map for fruits path: %s.", density_map_fruit_path)
+
         if not os.path.isfile(density_map_fruit_path):
             self.logger.warning("Density map for fruits not found in %s.", density_map_fruit_path)
             return
 
         # Single channeled 8-bit image, where non-zero values (255) are where the grass is.
-        base_image = cv2.imread(base_image_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
+        grass_image = cv2.imread(  # pylint: disable=no-member
+            grass_image_path, cv2.IMREAD_UNCHANGED  # pylint: disable=no-member
+        )
 
         # Density map of the fruits is 2X size of the base image, so we need to resize it.
         # We'll resize the base image to make it bigger, so we can compare the values.
-        base_image = cv2.resize(  # pylint: disable=no-member
-            base_image,
-            (base_image.shape[1] * 2, base_image.shape[0] * 2),
+        grass_image = cv2.resize(  # pylint: disable=no-member
+            grass_image,
+            (grass_image.shape[1] * 2, grass_image.shape[0] * 2),
             interpolation=cv2.INTER_NEAREST,  # pylint: disable=no-member
         )
+        if forest_image is not None:
+            forest_image = cv2.resize(  # pylint: disable=no-member
+                forest_image,
+                (forest_image.shape[1] * 2, forest_image.shape[0] * 2),
+                interpolation=cv2.INTER_NEAREST,  # pylint: disable=no-member
+            )
+
+            # Add non zero values from the forest image to the grass image.
+            grass_image[forest_image != 0] = 255
 
         # B and G channels remain the same (zeros), while we change the R channel.
         possible_R_values = [33, 65, 97, 129, 161, 193, 225]  # pylint: disable=C0103
@@ -252,46 +293,79 @@ class GRLE(Component):
                 y = randint(0, image.shape[0] - island_size)
 
                 # Randomly choose the shape of the island.
-                shapes = ["circle", "ellipse", "polygon"]
-                shape = choice(shapes)
+                # shapes = ["circle", "ellipse", "polygon"]
+                # shape = choice(shapes)
 
                 try:
-                    if shape == "circle":
-                        center = (x + island_size // 2, y + island_size // 2)
-                        radius = island_size // 2
-                        cv2.circle(image, center, radius, plant_value, -1)  # type: ignore
-                    elif shape == "ellipse":
-                        center = (x + island_size // 2, y + island_size // 2)
-                        axes = (island_size // 2, island_size // 4)
-                        angle = 0
-                        cv2.ellipse(  # type: ignore
-                            image, center, axes, angle, 0, 360, plant_value, -1
-                        )
-                    elif shape == "polygon":
-                        nodes_count = randint(20, 50)
-                        nodes = []
-                        for _ in range(nodes_count):
-                            node = (randint(x, x + island_size), randint(y, y + island_size))
-                            nodes.append(node)
-                        nodes = np.array(nodes, np.int32)  # type: ignore
-                        cv2.fillPoly(image, [nodes], plant_value)  # type: ignore
+                    polygon_points = get_rounded_polygon(
+                        num_vertices=ISLAND_VERTEX_COUNT,
+                        center=(x + island_size // 2, y + island_size // 2),
+                        radius=island_size // 2,
+                        rounding_radius=ISLAND_ROUNDING_RADIUS,
+                    )
+                    if not polygon_points:
+                        continue
+
+                    nodes = np.array(polygon_points, np.int32)  # type: ignore
+                    cv2.fillPoly(image, [nodes], plant_value)  # type: ignore
                 except Exception:  # pylint: disable=W0703
                     continue
 
             return image
 
-        updated_base_image = base_image.copy()
+        def get_rounded_polygon(
+            num_vertices: int, center: tuple[int, int], radius: int, rounding_radius: int
+        ) -> list[tuple[int, int]] | None:
+            """Get a randomly rounded polygon.
+
+            Arguments:
+                num_vertices (int): The number of vertices of the polygon.
+                center (tuple[int, int]): The center of the polygon.
+                radius (int): The radius of the polygon.
+                rounding_radius (int): The rounding radius of the polygon.
+
+            Returns:
+                list[tuple[int, int]] | None: The rounded polygon.
+            """
+            angle_offset = np.pi / num_vertices
+            angles = np.linspace(0, 2 * np.pi, num_vertices, endpoint=False) + angle_offset
+            random_angles = angles + np.random.uniform(
+                -ISLAND_DISTORTION, ISLAND_DISTORTION, num_vertices
+            )  # Add randomness to angles
+            random_radii = radius + np.random.uniform(
+                -radius * ISLAND_DISTORTION, radius * ISLAND_DISTORTION, num_vertices
+            )  # Add randomness to radii
+
+            points = [
+                (center[0] + np.cos(a) * r, center[1] + np.sin(a) * r)
+                for a, r in zip(random_angles, random_radii)
+            ]
+            polygon = Polygon(points)
+            buffered_polygon = polygon.buffer(rounding_radius, resolution=16)
+            rounded_polygon = list(buffered_polygon.exterior.coords)
+            if not rounded_polygon:
+                return None
+            return rounded_polygon
+
+        grass_image_copy = grass_image.copy()
+        if forest_image is not None:
+            # Add the forest layer to the base image, to merge the masks.
+            grass_image_copy[forest_image != 0] = 33
         # Set all the non-zero values to 33.
-        updated_base_image[base_image != 0] = 33
+        grass_image_copy[grass_image != 0] = 33
 
         # Add islands of plants to the base image.
         island_count = self.map_size
         self.logger.info("Adding %s islands of plants to the base image.", island_count)
-        updated_base_image = create_island_of_plants(updated_base_image, island_count)
+        grass_image_copy = create_island_of_plants(grass_image_copy, island_count)
         self.logger.debug("Islands of plants added to the base image.")
 
+        # Sligtly reduce the size of the grass_image, that we'll use as mask.
+        kernel = np.ones((3, 3), np.uint8)
+        grass_image = cv2.erode(grass_image, kernel, iterations=1)
+
         # Remove the values where the base image has zeros.
-        updated_base_image[base_image == 0] = 0
+        grass_image_copy[grass_image == 0] = 0
         self.logger.debug("Removed the values where the base image has zeros.")
 
         # Value of 33 represents the base grass plant.
@@ -305,7 +379,7 @@ class GRLE(Component):
         self.logger.debug("Density map for fruits loaded, shape: %s.", density_map_fruits.shape)
 
         # Put the updated base image as the B channel in the density map.
-        density_map_fruits[:, :, 0] = updated_base_image
+        density_map_fruits[:, :, 0] = grass_image_copy
         self.logger.debug("Updated base image added as the B channel in the density map.")
 
         # Save the updated density map.

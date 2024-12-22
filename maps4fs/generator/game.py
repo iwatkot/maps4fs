@@ -36,7 +36,7 @@ class Game:
     _map_template_path: str | None = None
     _texture_schema: str | None = None
     _grle_schema: str | None = None
-    _base_image: str | None = None
+    _tree_schema: str | None = None
 
     # Order matters! Some components depend on others.
     components = [Texture, I3d, GRLE, Background, Config]
@@ -110,6 +110,19 @@ class Game:
             raise ValueError("GRLE layers schema path not set.")
         return self._grle_schema
 
+    @property
+    def tree_schema(self) -> str:
+        """Returns the path to the tree layers schema file.
+
+        Raises:
+            ValueError: If the tree layers schema path is not set.
+
+        Returns:
+            str: The path to the tree layers schema file."""
+        if not self._tree_schema:
+            raise ValueError("Tree layers schema path not set.")
+        return self._tree_schema
+
     def dem_file_path(self, map_directory: str) -> str:
         """Returns the path to the DEM file.
 
@@ -130,19 +143,6 @@ class Game:
         Returns:
             str: The path to the weights directory."""
         raise NotImplementedError
-
-    def base_image_path(self, map_directory: str) -> str | None:
-        """Returns the path to the base density map image.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the base density map image or None if not set.
-        """
-        if self._base_image:
-            return os.path.join(self.weights_dir_path(map_directory), self._base_image)
-        return None
 
     def i3d_file_path(self, map_directory: str) -> str:
         """Returns the path to the i3d file.
@@ -201,7 +201,7 @@ class FS25(Game):
     _map_template_path = os.path.join(working_directory, "data", "fs25-map-template.zip")
     _texture_schema = os.path.join(working_directory, "data", "fs25-texture-schema.json")
     _grle_schema = os.path.join(working_directory, "data", "fs25-grle-schema.json")
-    _base_image = "base.png"
+    _tree_schema = os.path.join(working_directory, "data", "fs25-tree-schema.json")
 
     def dem_file_path(self, map_directory: str) -> str:
         """Returns the path to the DEM file.

@@ -103,20 +103,6 @@ layers = [
 ```
 As a result of saving those `.tif` files, you'll get one image with the exact bounds and another one with the margin around it. In case you want manually adjust the bounds, you can use the image with the margin.
 
-### Approach 1: Using maps4fs Toolbox: GeoTIFF windowing
-
-It's a recommended approach.
-
-2. Navigate to the `🧰 Modder Toolbox` -> `🖼️ Textures and DEM` -> `🪟 GeoTIFF windowing` and upload your tiff image (with margin).
-
-3. Enter coordinates of the center point of the map. It's recommended to paste it EXACTLY the same as in the `generation_info.json` and the size of the map (2048, 4096 and so on). Click on the `Extract ROI` button.
-
-![GeoTIFF windowing](https://github.com/user-attachments/assets/2e63345b-58b1-4d06-8c87-0f7e655a6413)
-
-4. Now you can download windowed image, that will be almost perfectly aligned with the map. But if you want to make it perfectly aligned, you can continue with the second approach.
-
-### Approach 2: Manual adjustment in image editor
-
 2. Create a new image in Photoshop or any other image editor, which allows working with layers, put some of your texture files in center of it. For example for map of size 4096 x 4096 pixels, you need to create an image of size 8192 x 8192 pixels, and you need to put the texture in the center of it.
 
 3. Now add there your satellite images with margins, lower the opacity of this layer and try to manually adjust it. Please note, that Earth is not flat, so it WONT be just scale and move, you also need to rotate it a bit and maybe skew it. The recommended approach is to use the `Free Transform` tool in Photoshop and just move the corners until it fits the map.
