@@ -18,7 +18,7 @@
   <a href="#Background-terrain">Background terrain</a> •
   <a href="#Overview-image">Overview image</a><br>
   <a href="#DDS-conversion">DDS conversion</a> •
-  <a href="#For-advanced-users">For advanced users</a> •
+  <a href="#Advanced-settings">Advanced settings</a> •
   <a href="#Resources">Resources</a> •
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a><br>
   <a href="#Special-thanks">Special thanks</a>
@@ -434,7 +434,7 @@ List of the important DDS files:
 - `preview.dds` - 2048x2048 pixels, the preview image of the map on the loading screen,
 - `mapsUS/overview.dds` - 4096x4096 pixels, the overview image of the map (in-game map)
 
-## For advanced users
+## Advanced settings
 The tool supports the custom size of the map. To use this feature select `Custom` in the `Map size` dropdown and enter the desired size. The tool will generate a map with the size you entered.<br>
 
 ⛔️ Do not use this feature, if you don't know what you're doing. In most cases, the Giants Editor will just crash on opening the file, because you need to enter specific values for the map size.<br><br>
@@ -458,6 +458,12 @@ You can also apply some advanced settings to the map generation process. Note th
 ### Farmlands Advanced settings
 
 - Farmlands margin - this value (in meters) will be applied to each farmland, making it bigger. You can use the value to adjust how much the farmland should be bigger than the actual field. By default, it's set to 3.
+
+### Vegetation Advanced settings
+
+- Forest density - the density of the forest in meters. The lower the value, the lower the distance between the trees, which makes the forest denser. Note, that low values will lead to enormous number of trees, which may cause the Giants Editor to crash or lead to performance issues. By default, it's set to 10.
+
+- Random plants - when adding decorative foliage, enabling this option will add different species of plants to the map. If unchecked only basic grass (smallDenseMix) will be added. Defaults to True.
 
 ## Resources
 In this section, you'll find a list of the resources that you need to create a map for the Farming Simulator.<br>

@@ -102,3 +102,7 @@ class Messages:
         "and the map size, it may generate dozens of thousands of trees, which can cause "
         "performance issues."
     )
+    RANDOMIZE_PLANTS_INFO = (
+        "If checked, random species of plants will be generated. "
+        "If unchecked, only basic smallDenseMix will be applied."
+    )

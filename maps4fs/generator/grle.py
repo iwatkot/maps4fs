@@ -41,6 +41,7 @@ class GRLE(Component):
         attribute. If the game does not support I3D files, the attribute is set to None."""
 
         self.farmland_margin = self.kwargs.get("farmland_margin", 0)
+        self.randomize_plants = self.kwargs.get("randomize_plants", True)
 
         try:
             grle_schema_path = self.game.grle_schema
@@ -357,7 +358,8 @@ class GRLE(Component):
         # Add islands of plants to the base image.
         island_count = self.map_size
         self.logger.info("Adding %s islands of plants to the base image.", island_count)
-        grass_image_copy = create_island_of_plants(grass_image_copy, island_count)
+        if self.randomize_plants:
+            grass_image_copy = create_island_of_plants(grass_image_copy, island_count)
         self.logger.debug("Islands of plants added to the base image.")
 
         # Sligtly reduce the size of the grass_image, that we'll use as mask.
@@ -367,6 +369,12 @@ class GRLE(Component):
         # Remove the values where the base image has zeros.
         grass_image_copy[grass_image == 0] = 0
         self.logger.debug("Removed the values where the base image has zeros.")
+
+        # Set zeros on all sides of the image
+        grass_image_copy[0, :] = 0  # Top side
+        grass_image_copy[-1, :] = 0  # Bottom side
+        grass_image_copy[:, 0] = 0  # Left side
+        grass_image_copy[:, -1] = 0  # Right side
 
         # Value of 33 represents the base grass plant.
         # After painting it with base grass, we'll create multiple islands of different plants.
