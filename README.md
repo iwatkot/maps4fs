@@ -44,6 +44,7 @@
 🌾 Automatically generates fields 🆕<br>
 🌽 Automatically generates farmlands 🆕<br>
 🌿 Automatically generates decorative foliage 🆕<br>
+🌲 Automatically generates forests 🆕<br>
 🌍 Based on real-world data from OpenStreetMap<br>
 🏞️ Generates height map using SRTM dataset<br>
 📦 Provides a ready-to-use map template for the Giants Editor<br>
@@ -62,6 +63,8 @@
 📐 Perfectly aligned background terrain.<br><br>
 <img src="https://github.com/user-attachments/assets/5764b2ec-e626-426f-9f5d-beb12ba95133"><br>
 🌿 Automatically generates decorative foliage.<br><br>
+<img src="https://github.com/user-attachments/assets/27a5e541-a9f5-4504-b8d2-64aae9fb3e52"><br>
+🌲 Automatically generates forests.<br><br>
 <img src="https://github.com/user-attachments/assets/80e5923c-22c7-4dc0-8906-680902511f3a"><br>
 🗒️ True-to-life blueprints for fast and precise modding.<br><br>
 <img width="480" src="https://github.com/user-attachments/assets/1a8802d2-6a3b-4bfa-af2b-7c09478e199b"><br>
