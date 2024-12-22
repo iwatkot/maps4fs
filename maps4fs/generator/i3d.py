@@ -20,6 +20,7 @@ DEFAULT_MAX_LOD_DISTANCE = 10000
 DEFAULT_MAX_LOD_OCCLUDER_DISTANCE = 10000
 NODE_ID_STARTING_VALUE = 2000
 TREE_NODE_ID_STARTING_VALUE = 4000
+DEFAULT_FOREST_DENSITY = 10
 
 
 # pylint: disable=R0903
@@ -50,6 +51,9 @@ class I3d(Component):
         except NotImplementedError:
             self.logger.info("I3D file processing is not implemented for this game.")
             self._map_i3d_path = None
+
+        self.forest_density = self.kwargs.get("forest_density", DEFAULT_FOREST_DENSITY)
+        self.logger.info("Forest density: %s.", self.forest_density)
 
     def process(self) -> None:
         """Updates the map I3D file with the default settings."""
@@ -390,15 +394,13 @@ class I3d(Component):
         # pylint: disable=no-member
         forest_image = cv2.imread(forest_image_path, cv2.IMREAD_UNCHANGED)
 
-        forest_density = 10  # TODO: Obtain as a setting from UI.
-
         tree_count = 0
-        for x, y in self.non_empty_pixels(forest_image, step=forest_density):
+        for x, y in self.non_empty_pixels(forest_image, step=self.forest_density):
             xcs, ycs = self.top_left_coordinates_to_center((x, y))
             node_id += 1
 
             rotation = randint(-180, 180)
-            xcs, ycs = self.randomize_coordinates((xcs, ycs), forest_density)  # type: ignore
+            xcs, ycs = self.randomize_coordinates((xcs, ycs), self.forest_density)  # type: ignore
 
             random_tree = choice(tree_schema)
             tree_name = random_tree["name"]
