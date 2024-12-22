@@ -219,7 +219,14 @@ class GRLE(Component):
         grass_image_path = grass_layer.get_preview_or_path(weights_directory)
         self.logger.debug("Grass image path: %s.", grass_image_path)
 
-        # TODO: Get the forest layer and combine it with the grass layer.
+        forest_layer = texture_component.get_layer_by_usage("forest")
+        forest_image = None
+        if forest_layer:
+            forest_image_path = forest_layer.get_preview_or_path(weights_directory)
+            self.logger.debug("Forest image path: %s.", forest_image_path)
+            if forest_image_path:
+                # pylint: disable=no-member
+                forest_image = cv2.imread(forest_image_path, cv2.IMREAD_UNCHANGED)
 
         if not grass_image_path or not os.path.isfile(grass_image_path):
             self.logger.warning("Base image not found in %s.", grass_image_path)
@@ -247,6 +254,15 @@ class GRLE(Component):
             (grass_image.shape[1] * 2, grass_image.shape[0] * 2),
             interpolation=cv2.INTER_NEAREST,  # pylint: disable=no-member
         )
+        if forest_image is not None:
+            forest_image = cv2.resize(  # pylint: disable=no-member
+                forest_image,
+                (forest_image.shape[1] * 2, forest_image.shape[0] * 2),
+                interpolation=cv2.INTER_NEAREST,  # pylint: disable=no-member
+            )
+
+            # Add non zero values from the forest image to the grass image.
+            grass_image[forest_image != 0] = 255
 
         # B and G channels remain the same (zeros), while we change the R channel.
         possible_R_values = [33, 65, 97, 129, 161, 193, 225]  # pylint: disable=C0103
@@ -332,6 +348,9 @@ class GRLE(Component):
             return rounded_polygon
 
         grass_image_copy = grass_image.copy()
+        if forest_image is not None:
+            # Add the forest layer to the base image, to merge the masks.
+            grass_image_copy[forest_image != 0] = 33
         # Set all the non-zero values to 33.
         grass_image_copy[grass_image != 0] = 33
 
