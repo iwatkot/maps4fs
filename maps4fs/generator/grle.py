@@ -7,11 +7,15 @@ from xml.etree import ElementTree as ET
 
 import cv2
 import numpy as np
+from shapely.geometry import Polygon
 
 from maps4fs.generator.component import Component
 
 ISLAND_SIZE_MIN = 10
 ISLAND_SIZE_MAX = 200
+ISLAND_DISTORTION = 0.3
+ISLAND_VERTEX_COUNT = 30
+ISLAND_ROUNDING_RADIUS = 15
 
 
 # pylint: disable=W0223
@@ -252,33 +256,59 @@ class GRLE(Component):
                 y = randint(0, image.shape[0] - island_size)
 
                 # Randomly choose the shape of the island.
-                shapes = ["circle", "ellipse", "polygon"]
-                shape = choice(shapes)
+                # shapes = ["circle", "ellipse", "polygon"]
+                # shape = choice(shapes)
 
                 try:
-                    if shape == "circle":
-                        center = (x + island_size // 2, y + island_size // 2)
-                        radius = island_size // 2
-                        cv2.circle(image, center, radius, plant_value, -1)  # type: ignore
-                    elif shape == "ellipse":
-                        center = (x + island_size // 2, y + island_size // 2)
-                        axes = (island_size // 2, island_size // 4)
-                        angle = 0
-                        cv2.ellipse(  # type: ignore
-                            image, center, axes, angle, 0, 360, plant_value, -1
-                        )
-                    elif shape == "polygon":
-                        nodes_count = randint(20, 50)
-                        nodes = []
-                        for _ in range(nodes_count):
-                            node = (randint(x, x + island_size), randint(y, y + island_size))
-                            nodes.append(node)
-                        nodes = np.array(nodes, np.int32)  # type: ignore
-                        cv2.fillPoly(image, [nodes], plant_value)  # type: ignore
+                    polygon_points = get_rounded_polygon(
+                        num_vertices=ISLAND_VERTEX_COUNT,
+                        center=(x + island_size // 2, y + island_size // 2),
+                        radius=island_size // 2,
+                        rounding_radius=ISLAND_ROUNDING_RADIUS,
+                    )
+                    if not polygon_points:
+                        continue
+
+                    nodes = np.array(polygon_points, np.int32)  # type: ignore
+                    cv2.fillPoly(image, [nodes], plant_value)  # type: ignore
                 except Exception:  # pylint: disable=W0703
                     continue
 
             return image
+
+        def get_rounded_polygon(
+            num_vertices: int, center: tuple[int, int], radius: int, rounding_radius: int
+        ) -> list[tuple[int, int]] | None:
+            """Get a randomly rounded polygon.
+
+            Arguments:
+                num_vertices (int): The number of vertices of the polygon.
+                center (tuple[int, int]): The center of the polygon.
+                radius (int): The radius of the polygon.
+                rounding_radius (int): The rounding radius of the polygon.
+
+            Returns:
+                list[tuple[int, int]] | None: The rounded polygon.
+            """
+            angle_offset = np.pi / num_vertices
+            angles = np.linspace(0, 2 * np.pi, num_vertices, endpoint=False) + angle_offset
+            random_angles = angles + np.random.uniform(
+                -ISLAND_DISTORTION, ISLAND_DISTORTION, num_vertices
+            )  # Add randomness to angles
+            random_radii = radius + np.random.uniform(
+                -radius * ISLAND_DISTORTION, radius * ISLAND_DISTORTION, num_vertices
+            )  # Add randomness to radii
+
+            points = [
+                (center[0] + np.cos(a) * r, center[1] + np.sin(a) * r)
+                for a, r in zip(random_angles, random_radii)
+            ]
+            polygon = Polygon(points)
+            buffered_polygon = polygon.buffer(rounding_radius, resolution=16)
+            rounded_polygon = list(buffered_polygon.exterior.coords)
+            if not rounded_polygon:
+                return None
+            return rounded_polygon
 
         updated_base_image = base_image.copy()
         # Set all the non-zero values to 33.
@@ -289,6 +319,10 @@ class GRLE(Component):
         self.logger.info("Adding %s islands of plants to the base image.", island_count)
         updated_base_image = create_island_of_plants(updated_base_image, island_count)
         self.logger.debug("Islands of plants added to the base image.")
+
+        # Sligtly reduce the size of the base_image, that we'll use as mask.
+        kernel = np.ones((3, 3), np.uint8)
+        base_image = cv2.erode(base_image, kernel, iterations=1)
 
         # Remove the values where the base image has zeros.
         updated_base_image[base_image == 0] = 0
@@ -313,3 +347,6 @@ class GRLE(Component):
         density_map_fruits = cv2.cvtColor(density_map_fruits, cv2.COLOR_BGR2RGB)
         cv2.imwrite(density_map_fruit_path, density_map_fruits)
         self.logger.info("Updated density map for fruits saved in %s.", density_map_fruit_path)
+
+        debug_save_path = "debug.png"
+        cv2.imwrite(debug_save_path, density_map_fruits)
