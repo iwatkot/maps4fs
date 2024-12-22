@@ -39,7 +39,7 @@ class Component:
     def __init__(
         self,
         game: Game,
-        map: Map,
+        map: Map,  # pylint: disable=W0622
         coordinates: tuple[float, float],
         map_size: int,
         map_rotated_size: int,

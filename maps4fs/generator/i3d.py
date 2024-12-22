@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import os
-from random import choice
+from random import choice, randint, uniform
 from typing import Generator
 from xml.etree import ElementTree as ET
 
@@ -325,7 +325,9 @@ class I3d(Component):
         attribute_node.set("value", value)
         return attribute_node
 
+    # pylint: disable=R0911
     def _add_forests(self) -> None:
+        """Adds forests to the map I3D file."""
         try:
             tree_schema_path = self.game.tree_schema
         except ValueError:
@@ -345,7 +347,7 @@ class I3d(Component):
             )
             return
 
-        texture_component: Texture | None = self.map.get_component("Texture")
+        texture_component: Texture | None = self.map.get_component("Texture")  # type: ignore
         if not texture_component:
             self.logger.warning("Texture component not found.")
             return
@@ -385,24 +387,27 @@ class I3d(Component):
         trees_node.set("nodeId", str(node_id))
         node_id += 1
 
+        # pylint: disable=no-member
         forest_image = cv2.imread(forest_image_path, cv2.IMREAD_UNCHANGED)
 
+        forest_density = 10  # TODO: Obtain as a setting from UI.
+
         tree_count = 0
-        for x, y in self.non_empty_pixels(forest_image, step=2):
+        for x, y in self.non_empty_pixels(forest_image, step=forest_density):
             xcs, ycs = self.top_left_coordinates_to_center((x, y))
             node_id += 1
 
-            # TODO: Randomize coordinates.
+            rotation = randint(-180, 180)
+            xcs, ycs = self.randomize_coordinates((xcs, ycs), forest_density)  # type: ignore
 
             random_tree = choice(tree_schema)
             tree_name = random_tree["name"]
             tree_id = random_tree["reference_id"]
 
-            # <ReferenceNode name="oak_stage02" translation="{x} 0 {y}" rotation="0 -0 0" referenceId="658" nodeId="{node_id}"/>
             reference_node = ET.Element("ReferenceNode")
-            reference_node.set("name", tree_name)
+            reference_node.set("name", tree_name)  # type: ignore
             reference_node.set("translation", f"{xcs} 0 {ycs}")
-            reference_node.set("rotation", "0 -0 0")
+            reference_node.set("rotation", f"0 {rotation} 0")
             reference_node.set("referenceId", str(tree_id))
             reference_node.set("nodeId", str(node_id))
 
@@ -414,6 +419,29 @@ class I3d(Component):
 
         tree.write(self._map_i3d_path)  # type: ignore
         self.logger.info("Map I3D file saved to: %s.", self._map_i3d_path)
+
+    @staticmethod
+    def randomize_coordinates(coordinates: tuple[int, int], density: int) -> tuple[float, float]:
+        """Randomizes the coordinates of the point with the given density.
+
+        Arguments:
+            coordinates (tuple[int, int]): The coordinates of the point.
+            density (int): The density of the randomization.
+
+        Returns:
+            tuple[float, float]: The randomized coordinates of the point.
+        """
+        MAXIMUM_RELATIVE_SHIFT = 0.2  # pylint: disable=C0103
+        shift_range = density * MAXIMUM_RELATIVE_SHIFT
+
+        x_shift = uniform(-shift_range, shift_range)
+        y_shift = uniform(-shift_range, shift_range)
+
+        x, y = coordinates
+        x += x_shift  # type: ignore
+        y += y_shift  # type: ignore
+
+        return x, y
 
     @staticmethod
     def non_empty_pixels(

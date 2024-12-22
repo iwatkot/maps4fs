@@ -7,7 +7,7 @@ from xml.etree import ElementTree as ET
 
 import cv2
 import numpy as np
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon  # type: ignore
 
 from maps4fs.generator.component import Component
 from maps4fs.generator.texture import Texture
@@ -199,12 +199,13 @@ class GRLE(Component):
             "Farmlands added to the InfoLayer PNG file: %s.", info_layer_farmlands_path
         )
 
+    # pylint: disable=R0915
     def _add_plants(self) -> None:
         """Adds plants to the InfoLayer PNG file."""
         # 1. Get the path to the densityMap_fruits.png.
         # 2. Get the path to the base layer (grass).
         # 3. Detect non-zero areas in the base layer (it's where the plants will be placed).
-        texture_component: Texture | None = self.map.get_component("Texture")
+        texture_component: Texture | None = self.map.get_component("Texture")  # type: ignore
         if not texture_component:
             self.logger.warning("Texture component not found in the map.")
             return
@@ -235,9 +236,9 @@ class GRLE(Component):
             return
 
         # Single channeled 8-bit image, where non-zero values (255) are where the grass is.
-        grass_image = cv2.imread(
-            grass_image_path, cv2.IMREAD_UNCHANGED
-        )  # pylint: disable=no-member
+        grass_image = cv2.imread(  # pylint: disable=no-member
+            grass_image_path, cv2.IMREAD_UNCHANGED  # pylint: disable=no-member
+        )
 
         # Density map of the fruits is 2X size of the base image, so we need to resize it.
         # We'll resize the base image to make it bigger, so we can compare the values.
