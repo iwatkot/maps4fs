@@ -229,6 +229,7 @@ class GeneratorUI:
         self.fields_padding = 0
         self.farmland_margin = 3
         self.forest_density = 10
+        self.randomize_plants = True
 
         if not self.auto_process:
             self.logger.info("Auto preset is disabled.")
@@ -347,6 +348,13 @@ class GeneratorUI:
                     label_visibility="collapsed",
                 )
 
+                st.write("Random plants:")
+                st.write(Messages.RANDOMIZE_PLANTS_INFO)
+
+                self.randomize_plants = st.checkbox(
+                    "Random plants", value=True, key="randomize_plants"
+                )
+
         # Add an empty container for status messages.
         self.status_container = st.empty()
 
@@ -455,6 +463,7 @@ class GeneratorUI:
             fields_padding=self.fields_padding,
             farmland_margin=self.farmland_margin,
             forest_density=self.forest_density,
+            randomize_plants=self.randomize_plants,
         )
 
         if self.community:
