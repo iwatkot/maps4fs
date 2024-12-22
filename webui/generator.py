@@ -228,6 +228,7 @@ class GeneratorUI:
         self.plateau_height_input = DEFAULT_PLATEAU
         self.fields_padding = 0
         self.farmland_margin = 3
+        self.forest_density = 10
 
         if not self.auto_process:
             self.logger.info("Auto preset is disabled.")
@@ -453,6 +454,7 @@ class GeneratorUI:
             light_version=self.community,
             fields_padding=self.fields_padding,
             farmland_margin=self.farmland_margin,
+            forest_density=self.forest_density,
         )
 
         if self.community:
