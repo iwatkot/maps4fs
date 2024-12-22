@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import shutil
 from collections import defaultdict
 from typing import Any, Callable, Generator, Optional
 

@@ -4,15 +4,22 @@ from __future__ import annotations
 
 import json
 import os
+from random import choice
+from typing import Generator
 from xml.etree import ElementTree as ET
 
+import cv2
+import numpy as np
+
 from maps4fs.generator.component import Component
+from maps4fs.generator.texture import Texture
 
 DEFAULT_HEIGHT_SCALE = 2000
 DISPLACEMENT_LAYER_SIZE_FOR_BIG_MAPS = 32768
 DEFAULT_MAX_LOD_DISTANCE = 10000
 DEFAULT_MAX_LOD_OCCLUDER_DISTANCE = 10000
-NODE_ID_STARTING_VALUE = 500
+NODE_ID_STARTING_VALUE = 2000
+TREE_NODE_ID_STARTING_VALUE = 4000
 
 
 # pylint: disable=R0903
@@ -48,6 +55,7 @@ class I3d(Component):
         """Updates the map I3D file with the default settings."""
         self._update_i3d_file()
         self._add_fields()
+        self._add_forests()
 
     def _get_tree(self) -> ET.ElementTree | None:
         """Returns the ElementTree instance of the map I3D file."""
@@ -316,3 +324,112 @@ class I3d(Component):
         attribute_node.set("type", attr_type)
         attribute_node.set("value", value)
         return attribute_node
+
+    def _add_forests(self) -> None:
+        try:
+            tree_schema_path = self.game.tree_schema
+        except ValueError:
+            self.logger.warning("Tree schema path not set for the Game %s.", self.game.code)
+            return
+
+        if not os.path.isfile(tree_schema_path):
+            self.logger.warning("Tree schema file was not found: %s.", tree_schema_path)
+            return
+
+        try:
+            with open(tree_schema_path, "r", encoding="utf-8") as tree_schema_file:
+                tree_schema: list[dict[str, str | int]] = json.load(tree_schema_file)
+        except json.JSONDecodeError as e:
+            self.logger.warning(
+                "Could not load tree schema from %s with error: %s", tree_schema_path, e
+            )
+            return
+
+        texture_component: Texture | None = self.map.get_component("Texture")
+        if not texture_component:
+            self.logger.warning("Texture component not found.")
+            return
+
+        forest_layer = texture_component.get_layer_by_usage("forest")
+
+        if not forest_layer:
+            self.logger.warning("Forest layer not found.")
+            return
+
+        weights_directory = self.game.weights_dir_path(self.map_directory)
+        forest_image_path = forest_layer.get_preview_or_path(weights_directory)
+
+        if not forest_image_path or not os.path.isfile(forest_image_path):
+            self.logger.warning("Forest image not found.")
+            return
+
+        tree = self._get_tree()
+        if tree is None:
+            return
+
+        # Find the <Scene> element in the I3D file.
+        root = tree.getroot()
+        scene_node = root.find(".//Scene")
+        if scene_node is None:
+            self.logger.warning("Scene element not found in I3D file.")
+            return
+
+        self.logger.debug("Scene element found in I3D file, starting to add forests.")
+
+        node_id = TREE_NODE_ID_STARTING_VALUE
+
+        # Create <TransformGroup name="trees" translation="0 400 0" nodeId="{node_id}"> element.
+        trees_node = ET.Element("TransformGroup")
+        trees_node.set("name", "trees")
+        trees_node.set("translation", "0 400 0")
+        trees_node.set("nodeId", str(node_id))
+        node_id += 1
+
+        forest_image = cv2.imread(forest_image_path, cv2.IMREAD_UNCHANGED)
+
+        tree_count = 0
+        for x, y in self.non_empty_pixels(forest_image, step=2):
+            xcs, ycs = self.top_left_coordinates_to_center((x, y))
+            node_id += 1
+
+            # TODO: Randomize coordinates.
+
+            random_tree = choice(tree_schema)
+            tree_name = random_tree["name"]
+            tree_id = random_tree["reference_id"]
+
+            # <ReferenceNode name="oak_stage02" translation="{x} 0 {y}" rotation="0 -0 0" referenceId="658" nodeId="{node_id}"/>
+            reference_node = ET.Element("ReferenceNode")
+            reference_node.set("name", tree_name)
+            reference_node.set("translation", f"{xcs} 0 {ycs}")
+            reference_node.set("rotation", "0 -0 0")
+            reference_node.set("referenceId", str(tree_id))
+            reference_node.set("nodeId", str(node_id))
+
+            trees_node.append(reference_node)
+            tree_count += 1
+
+        scene_node.append(trees_node)
+        self.logger.info("Added %s trees to the I3D file.", tree_count)
+
+        tree.write(self._map_i3d_path)  # type: ignore
+        self.logger.info("Map I3D file saved to: %s.", self._map_i3d_path)
+
+    @staticmethod
+    def non_empty_pixels(
+        image: np.ndarray, step: int = 1
+    ) -> Generator[tuple[int, int], None, None]:
+        """Receives numpy array, which represents single-channeled image of uint8 type.
+        Yield coordinates of non-empty pixels (pixels with value greater than 0).
+
+        Arguments:
+            image (np.ndarray): The image to get non-empty pixels from.
+            step (int, optional): The step to iterate through the image. Defaults to 1.
+
+        Yields:
+            tuple[int, int]: The coordinates of non-empty pixels.
+        """
+        for y, row in enumerate(image[::step]):
+            for x, value in enumerate(row[::step]):
+                if value > 0:
+                    yield x * step, y * step

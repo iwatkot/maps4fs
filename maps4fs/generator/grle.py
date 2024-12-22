@@ -218,6 +218,8 @@ class GRLE(Component):
         grass_image_path = grass_layer.get_preview_or_path(weights_directory)
         self.logger.debug("Grass image path: %s.", grass_image_path)
 
+        # TODO: Get the forest layer and combine it with the grass layer.
+
         if not grass_image_path or not os.path.isfile(grass_image_path):
             self.logger.warning("Base image not found in %s.", grass_image_path)
             return
