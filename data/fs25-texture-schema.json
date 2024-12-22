@@ -83,7 +83,7 @@
   {
     "name": "grassDirtPatchy",
     "count": 2,
-    "tags": { "natural": ["wood", "tree_row", "forest"] },
+    "tags": { "natural": ["wood", "tree_row"], "landuse": "forest" },
     "width": 2,
     "color": [0, 252, 124],
     "usage": "forest"
