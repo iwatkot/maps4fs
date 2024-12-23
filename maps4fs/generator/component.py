@@ -371,8 +371,11 @@ class Component:
         bounds = box(min_x, min_y, max_x, max_y)
 
         # Intersect the polygon with the bounds to fit it within the map
-        fitted_polygon = polygon.intersection(bounds)
-        self.logger.debug("Fitted the polygon into the bounds: %s", bounds)
+        try:
+            fitted_polygon = polygon.intersection(bounds)
+            self.logger.debug("Fitted the polygon into the bounds: %s", bounds)
+        except Exception as e:
+            raise ValueError(f"Could not fit the polygon into the bounds: {e}")
 
         if not isinstance(fitted_polygon, Polygon):
             raise ValueError("The fitted polygon is not a valid polygon.")
