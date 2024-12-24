@@ -16,6 +16,7 @@ class Messages:
         "StreamLit community hosting has some limitations, such as:  \n"
         "🔸 Maximum map size is 2048x2048 meters.  \n"
         "🔸 Background terrain will not be generated.  \n"
+        "🔸 Water planes will not be generated.  \n"
         "🔸 Map rotation is disabled.  \n"
         "🔸 Texture dissolving is disabled (they will look worse).  \n  \n"
         "If you run the application locally, you won't have any of these limitations "
@@ -105,4 +106,11 @@ class Messages:
     RANDOMIZE_PLANTS_INFO = (
         "If checked, random species of plants will be generated. "
         "If unchecked, only basic smallDenseMix will be applied."
+    )
+    WATER_DEPTH_INFO = (
+        "This value will be subtracted from the DEM image, making the water deeper. "
+        "Pay attention to the fact, that this value IS NOT IN METERS, instead it uses the pixel "
+        "value from the DEM image. So, if you set low values, you will probably see no "
+        "difference. Also, this value will be added to the plateau value, to avoid negative "
+        "height."
     )

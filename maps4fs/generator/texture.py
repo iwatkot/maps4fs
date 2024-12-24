@@ -64,6 +64,7 @@ class Texture(Component):
             priority: int | None = None,
             info_layer: str | None = None,
             usage: str | None = None,
+            background: bool = False,
         ):
             self.name = name
             self.count = count
@@ -74,6 +75,7 @@ class Texture(Component):
             self.priority = priority
             self.info_layer = info_layer
             self.usage = usage
+            self.background = background
 
         def to_json(self) -> dict[str, str | list[str] | bool]:  # type: ignore
             """Returns dictionary with layer data.
@@ -90,6 +92,7 @@ class Texture(Component):
                 "priority": self.priority,
                 "info_layer": self.info_layer,
                 "usage": self.usage,
+                "background": self.background,
             }
 
             data = {k: v for k, v in data.items() if v is not None}
@@ -178,17 +181,30 @@ class Texture(Component):
         self.fields_padding = self.kwargs.get("fields_padding", 0)
         self.logger.debug("Light version: %s.", self.light_version)
 
-        if not os.path.isfile(self.game.texture_schema):
-            raise FileNotFoundError(f"Texture layers schema not found: {self.game.texture_schema}")
+        self.custom_schema: list[dict[str, str | dict[str, str] | int]] | None = self.kwargs.get(
+            "custom_schema"
+        )
+
+        if self.custom_schema:
+            layers_schema = self.custom_schema
+            self.logger.info("Custom schema loaded with %s layers.", len(layers_schema))
+        else:
+            if not os.path.isfile(self.game.texture_schema):
+                raise FileNotFoundError(
+                    f"Texture layers schema not found: {self.game.texture_schema}"
+                )
+
+            try:
+                with open(self.game.texture_schema, "r", encoding="utf-8") as f:
+                    layers_schema = json.load(f)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Error loading texture layers schema: {e}") from e
 
         try:
-            with open(self.game.texture_schema, "r", encoding="utf-8") as f:
-                layers_schema = json.load(f)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Error loading texture layers schema: {e}") from e
-
-        self.layers = [self.Layer.from_json(layer) for layer in layers_schema]
-        self.logger.info("Loaded %s layers.", len(self.layers))
+            self.layers = [self.Layer.from_json(layer) for layer in layers_schema]
+            self.logger.info("Loaded %s layers.", len(self.layers))
+        except Exception as e:  # pylint: disable=W0703
+            raise ValueError(f"Error loading texture layers: {e}") from e
 
         base_layer = self.get_base_layer()
         if base_layer:
@@ -214,6 +230,14 @@ class Texture(Component):
             if layer.priority == 0:
                 return layer
         return None
+
+    def get_background_layers(self) -> list[Layer]:
+        """Returns list of background layers.
+
+        Returns:
+            list[Layer]: List of background layers.
+        """
+        return [layer for layer in self.layers if layer.background]
 
     def get_layer_by_usage(self, usage: str) -> Layer | None:
         """Returns layer by usage.
