@@ -2,6 +2,8 @@
 
 [server]
 maxUploadSize = 1000
+enableCORS = "false"
+enableXsrfProtection = "true"
 
 [client]
 toolbarMode = "viewer"
