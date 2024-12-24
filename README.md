@@ -457,6 +457,8 @@ You can also apply some advanced settings to the map generation process. Note th
 
 - Plateau height: this value will be added to each pixel of the DEM image, making it "higher". It's useful when you want to add some negative heights on the map, that appear to be in a "low" place. By default, it's set to 0.
 
+- Water depth: this value will be subtracted from each pixel of the DEM image, where water resources are located. Pay attention that it's not in meters, instead it in the pixel value of DEM, which is 16 bit image with possible values from 0 to 65535. When this value is set, the same value will be added to the plateau setting to avoid negative heights.
+
 ### Texture Advanced settings
 
 - Fields padding - this value (in meters) will be applied to each field, making it smaller. It's useful when the fields are too close to each other and you want to make them smaller. By default, it's set to 0.
