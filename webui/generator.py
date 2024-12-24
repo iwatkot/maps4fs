@@ -521,6 +521,11 @@ class GeneratorUI:
             st.session_state.generated = True
 
             self.status_container.success("Map generation completed!", icon="✅")
+        except Exception as e:
+            self.logger.error("An error occurred while generating the map: %s", repr(e))
+            self.status_container.error(
+                f"An error occurred while generating the map: {repr(e)}.", icon="❌"
+            )
         finally:
             if self.community:
                 remove_from_queue(session_name)

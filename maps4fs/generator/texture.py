@@ -412,7 +412,7 @@ class Texture(Component):
 
             mask = cv2.bitwise_not(cumulative_image)
 
-            for polygon in self.polygons(layer.tags, layer.width):  # type: ignore
+            for polygon in self.polygons(layer.tags, layer.width, layer.info_layer):  # type: ignore
                 if layer.info_layer:
                     info_layer_data[layer.info_layer].append(self.np_to_polygon_points(polygon))
                 cv2.fillPoly(layer_image, [polygon], color=255)  # type: ignore
@@ -621,18 +621,22 @@ class Texture(Component):
         return converters.get(geom_type)  # type: ignore
 
     def polygons(
-        self, tags: dict[str, str | list[str] | bool], width: int | None
+        self,
+        tags: dict[str, str | list[str] | bool],
+        width: int | None,
+        info_layer: str | None = None,
     ) -> Generator[np.ndarray, None, None]:
         """Generator which yields numpy arrays of polygons from OSM data.
 
         Arguments:
             tags (dict[str, str | list[str]]): Dictionary of tags to search for.
             width (int | None): Width of the polygon in meters (only for LineString).
+            info_layer (str | None): Name of the corresponding info layer.
 
         Yields:
             Generator[np.ndarray, None, None]: Numpy array of polygon points.
         """
-        is_fieds = "farmland" in tags.values()
+        is_fieds = info_layer == "fields"
         try:
             objects = ox.features_from_bbox(bbox=self.new_bbox, tags=tags)
         except Exception as e:  # pylint: disable=W0718
