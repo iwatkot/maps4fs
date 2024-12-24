@@ -138,7 +138,7 @@
   {
     "name": "mudDark",
     "count": 2,
-    "tags": { "landuse": "farmland" },
+    "tags": { "landuse": ["farmland", "meadow"] },
     "color": [47, 107, 85],
     "priority": 4,
     "info_layer": "fields"
@@ -171,7 +171,8 @@
     "count": 2,
     "tags": { "waterway": ["ditch", "drain"] },
     "width": 2,
-    "color": [33, 67, 101]
+    "color": [33, 67, 101],
+    "background": true
   },
   {
     "name": "mudTracks",
@@ -210,6 +211,7 @@
       "landuse": "basin"
     },
     "width": 10,
-    "color": [255, 20, 20]
+    "color": [255, 20, 20],
+    "background": true
   }
 ]

@@ -230,6 +230,7 @@ class GeneratorUI:
         self.farmland_margin = 3
         self.forest_density = 10
         self.randomize_plants = True
+        self.water_depth = 200
 
         if not self.auto_process:
             self.logger.info("Auto preset is disabled.")
@@ -292,6 +293,18 @@ class GeneratorUI:
                     min_value=0,
                     max_value=10000,
                     key="plateau_height",
+                    label_visibility="collapsed",
+                )
+
+                st.write("Enter the water depth (pixel value):")
+                st.write(Messages.WATER_DEPTH_INFO)
+
+                self.water_depth = st.number_input(
+                    "Water Depth",
+                    value=200,
+                    min_value=0,
+                    max_value=10000,
+                    key="water_depth",
                     label_visibility="collapsed",
                 )
 
@@ -448,6 +461,12 @@ class GeneratorUI:
         # Create an instance of the Map class and generate the map.
         multiplier = self.multiplier_input if not self.auto_process else 1
 
+        plateau = (
+            self.plateau_height_input
+            if not self.water_depth
+            else self.plateau_height_input + self.water_depth
+        )
+
         mp = mfs.Map(
             game,
             coordinates,
@@ -458,12 +477,13 @@ class GeneratorUI:
             multiplier=multiplier,
             blur_radius=self.blur_radius_input,
             auto_process=self.auto_process,
-            plateau=self.plateau_height_input,
+            plateau=plateau,
             light_version=self.community,
             fields_padding=self.fields_padding,
             farmland_margin=self.farmland_margin,
             forest_density=self.forest_density,
             randomize_plants=self.randomize_plants,
+            water_depth=self.water_depth,
         )
 
         if self.community:

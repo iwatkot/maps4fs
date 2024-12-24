@@ -330,6 +330,7 @@ class Component:
 
         return cs_x, cs_y
 
+    # pylint: disable=R0914
     def fit_polygon_into_bounds(
         self, polygon_points: list[tuple[int, int]], margin: int = 0, angle: int = 0
     ) -> list[tuple[int, int]]:
@@ -371,8 +372,13 @@ class Component:
         bounds = box(min_x, min_y, max_x, max_y)
 
         # Intersect the polygon with the bounds to fit it within the map
-        fitted_polygon = polygon.intersection(bounds)
-        self.logger.debug("Fitted the polygon into the bounds: %s", bounds)
+        try:
+            fitted_polygon = polygon.intersection(bounds)
+            self.logger.debug("Fitted the polygon into the bounds: %s", bounds)
+        except Exception as e:
+            raise ValueError(  # pylint: disable=W0707
+                f"Could not fit the polygon into the bounds: {e}"
+            )
 
         if not isinstance(fitted_polygon, Polygon):
             raise ValueError("The fitted polygon is not a valid polygon.")

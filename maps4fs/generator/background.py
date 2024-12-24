@@ -3,8 +3,10 @@ around the map."""
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
+from copy import deepcopy
 
 import cv2
 import numpy as np
@@ -17,6 +19,7 @@ from maps4fs.generator.dem import (
     DEFAULT_PLATEAU,
     DEM,
 )
+from maps4fs.generator.texture import Texture
 
 DEFAULT_DISTANCE = 2048
 RESIZE_FACTOR = 1 / 8
@@ -25,6 +28,7 @@ FULL_PREVIEW_NAME = "PREVIEW"
 ELEMENTS = [FULL_NAME, FULL_PREVIEW_NAME]
 
 
+# pylint: disable=R0902
 class Background(Component):
     """Component for creating 3D obj files based on DEM data around the map.
 
@@ -43,7 +47,9 @@ class Background(Component):
     def preprocess(self) -> None:
         """Registers the DEMs for the background terrain."""
         self.light_version = self.kwargs.get("light_version", False)
+        self.water_depth = self.kwargs.get("water_depth", 0)
         self.stl_preview_path: str | None = None
+        self.water_resources_path: str | None = None
 
         if self.rotation:
             self.logger.debug("Rotation is enabled: %s.", self.rotation)
@@ -51,22 +57,29 @@ class Background(Component):
         else:
             output_size_multiplier = 1
 
-        background_size = self.map_size + DEFAULT_DISTANCE * 2
-        rotated_size = int(background_size * output_size_multiplier)
+        self.background_size = self.map_size + DEFAULT_DISTANCE * 2
+        self.rotated_size = int(self.background_size * output_size_multiplier)
 
         self.background_directory = os.path.join(self.map_directory, "background")
+        self.water_directory = os.path.join(self.map_directory, "water")
         os.makedirs(self.background_directory, exist_ok=True)
+        os.makedirs(self.water_directory, exist_ok=True)
 
         autoprocesses = [self.kwargs.get("auto_process", False), False]
+        self.output_paths = [
+            os.path.join(self.background_directory, f"{name}.png") for name in ELEMENTS
+        ]
+        self.not_substracted_path = os.path.join(self.background_directory, "not_substracted.png")
+
         dems = []
 
-        for name, autoprocess in zip(ELEMENTS, autoprocesses):
+        for name, autoprocess, output_path in zip(ELEMENTS, autoprocesses, self.output_paths):
             dem = DEM(
                 self.game,
                 self.map,
                 self.coordinates,
-                background_size,
-                rotated_size,
+                self.background_size,
+                self.rotated_size,
                 self.rotation,
                 self.map_directory,
                 self.logger,
@@ -77,8 +90,8 @@ class Background(Component):
             )
             dem.preprocess()
             dem.is_preview = self.is_preview(name)  # type: ignore
-            dem.set_output_resolution((rotated_size, rotated_size))
-            dem.set_dem_path(os.path.join(self.background_directory, f"{name}.png"))
+            dem.set_output_resolution((self.rotated_size, self.rotated_size))
+            dem.set_dem_path(output_path)
             dems.append(dem)
 
         self.dems = dems
@@ -98,8 +111,17 @@ class Background(Component):
         """Launches the component processing. Iterates over all tiles and processes them
         as a result the DEM files will be saved, then based on them the obj files will be
         generated."""
+        self.create_background_textures()
+
         for dem in self.dems:
             dem.process()
+            if not dem.is_preview:  # type: ignore
+                shutil.copyfile(dem.dem_path, self.not_substracted_path)
+
+        if self.water_depth:
+            self.subtraction()
+
+        for dem in self.dems:
             if not dem.is_preview:  # type: ignore
                 cutted_dem_path = self.cutout(dem.dem_path)
                 if self.game.additional_dem_name is not None:
@@ -107,6 +129,7 @@ class Background(Component):
 
         if not self.light_version:
             self.generate_obj_files()
+            self.generate_water_resources_obj()
         else:
             self.logger.info("Light version is enabled, obj files will not be generated.")
 
@@ -223,13 +246,20 @@ class Background(Component):
         return main_dem_path
 
     # pylint: disable=too-many-locals
-    def plane_from_np(self, dem_data: np.ndarray, save_path: str, is_preview: bool = False) -> None:
+    def plane_from_np(
+        self,
+        dem_data: np.ndarray,
+        save_path: str,
+        is_preview: bool = False,
+        include_zeros: bool = True,
+    ) -> None:
         """Generates a 3D obj file based on DEM data.
 
         Arguments:
             dem_data (np.ndarray) -- The DEM data as a numpy array.
             save_path (str) -- The path where the obj file will be saved.
             is_preview (bool, optional) -- If True, the preview mesh will be generated.
+            include_zeros (bool, optional) -- If True, the mesh will include the zero height values.
         """
         dem_data = cv2.resize(  # pylint: disable=no-member
             dem_data, (0, 0), fx=RESIZE_FACTOR, fy=RESIZE_FACTOR
@@ -247,6 +277,9 @@ class Background(Component):
         x, y = np.meshgrid(x, y)
         z = dem_data
 
+        ground = z.max()
+        self.logger.debug("Ground level: %s", ground)
+
         self.logger.debug(
             "Starting to generate a mesh for with shape: %s x %s. This may take a while...",
             cols,
@@ -256,6 +289,8 @@ class Background(Component):
         vertices = np.column_stack([x.ravel(), y.ravel(), z.ravel()])
         faces = []
 
+        skipped = 0
+
         for i in range(rows - 1):
             for j in range(cols - 1):
                 top_left = i * cols + j
@@ -263,8 +298,14 @@ class Background(Component):
                 bottom_left = top_left + cols
                 bottom_right = bottom_left + 1
 
+                if ground in [z[i, j], z[i, j + 1], z[i + 1, j], z[i + 1, j + 1]]:
+                    skipped += 1
+                    continue
+
                 faces.append([top_left, bottom_left, bottom_right])
                 faces.append([top_left, bottom_right, top_right])
+
+        self.logger.debug("Skipped faces: %s", skipped)
 
         faces = np.array(faces)  # type: ignore
         mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
@@ -283,13 +324,14 @@ class Background(Component):
             mesh.apply_scale([0.5, 0.5, 0.5])
             self.mesh_to_stl(mesh)
         else:
-            multiplier = self.kwargs.get("multiplier", DEFAULT_MULTIPLIER)
-            if multiplier != 1:
-                z_scaling_factor = 1 / multiplier
-            else:
-                z_scaling_factor = 1 / 2**5
-            self.logger.debug("Z scaling factor: %s", z_scaling_factor)
-            mesh.apply_scale([1 / RESIZE_FACTOR, 1 / RESIZE_FACTOR, z_scaling_factor])
+            if not include_zeros:
+                multiplier = self.kwargs.get("multiplier", DEFAULT_MULTIPLIER)
+                if multiplier != 1:
+                    z_scaling_factor = 1 / multiplier
+                else:
+                    z_scaling_factor = 1 / 2**5
+                self.logger.debug("Z scaling factor: %s", z_scaling_factor)
+                mesh.apply_scale([1 / RESIZE_FACTOR, 1 / RESIZE_FACTOR, z_scaling_factor])
 
         mesh.export(save_path)
         self.logger.debug("Obj file saved: %s", save_path)
@@ -413,3 +455,123 @@ class Background(Component):
 
         cv2.imwrite(colored_dem_path, dem_data_colored)
         return colored_dem_path
+
+    def create_background_textures(self) -> None:
+        """Creates background textures for the map."""
+        if not os.path.isfile(self.game.texture_schema):
+            self.logger.warning("Texture schema file not found: %s", self.game.texture_schema)
+            return
+
+        with open(self.game.texture_schema, "r", encoding="utf-8") as f:
+            layers_schema = json.load(f)
+
+        background_layers = []
+        for layer in layers_schema:
+            if layer.get("background") is True:
+                layer_copy = deepcopy(layer)
+                layer_copy["count"] = 1
+                layer_copy["name"] = f"{layer['name']}_background"
+                background_layers.append(layer_copy)
+
+        if not background_layers:
+            return
+
+        self.background_texture = Texture(  # pylint: disable=W0201
+            self.game,
+            self.map,
+            self.coordinates,
+            self.background_size,
+            self.rotated_size,
+            rotation=self.rotation,
+            map_directory=self.map_directory,
+            logger=self.logger,
+            light_version=self.light_version,
+            custom_schema=background_layers,
+        )
+
+        self.background_texture.preprocess()
+        self.background_texture.process()
+
+        processed_layers = self.background_texture.get_background_layers()
+        weights_directory = self.game.weights_dir_path(self.map_directory)
+        background_paths = [layer.path(weights_directory) for layer in processed_layers]
+        self.logger.debug("Found %s background textures.", len(background_paths))
+
+        if not background_paths:
+            self.logger.warning("No background textures found.")
+            return
+
+        # Merge all images into one.
+        background_image = np.zeros((self.background_size, self.background_size), dtype=np.uint8)
+        for path in background_paths:
+            layer = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+            background_image = cv2.add(background_image, layer)  # type: ignore
+
+        background_save_path = os.path.join(self.water_directory, "water_resources.png")
+        cv2.imwrite(background_save_path, background_image)
+        self.logger.info("Background texture saved: %s", background_save_path)
+        self.water_resources_path = background_save_path  # pylint: disable=W0201
+
+    def subtraction(self) -> None:
+        """Subtracts the water depth from the DEM data where the water resources are located."""
+        if not self.water_resources_path:
+            self.logger.warning("Water resources texture not found.")
+            return
+
+        # Single channeled 8 bit image, where the water have values of 255, and the rest 0.
+        water_resources_image = cv2.imread(self.water_resources_path, cv2.IMREAD_UNCHANGED)
+        mask = water_resources_image == 255
+
+        # Make mask a little bit smaller (1 pixel).
+        mask = cv2.erode(mask.astype(np.uint8), np.ones((3, 3), np.uint8), iterations=1).astype(
+            bool
+        )
+
+        for output_path in self.output_paths:
+            if FULL_PREVIEW_NAME in output_path:
+                continue
+            dem_image = cv2.imread(output_path, cv2.IMREAD_UNCHANGED)
+
+            # Create a mask where water_resources_image is 255 (or not 0)
+            # Subtract water_depth from dem_image where mask is True
+            dem_image[mask] = dem_image[mask] - self.water_depth
+
+            # Save the modified dem_image back to the output path
+            cv2.imwrite(output_path, dem_image)
+            self.logger.debug("Water depth subtracted from DEM data: %s", output_path)
+
+    def generate_water_resources_obj(self) -> None:
+        """Generates 3D obj files based on water resources data."""
+        if not self.water_resources_path:
+            self.logger.warning("Water resources texture not found.")
+            return
+
+        # Single channeled 8 bit image, where the water have values of 255, and the rest 0.
+        plane_water = cv2.imread(self.water_resources_path, cv2.IMREAD_UNCHANGED)
+        dilated_plane_water = cv2.dilate(
+            plane_water.astype(np.uint8), np.ones((5, 5), np.uint8), iterations=5
+        ).astype(np.uint8)
+        plane_save_path = os.path.join(self.water_directory, "plane_water.obj")
+        self.plane_from_np(
+            dilated_plane_water, plane_save_path, is_preview=False, include_zeros=False
+        )
+
+        # Single channeled 16 bit DEM image of terrain.
+        background_dem = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
+
+        # Remove all the values from the background dem where the plane_water is 0.
+        background_dem[plane_water == 0] = 0
+
+        # Dilate the background dem to make the water more smooth.
+        elevated_water = cv2.dilate(background_dem, np.ones((3, 3), np.uint16), iterations=10)
+
+        # Use the background dem as a mask to prevent the original values from being overwritten.
+        mask = background_dem > 0
+
+        # Combine the dilated background dem with non-dilated background dem.
+        elevated_water = np.where(mask, background_dem, elevated_water)
+        elevated_save_path = os.path.join(self.water_directory, "elevated_water.obj")
+
+        self.plane_from_np(
+            elevated_water, elevated_save_path, is_preview=False, include_zeros=False
+        )

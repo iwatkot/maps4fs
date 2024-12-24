@@ -45,6 +45,7 @@
 🌽 Automatically generates farmlands 🆕<br>
 🌿 Automatically generates decorative foliage 🆕<br>
 🌲 Automatically generates forests 🆕<br>
+🌊 Automatically generates water planes 🆕<br>
 🌍 Based on real-world data from OpenStreetMap<br>
 🏞️ Generates height map using SRTM dataset<br>
 📦 Provides a ready-to-use map template for the Giants Editor<br>
@@ -65,6 +66,8 @@
 🌿 Automatically generates decorative foliage.<br><br>
 <img src="https://github.com/user-attachments/assets/27a5e541-a9f5-4504-b8d2-64aae9fb3e52"><br>
 🌲 Automatically generates forests.<br><br>
+<img src="https://github.com/user-attachments/assets/cce7d4e0-cba2-4dd2-b22d-03137fb2e860"><br>
+🌊 Automatically generates water planes.<br><br>
 <img src="https://github.com/user-attachments/assets/80e5923c-22c7-4dc0-8906-680902511f3a"><br>
 🗒️ True-to-life blueprints for fast and precise modding.<br><br>
 <img width="480" src="https://github.com/user-attachments/assets/1a8802d2-6a3b-4bfa-af2b-7c09478e199b"><br>
@@ -75,6 +78,9 @@
 📹 A complete step-by-step video tutorial is here!  
 <a href="https://www.youtube.com/watch?v=Nl_aqXJ5nAk" target="_blank"><img src="https://github.com/user-attachments/assets/4845e030-0e73-47ab-a5a3-430308913060"/></a>
 <p align="center"><i>How to Generate a Map for Farming Simulator 25 and 22 from a real place using maps4FS.</i></p>
+
+![Map example](https://github.com/user-attachments/assets/c46a3581-dd17-462f-b815-e36d4f724947)
+<p align="center"><i>Map example generated with maps4fs.</i></p>
 
 ## Quick Start
 There are several ways to use the tool. You obviously need the **first one**, but you can choose any of the others depending on your needs.<br>
@@ -450,6 +456,8 @@ You can also apply some advanced settings to the map generation process. Note th
 - Blur radius: the radius of the Gaussian blur filter applied to the DEM map. By default, it's set to 21. This filter just makes the DEM map smoother, so the height transitions will be more natural. You can set it to 1 to disable the filter, but it will result in a Minecraft-like map.
 
 - Plateau height: this value will be added to each pixel of the DEM image, making it "higher". It's useful when you want to add some negative heights on the map, that appear to be in a "low" place. By default, it's set to 0.
+
+- Water depth: this value will be subtracted from each pixel of the DEM image, where water resources are located. Pay attention that it's not in meters, instead it in the pixel value of DEM, which is 16 bit image with possible values from 0 to 65535. When this value is set, the same value will be added to the plateau setting to avoid negative heights.
 
 ### Texture Advanced settings
 
