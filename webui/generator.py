@@ -48,7 +48,9 @@ class GeneratorUI:
         self.logger = mfs.Logger(level="INFO", to_file=False)
 
         self.community = config.is_on_community_server()
+        self.public = config.is_public()
         self.logger.debug("The application launched on the community server: %s", self.community)
+        self.logger.debug("The application launched on a public server: %s", self.public)
 
         self.left_column, self.right_column = st.columns(2, gap="large")
 
@@ -117,7 +119,8 @@ class GeneratorUI:
 
         st.title(Messages.TITLE)
 
-        if not self.community:
+        # Only for a local Docker version.
+        if not self.community and not self.public:
             versions = config.get_versions(self.logger)
             try:
                 if versions:
@@ -141,7 +144,6 @@ class GeneratorUI:
         st.write(Messages.MAIN_PAGE_DESCRIPTION)
         if self.community:
             st.info(Messages.MAIN_PAGE_COMMUNITY_WARNING)
-        # st.info(Messages.TERRAIN_RELOAD)
         st.markdown("---")
 
         # Game selection (FS22 or FS25).
@@ -169,6 +171,8 @@ class GeneratorUI:
         size_options = ["2048x2048", "4096x4096", "8192x8192", "16384x16384", "Custom"]
         if self.community:
             size_options = size_options[:1]
+        if self.public:
+            size_options = size_options[:2]
 
         # Map size selection.
         st.write("Select size of the map:")
@@ -196,7 +200,7 @@ class GeneratorUI:
 
             self.map_size_input = f"{custom_map_size_input}x{custom_map_size_input}"
 
-        if self.community:
+        if self.community or self.public:
             st.warning(
                 "💡 If you run the tool locally, you can generate larger maps, even with the custom size.  \n"
             )
@@ -486,7 +490,7 @@ class GeneratorUI:
             water_depth=self.water_depth,
         )
 
-        if self.community:
+        if self.community or self.public:
             add_to_queue(session_name)
             for position in wait_in_queue(session_name):
                 self.status_container.info(
@@ -527,7 +531,7 @@ class GeneratorUI:
                 f"An error occurred while generating the map: {repr(e)}.", icon="❌"
             )
         finally:
-            if self.community:
+            if self.community or self.public:
                 remove_from_queue(session_name)
 
     def show_preview(self, mp: mfs.Map) -> None:

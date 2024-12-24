@@ -20,6 +20,8 @@ os.makedirs(INPUT_DIRECTORY, exist_ok=True)
 
 STREAMLIT_COMMUNITY_KEY = "HOSTNAME"
 STREAMLIT_COMMUNITY_VALUE = "streamlit"
+PUBLIC_HOSTNAME_KEY = "PUBLIC_HOSTNAME"
+PUBLIC_HOSTNAME_VALUE = "maps4fs"
 
 DOCS_DIRECTORY = os.path.join(WORKING_DIRECTORY, "docs")
 MD_FILES = {
@@ -56,6 +58,15 @@ def is_on_community_server() -> bool:
         bool: True if the script is running on the Streamlit Community server, False otherwise.
     """
     return os.environ.get(STREAMLIT_COMMUNITY_KEY) == STREAMLIT_COMMUNITY_VALUE
+
+
+def is_public() -> bool:
+    """Check if the script is running on a public server.
+
+    Returns:
+        bool: True if the script is running on a public server, False otherwise.
+    """
+    return os.environ.get(PUBLIC_HOSTNAME_KEY) == PUBLIC_HOSTNAME_VALUE
 
 
 def remove_with_delay_without_blocking(

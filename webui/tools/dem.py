@@ -2,7 +2,7 @@ import os
 
 import streamlit as st
 import streamlit.components.v1 as components
-from config import INPUT_DIRECTORY, is_on_community_server
+from config import INPUT_DIRECTORY, is_on_community_server, is_public
 from osmp import get_bbox, get_center, get_preview
 from tools.tool import Tool
 
@@ -22,11 +22,8 @@ class GeoTIFFWindowingTool(Tool):
     download_path = None
 
     def content(self):
-        if is_on_community_server():
-            st.warning(
-                "💡 This tool is disabled on StreamLit community hosting.  \n"
-                "If you want to use it, consider running the application locally."
-            )
+        if is_on_community_server() or is_public():
+            st.warning("💡 This tool is available in the local version of the tool.")
             return
         if "windowed" not in st.session_state:
             st.session_state.windowed = False
