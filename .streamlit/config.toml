@@ -3,7 +3,7 @@
 [server]
 maxUploadSize = 1000
 enableCORS = "false"
-enableXsrfProtection = "true"
+enableXsrfProtection = "false"
 
 [client]
 toolbarMode = "viewer"
