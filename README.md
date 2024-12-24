@@ -79,6 +79,9 @@
 <a href="https://www.youtube.com/watch?v=Nl_aqXJ5nAk" target="_blank"><img src="https://github.com/user-attachments/assets/4845e030-0e73-47ab-a5a3-430308913060"/></a>
 <p align="center"><i>How to Generate a Map for Farming Simulator 25 and 22 from a real place using maps4FS.</i></p>
 
+![Map example](https://github.com/user-attachments/assets/c46a3581-dd17-462f-b815-e36d4f724947)
+*Map example generated with maps4fs.*
+
 ## Quick Start
 There are several ways to use the tool. You obviously need the **first one**, but you can choose any of the others depending on your needs.<br>
 ### 🚜 For most users
