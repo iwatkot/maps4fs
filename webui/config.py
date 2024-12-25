@@ -57,7 +57,8 @@ def is_on_community_server() -> bool:
     Returns:
         bool: True if the script is running on the Streamlit Community server, False otherwise.
     """
-    return os.environ.get(STREAMLIT_COMMUNITY_KEY) == STREAMLIT_COMMUNITY_VALUE
+    # return os.environ.get(STREAMLIT_COMMUNITY_KEY) == STREAMLIT_COMMUNITY_VALUE
+    return True
 
 
 def is_public() -> bool:

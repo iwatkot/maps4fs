@@ -395,7 +395,9 @@ class I3d(Component):
             node_id += 1
 
             rotation = randint(-180, 180)
-            xcs, ycs = self.randomize_coordinates((xcs, ycs), self.map.i3d_settings.forest_density)  # type: ignore
+            xcs, ycs = self.randomize_coordinates(  # type: ignore
+                (xcs, ycs), self.map.i3d_settings.forest_density
+            )
 
             random_tree = choice(tree_schema)
             tree_name = random_tree["name"]

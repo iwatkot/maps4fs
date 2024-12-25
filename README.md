@@ -463,6 +463,8 @@ You can also apply some advanced settings to the map generation process. Note th
 
 - Fields padding - this value (in meters) will be applied to each field, making it smaller. It's useful when the fields are too close to each other and you want to make them smaller. By default, it's set to 0.
 
+- Texture dissolving - if enabled, the values from one layer will be splitted between different layers of texture, making it look more natural. By default, it's set to True. Can be turned of for faster processing.
+
 ### Farmlands Advanced settings
 
 - Farmlands margin - this value (in meters) will be applied to each farmland, making it bigger. You can use the value to adjust how much the farmland should be bigger than the actual field. By default, it's set to 3.
@@ -472,6 +474,12 @@ You can also apply some advanced settings to the map generation process. Note th
 - Forest density - the density of the forest in meters. The lower the value, the lower the distance between the trees, which makes the forest denser. Note, that low values will lead to enormous number of trees, which may cause the Giants Editor to crash or lead to performance issues. By default, it's set to 10.
 
 - Random plants - when adding decorative foliage, enabling this option will add different species of plants to the map. If unchecked only basic grass (smallDenseMix) will be added. Defaults to True.
+
+### Background terrain Advanced settings
+
+- Generate background - if enabled, the obj files for the background terrain will be generated. You can turn it off if you already have those files or don't need them. By default, it's set to True.
+
+- Generate water - if enabled, the water planes obj files will be generated. You can turn it off if you already have those files or don't need them. By default, it's set to True.
 
 ## Resources
 In this section, you'll find a list of the resources that you need to create a map for the Farming Simulator.<br>

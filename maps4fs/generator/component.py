@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from maps4fs.generator.map import Map
 
 
-# pylint: disable=R0801, R0903, R0902, R0904
+# pylint: disable=R0801, R0903, R0902, R0904, R0913, R0917
 class Component:
     """Base class for all map generation components.
 

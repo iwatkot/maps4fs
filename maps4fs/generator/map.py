@@ -12,6 +12,18 @@ from maps4fs.logger import Logger
 
 
 class DEMSettings(NamedTuple):
+    """Represents the advanced settings for DEM component.
+
+    Attributes:
+        auto_process (bool): use the auto preset to change the multiplier.
+        multiplier (int): multiplier for the heightmap, every pixel will be multiplied by this
+            value.
+        blur_radius (int): radius of the blur filter.
+        plateau (int): plateau height, will be added to each pixel.
+        water_depth (int): water depth, will be subtracted from each pixel where the water
+            is present.
+    """
+
     auto_process: bool = True
     multiplier: int = 1
     blur_radius: int = 35
@@ -20,19 +32,47 @@ class DEMSettings(NamedTuple):
 
 
 class BackgroundSettings(NamedTuple):
-    generate_models: bool = True
+    """Represents the advanced settings for background component.
+
+    Attributes:
+        generate_background (bool): generate obj files for the background terrain.
+        generate_water (bool): generate obj files for the water.
+    """
+
+    generate_background: bool = True
+    generate_water: bool = True
 
 
 class GRLESettings(NamedTuple):
+    """Represents the advanced settings for GRLE component.
+
+    Attributes:
+        farmland_margin (int): margin around the farmland.
+        random_plants (bool): generate random plants on the map or use the default one.
+    """
+
     farmland_margin: int = 0
     random_plants: bool = True
 
 
 class I3DSettings(NamedTuple):
+    """Represents the advanced settings for I3D component.
+
+    Attributes:
+        forest_density (int): density of the forest (distance between trees).
+    """
+
     forest_density: int = 10
 
 
 class TextureSettings(NamedTuple):
+    """Represents the advanced settings for texture component.
+
+    Attributes:
+        dissolve (bool): dissolve the texture into several images.
+        fields_padding (int): padding around the fields.
+    """
+
     dissolve: bool = True
     fields_padding: int = 0
 

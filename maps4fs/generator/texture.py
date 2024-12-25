@@ -180,7 +180,7 @@ class Texture(Component):
         """Preprocesses the data before the generation."""
         # if self.custom_schema:
         if getattr(self.game, "custom_schema", None):
-            layers_schema = self.custom_schema
+            layers_schema = self.custom_schema  # type: ignore
             self.logger.info("Custom schema loaded with %s layers.", len(layers_schema))
         else:
             if not os.path.isfile(self.game.texture_schema):
@@ -425,7 +425,9 @@ class Texture(Component):
         if cumulative_image is not None:
             self.draw_base_layer(cumulative_image)
 
-        if self.map.texture_settings.dissolve:
+        if self.map.texture_settings.dissolve and self.game.code != "FS22":
+            # FS22 has textures splitted into 4 sublayers, which leads to a very
+            # long processing time when dissolving them.
             self.dissolve()
         else:
             self.logger.debug("Skipping dissolve in light version of the map.")

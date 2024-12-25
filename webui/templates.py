@@ -9,6 +9,7 @@ class Messages:
         "🤗 If you like the project, consider supporting it on [Buy Me a Coffee](https://www.buymeacoffee.com/iwatkot).  \n"
         "📹 A complete step-by-step video tutorial is on [YouTube](https://www.youtube.com/watch?v=Nl_aqXJ5nAk&)!"
     )
+    MOVED = "The app has moved to [maps4fs.xyz](https://maps4fs.xyz)"
     MAIN_PAGE_COMMUNITY_WARNING = (
         "🚜 Hey, farmer!  \n"
         "Do you know what **Docker** is? If yes, please consider running the application "
@@ -98,4 +99,17 @@ class Messages:
         "value from the DEM image. So, if you set low values, you will probably see no "
         "difference. Also, this value will be added to the plateau value, to avoid negative "
         "height."
+    )
+    DISSOLVING_INFO = (
+        "If enabled, the textures will be dissolved (splitted between different files). "
+        "It makes them look better in game, but it will require some time. "
+        "It's recommended to keep this option enabled."
+    )
+    GENERATE_BACKGROUND_INFO = (
+        "If enabled, the background terrain obj files will be generated to edit them in Blender. "
+        "Turn it off if you already have them or don't need them."
+    )
+    GENERATE_WATER_INFO = (
+        "If enabled, the water planes obj files will be generated to edit them in Blender. "
+        "Turn it off if you already have them or don't need them."
     )

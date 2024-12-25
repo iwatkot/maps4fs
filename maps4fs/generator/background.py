@@ -117,8 +117,9 @@ class Background(Component):
                 if self.game.additional_dem_name is not None:
                     self.make_copy(cutted_dem_path, self.game.additional_dem_name)
 
-        if self.map.background_settings.generate_models:
+        if self.map.background_settings.generate_background:
             self.generate_obj_files()
+        if self.map.background_settings.generate_water:
             self.generate_water_resources_obj()
         else:
             self.logger.info("Light version is enabled, obj files will not be generated.")
@@ -476,7 +477,7 @@ class Background(Component):
             map_directory=self.map_directory,
             logger=self.logger,
         )
-        self.background_texture.custom_schema = background_layers
+        self.background_texture.custom_schema = background_layers  # type: ignore
 
         self.background_texture.preprocess()
         self.background_texture.process()

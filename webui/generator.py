@@ -45,9 +45,9 @@ class GeneratorUI:
         self.download_path = None
         self.logger = mfs.Logger(level="INFO", to_file=False)
 
-        self.community = config.is_on_community_server()
+        if config.is_on_community_server():
+            st.toast(Messages.MOVED, icon="🚜")
         self.public = config.is_public()
-        self.logger.debug("The application launched on the community server: %s", self.community)
         self.logger.debug("The application launched on a public server: %s", self.public)
 
         self.left_column, self.right_column = st.columns(2, gap="large")
@@ -118,7 +118,7 @@ class GeneratorUI:
         st.title(Messages.TITLE)
 
         # Only for a local Docker version.
-        if not self.community and not self.public:
+        if not self.public:
             versions = config.get_versions(self.logger)
             try:
                 if versions:
@@ -140,8 +140,6 @@ class GeneratorUI:
                 self.logger.error("An error occurred while checking the package version: %s", e)
 
         st.write(Messages.MAIN_PAGE_DESCRIPTION)
-        if self.community:
-            st.info(Messages.MAIN_PAGE_COMMUNITY_WARNING)
         st.markdown("---")
 
         # Game selection (FS22 or FS25).
@@ -167,10 +165,8 @@ class GeneratorUI:
         )
 
         size_options = ["2048x2048", "4096x4096", "8192x8192", "16384x16384", "Custom"]
-        if self.community:
-            size_options = size_options[:1]
         if self.public:
-            size_options = size_options[:2]
+            size_options = size_options[:3]
 
         # Map size selection.
         st.write("Select size of the map:")
@@ -198,7 +194,7 @@ class GeneratorUI:
 
             self.map_size_input = f"{custom_map_size_input}x{custom_map_size_input}"
 
-        if self.community or self.public:
+        if self.public:
             st.warning(
                 "💡 If you run the tool locally, you can generate larger maps, even with the custom size.  \n"
             )
@@ -214,11 +210,9 @@ class GeneratorUI:
             step=1,
             key="rotation",
             label_visibility="collapsed",
-            disabled=self.community,
+            disabled=False,
             on_change=self.map_preview,
         )
-        if self.community:
-            st.warning("💡 This feature is available in local version of the tool.")
 
         self.auto_process = st.checkbox("Use auto preset", value=True, key="auto_process")
         if self.auto_process:
@@ -233,6 +227,9 @@ class GeneratorUI:
         self.forest_density = 10
         self.randomize_plants = True
         self.water_depth = 200
+        self.dissolving_enabled = True
+        self.generate_background = True
+        self.generate_water = True
 
         if not self.auto_process:
             self.logger.info("Auto preset is disabled.")
@@ -327,6 +324,14 @@ class GeneratorUI:
                     label_visibility="collapsed",
                 )
 
+                st.write("Dissolving:")
+                st.write(Messages.DISSOLVING_INFO)
+                self.dissolving_enabled = st.checkbox(
+                    "Dissolving enabled",
+                    value=True,
+                    key="dissolving_enabled",
+                )
+
             with st.expander("Farmlands Advanced Settings", icon="🌾"):
                 st.info(
                     "ℹ️ Settings related to the farmlands of the map, which represent the lands "
@@ -370,6 +375,26 @@ class GeneratorUI:
                     "Random plants", value=True, key="randomize_plants"
                 )
 
+            with st.expander("Background Advanced Settings", icon="🖼️"):
+                st.info(
+                    "ℹ️ Settings related to the background of the map, which represent the sky, "
+                    "clouds, etc."
+                )
+
+                st.write("Generate background:")
+                st.write(Messages.GENERATE_BACKGROUND_INFO)
+
+                self.generate_background = st.checkbox(
+                    "Generate background", value=True, key="generate_background"
+                )
+
+                st.write("Generate water:")
+                st.write(Messages.GENERATE_WATER_INFO)
+
+                self.generate_water = st.checkbox(
+                    "Generate water", value=True, key="generate_water"
+                )
+
         # Add an empty container for status messages.
         self.status_container = st.empty()
 
@@ -378,8 +403,9 @@ class GeneratorUI:
 
         # Generate button.
         with self.buttons_container:
-            if st.button("Generate", key="launch_btn"):
-                self.generate_map()
+            if not config.is_on_community_server():
+                if st.button("Generate", key="launch_btn"):
+                    self.generate_map()
 
         # Download button.
         if st.session_state.generated:
@@ -476,7 +502,9 @@ class GeneratorUI:
         )
         self.logger.info("DEM settings: %s", dem_settings)
 
-        background_settings = mfs.BackgroundSettings(generate_models=not self.community)
+        background_settings = mfs.BackgroundSettings(
+            generate_background=self.generate_background, generate_water=self.generate_water
+        )
         self.logger.info("Background settings: %s", background_settings)
 
         grle_settings = mfs.GRLESettings(
@@ -489,7 +517,7 @@ class GeneratorUI:
         self.logger.info("I3D settings: %s", i3d_settings)
 
         texture_settings = mfs.TextureSettings(
-            dissolve=not self.community, fields_padding=self.fields_padding
+            dissolve=self.dissolving_enabled, fields_padding=self.fields_padding
         )
         self.logger.info("Texture settings: %s", texture_settings)
 
@@ -507,7 +535,7 @@ class GeneratorUI:
             texture_settings=texture_settings,
         )
 
-        if self.community or self.public:
+        if self.public:
             add_to_queue(session_name)
             for position in wait_in_queue(session_name):
                 self.status_container.info(
@@ -548,7 +576,7 @@ class GeneratorUI:
         #         f"An error occurred while generating the map: {repr(e)}.", icon="❌"
         #     )
         finally:
-            if self.community or self.public:
+            if self.public:
                 remove_from_queue(session_name)
 
     def show_preview(self, mp: mfs.Map) -> None:
