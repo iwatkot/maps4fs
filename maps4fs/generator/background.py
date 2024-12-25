@@ -77,9 +77,11 @@ class Background(Component):
                 self.map_directory,
                 self.logger,
             )
-            dem.auto_process = autoprocess
             dem.preprocess()
             dem.is_preview = self.is_preview(name)  # type: ignore
+            if dem.is_preview:  # type: ignore
+                dem.multiplier = 1
+            dem.auto_process = autoprocess
             dem.set_output_resolution((self.rotated_size, self.rotated_size))
             dem.set_dem_path(output_path)
             dems.append(dem)
