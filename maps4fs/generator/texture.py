@@ -177,15 +177,9 @@ class Texture(Component):
             ]
 
     def preprocess(self) -> None:
-        self.light_version = self.kwargs.get("light_version", False)
-        self.fields_padding = self.kwargs.get("fields_padding", 0)
-        self.logger.debug("Light version: %s.", self.light_version)
-
-        self.custom_schema: list[dict[str, str | dict[str, str] | int]] | None = self.kwargs.get(
-            "custom_schema"
-        )
-
-        if self.custom_schema:
+        """Preprocesses the data before the generation."""
+        # if self.custom_schema:
+        if getattr(self.game, "custom_schema", None):
             layers_schema = self.custom_schema
             self.logger.info("Custom schema loaded with %s layers.", len(layers_schema))
         else:
@@ -431,7 +425,7 @@ class Texture(Component):
         if cumulative_image is not None:
             self.draw_base_layer(cumulative_image)
 
-        if not self.light_version:
+        if self.map.texture_settings.dissolve:
             self.dissolve()
         else:
             self.logger.debug("Skipping dissolve in light version of the map.")
@@ -651,8 +645,8 @@ class Texture(Component):
             if polygon is None:
                 continue
 
-            if is_fieds and self.fields_padding > 0:
-                padded_polygon = polygon.buffer(-self.fields_padding)
+            if is_fieds and self.map.texture_settings.fields_padding > 0:
+                padded_polygon = polygon.buffer(-self.map.texture_settings.fields_padding)
 
                 if not isinstance(padded_polygon, shapely.geometry.polygon.Polygon):
                     self.logger.warning("The padding value is too high, field will not padded.")

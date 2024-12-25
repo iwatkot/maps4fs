@@ -26,22 +26,7 @@ class Messages:
         "Also, if you are familiar with Python, you can use the "
         "[maps4fs](https://pypi.org/project/maps4fs/) package to generate maps locally."
     )
-    # TERRAIN_RELOAD = (
-    #     "ℹ️ When opening the map first time in the Giants Editor, select the **terrain** object, "
-    #     "open the **Terrain** tab in the **Attributes** window, scroll down to the end "
-    #     "and press the **Reload material** button.  \n"
-    #     "Otherwise you may (and will) face some glitches."
-    # )
-    # HEIGHT_SCALE_INFO = (
-    #     "ℹ️ Remember to adjust the ***heightScale*** parameter in the Giants Editor to a value "
-    #     "that suits your map. Learn more about it in repo's "
-    #     "[README](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#For-advanced-users)."
-    # )
-    COMMUNITY_ADVANCED_SETTINGS = (
-        "💡 Advanced settings are disabled on StreamLit community hosting.  \n"
-        "If you want to have more control over the terrain generation, consider running the "
-        "application locally."
-    )
+    TOOL_LOCAL = "💡 This tool is available in the local version of the tool."
 
     AUTO_PRESET_INFO = (
         "Auto preset will automatically apply different algorithms to make terrain more "

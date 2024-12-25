@@ -11,12 +11,10 @@ from streamlit_stl import stl_from_file
 from templates import Messages
 
 import maps4fs as mfs
-from maps4fs.generator.dem import (
-    DEFAULT_BLUR_RADIUS,
-    DEFAULT_MULTIPLIER,
-    DEFAULT_PLATEAU,
-)
 
+DEFAULT_MULTIPLIER = 1
+DEFAULT_BLUR_RADIUS = 35
+DEFAULT_PLATEAU = 0
 DEFAULT_LAT = 45.28571409289627
 DEFAULT_LON = 20.237433441210115
 Image.MAX_IMAGE_PIXELS = None
@@ -396,7 +394,6 @@ class GeneratorUI:
                         icon="📥",
                     )
 
-            # st.info(f"The file will be removed in {int(config.REMOVE_DELAY / 60)} minutes.")
             config.remove_with_delay_without_blocking(self.download_path, self.logger)
 
             st.session_state.generated = False
@@ -471,6 +468,31 @@ class GeneratorUI:
             else self.plateau_height_input + self.water_depth
         )
 
+        dem_settings = mfs.DEMSettings(
+            auto_process=self.auto_process,
+            multiplier=multiplier,
+            blur_radius=self.blur_radius_input,
+            plateau=plateau,
+        )
+        self.logger.info("DEM settings: %s", dem_settings)
+
+        background_settings = mfs.BackgroundSettings(generate_models=not self.community)
+        self.logger.info("Background settings: %s", background_settings)
+
+        grle_settings = mfs.GRLESettings(
+            farmland_margin=self.farmland_margin,
+            random_plants=self.randomize_plants,
+        )
+        self.logger.info("GRLE settings: %s", grle_settings)
+
+        i3d_settings = mfs.I3DSettings(forest_density=self.forest_density)
+        self.logger.info("I3D settings: %s", i3d_settings)
+
+        texture_settings = mfs.TextureSettings(
+            dissolve=not self.community, fields_padding=self.fields_padding
+        )
+        self.logger.info("Texture settings: %s", texture_settings)
+
         mp = mfs.Map(
             game,
             coordinates,
@@ -478,16 +500,11 @@ class GeneratorUI:
             self.rotation,
             map_directory,
             logger=self.logger,
-            multiplier=multiplier,
-            blur_radius=self.blur_radius_input,
-            auto_process=self.auto_process,
-            plateau=plateau,
-            light_version=self.community,
-            fields_padding=self.fields_padding,
-            farmland_margin=self.farmland_margin,
-            forest_density=self.forest_density,
-            randomize_plants=self.randomize_plants,
-            water_depth=self.water_depth,
+            dem_settings=dem_settings,
+            background_settings=background_settings,
+            grle_settings=grle_settings,
+            i3d_settings=i3d_settings,
+            texture_settings=texture_settings,
         )
 
         if self.community or self.public:
@@ -525,11 +542,11 @@ class GeneratorUI:
             st.session_state.generated = True
 
             self.status_container.success("Map generation completed!", icon="✅")
-        except Exception as e:
-            self.logger.error("An error occurred while generating the map: %s", repr(e))
-            self.status_container.error(
-                f"An error occurred while generating the map: {repr(e)}.", icon="❌"
-            )
+        # except Exception as e:
+        #     self.logger.error("An error occurred while generating the map: %s", repr(e))
+        #     self.status_container.error(
+        #         f"An error occurred while generating the map: {repr(e)}.", icon="❌"
+        #     )
         finally:
             if self.community or self.public:
                 remove_from_queue(session_name)

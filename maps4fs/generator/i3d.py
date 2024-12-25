@@ -43,17 +43,12 @@ class I3d(Component):
     def preprocess(self) -> None:
         """Gets the path to the map I3D file from the game instance and saves it to the instance
         attribute. If the game does not support I3D files, the attribute is set to None."""
-        self.auto_process = self.kwargs.get("auto_process", False)
-
         try:
             self._map_i3d_path = self.game.i3d_file_path(self.map_directory)
             self.logger.debug("Map I3D path: %s.", self._map_i3d_path)
         except NotImplementedError:
             self.logger.info("I3D file processing is not implemented for this game.")
             self._map_i3d_path = None
-
-        self.forest_density = self.kwargs.get("forest_density", DEFAULT_FOREST_DENSITY)
-        self.logger.info("Forest density: %s.", self.forest_density)
 
     def process(self) -> None:
         """Updates the map I3D file with the default settings."""
@@ -84,7 +79,7 @@ class I3d(Component):
         root = tree.getroot()
         for map_elem in root.iter("Scene"):
             for terrain_elem in map_elem.iter("TerrainTransformGroup"):
-                if self.auto_process:
+                if self.map.dem_settings.auto_process:
                     terrain_elem.set("heightScale", str(DEFAULT_HEIGHT_SCALE))
                     self.logger.debug(
                         "heightScale attribute set to %s in TerrainTransformGroup element.",
@@ -395,12 +390,12 @@ class I3d(Component):
         forest_image = cv2.imread(forest_image_path, cv2.IMREAD_UNCHANGED)
 
         tree_count = 0
-        for x, y in self.non_empty_pixels(forest_image, step=self.forest_density):
+        for x, y in self.non_empty_pixels(forest_image, step=self.map.i3d_settings.forest_density):
             xcs, ycs = self.top_left_coordinates_to_center((x, y))
             node_id += 1
 
             rotation = randint(-180, 180)
-            xcs, ycs = self.randomize_coordinates((xcs, ycs), self.forest_density)  # type: ignore
+            xcs, ycs = self.randomize_coordinates((xcs, ycs), self.map.i3d_settings.forest_density)  # type: ignore
 
             random_tree = choice(tree_schema)
             tree_name = random_tree["name"]

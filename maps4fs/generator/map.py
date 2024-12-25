@@ -4,11 +4,37 @@ from __future__ import annotations
 
 import os
 import shutil
-from typing import Any, Generator
+from typing import Any, Generator, NamedTuple
 
 from maps4fs.generator.component import Component
 from maps4fs.generator.game import Game
 from maps4fs.logger import Logger
+
+
+class DEMSettings(NamedTuple):
+    auto_process: bool = True
+    multiplier: int = 1
+    blur_radius: int = 35
+    plateau: int = 0
+    water_depth: int = 0
+
+
+class BackgroundSettings(NamedTuple):
+    generate_models: bool = True
+
+
+class GRLESettings(NamedTuple):
+    farmland_margin: int = 0
+    random_plants: bool = True
+
+
+class I3DSettings(NamedTuple):
+    forest_density: int = 10
+
+
+class TextureSettings(NamedTuple):
+    dissolve: bool = True
+    fields_padding: int = 0
 
 
 # pylint: disable=R0913, R0902
@@ -31,7 +57,11 @@ class Map:
         rotation: int,
         map_directory: str,
         logger: Any = None,
-        **kwargs,
+        dem_settings: DEMSettings = DEMSettings(),
+        background_settings: BackgroundSettings = BackgroundSettings(),
+        grle_settings: GRLESettings = GRLESettings(),
+        i3d_settings: I3DSettings = I3DSettings(),
+        texture_settings: TextureSettings = TextureSettings(),
     ):
         if not logger:
             logger = Logger(to_stdout=True, to_file=False)
@@ -53,8 +83,16 @@ class Map:
 
         self.logger.info("Game was set to %s", game.code)
 
-        self.kwargs = kwargs
-        self.logger.info("Additional arguments: %s", kwargs)
+        self.dem_settings = dem_settings
+        self.logger.info("DEM settings: %s", dem_settings)
+        self.background_settings = background_settings
+        self.logger.info("Background settings: %s", background_settings)
+        self.grle_settings = grle_settings
+        self.logger.info("GRLE settings: %s", grle_settings)
+        self.i3d_settings = i3d_settings
+        self.logger.info("I3D settings: %s", i3d_settings)
+        self.texture_settings = texture_settings
+        self.logger.info("Texture settings: %s", texture_settings)
 
         os.makedirs(self.map_directory, exist_ok=True)
         self.logger.debug("Map directory created: %s", self.map_directory)
@@ -81,7 +119,6 @@ class Map:
                 self.rotation,
                 self.map_directory,
                 self.logger,
-                **self.kwargs,
             )
             self.components.append(component)
 

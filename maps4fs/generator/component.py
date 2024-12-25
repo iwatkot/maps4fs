@@ -46,7 +46,6 @@ class Component:
         rotation: int,
         map_directory: str,
         logger: Any = None,
-        **kwargs,  # pylint: disable=W0613, R0913, R0917
     ):
         self.game = game
         self.map = map
@@ -56,7 +55,6 @@ class Component:
         self.rotation = rotation
         self.map_directory = map_directory
         self.logger = logger
-        self.kwargs = kwargs
 
         os.makedirs(self.previews_directory, exist_ok=True)
         os.makedirs(self.scripts_directory, exist_ok=True)

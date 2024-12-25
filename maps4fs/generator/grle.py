@@ -40,9 +40,6 @@ class GRLE(Component):
         """Gets the path to the map I3D file from the game instance and saves it to the instance
         attribute. If the game does not support I3D files, the attribute is set to None."""
 
-        self.farmland_margin = self.kwargs.get("farmland_margin", 0)
-        self.randomize_plants = self.kwargs.get("randomize_plants", True)
-
         try:
             grle_schema_path = self.game.grle_schema
         except ValueError:
@@ -148,7 +145,7 @@ class GRLE(Component):
         for field in fields:
             try:
                 fitted_field = self.fit_polygon_into_bounds(
-                    field, self.farmland_margin, angle=self.rotation
+                    field, self.map.grle_settings.farmland_margin, angle=self.rotation
                 )
             except ValueError as e:
                 self.logger.warning(
@@ -358,7 +355,7 @@ class GRLE(Component):
         # Add islands of plants to the base image.
         island_count = self.map_size
         self.logger.info("Adding %s islands of plants to the base image.", island_count)
-        if self.randomize_plants:
+        if self.map.grle_settings.random_plants:
             grass_image_copy = create_island_of_plants(grass_image_copy, island_count)
         self.logger.debug("Islands of plants added to the base image.")
 
