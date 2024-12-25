@@ -498,3 +498,6 @@ But also, I want to thank the people who helped me with the project in some way,
 - [Ka5tis](https://github.com/Ka5tis) - for investigating the issue with a "spiky terrain" and finding a solution - changing the `DisplacementLayer` size to a higher value.
 - [Kalderone](https://www.youtube.com/@Kalderone_FS22) - for useful feedback, suggestions, expert advice on the map-making process and highlihting some important settings in the Giants Editor.
 - [OneSunnySunday](https://www.artstation.com/onesunnysunday) - for expert advice on Blender, help in processing background terrain, and compiling detailed tutorials on how to prepare the OBJ files for use in Giants Editor.
+- [BFernaesds](https://github.com/BFernaesds) - for the manual tests of the app.
+- [gamerdesigns](https://github.com/gamerdesigns) - for the manual tests of the app. 
+- [Tox3](https://github.com/Tox3) - for the manual tests of the app. 
