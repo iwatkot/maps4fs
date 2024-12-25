@@ -194,13 +194,8 @@ class GeneratorUI:
 
             self.map_size_input = f"{custom_map_size_input}x{custom_map_size_input}"
 
-        if self.public:
-            st.warning(
-                "💡 If you run the tool locally, you can generate larger maps, even with the custom size.  \n"
-            )
-
         # Rotation input.
-        st.write("[BETA] Enter the rotation of the map:")
+        st.write("Enter the rotation of the map:")
 
         self.rotation = st.slider(
             "Rotation",

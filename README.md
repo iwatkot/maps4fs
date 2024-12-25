@@ -85,14 +85,7 @@
 ## Quick Start
 There are several ways to use the tool. You obviously need the **first one**, but you can choose any of the others depending on your needs.<br>
 ### 🚜 For most users
-**Option 1:** Open the [maps4fs](https://maps4fs.streamlit.app) on StreamLit and generate a map template in a few clicks.<br>
-<i>Note, that StreamLit community hosting has some limitations, such as:  <br>
-1. Maximum map size is 4096x4096 meters.  <br>
-2. Advanced settings are disabled.  <br>
-3. Texture dissolving is disabled (they will look worse).  </i><br>
-
-If you run the application locally, you won't have any of these limitations and will be able to generate maps of any size with any settings you want and nice looking textures.<br>
-So, jump to [Docker version](#option-2-docker-version) to launch the tool with one command and get the full experience.<br>
+**Option 1:** Open the [maps4fs](https://maps4fs.xyz) and generate a map template in a few clicks.<br>
 
 ![Basic WebUI](https://github.com/user-attachments/assets/52f499cc-f28a-4da3-abef-0e818abe8dbe)
 
@@ -140,13 +133,13 @@ Don't know where to start? Don't worry, just follow this [step-by-step guide](do
 
 ## How-To-Run
 
-### Option 1: StreamLit
-🟢 Recommended for all users.
+### Option 1: Public version
+🟢 Recommended for all users.  
 🛠️ Don't need to install anything.  
-🗺️ Supported map sizes: 2x2, 4x4 km.  
-⚙️ Advanced settings: disabled.  
-🖼️ Texture dissolving: disabled.  
-Using the [StreamLit](https://maps4fs.streamlit.app) version of the tool is the easiest way to generate a map template. Just open the link and follow the instructions.
+🗺️ Supported map sizes: 2x2, 4x4, 8x8 km.  
+⚙️ Advanced settings: enabled.  
+🖼️ Texture dissolving: enabled.  
+Using the public version on [maps4fs.xyz](https://maps4fs.xyz) is the easiest way to generate a map template. Just open the link and follow the instructions.
 Note: due to CPU and RAM limitations of the hosting, the generation may take some time. If you need faster processing, use the [Docker version](#option-2-docker-version).<br>
 
 Using it is easy and doesn't require any guides. Enjoy!
