@@ -13,12 +13,7 @@ import numpy as np
 import trimesh  # type: ignore
 
 from maps4fs.generator.component import Component
-from maps4fs.generator.dem import (
-    DEFAULT_BLUR_RADIUS,
-    DEFAULT_MULTIPLIER,
-    DEFAULT_PLATEAU,
-    DEM,
-)
+from maps4fs.generator.dem import DEM
 from maps4fs.generator.texture import Texture
 
 DEFAULT_DISTANCE = 2048
@@ -46,8 +41,6 @@ class Background(Component):
     # pylint: disable=R0801
     def preprocess(self) -> None:
         """Registers the DEMs for the background terrain."""
-        self.light_version = self.kwargs.get("light_version", False)
-        self.water_depth = self.kwargs.get("water_depth", 0)
         self.stl_preview_path: str | None = None
         self.water_resources_path: str | None = None
 
@@ -65,7 +58,7 @@ class Background(Component):
         os.makedirs(self.background_directory, exist_ok=True)
         os.makedirs(self.water_directory, exist_ok=True)
 
-        autoprocesses = [self.kwargs.get("auto_process", False), False]
+        autoprocesses = [self.map.dem_settings.auto_process, False]
         self.output_paths = [
             os.path.join(self.background_directory, f"{name}.png") for name in ELEMENTS
         ]
@@ -83,11 +76,8 @@ class Background(Component):
                 self.rotation,
                 self.map_directory,
                 self.logger,
-                auto_process=autoprocess,
-                blur_radius=self.kwargs.get("blur_radius", DEFAULT_BLUR_RADIUS),
-                multiplier=self.kwargs.get("multiplier", DEFAULT_MULTIPLIER),
-                plateau=self.kwargs.get("plateau", DEFAULT_PLATEAU),
             )
+            dem.auto_process = autoprocess
             dem.preprocess()
             dem.is_preview = self.is_preview(name)  # type: ignore
             dem.set_output_resolution((self.rotated_size, self.rotated_size))
@@ -118,7 +108,7 @@ class Background(Component):
             if not dem.is_preview:  # type: ignore
                 shutil.copyfile(dem.dem_path, self.not_substracted_path)
 
-        if self.water_depth:
+        if self.map.dem_settings.water_depth:
             self.subtraction()
 
         for dem in self.dems:
@@ -127,8 +117,9 @@ class Background(Component):
                 if self.game.additional_dem_name is not None:
                     self.make_copy(cutted_dem_path, self.game.additional_dem_name)
 
-        if not self.light_version:
+        if self.map.background_settings.generate_background:
             self.generate_obj_files()
+        if self.map.background_settings.generate_water:
             self.generate_water_resources_obj()
         else:
             self.logger.info("Light version is enabled, obj files will not be generated.")
@@ -325,7 +316,7 @@ class Background(Component):
             self.mesh_to_stl(mesh)
         else:
             if not include_zeros:
-                multiplier = self.kwargs.get("multiplier", DEFAULT_MULTIPLIER)
+                multiplier = self.map.dem_settings.multiplier
                 if multiplier != 1:
                     z_scaling_factor = 1 / multiplier
                 else:
@@ -485,8 +476,7 @@ class Background(Component):
             rotation=self.rotation,
             map_directory=self.map_directory,
             logger=self.logger,
-            light_version=self.light_version,
-            custom_schema=background_layers,
+            custom_schema=background_layers,  # type: ignore
         )
 
         self.background_texture.preprocess()
@@ -534,7 +524,7 @@ class Background(Component):
 
             # Create a mask where water_resources_image is 255 (or not 0)
             # Subtract water_depth from dem_image where mask is True
-            dem_image[mask] = dem_image[mask] - self.water_depth
+            dem_image[mask] = dem_image[mask] - self.map.dem_settings.water_depth
 
             # Save the modified dem_image back to the output path
             cv2.imwrite(output_path, dem_image)

@@ -9,6 +9,7 @@ class Messages:
         "🤗 If you like the project, consider supporting it on [Buy Me a Coffee](https://www.buymeacoffee.com/iwatkot).  \n"
         "📹 A complete step-by-step video tutorial is on [YouTube](https://www.youtube.com/watch?v=Nl_aqXJ5nAk&)!"
     )
+    MOVED = "The app has moved to [maps4fs.xyz](https://maps4fs.xyz)"
     MAIN_PAGE_COMMUNITY_WARNING = (
         "🚜 Hey, farmer!  \n"
         "Do you know what **Docker** is? If yes, please consider running the application "
@@ -26,22 +27,7 @@ class Messages:
         "Also, if you are familiar with Python, you can use the "
         "[maps4fs](https://pypi.org/project/maps4fs/) package to generate maps locally."
     )
-    # TERRAIN_RELOAD = (
-    #     "ℹ️ When opening the map first time in the Giants Editor, select the **terrain** object, "
-    #     "open the **Terrain** tab in the **Attributes** window, scroll down to the end "
-    #     "and press the **Reload material** button.  \n"
-    #     "Otherwise you may (and will) face some glitches."
-    # )
-    # HEIGHT_SCALE_INFO = (
-    #     "ℹ️ Remember to adjust the ***heightScale*** parameter in the Giants Editor to a value "
-    #     "that suits your map. Learn more about it in repo's "
-    #     "[README](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#For-advanced-users)."
-    # )
-    COMMUNITY_ADVANCED_SETTINGS = (
-        "💡 Advanced settings are disabled on StreamLit community hosting.  \n"
-        "If you want to have more control over the terrain generation, consider running the "
-        "application locally."
-    )
+    TOOL_LOCAL = "💡 This tool is available in the local version of the tool."
 
     AUTO_PRESET_INFO = (
         "Auto preset will automatically apply different algorithms to make terrain more "
@@ -113,4 +99,17 @@ class Messages:
         "value from the DEM image. So, if you set low values, you will probably see no "
         "difference. Also, this value will be added to the plateau value, to avoid negative "
         "height."
+    )
+    DISSOLVING_INFO = (
+        "If enabled, the textures will be dissolved (splitted between different files). "
+        "It makes them look better in game, but it will require some time. "
+        "It's recommended to keep this option enabled."
+    )
+    GENERATE_BACKGROUND_INFO = (
+        "If enabled, the background terrain obj files will be generated to edit them in Blender. "
+        "Turn it off if you already have them or don't need them."
+    )
+    GENERATE_WATER_INFO = (
+        "If enabled, the water planes obj files will be generated to edit them in Blender. "
+        "Turn it off if you already have them or don't need them."
     )

@@ -35,7 +35,7 @@ jobs:
         run: pylint maps4fs
 
       - name: Run pytest with coverage
-        run: pytest --cov=maps4fs --cov-report xml
+        run: pytest --cov=maps4fs/generator --cov-report xml
 
       - name: Download Code Climate test-reporter
         run: |

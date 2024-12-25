@@ -177,16 +177,10 @@ class Texture(Component):
             ]
 
     def preprocess(self) -> None:
-        self.light_version = self.kwargs.get("light_version", False)
-        self.fields_padding = self.kwargs.get("fields_padding", 0)
-        self.logger.debug("Light version: %s.", self.light_version)
-
-        self.custom_schema: list[dict[str, str | dict[str, str] | int]] | None = self.kwargs.get(
-            "custom_schema"
-        )
-
-        if self.custom_schema:
-            layers_schema = self.custom_schema
+        """Preprocesses the data before the generation."""
+        custom_schema = self.kwargs.get("custom_schema")
+        if custom_schema:
+            layers_schema = custom_schema  # type: ignore
             self.logger.info("Custom schema loaded with %s layers.", len(layers_schema))
         else:
             if not os.path.isfile(self.game.texture_schema):
@@ -201,7 +195,7 @@ class Texture(Component):
                 raise ValueError(f"Error loading texture layers schema: {e}") from e
 
         try:
-            self.layers = [self.Layer.from_json(layer) for layer in layers_schema]
+            self.layers = [self.Layer.from_json(layer) for layer in layers_schema]  # type: ignore
             self.logger.info("Loaded %s layers.", len(self.layers))
         except Exception as e:  # pylint: disable=W0703
             raise ValueError(f"Error loading texture layers: {e}") from e
@@ -431,7 +425,9 @@ class Texture(Component):
         if cumulative_image is not None:
             self.draw_base_layer(cumulative_image)
 
-        if not self.light_version:
+        if self.map.texture_settings.dissolve and self.game.code != "FS22":
+            # FS22 has textures splitted into 4 sublayers, which leads to a very
+            # long processing time when dissolving them.
             self.dissolve()
         else:
             self.logger.debug("Skipping dissolve in light version of the map.")
@@ -651,8 +647,8 @@ class Texture(Component):
             if polygon is None:
                 continue
 
-            if is_fieds and self.fields_padding > 0:
-                padded_polygon = polygon.buffer(-self.fields_padding)
+            if is_fieds and self.map.texture_settings.fields_padding > 0:
+                padded_polygon = polygon.buffer(-self.map.texture_settings.fields_padding)
 
                 if not isinstance(padded_polygon, shapely.geometry.polygon.Polygon):
                     self.logger.warning("The padding value is too high, field will not padded.")

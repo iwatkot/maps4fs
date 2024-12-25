@@ -5,6 +5,7 @@ import streamlit.components.v1 as components
 from config import INPUT_DIRECTORY, is_on_community_server, is_public
 from osmp import get_bbox, get_center, get_preview
 from tools.tool import Tool
+from templates import Messages
 
 from maps4fs.toolbox.dem import extract_roi, get_geo_tiff_bbox, read_geo_tiff
 
@@ -23,7 +24,7 @@ class GeoTIFFWindowingTool(Tool):
 
     def content(self):
         if is_on_community_server() or is_public():
-            st.warning("💡 This tool is available in the local version of the tool.")
+            st.warning(Messages.TOOL_LOCAL)
             return
         if "windowed" not in st.session_state:
             st.session_state.windowed = False
@@ -31,11 +32,6 @@ class GeoTIFFWindowingTool(Tool):
         self.left_column, self.right_column = st.columns(2)
         with self.right_column:
             self.html_preview_container = st.empty()
-
-        # if uploaded_file is not None:
-        #     self.save_path = self.get_save_path(uploaded_file.name)
-        #     with open(self.save_path, "wb") as f:
-        #         f.write(uploaded_file.read())
 
         if uploaded_file is not None:
             if not uploaded_file.name.lower().endswith((".tif", ".tiff")):

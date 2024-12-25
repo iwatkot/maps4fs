@@ -4,11 +4,77 @@ from __future__ import annotations
 
 import os
 import shutil
-from typing import Any, Generator
+from typing import Any, Generator, NamedTuple
 
 from maps4fs.generator.component import Component
 from maps4fs.generator.game import Game
 from maps4fs.logger import Logger
+
+
+class DEMSettings(NamedTuple):
+    """Represents the advanced settings for DEM component.
+
+    Attributes:
+        auto_process (bool): use the auto preset to change the multiplier.
+        multiplier (int): multiplier for the heightmap, every pixel will be multiplied by this
+            value.
+        blur_radius (int): radius of the blur filter.
+        plateau (int): plateau height, will be added to each pixel.
+        water_depth (int): water depth, will be subtracted from each pixel where the water
+            is present.
+    """
+
+    auto_process: bool = True
+    multiplier: int = 1
+    blur_radius: int = 35
+    plateau: int = 0
+    water_depth: int = 0
+
+
+class BackgroundSettings(NamedTuple):
+    """Represents the advanced settings for background component.
+
+    Attributes:
+        generate_background (bool): generate obj files for the background terrain.
+        generate_water (bool): generate obj files for the water.
+    """
+
+    generate_background: bool = True
+    generate_water: bool = True
+
+
+class GRLESettings(NamedTuple):
+    """Represents the advanced settings for GRLE component.
+
+    Attributes:
+        farmland_margin (int): margin around the farmland.
+        random_plants (bool): generate random plants on the map or use the default one.
+    """
+
+    farmland_margin: int = 0
+    random_plants: bool = True
+
+
+class I3DSettings(NamedTuple):
+    """Represents the advanced settings for I3D component.
+
+    Attributes:
+        forest_density (int): density of the forest (distance between trees).
+    """
+
+    forest_density: int = 10
+
+
+class TextureSettings(NamedTuple):
+    """Represents the advanced settings for texture component.
+
+    Attributes:
+        dissolve (bool): dissolve the texture into several images.
+        fields_padding (int): padding around the fields.
+    """
+
+    dissolve: bool = True
+    fields_padding: int = 0
 
 
 # pylint: disable=R0913, R0902
@@ -31,7 +97,11 @@ class Map:
         rotation: int,
         map_directory: str,
         logger: Any = None,
-        **kwargs,
+        dem_settings: DEMSettings = DEMSettings(),
+        background_settings: BackgroundSettings = BackgroundSettings(),
+        grle_settings: GRLESettings = GRLESettings(),
+        i3d_settings: I3DSettings = I3DSettings(),
+        texture_settings: TextureSettings = TextureSettings(),
     ):
         if not logger:
             logger = Logger(to_stdout=True, to_file=False)
@@ -53,8 +123,16 @@ class Map:
 
         self.logger.info("Game was set to %s", game.code)
 
-        self.kwargs = kwargs
-        self.logger.info("Additional arguments: %s", kwargs)
+        self.dem_settings = dem_settings
+        self.logger.info("DEM settings: %s", dem_settings)
+        self.background_settings = background_settings
+        self.logger.info("Background settings: %s", background_settings)
+        self.grle_settings = grle_settings
+        self.logger.info("GRLE settings: %s", grle_settings)
+        self.i3d_settings = i3d_settings
+        self.logger.info("I3D settings: %s", i3d_settings)
+        self.texture_settings = texture_settings
+        self.logger.info("Texture settings: %s", texture_settings)
 
         os.makedirs(self.map_directory, exist_ok=True)
         self.logger.debug("Map directory created: %s", self.map_directory)
@@ -81,7 +159,6 @@ class Map:
                 self.rotation,
                 self.map_directory,
                 self.logger,
-                **self.kwargs,
             )
             self.components.append(component)
 

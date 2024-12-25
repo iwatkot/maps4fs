@@ -26,7 +26,6 @@ coordinates_cases = [
 ]
 
 game_code_cases = ["FS25"]
-autoprocess_cases = [True, False]
 
 
 def get_random_size() -> tuple[int, int]:
@@ -70,61 +69,59 @@ def load_textures_schema(json_path: str) -> dict:
 def test_map():
     """Test Map generation for different cases."""
     for game_code in game_code_cases:
-        for autoprocess_case in autoprocess_cases:
-            game = Game.from_code(game_code)
-            for coordinates in coordinates_cases:
-                height, width = get_random_size()
-                directory = map_directory(game_code)
+        game = Game.from_code(game_code)
+        for coordinates in coordinates_cases:
+            height, width = get_random_size()
+            directory = map_directory(game_code)
 
-                map = Map(
-                    game=game,
-                    coordinates=coordinates,
-                    size=height,
-                    rotation=0,
-                    map_directory=directory,
-                    auto_process=autoprocess_case,
-                )
+            map = Map(
+                game=game,
+                coordinates=coordinates,
+                size=height,
+                rotation=0,
+                map_directory=directory,
+            )
 
-                for _ in map.generate():
-                    pass
+            for _ in map.generate():
+                pass
 
-                layers_schema = load_textures_schema(game.texture_schema)
+            layers_schema = load_textures_schema(game.texture_schema)
 
-                texture_subdir = "maps/map/data" if game_code == "FS22" else "map/data"
+            texture_subdir = "maps/map/data" if game_code == "FS22" else "map/data"
 
-                textures_directory = os.path.join(directory, texture_subdir)
-                for texture in layers_schema:
-                    texture_name = texture["name"]
-                    numer_of_layers = texture["count"]
+            textures_directory = os.path.join(directory, texture_subdir)
+            for texture in layers_schema:
+                texture_name = texture["name"]
+                numer_of_layers = texture["count"]
 
-                    exclude_weight = texture.get("exclude_weight", False)
-                    if exclude_weight:
-                        continue
+                exclude_weight = texture.get("exclude_weight", False)
+                if exclude_weight:
+                    continue
 
-                    if numer_of_layers == 0:
-                        continue
-                    for idx in range(1, numer_of_layers + 1):
-                        texture_path = os.path.join(
-                            textures_directory, f"{texture_name}{str(idx).zfill(2)}_weight.png"
-                        )
-                        assert os.path.isfile(texture_path), f"Texture not found: {texture_path}"
-                        img = cv2.imread(texture_path)
-                        assert img is not None, f"Texture could not be read: {texture_path}"
-                        assert img.shape == (
-                            height,
-                            width,
-                            3,
-                        ), f"Texture shape mismatch: {img.shape} != {(height, width, 3)}"
-                        assert img.dtype == "uint8", f"Texture dtype mismatch: {img.dtype} != uint8"
+                if numer_of_layers == 0:
+                    continue
+                for idx in range(1, numer_of_layers + 1):
+                    texture_path = os.path.join(
+                        textures_directory, f"{texture_name}{str(idx).zfill(2)}_weight.png"
+                    )
+                    assert os.path.isfile(texture_path), f"Texture not found: {texture_path}"
+                    img = cv2.imread(texture_path)
+                    assert img is not None, f"Texture could not be read: {texture_path}"
+                    assert img.shape == (
+                        height,
+                        width,
+                        3,
+                    ), f"Texture shape mismatch: {img.shape} != {(height, width, 3)}"
+                    assert img.dtype == "uint8", f"Texture dtype mismatch: {img.dtype} != uint8"
 
-                dem_name = "map_dem.png" if game_code == "FS22" else "dem.png"
+            dem_name = "map_dem.png" if game_code == "FS22" else "dem.png"
 
-                dem_file = os.path.join(textures_directory, dem_name)
-                assert os.path.isfile(dem_file), f"DEM file not found: {dem_file}"
-                img = cv2.imread(dem_file, cv2.IMREAD_UNCHANGED)
-                assert img is not None, f"DEM could not be read: {dem_file}"
+            dem_file = os.path.join(textures_directory, dem_name)
+            assert os.path.isfile(dem_file), f"DEM file not found: {dem_file}"
+            img = cv2.imread(dem_file, cv2.IMREAD_UNCHANGED)
+            assert img is not None, f"DEM could not be read: {dem_file}"
 
-                assert img.dtype == "uint16", f"DEM dtype mismatch: {img.dtype} != uint16"
+            assert img.dtype == "uint16", f"DEM dtype mismatch: {img.dtype} != uint16"
 
 
 def test_map_preview():
@@ -169,7 +166,7 @@ def test_map_pack():
         game=game,
         coordinates=case,
         size=height,
-        rotation=0,
+        rotation=30,
         map_directory=directory,
     )
     for _ in map.generate():

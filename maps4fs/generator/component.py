@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from maps4fs.generator.map import Map
 
 
-# pylint: disable=R0801, R0903, R0902, R0904
+# pylint: disable=R0801, R0903, R0902, R0904, R0913, R0917
 class Component:
     """Base class for all map generation components.
 
@@ -46,7 +46,7 @@ class Component:
         rotation: int,
         map_directory: str,
         logger: Any = None,
-        **kwargs,  # pylint: disable=W0613, R0913, R0917
+        **kwargs: dict[str, Any],
     ):
         self.game = game
         self.map = map
@@ -57,6 +57,13 @@ class Component:
         self.map_directory = map_directory
         self.logger = logger
         self.kwargs = kwargs
+
+        self.logger.info(
+            "Component %s initialized. Map size: %s, map rotated size: %s",  # type: ignore
+            self.__class__.__name__,
+            self.map_size,
+            self.map_rotated_size,
+        )
 
         os.makedirs(self.previews_directory, exist_ok=True)
         os.makedirs(self.scripts_directory, exist_ok=True)

@@ -14,9 +14,6 @@ from pympler import asizeof  # type: ignore
 from maps4fs.generator.component import Component
 
 SRTM = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
-DEFAULT_MULTIPLIER = 1
-DEFAULT_BLUR_RADIUS = 35
-DEFAULT_PLATEAU = 0
 
 
 # pylint: disable=R0903, R0902
@@ -50,8 +47,7 @@ class DEM(Component):
         self.output_resolution = self.get_output_resolution()
         self.logger.debug("Output resolution for DEM data: %s.", self.output_resolution)
 
-        self.multiplier = self.kwargs.get("multiplier", DEFAULT_MULTIPLIER)
-        blur_radius = self.kwargs.get("blur_radius", DEFAULT_BLUR_RADIUS)
+        blur_radius = self.map.dem_settings.blur_radius
         if blur_radius is None or blur_radius <= 0:
             # We'll disable blur if the radius is 0 or negative.
             blur_radius = 0
@@ -59,11 +55,12 @@ class DEM(Component):
             blur_radius += 1
         self.blur_radius = blur_radius
         self.logger.debug(
-            "DEM value multiplier is %s, blur radius is %s.", self.multiplier, self.blur_radius
+            "DEM value multiplier is %s, blur radius is %s.",
+            self.map.dem_settings.multiplier,
+            self.blur_radius,
         )
 
-        self.auto_process = self.kwargs.get("auto_process", False)
-        self.plateau = self.kwargs.get("plateau", False)
+        self.auto_process = self.map.dem_settings.auto_process
 
     @property
     def dem_path(self) -> str:
@@ -191,11 +188,11 @@ class DEM(Component):
             resampled_data = self._normalize_dem(resampled_data)
         else:
             self.logger.debug("Auto processing is disabled, DEM data will not be normalized.")
-            resampled_data = resampled_data * self.multiplier
+            resampled_data = resampled_data * self.map.dem_settings.multiplier
 
             self.logger.debug(
                 "DEM data was multiplied by %s. Min: %s, max: %s. Data type: %s.",
-                self.multiplier,
+                self.map.dem_settings.multiplier,
                 resampled_data.min(),
                 resampled_data.max(),
                 resampled_data.dtype,
@@ -210,7 +207,7 @@ class DEM(Component):
             self.logger.debug(
                 "DEM data was multiplied by %s and clipped to 16-bit unsigned integer range. "
                 "Min: %s, max: %s.",
-                self.multiplier,
+                self.map.dem_settings.multiplier,
                 resampled_data.min(),
                 resampled_data.max(),
             )
@@ -240,18 +237,18 @@ class DEM(Component):
             resampled_data.max(),
         )
 
-        if self.plateau:
+        if self.map.dem_settings.plateau:
             # Plateau is a flat area with a constant height.
             # So we just add this value to each pixel of the DEM.
             # And also need to ensure that there will be no values with height greater than
             # it's allowed in 16-bit unsigned integer.
 
-            resampled_data += self.plateau
+            resampled_data += self.map.dem_settings.plateau
             resampled_data = np.clip(resampled_data, 0, 65535)
 
             self.logger.debug(
                 "Plateau with height %s was added to DEM data. Min: %s, max: %s.",
-                self.plateau,
+                self.map.dem_settings.plateau,
                 resampled_data.min(),
                 resampled_data.max(),
             )
