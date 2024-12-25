@@ -46,6 +46,7 @@ class Component:
         rotation: int,
         map_directory: str,
         logger: Any = None,
+        **kwargs: dict[str, Any],
     ):
         self.game = game
         self.map = map
@@ -55,6 +56,14 @@ class Component:
         self.rotation = rotation
         self.map_directory = map_directory
         self.logger = logger
+        self.kwargs = kwargs
+
+        self.logger.info(
+            "Component %s initialized. Map size: %s, map rotated size: %s",  # type: ignore
+            self.__class__.__name__,
+            self.map_size,
+            self.map_rotated_size,
+        )
 
         os.makedirs(self.previews_directory, exist_ok=True)
         os.makedirs(self.scripts_directory, exist_ok=True)

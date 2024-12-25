@@ -178,9 +178,9 @@ class Texture(Component):
 
     def preprocess(self) -> None:
         """Preprocesses the data before the generation."""
-        # if self.custom_schema:
-        if getattr(self.game, "custom_schema", None):
-            layers_schema = self.custom_schema  # type: ignore
+        custom_schema = self.kwargs.get("custom_schema")
+        if custom_schema:
+            layers_schema = custom_schema  # type: ignore
             self.logger.info("Custom schema loaded with %s layers.", len(layers_schema))
         else:
             if not os.path.isfile(self.game.texture_schema):
@@ -195,7 +195,7 @@ class Texture(Component):
                 raise ValueError(f"Error loading texture layers schema: {e}") from e
 
         try:
-            self.layers = [self.Layer.from_json(layer) for layer in layers_schema]
+            self.layers = [self.Layer.from_json(layer) for layer in layers_schema]  # type: ignore
             self.logger.info("Loaded %s layers.", len(self.layers))
         except Exception as e:  # pylint: disable=W0703
             raise ValueError(f"Error loading texture layers: {e}") from e
