@@ -54,9 +54,10 @@ class DEM(Component):
         elif blur_radius % 2 == 0:
             blur_radius += 1
         self.blur_radius = blur_radius
+        self.multiplier = self.map.dem_settings.multiplier
         self.logger.debug(
             "DEM value multiplier is %s, blur radius is %s.",
-            self.map.dem_settings.multiplier,
+            self.multiplier,
             self.blur_radius,
         )
 
@@ -188,11 +189,11 @@ class DEM(Component):
             resampled_data = self._normalize_dem(resampled_data)
         else:
             self.logger.debug("Auto processing is disabled, DEM data will not be normalized.")
-            resampled_data = resampled_data * self.map.dem_settings.multiplier
+            resampled_data = resampled_data * self.multiplier
 
             self.logger.debug(
                 "DEM data was multiplied by %s. Min: %s, max: %s. Data type: %s.",
-                self.map.dem_settings.multiplier,
+                self.multiplier,
                 resampled_data.min(),
                 resampled_data.max(),
                 resampled_data.dtype,
@@ -207,7 +208,7 @@ class DEM(Component):
             self.logger.debug(
                 "DEM data was multiplied by %s and clipped to 16-bit unsigned integer range. "
                 "Min: %s, max: %s.",
-                self.map.dem_settings.multiplier,
+                self.multiplier,
                 resampled_data.min(),
                 resampled_data.max(),
             )
