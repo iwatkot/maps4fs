@@ -8,6 +8,7 @@ import maps4fs as mfs
 
 WORKING_DIRECTORY = os.getcwd()
 ARCHIVES_DIRECTORY = os.path.join(WORKING_DIRECTORY, "archives")
+DATA_DIRECTORY = os.path.join(WORKING_DIRECTORY, "data")
 MAPS_DIRECTORY = os.path.join(WORKING_DIRECTORY, "maps")
 OSMPS_DIRECTORY = os.path.join(WORKING_DIRECTORY, "osmps")
 TEMP_DIRECTORY = os.path.join(WORKING_DIRECTORY, "temp")
@@ -16,6 +17,13 @@ os.makedirs(ARCHIVES_DIRECTORY, exist_ok=True)
 os.makedirs(MAPS_DIRECTORY, exist_ok=True)
 os.makedirs(OSMPS_DIRECTORY, exist_ok=True)
 os.makedirs(INPUT_DIRECTORY, exist_ok=True)
+
+FS25_TEXTURE_SCHEMA_PATH = os.path.join(DATA_DIRECTORY, "fs25-texture-schema.json")
+FS25_TREE_SCHEMA_PATH = os.path.join(DATA_DIRECTORY, "fs25-tree-schema.json")
+if not os.path.exists(FS25_TEXTURE_SCHEMA_PATH):
+    raise FileNotFoundError(f"File {FS25_TEXTURE_SCHEMA_PATH} not found.")
+if not os.path.exists(FS25_TREE_SCHEMA_PATH):
+    raise FileNotFoundError(f"File {FS25_TREE_SCHEMA_PATH} not found.")
 
 
 STREAMLIT_COMMUNITY_KEY = "HOSTNAME"

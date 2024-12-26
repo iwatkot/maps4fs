@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import datetime
 from time import perf_counter
@@ -234,7 +235,7 @@ class GeneratorUI:
             st.info(Messages.AUTO_PRESET_DISABLED)
 
         # Add checkbox for advanced settings.
-        st.write("Advanced settings (do not change if you are not sure):")
+        st.write("Advanced settings:")
         self.advanced_settings = st.checkbox(
             "Show advanced settings",
             key="advanced_settings",
@@ -400,6 +401,49 @@ class GeneratorUI:
                     "Generate water", value=True, key="generate_water"
                 )
 
+        self.custom_schemas = False
+        self.texture_schema_input = None
+        self.tree_schema_input = None
+
+        if self.game_code == "FS25":
+            st.write("Custom schemas:")
+            self.custom_schemas = st.checkbox(
+                "Show schemas editor", value=False, key="custom_schemas"
+            )
+
+            if self.custom_schemas:
+                self.logger.debug("Custom schemas are enabled.")
+
+                st.warning("⚠️ Changing these settings can lead to unexpected results.")
+
+                with st.expander("Texture custom schema", icon="🎨"):
+                    st.write("Enter the texture schema:")
+                    st.write(Messages.TEXTURE_SCHEMA_INFO)
+
+                    with open(config.FS25_TEXTURE_SCHEMA_PATH, "r", encoding="utf-8") as f:
+                        schema = json.load(f)
+
+                    self.texture_schema_input = st.text_area(
+                        "Texture Schema",
+                        value=json.dumps(schema, indent=2),
+                        height=600,
+                        label_visibility="collapsed",
+                    )
+
+                with st.expander("Tree custom schema", icon="🌲"):
+                    st.write("Enter the tree schema:")
+                    st.write(Messages.TEXTURE_SCHEMA_INFO)
+
+                    with open(config.FS25_TREE_SCHEMA_PATH, "r", encoding="utf-8") as f:
+                        schema = json.load(f)
+
+                    self.tree_schema_input = st.text_area(
+                        "Tree Schema",
+                        value=json.dumps(schema, indent=2),
+                        height=600,
+                        label_visibility="collapsed",
+                    )
+
         # Add an empty container for status messages.
         self.status_container = st.empty()
 
@@ -529,6 +573,22 @@ class GeneratorUI:
         )
         self.logger.debug("Texture settings: %s", texture_settings)
 
+        texture_schema = None
+        tree_schema = None
+        if self.custom_schemas:
+            if self.texture_schema_input:
+                try:
+                    texture_schema = json.loads(self.texture_schema_input)
+                except json.JSONDecodeError:
+                    st.error("Invalid texture schema!")
+                    return
+            if self.tree_schema_input:
+                try:
+                    tree_schema = json.loads(self.tree_schema_input)
+                except json.JSONDecodeError:
+                    st.error("Invalid tree schema!")
+                    return
+
         mp = mfs.Map(
             game,
             coordinates,
@@ -541,6 +601,8 @@ class GeneratorUI:
             grle_settings=grle_settings,
             i3d_settings=i3d_settings,
             texture_settings=texture_settings,
+            texture_custom_schema=texture_schema,
+            tree_custom_schema=tree_schema,
         )
 
         if self.public:

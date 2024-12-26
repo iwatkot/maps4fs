@@ -116,3 +116,11 @@ class Messages:
     SKIP_DRAINS_INFO = (
         "If enabled, the drains and ditches will be ignored while generating the map."
     )
+    TEXTURE_SCHEMA_INFO = (
+        "This section contains the schema which is used to generate the textures. "
+        "Any changes here can lead to errors or completely broken map. "
+    )
+    TREE_SCHEMA_INFO = (
+        "This section contains the schema which is used to generate the trees. "
+        "Any changes here can lead to errors or completely broken map. "
+    )
