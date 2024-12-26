@@ -6,7 +6,6 @@ import json
 import os
 import re
 from collections import defaultdict
-from copy import deepcopy
 from typing import Any, Callable, Generator, Optional
 
 import cv2
