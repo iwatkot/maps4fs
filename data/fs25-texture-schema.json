@@ -170,7 +170,7 @@
     "name": "mudPebblesLight",
     "count": 2,
     "tags": { "waterway": ["ditch", "drain"] },
-    "width": 2,
+    "width": 4,
     "color": [33, 67, 101],
     "background": true
   },
