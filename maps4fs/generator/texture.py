@@ -6,6 +6,7 @@ import json
 import os
 import re
 from collections import defaultdict
+from copy import deepcopy
 from typing import Any, Callable, Generator, Optional
 
 import cv2
@@ -635,9 +636,8 @@ class Texture(Component):
         is_fieds = info_layer == "fields"
         try:
             objects = ox.features_from_bbox(bbox=self.new_bbox, tags=tags)
-        except Exception as e:  # pylint: disable=W0718
-            self.logger.warning("Error fetching objects for tags: %s.", tags)
-            self.logger.warning(e)
+        except Exception:  # pylint: disable=W0718
+            self.logger.debug("Error fetching objects for tags: %s.", tags)
             return
         objects_utm = ox.projection.project_gdf(objects, to_latlong=False)
         self.logger.debug("Fetched %s elements for tags: %s.", len(objects_utm), tags)

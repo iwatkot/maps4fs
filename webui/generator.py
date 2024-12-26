@@ -372,8 +372,8 @@ class GeneratorUI:
 
             with st.expander("Background Advanced Settings", icon="🖼️"):
                 st.info(
-                    "ℹ️ Settings related to the background of the map, which represent the sky, "
-                    "clouds, etc."
+                    "ℹ️ Settings related to the background of the map, which represent the "
+                    "surrounding area of the map."
                 )
 
                 st.write("Generate background:")
