@@ -149,6 +149,14 @@ class Map:
         Yields:
             Generator[str, None, None]: Component names.
         """
+        self.logger.info(
+            "Starting map generation. Game code: %s. Coordinates: %s, size: %s. Rotation: %s.",
+            self.game.code,
+            self.coordinates,
+            self.size,
+            self.rotation,
+        )
+
         for game_component in self.game.components:
             component = game_component(
                 self.game,
@@ -183,6 +191,14 @@ class Map:
                     e,
                 )
                 raise e
+
+        self.logger.info(
+            "Map generation completed. Game code: %s. Coordinates: %s, size: %s. Rotation: %s.",
+            self.game.code,
+            self.coordinates,
+            self.size,
+            self.rotation,
+        )
 
     def get_component(self, component_name: str) -> Component | None:
         """Get component by name.
@@ -231,7 +247,7 @@ class Map:
         if remove_source:
             try:
                 shutil.rmtree(self.map_directory)
-                self.logger.info("Map directory removed: %s", self.map_directory)
+                self.logger.debug("Map directory removed: %s", self.map_directory)
             except Exception as e:  # pylint: disable=W0718
-                self.logger.error("Error removing map directory %s: %s", self.map_directory, e)
+                self.logger.debug("Error removing map directory %s: %s", self.map_directory, e)
         return archive_path

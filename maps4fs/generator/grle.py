@@ -43,7 +43,7 @@ class GRLE(Component):
         try:
             grle_schema_path = self.game.grle_schema
         except ValueError:
-            self.logger.info("GRLE schema processing is not implemented for this game.")
+            self.logger.warning("GRLE schema processing is not implemented for this game.")
             return
 
         try:
@@ -57,7 +57,7 @@ class GRLE(Component):
     def process(self) -> None:
         """Generates InfoLayer PNG files based on the GRLE schema."""
         if not self._grle_schema:
-            self.logger.info("GRLE schema is not obtained, skipping the processing.")
+            self.logger.debug("GRLE schema is not obtained, skipping the processing.")
             return
 
         for info_layer in self._grle_schema:
@@ -84,7 +84,7 @@ class GRLE(Component):
 
         self._add_farmlands()
         if self.game.code == "FS25":
-            self.logger.info("Game is %s, plants will be added.", self.game.code)
+            self.logger.debug("Game is %s, plants will be added.", self.game.code)
             self._add_plants()
         else:
             self.logger.warning("Adding plants it's not supported for the %s.", self.game.code)
@@ -120,7 +120,7 @@ class GRLE(Component):
             self.game.weights_dir_path(self.map_directory), "infoLayer_farmlands.png"
         )
 
-        self.logger.info(
+        self.logger.debug(
             "Adding farmlands to the InfoLayer PNG file: %s.", info_layer_farmlands_path
         )
 
@@ -190,10 +190,10 @@ class GRLE(Component):
 
         tree.write(farmlands_xml_path)
 
-        self.logger.info("Farmlands added to the farmlands XML file: %s.", farmlands_xml_path)
+        self.logger.debug("Farmlands added to the farmlands XML file: %s.", farmlands_xml_path)
 
         cv2.imwrite(info_layer_farmlands_path, image)  # pylint: disable=no-member
-        self.logger.info(
+        self.logger.debug(
             "Farmlands added to the InfoLayer PNG file: %s.", info_layer_farmlands_path
         )
 
@@ -354,7 +354,7 @@ class GRLE(Component):
 
         # Add islands of plants to the base image.
         island_count = self.map_size
-        self.logger.info("Adding %s islands of plants to the base image.", island_count)
+        self.logger.debug("Adding %s islands of plants to the base image.", island_count)
         if self.map.grle_settings.random_plants:
             grass_image_copy = create_island_of_plants(grass_image_copy, island_count)
         self.logger.debug("Islands of plants added to the base image.")
@@ -391,4 +391,4 @@ class GRLE(Component):
         # Ensure that order of channels is correct because CV2 uses BGR and we need RGB.
         density_map_fruits = cv2.cvtColor(density_map_fruits, cv2.COLOR_BGR2RGB)
         cv2.imwrite(density_map_fruit_path, density_map_fruits)
-        self.logger.info("Updated density map for fruits saved in %s.", density_map_fruit_path)
+        self.logger.debug("Updated density map for fruits saved in %s.", density_map_fruit_path)

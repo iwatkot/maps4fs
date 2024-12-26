@@ -202,7 +202,7 @@ class Texture(Component):
 
         base_layer = self.get_base_layer()
         if base_layer:
-            self.logger.info("Base layer found: %s.", base_layer.name)
+            self.logger.debug("Base layer found: %s.", base_layer.name)
         else:
             self.logger.warning("No base layer found.")
 
@@ -313,7 +313,7 @@ class Texture(Component):
 
         for layer in self.layers:
             self._generate_weights(layer)
-        self.logger.info("Prepared weights for %s layers.", len(self.layers))
+        self.logger.debug("Prepared weights for %s layers.", len(self.layers))
 
     def _generate_weights(self, layer: Layer) -> None:
         """Generates weight files for textures. Each file is a numpy array of zeros and
@@ -416,7 +416,7 @@ class Texture(Component):
             cumulative_image = cv2.bitwise_or(cumulative_image, output_image)
 
             cv2.imwrite(layer_path, output_image)
-            self.logger.info("Texture %s saved.", layer_path)
+            self.logger.debug("Texture %s saved.", layer_path)
 
         # Save info layer data.
         with open(self.info_layer_path, "w", encoding="utf-8") as f:
@@ -481,8 +481,6 @@ class Texture(Component):
 
             self.logger.info("Dissolved layer %s.", layer.name)
 
-        self.logger.info("Dissolving finished.")
-
     def draw_base_layer(self, cumulative_image: np.ndarray) -> None:
         """Draws base layer and saves it into the png file.
         Base layer is the last layer to be drawn, it fills the remaining area of the map.
@@ -496,7 +494,7 @@ class Texture(Component):
             self.logger.debug("Drawing base layer %s.", layer_path)
             img = cv2.bitwise_not(cumulative_image)
             cv2.imwrite(layer_path, img)
-            self.logger.info("Base texture %s saved.", layer_path)
+            self.logger.debug("Base texture %s saved.", layer_path)
 
     def get_relative_x(self, x: float) -> int:
         """Converts UTM X coordinate to relative X coordinate in map image.
@@ -711,5 +709,5 @@ class Texture(Component):
         preview_path = os.path.join(self.previews_directory, "textures_osm.png")
 
         cv2.imwrite(preview_path, merged)  # type: ignore
-        self.logger.info("Preview saved to %s.", preview_path)
+        self.logger.debug("Preview saved to %s.", preview_path)
         return preview_path
