@@ -71,10 +71,12 @@ class TextureSettings(NamedTuple):
     Attributes:
         dissolve (bool): dissolve the texture into several images.
         fields_padding (int): padding around the fields.
+        skip_drains (bool): skip drains generation.
     """
 
     dissolve: bool = True
     fields_padding: int = 0
+    skip_drains: bool = False
 
 
 # pylint: disable=R0913, R0902

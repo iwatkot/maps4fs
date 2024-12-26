@@ -173,7 +173,8 @@
     "tags": { "waterway": ["ditch", "drain"] },
     "width": 4,
     "color": [33, 67, 101],
-    "background": true
+    "background": true,
+    "usage": "drain"
   },
   {
     "name": "mudTracks",
