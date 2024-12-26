@@ -494,6 +494,7 @@ class GeneratorUI:
             multiplier=multiplier,
             blur_radius=self.blur_radius_input,
             plateau=plateau,
+            water_depth=self.water_depth,
         )
         self.logger.info("DEM settings: %s", dem_settings)
 
