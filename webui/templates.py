@@ -113,3 +113,6 @@ class Messages:
         "If enabled, the water planes obj files will be generated to edit them in Blender. "
         "Turn it off if you already have them or don't need them."
     )
+    SKIP_DRAINS_INFO = (
+        "If enabled, the drains and ditches will be ignored while generating the map."
+    )

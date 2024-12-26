@@ -226,6 +226,7 @@ class GeneratorUI:
         self.dissolving_enabled = True
         self.generate_background = True
         self.generate_water = True
+        self.skip_drains = False
 
         if not self.auto_process:
             self.logger.info("Auto preset is disabled.")
@@ -326,6 +327,14 @@ class GeneratorUI:
                     "Dissolving enabled",
                     value=True,
                     key="dissolving_enabled",
+                )
+
+                st.write("Skip drains:")
+                st.write(Messages.SKIP_DRAINS_INFO)
+                self.skip_drains = st.checkbox(
+                    "Skip drains",
+                    value=False,
+                    key="skip_drains",
                 )
 
             with st.expander("Farmlands Advanced Settings", icon="🌾"):
@@ -514,7 +523,9 @@ class GeneratorUI:
         self.logger.debug("I3D settings: %s", i3d_settings)
 
         texture_settings = mfs.TextureSettings(
-            dissolve=self.dissolving_enabled, fields_padding=self.fields_padding
+            dissolve=self.dissolving_enabled,
+            fields_padding=self.fields_padding,
+            skip_drains=self.skip_drains,
         )
         self.logger.debug("Texture settings: %s", texture_settings)
 

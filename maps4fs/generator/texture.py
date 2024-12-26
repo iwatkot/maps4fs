@@ -388,6 +388,9 @@ class Texture(Component):
         info_layer_data = defaultdict(list)
 
         for layer in layers:
+            if self.map.texture_settings.skip_drains and layer.usage == "drain":
+                self.logger.debug("Skipping layer %s because of the usage.", layer.name)
+                continue
             if not layer.tags:
                 self.logger.debug("Layer %s has no tags, there's nothing to draw.", layer.name)
                 continue

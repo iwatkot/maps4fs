@@ -458,6 +458,8 @@ You can also apply some advanced settings to the map generation process. Note th
 
 - Texture dissolving - if enabled, the values from one layer will be splitted between different layers of texture, making it look more natural. By default, it's set to True. Can be turned of for faster processing.
 
+- Skip drains - if enabled, the tool will not generate the drains and ditches on the map. By default, it's set to False. Use this if you don't need the drains on the map.
+
 ### Farmlands Advanced settings
 
 - Farmlands margin - this value (in meters) will be applied to each farmland, making it bigger. You can use the value to adjust how much the farmland should be bigger than the actual field. By default, it's set to 3.
