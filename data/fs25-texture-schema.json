@@ -86,7 +86,8 @@
     "tags": { "natural": ["wood", "tree_row"], "landuse": "forest" },
     "width": 2,
     "color": [0, 252, 124],
-    "usage": "forest"
+    "usage": "forest",
+    "priority": 5
   },
   {
     "name": "grassDirtPatchyDry",

@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from time import perf_counter
 
 import config
 import osmp
@@ -372,8 +373,8 @@ class GeneratorUI:
 
             with st.expander("Background Advanced Settings", icon="🖼️"):
                 st.info(
-                    "ℹ️ Settings related to the background of the map, which represent the sky, "
-                    "clouds, etc."
+                    "ℹ️ Settings related to the background of the map, which represent the "
+                    "surrounding area of the map."
                 )
 
                 st.write("Generate background:")
@@ -496,26 +497,26 @@ class GeneratorUI:
             plateau=plateau,
             water_depth=self.water_depth,
         )
-        self.logger.info("DEM settings: %s", dem_settings)
+        self.logger.debug("DEM settings: %s", dem_settings)
 
         background_settings = mfs.BackgroundSettings(
             generate_background=self.generate_background, generate_water=self.generate_water
         )
-        self.logger.info("Background settings: %s", background_settings)
+        self.logger.debug("Background settings: %s", background_settings)
 
         grle_settings = mfs.GRLESettings(
             farmland_margin=self.farmland_margin,
             random_plants=self.randomize_plants,
         )
-        self.logger.info("GRLE settings: %s", grle_settings)
+        self.logger.debug("GRLE settings: %s", grle_settings)
 
         i3d_settings = mfs.I3DSettings(forest_density=self.forest_density)
-        self.logger.info("I3D settings: %s", i3d_settings)
+        self.logger.debug("I3D settings: %s", i3d_settings)
 
         texture_settings = mfs.TextureSettings(
             dissolve=self.dissolving_enabled, fields_padding=self.fields_padding
         )
-        self.logger.info("Texture settings: %s", texture_settings)
+        self.logger.debug("Texture settings: %s", texture_settings)
 
         mp = mfs.Map(
             game,
@@ -544,6 +545,8 @@ class GeneratorUI:
             step = int(100 / (len(game.components) + 2))
             completed = 0
             progress_bar = st.progress(0)
+
+            generation_started_at = perf_counter()
             for component_name in mp.generate():
                 progress_bar.progress(completed, f"⏳ Generating {component_name}...")
                 completed += step
@@ -565,7 +568,10 @@ class GeneratorUI:
 
             st.session_state.generated = True
 
-            self.status_container.success("Map generation completed!", icon="✅")
+            generation_finished_at = perf_counter()
+            generation_time = round(generation_finished_at - generation_started_at, 3)
+            self.logger.info("Map generated in %s seconds.", generation_time)
+            self.status_container.success(f"Map generated in {generation_time} seconds.", icon="✅")
         except Exception as e:
             self.logger.error("An error occurred while generating the map: %s", repr(e))
             self.status_container.error(

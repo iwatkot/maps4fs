@@ -255,7 +255,7 @@ class DEM(Component):
             )
 
         cv2.imwrite(self._dem_path, resampled_data)
-        self.logger.info("DEM data was saved to %s.", self._dem_path)
+        self.logger.debug("DEM data was saved to %s.", self._dem_path)
 
         if self.rotation:
             self.rotate_dem()
@@ -401,7 +401,7 @@ class DEM(Component):
 
         scaling_factor = self._get_scaling_factor(max_dev)
         adjusted_max_height = int(65535 * scaling_factor)
-        self.logger.info(
+        self.logger.debug(
             "Maximum deviation: %s. Scaling factor: %s. Adjusted max height: %s.",
             max_dev,
             scaling_factor,

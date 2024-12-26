@@ -123,8 +123,6 @@ class Background(Component):
             self.generate_obj_files()
         if self.map.background_settings.generate_water:
             self.generate_water_resources_obj()
-        else:
-            self.logger.info("Light version is enabled, obj files will not be generated.")
 
     def make_copy(self, dem_path: str, dem_name: str) -> None:
         """Copies DEM data to additional DEM file.
@@ -138,7 +136,7 @@ class Background(Component):
         additional_dem_path = os.path.join(dem_directory, dem_name)
 
         shutil.copyfile(dem_path, additional_dem_path)
-        self.logger.info("Additional DEM data was copied to %s.", additional_dem_path)
+        self.logger.debug("Additional DEM data was copied to %s.", additional_dem_path)
 
     def info_sequence(self) -> dict[str, str | float | int]:
         """Returns a dictionary with information about the background terrain.
@@ -340,7 +338,7 @@ class Background(Component):
         preview_path = os.path.join(self.previews_directory, "background_dem.stl")
         mesh.export(preview_path)
 
-        self.logger.info("STL file saved: %s", preview_path)
+        self.logger.debug("STL file saved: %s", preview_path)
 
         self.stl_preview_path = preview_path  # pylint: disable=attribute-defined-outside-init
 
@@ -501,7 +499,7 @@ class Background(Component):
 
         background_save_path = os.path.join(self.water_directory, "water_resources.png")
         cv2.imwrite(background_save_path, background_image)
-        self.logger.info("Background texture saved: %s", background_save_path)
+        self.logger.debug("Background texture saved: %s", background_save_path)
         self.water_resources_path = background_save_path  # pylint: disable=W0201
 
     def subtraction(self) -> None:

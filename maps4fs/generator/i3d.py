@@ -47,7 +47,7 @@ class I3d(Component):
             self._map_i3d_path = self.game.i3d_file_path(self.map_directory)
             self.logger.debug("Map I3D path: %s.", self._map_i3d_path)
         except NotImplementedError:
-            self.logger.info("I3D file processing is not implemented for this game.")
+            self.logger.warning("I3D file processing is not implemented for this game.")
             self._map_i3d_path = None
 
     def process(self) -> None:
@@ -59,7 +59,7 @@ class I3d(Component):
     def _get_tree(self) -> ET.ElementTree | None:
         """Returns the ElementTree instance of the map I3D file."""
         if not self._map_i3d_path:
-            self.logger.info("I3D is not obtained, skipping the update.")
+            self.logger.debug("I3D is not obtained, skipping the update.")
             return None
         if not os.path.isfile(self._map_i3d_path):
             self.logger.warning("I3D file not found: %s.", self._map_i3d_path)
@@ -117,7 +117,7 @@ class I3d(Component):
                 )
 
         tree.write(self._map_i3d_path)  # type: ignore
-        self.logger.info("Map I3D file saved to: %s.", self._map_i3d_path)
+        self.logger.debug("Map I3D file saved to: %s.", self._map_i3d_path)
 
     def previews(self) -> list[str]:
         """Returns a list of paths to the preview images (empty list).
@@ -234,7 +234,7 @@ class I3d(Component):
                     field_id += 1
 
             tree.write(self._map_i3d_path)  # type: ignore
-            self.logger.info("Map I3D file saved to: %s.", self._map_i3d_path)
+            self.logger.debug("Map I3D file saved to: %s.", self._map_i3d_path)
 
     def get_name_indicator_node(self, node_id: int, field_id: int) -> tuple[ET.Element, int]:
         """Creates a name indicator node with given node ID and field ID.
@@ -417,7 +417,7 @@ class I3d(Component):
         self.logger.info("Added %s trees to the I3D file.", tree_count)
 
         tree.write(self._map_i3d_path)  # type: ignore
-        self.logger.info("Map I3D file saved to: %s.", self._map_i3d_path)
+        self.logger.debug("Map I3D file saved to: %s.", self._map_i3d_path)
 
     @staticmethod
     def randomize_coordinates(coordinates: tuple[int, int], density: int) -> tuple[float, float]:
