@@ -54,7 +54,8 @@ class I3d(Component):
         """Updates the map I3D file with the default settings."""
         self._update_i3d_file()
         self._add_fields()
-        self._add_forests()
+        if self.game.code == "FS25":
+            self._add_forests()
 
     def _get_tree(self) -> ET.ElementTree | None:
         """Returns the ElementTree instance of the map I3D file."""
@@ -327,24 +328,28 @@ class I3d(Component):
     # pylint: disable=R0911
     def _add_forests(self) -> None:
         """Adds forests to the map I3D file."""
-        try:
-            tree_schema_path = self.game.tree_schema
-        except ValueError:
-            self.logger.warning("Tree schema path not set for the Game %s.", self.game.code)
-            return
+        custom_schema = self.kwargs.get("tree_custom_schema")
+        if custom_schema:
+            tree_schema = custom_schema
+        else:
+            try:
+                tree_schema_path = self.game.tree_schema
+            except ValueError:
+                self.logger.warning("Tree schema path not set for the Game %s.", self.game.code)
+                return
 
-        if not os.path.isfile(tree_schema_path):
-            self.logger.warning("Tree schema file was not found: %s.", tree_schema_path)
-            return
+            if not os.path.isfile(tree_schema_path):
+                self.logger.warning("Tree schema file was not found: %s.", tree_schema_path)
+                return
 
-        try:
-            with open(tree_schema_path, "r", encoding="utf-8") as tree_schema_file:
-                tree_schema: list[dict[str, str | int]] = json.load(tree_schema_file)
-        except json.JSONDecodeError as e:
-            self.logger.warning(
-                "Could not load tree schema from %s with error: %s", tree_schema_path, e
-            )
-            return
+            try:
+                with open(tree_schema_path, "r", encoding="utf-8") as tree_schema_file:
+                    tree_schema = json.load(tree_schema_file)  # type: ignore
+            except json.JSONDecodeError as e:
+                self.logger.warning(
+                    "Could not load tree schema from %s with error: %s", tree_schema_path, e
+                )
+                return
 
         texture_component: Texture | None = self.map.get_component("Texture")  # type: ignore
         if not texture_component:
@@ -399,7 +404,7 @@ class I3d(Component):
                 (xcs, ycs), self.map.i3d_settings.forest_density
             )
 
-            random_tree = choice(tree_schema)
+            random_tree = choice(tree_schema)  # type: ignore
             tree_name = random_tree["name"]
             tree_id = random_tree["reference_id"]
 

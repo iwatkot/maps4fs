@@ -476,7 +476,7 @@ class Background(Component):
             rotation=self.rotation,
             map_directory=self.map_directory,
             logger=self.logger,
-            custom_schema=background_layers,  # type: ignore
+            texture_custom_schema=background_layers,  # type: ignore
         )
 
         self.background_texture.preprocess()

@@ -104,6 +104,7 @@ class Map:
         grle_settings: GRLESettings = GRLESettings(),
         i3d_settings: I3DSettings = I3DSettings(),
         texture_settings: TextureSettings = TextureSettings(),
+        **kwargs,
     ):
         if not logger:
             logger = Logger(to_stdout=True, to_file=False)
@@ -139,6 +140,9 @@ class Map:
         os.makedirs(self.map_directory, exist_ok=True)
         self.logger.debug("Map directory created: %s", self.map_directory)
 
+        self.texture_custom_schema = kwargs.get("texture_custom_schema", None)
+        self.tree_custom_schema = kwargs.get("tree_custom_schema", None)
+
         try:
             shutil.unpack_archive(game.template_path, self.map_directory)
             self.logger.debug("Map template unpacked to %s", self.map_directory)
@@ -169,6 +173,8 @@ class Map:
                 self.rotation,
                 self.map_directory,
                 self.logger,
+                texture_custom_schema=self.texture_custom_schema,
+                tree_custom_schema=self.tree_custom_schema,
             )
             self.components.append(component)
 

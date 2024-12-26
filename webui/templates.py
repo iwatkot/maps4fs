@@ -9,7 +9,7 @@ class Messages:
         "🤗 If you like the project, consider supporting it on [Buy Me a Coffee](https://www.buymeacoffee.com/iwatkot).  \n"
         "📹 A complete step-by-step video tutorial is on [YouTube](https://www.youtube.com/watch?v=Nl_aqXJ5nAk&)!"
     )
-    MOVED = "The app has moved to [maps4fs.xyz](https://maps4fs.xyz)"
+    MOVED = "The app has moved to ➡️➡️➡️ [maps4fs.xyz](https://maps4fs.xyz)"
     MAIN_PAGE_COMMUNITY_WARNING = (
         "🚜 Hey, farmer!  \n"
         "Do you know what **Docker** is? If yes, please consider running the application "
@@ -115,4 +115,12 @@ class Messages:
     )
     SKIP_DRAINS_INFO = (
         "If enabled, the drains and ditches will be ignored while generating the map."
+    )
+    TEXTURE_SCHEMA_INFO = (
+        "This section contains the schema which is used to generate the textures. "
+        "Any changes here can lead to errors or completely broken map. "
+    )
+    TREE_SCHEMA_INFO = (
+        "This section contains the schema which is used to generate the trees. "
+        "Any changes here can lead to errors or completely broken map. "
     )

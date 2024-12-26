@@ -178,7 +178,7 @@ class Texture(Component):
 
     def preprocess(self) -> None:
         """Preprocesses the data before the generation."""
-        custom_schema = self.kwargs.get("custom_schema")
+        custom_schema = self.kwargs.get("texture_custom_schema")
         if custom_schema:
             layers_schema = custom_schema  # type: ignore
             self.logger.info("Custom schema loaded with %s layers.", len(layers_schema))
