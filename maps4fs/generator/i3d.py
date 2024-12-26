@@ -344,7 +344,7 @@ class I3d(Component):
 
             try:
                 with open(tree_schema_path, "r", encoding="utf-8") as tree_schema_file:
-                    tree_schema: list[dict[str, str | int]] = json.load(tree_schema_file)
+                    tree_schema = json.load(tree_schema_file)  # type: ignore
             except json.JSONDecodeError as e:
                 self.logger.warning(
                     "Could not load tree schema from %s with error: %s", tree_schema_path, e
@@ -404,7 +404,7 @@ class I3d(Component):
                 (xcs, ycs), self.map.i3d_settings.forest_density
             )
 
-            random_tree = choice(tree_schema)
+            random_tree = choice(tree_schema)  # type: ignore
             tree_name = random_tree["name"]
             tree_id = random_tree["reference_id"]
 
