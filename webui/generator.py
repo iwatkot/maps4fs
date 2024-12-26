@@ -47,8 +47,6 @@ class GeneratorUI:
         self.download_path = None
         self.logger = mfs.Logger(level="INFO", to_file=False)
 
-        if config.is_on_community_server():
-            st.toast(Messages.MOVED, icon="🚜")
         self.public = config.is_public()
         self.logger.debug("The application launched on a public server: %s", self.public)
 
@@ -61,6 +59,8 @@ class GeneratorUI:
             self.add_right_widgets()
 
         with self.left_column:
+            if config.is_on_community_server():
+                st.error(Messages.MOVED, icon="🚜")
             self.add_left_widgets()
 
         self.map_preview()
