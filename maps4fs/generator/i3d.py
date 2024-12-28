@@ -19,7 +19,8 @@ DISPLACEMENT_LAYER_SIZE_FOR_BIG_MAPS = 32768
 DEFAULT_MAX_LOD_DISTANCE = 10000
 DEFAULT_MAX_LOD_OCCLUDER_DISTANCE = 10000
 NODE_ID_STARTING_VALUE = 2000
-TREE_NODE_ID_STARTING_VALUE = 4000
+SPLINES_NODE_ID_STARTING_VALUE = 5000
+TREE_NODE_ID_STARTING_VALUE = 10000
 DEFAULT_FOREST_DENSITY = 10
 
 
@@ -56,6 +57,7 @@ class I3d(Component):
         self._add_fields()
         if self.game.code == "FS25":
             self._add_forests()
+            self._add_splines()
 
     def _get_tree(self) -> ET.ElementTree | None:
         """Returns the ElementTree instance of the map I3D file."""
@@ -129,6 +131,98 @@ class I3d(Component):
         """
         return []
 
+    def _add_splines(self) -> None:
+        """Adds splines to the map I3D file."""
+        splines_i3d_path = os.path.join(self.map_directory, "map", "splines.i3d")
+        if not os.path.isfile(splines_i3d_path):
+            self.logger.warning("Splines I3D file not found: %s.", splines_i3d_path)
+            return
+
+        tree = ET.parse(splines_i3d_path)
+
+        textures_info_layer_path = self.get_infolayer_path("textures")
+        if not textures_info_layer_path:
+            return
+
+        with open(textures_info_layer_path, "r", encoding="utf-8") as textures_info_layer_file:
+            textures_info_layer = json.load(textures_info_layer_file)
+
+        roads_polylines: list[list[tuple[int, int]]] | None = textures_info_layer.get(
+            "roads_polylines"
+        )
+
+        if not roads_polylines:
+            self.logger.warning("Roads polylines data not found in textures info layer.")
+            return
+
+        self.logger.info("Found %s roads polylines in textures info layer.", len(roads_polylines))
+        self.logger.debug("Starging to add roads polylines to the I3D file.")
+
+        root = tree.getroot()
+        # Find <Shapes> element in the I3D file.
+        shapes_node = root.find(".//Shapes")
+        # Find <Scene> element in the I3D file.
+        scene_node = root.find(".//Scene")
+
+        if shapes_node is not None and scene_node is not None:
+            node_id = SPLINES_NODE_ID_STARTING_VALUE
+
+            for road_id, road in enumerate(roads_polylines, start=1):
+                # Add to scene node
+                # <Shape name="spline01_CSV" translation="0 0 0" nodeId="11" shapeId="11"/>
+
+                try:
+                    fitted_road = self.fit_object_into_bounds(
+                        linestring_points=road, angle=self.rotation
+                    )
+                except ValueError as e:
+                    self.logger.warning(
+                        "Road %s could not be fitted into the map bounds with error: %s",
+                        road_id,
+                        e,
+                    )
+                    continue
+
+                spline_name = f"spline{road_id}"
+
+                shape_node = ET.Element("Shape")
+                shape_node.set("name", spline_name)
+                shape_node.set("translation", "0 0 0")
+                shape_node.set("nodeId", str(node_id))
+                shape_node.set("shapeId", str(node_id))
+
+                scene_node.append(shape_node)
+
+                road_ccs = [self.top_left_coordinates_to_center(point) for point in fitted_road]
+
+                # Add to shapes node
+                # <NurbsCurve name="spline01_CSV" shapeId="11" degree="3" form="open">
+
+                nurbs_curve_node = ET.Element("NurbsCurve")
+                nurbs_curve_node.set("name", spline_name)
+                nurbs_curve_node.set("shapeId", str(node_id))
+                nurbs_curve_node.set("degree", "3")
+                nurbs_curve_node.set("form", "open")
+
+                # Now for each point in the road add the following entry to nurbs_curve_node
+                # <cv c="-224.548401, 427.297546, -2047.570312" />
+                # The second coordinate (Z) will be 0 at the moment.
+
+                for point_ccs in road_ccs:
+                    cx, cy = point_ccs
+
+                    cv_node = ET.Element("cv")
+                    cv_node.set("c", f"{cx}, 0, {cy}")
+
+                    nurbs_curve_node.append(cv_node)
+
+                shapes_node.append(nurbs_curve_node)
+
+                node_id += 1
+
+            tree.write(splines_i3d_path)  # type: ignore
+            self.logger.debug("Splines I3D file saved to: %s.", splines_i3d_path)
+
     # pylint: disable=R0914, R0915
     def _add_fields(self) -> None:
         """Adds fields to the map I3D file."""
@@ -166,7 +260,9 @@ class I3d(Component):
 
                 for field in fields:
                     try:
-                        fitted_field = self.fit_polygon_into_bounds(field, angle=self.rotation)
+                        fitted_field = self.fit_object_into_bounds(
+                            polygon_points=field, angle=self.rotation
+                        )
                     except ValueError as e:
                         self.logger.warning(
                             "Field %s could not be fitted into the map bounds with error: %s",

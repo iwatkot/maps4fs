@@ -11,7 +11,7 @@ import cv2
 import osmnx as ox  # type: ignore
 from pyproj import Transformer
 from shapely.affinity import rotate, translate  # type: ignore
-from shapely.geometry import Polygon, box  # type: ignore
+from shapely.geometry import LineString, Polygon, box  # type: ignore
 
 from maps4fs.generator.qgis import save_scripts
 
@@ -337,63 +337,122 @@ class Component:
 
         return cs_x, cs_y
 
+    # def fit_linestring_into_bounds(self, linestring_points: list[tuple[int, int]], angle: int = 0):
+    #     min_x = min_y = 0
+    #     max_x = max_y = self.map_size
+
+    #     linestring = LineString(linestring_points)
+    #     linestring_copy = deepcopy(linestring)
+
+    #     if angle:
+    #         center_x = center_y = self.map_rotated_size // 2
+    #         self.logger.debug(
+    #             "Rotating the linestring by %s degrees with center at %sx%s",
+    #             angle,
+    #             center_x,
+    #             center_y,
+    #         )
+    #         linestring = rotate(linestring, -angle, origin=(center_x, center_y))
+    #         offset = (self.map_size / 2) - (self.map_rotated_size / 2)
+    #         self.logger.debug("Translating the linestring by %s", offset)
+    #         linestring = translate(linestring, xoff=offset, yoff=offset)
+    #         self.logger.debug("Rotated and translated linestring.")
+
+    #     # Check if the coordinates actually changed.
+    #     if linestring == linestring_copy:
+    #         raise ValueError("The linestring was not rotated.")
+
+    #     bounds = box(min_x, min_y, max_x, max_y)
+
+    #     try:
+    #         fitted_linestring = linestring.intersection(bounds)
+    #         self.logger.debug("Fitted the linestring into the bounds: %s", bounds)
+    #     except Exception as e:
+    #         raise ValueError(  # pylint: disable=W0707
+    #             f"Could not fit the linestring into the bounds: {e}"
+    #         )
+
+    #     if not isinstance(fitted_linestring, LineString):
+    #         raise ValueError("The fitted linestring is not a valid linestring.")
+
+    #     as_list = list(fitted_linestring.coords)
+    #     if not as_list:
+    #         raise ValueError("The fitted linestring has no points.")
+
+    #     return as_list
+
     # pylint: disable=R0914
-    def fit_polygon_into_bounds(
-        self, polygon_points: list[tuple[int, int]], margin: int = 0, angle: int = 0
+    def fit_object_into_bounds(
+        self,
+        polygon_points: list[tuple[int, int]] | None = None,
+        linestring_points: list[tuple[int, int]] | None = None,
+        margin: int = 0,
+        angle: int = 0,
     ) -> list[tuple[int, int]]:
         """Fits a polygon into the bounds of the map.
 
         Arguments:
             polygon_points (list[tuple[int, int]]): The points of the polygon.
+            linestring_points (list[tuple[int, int]]): The points of the linestring.
             margin (int, optional): The margin to add to the polygon. Defaults to 0.
             angle (int, optional): The angle to rotate the polygon by. Defaults to 0.
 
         Returns:
             list[tuple[int, int]]: The points of the polygon fitted into the map bounds.
         """
+        if polygon_points is None and linestring_points is None:
+            raise ValueError("Either polygon or linestring points must be provided.")
+
         min_x = min_y = 0
         max_x = max_y = self.map_size
 
-        polygon = Polygon(polygon_points)
+        object_type = Polygon if polygon_points else LineString
+
+        # polygon = Polygon(polygon_points)
+        object = object_type(polygon_points or linestring_points)
 
         if angle:
             center_x = center_y = self.map_rotated_size // 2
             self.logger.debug(
-                "Rotating the polygon by %s degrees with center at %sx%s",
+                "Rotating the object by %s degrees with center at %sx%s",
                 angle,
                 center_x,
                 center_y,
             )
-            polygon = rotate(polygon, -angle, origin=(center_x, center_y))
+            object = rotate(object, -angle, origin=(center_x, center_y))
             offset = (self.map_size / 2) - (self.map_rotated_size / 2)
-            self.logger.debug("Translating the polygon by %s", offset)
-            polygon = translate(polygon, xoff=offset, yoff=offset)
-            self.logger.debug("Rotated and translated polygon.")
+            self.logger.debug("Translating the object by %s", offset)
+            object = translate(object, xoff=offset, yoff=offset)
+            self.logger.debug("Rotated and translated the object.")
 
-        if margin:
-            polygon = polygon.buffer(margin, join_style="mitre")
-            if polygon.is_empty:
-                raise ValueError("The polygon is empty after adding the margin.")
+        if margin and object_type is Polygon:
+            object = object.buffer(margin, join_style="mitre")
+            if object.is_empty:
+                raise ValueError("The object is empty after adding the margin.")
 
         # Create a bounding box for the map bounds
         bounds = box(min_x, min_y, max_x, max_y)
 
-        # Intersect the polygon with the bounds to fit it within the map
+        # Intersect the object with the bounds to fit it within the map
         try:
-            fitted_polygon = polygon.intersection(bounds)
-            self.logger.debug("Fitted the polygon into the bounds: %s", bounds)
+            fitted_object = object.intersection(bounds)
+            self.logger.debug("Fitted the object into the bounds: %s", bounds)
         except Exception as e:
             raise ValueError(  # pylint: disable=W0707
-                f"Could not fit the polygon into the bounds: {e}"
+                f"Could not fit the object into the bounds: {e}"
             )
 
-        if not isinstance(fitted_polygon, Polygon):
-            raise ValueError("The fitted polygon is not a valid polygon.")
+        if not isinstance(fitted_object, object_type):
+            raise ValueError("The fitted object is not valid (probably splitted into parts).")
 
         # Return the fitted polygon points
-        as_list = list(fitted_polygon.exterior.coords)
+        if object_type is Polygon:
+            as_list = list(fitted_object.exterior.coords)
+        elif object_type is LineString:
+            as_list = list(fitted_object.coords)
+
         if not as_list:
-            raise ValueError("The fitted polygon has no points.")
+            raise ValueError("The fitted object has no points.")
         return as_list
 
     def get_infolayer_path(self, layer_name: str) -> str | None:
