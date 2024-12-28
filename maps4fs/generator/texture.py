@@ -645,6 +645,21 @@ class Texture(Component):
         objects_utm = ox.projection.project_gdf(objects, to_latlong=False)
         self.logger.debug("Fetched %s elements for tags: %s.", len(objects_utm), tags)
 
+        yield from self.polygons_generator(objects_utm, width, is_fieds)
+
+    def polygons_generator(
+        self, objects_utm: pd.core.frame.DataFrame, width: int | None, is_fieds: bool
+    ) -> Generator[np.ndarray, None, None]:
+        """Generator which yields numpy arrays of polygons from OSM data.
+
+        Arguments:
+            objects_utm (pd.core.frame.DataFrame): Dataframe with OSM objects in UTM format.
+            width (int | None): Width of the polygon in meters (only for LineString).
+            is_fieds (bool): Flag to determine if the fields should be padded.
+
+        Yields:
+            Generator[np.ndarray, None, None]: Numpy array of polygon points.
+        """
         for _, obj in objects_utm.iterrows():
             polygon = self._to_polygon(obj, width)
             if polygon is None:
