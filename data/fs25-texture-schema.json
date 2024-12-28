@@ -18,7 +18,8 @@
     "tags": { "highway": ["motorway", "trunk", "primary"] },
     "width": 8,
     "color": [70, 70, 70],
-    "priority": 1
+    "priority": 1,
+    "info_layer": "roads"
   },
   {
     "name": "asphaltGravel",
@@ -134,7 +135,8 @@
     "count": 2,
     "tags": { "highway": ["secondary", "tertiary", "road", "service"] },
     "width": 4,
-    "color": [140, 180, 210]
+    "color": [140, 180, 210],
+    "info_layer": "roads"
   },
   {
     "name": "mudDark",
@@ -161,7 +163,8 @@
     "count": 2,
     "tags": { "highway": ["unclassified", "residential", "track"] },
     "width": 2,
-    "color": [33, 67, 101]
+    "color": [33, 67, 101],
+    "info_layer": "roads"
   },
   {
     "name": "mudPebbles",
