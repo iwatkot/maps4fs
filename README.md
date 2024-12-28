@@ -504,3 +504,4 @@ But also, I want to thank the people who helped me with the project in some way,
 - [BFernaesds](https://github.com/BFernaesds) - for the manual tests of the app.
 - [gamerdesigns](https://github.com/gamerdesigns) - for the manual tests of the app. 
 - [Tox3](https://github.com/Tox3) - for the manual tests of the app. 
+- [Lucandia](https://github.com/Lucandia) - for the awesome StreamLit [widget to preview STL files](https://github.com/Lucandia/streamlit_stl).
