@@ -47,6 +47,7 @@
 🌲 Automatically generates forests 🆕<br>
 🌊 Automatically generates water planes 🆕<br>
 🌍 Based on real-world data from OpenStreetMap<br>
+🗺️ Supports [custom OSM maps](/docs/custom_osm.md)<br>
 🏞️ Generates height map using SRTM dataset<br>
 📦 Provides a ready-to-use map template for the Giants Editor<br>
 🚜 Supports Farming Simulator 22 and 25<br>
