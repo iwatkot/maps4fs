@@ -79,7 +79,7 @@ class TextureSettings(NamedTuple):
     skip_drains: bool = False
 
 
-# pylint: disable=R0913, R0902
+# pylint: disable=R0913, R0902, R0914
 class Map:
     """Class used to generate map using all components.
 
