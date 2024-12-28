@@ -129,3 +129,8 @@ class Messages:
         "https://github.com/iwatkot/maps4fs/blob/main/docs/custom_osm.md).  \n"
         "Note, that incorrect file can lead to errors or completely broken map."
     )
+    SPLINE_DENSITY_INFO = (
+        "This value represents the number of additional points, which will be added between "
+        "each pair of existing points of the spline. The higher value will make the spline "
+        "more smooth. Be careful with high values, because it may make your spline too complex."
+    )

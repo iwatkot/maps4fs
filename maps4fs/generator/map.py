@@ -79,6 +79,17 @@ class TextureSettings(NamedTuple):
     skip_drains: bool = False
 
 
+class SplineSettings(NamedTuple):
+    """Represents the advanced settings for spline component.
+
+    Attributes:
+        spline_density (int): the number of extra points that will be added between each two
+            existing points.
+    """
+
+    spline_density: int = 4
+
+
 # pylint: disable=R0913, R0902, R0914
 class Map:
     """Class used to generate map using all components.
@@ -105,6 +116,7 @@ class Map:
         grle_settings: GRLESettings = GRLESettings(),
         i3d_settings: I3DSettings = I3DSettings(),
         texture_settings: TextureSettings = TextureSettings(),
+        spline_settings: SplineSettings = SplineSettings(),
         **kwargs,
     ):
         if not logger:
@@ -147,6 +159,8 @@ class Map:
         self.logger.info("I3D settings: %s", i3d_settings)
         self.texture_settings = texture_settings
         self.logger.info("Texture settings: %s", texture_settings)
+        self.spline_settings = spline_settings
+        self.logger.info("Spline settings: %s", spline_settings)
 
         os.makedirs(self.map_directory, exist_ok=True)
         self.logger.debug("Map directory created: %s", self.map_directory)

@@ -493,3 +493,35 @@ class Component:
         self.logger.debug("Shape of the cropped image: %s", cropped.shape)
 
         cv2.imwrite(output_path, cropped)
+
+    @staticmethod
+    def interpolate_points(
+        polyline: list[tuple[int, int]], num_points: int = 4
+    ) -> list[tuple[int, int]]:
+        """Receives a list of tuples, which represents a polyline. Add additional points
+        between the existing points to make the polyline smoother.
+
+        Arguments:
+            polyline (list[tuple[int, int]]): The list of points to interpolate.
+            num_points (int): The number of additional points to add between each pair of points.
+
+        Returns:
+            list[tuple[int, int]]: The list of points with additional points.
+        """
+        if not polyline or num_points < 1:
+            return polyline
+
+        interpolated_polyline = []
+        for i in range(len(polyline) - 1):
+            p1 = polyline[i]
+            p2 = polyline[i + 1]
+            interpolated_polyline.append(p1)
+            for j in range(1, num_points + 1):
+                new_point = (
+                    p1[0] + (p2[0] - p1[0]) * j / (num_points + 1),
+                    p1[1] + (p2[1] - p1[1]) * j / (num_points + 1),
+                )
+                interpolated_polyline.append((int(new_point[0]), int(new_point[1])))
+        interpolated_polyline.append(polyline[-1])
+
+        return interpolated_polyline

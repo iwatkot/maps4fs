@@ -662,8 +662,8 @@ class Texture(Component):
                 objects = ox.features_from_xml(self.map.custom_osm, tags=tags)
             else:
                 objects = ox.features_from_bbox(bbox=self.new_bbox, tags=tags)
-        except Exception:  # pylint: disable=W0718
-            self.logger.debug("Error fetching objects for tags: %s.", tags)
+        except Exception as e:  # pylint: disable=W0718
+            self.logger.debug("Error fetching objects for tags: %s. Error: %s.", tags, e)
             return
         objects_utm = ox.projection.project_gdf(objects, to_latlong=False)
         self.logger.debug("Fetched %s elements for tags: %s.", len(objects_utm), tags)

@@ -201,6 +201,14 @@ class I3d(Component):
                     )
                     continue
 
+                self.logger.debug("Road %s has %s points.", road_id, len(fitted_road))
+                fitted_road = self.interpolate_points(
+                    fitted_road, num_points=self.map.spline_settings.spline_density
+                )
+                self.logger.debug(
+                    "Road %s has %s points after interpolation.", road_id, len(fitted_road)
+                )
+
                 spline_name = f"spline{road_id}"
 
                 shape_node = ET.Element("Shape")

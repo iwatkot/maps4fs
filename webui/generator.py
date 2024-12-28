@@ -228,6 +228,7 @@ class GeneratorUI:
         self.generate_background = True
         self.generate_water = True
         self.skip_drains = False
+        self.spline_density = 4
 
         if not self.auto_process:
             self.logger.info("Auto preset is disabled.")
@@ -431,6 +432,24 @@ class GeneratorUI:
                     "Generate water", value=True, key="generate_water"
                 )
 
+            with st.expander("Spline Advanced Settings", icon="🛤️"):
+                st.info(
+                    "ℹ️ Settings related to the spline component of the map, which represent the "
+                    "roads, paths, etc."
+                )
+
+                st.write("Enter the spline density:")
+                st.write(Messages.SPLINE_DENSITY_INFO)
+
+                self.spline_density = st.number_input(
+                    "Spline Density",
+                    value=4,
+                    min_value=1,
+                    max_value=20,
+                    key="spline_density",
+                    label_visibility="collapsed",
+                )
+
         self.custom_schemas = False
         self.texture_schema_input = None
         self.tree_schema_input = None
@@ -603,6 +622,8 @@ class GeneratorUI:
         )
         self.logger.debug("Texture settings: %s", texture_settings)
 
+        spline_settings = mfs.SplineSettings(spline_density=self.spline_density)
+
         texture_schema = None
         tree_schema = None
         if self.custom_schemas:
@@ -637,6 +658,7 @@ class GeneratorUI:
             grle_settings=grle_settings,
             i3d_settings=i3d_settings,
             texture_settings=texture_settings,
+            spline_settings=spline_settings,
             texture_custom_schema=texture_schema,
             tree_custom_schema=tree_schema,
         )
