@@ -130,6 +130,13 @@ class Map:
         self.custom_osm = custom_osm
         self.logger.info("Custom OSM file: %s", custom_osm)
 
+        # Make a copy of a custom osm file to the map directory, so it will be
+        # included in the output archive.
+        if custom_osm:
+            copy_path = os.path.join(self.map_directory, "custom_osm.osm")
+            shutil.copyfile(custom_osm, copy_path)
+            self.logger.debug("Custom OSM file copied to %s", copy_path)
+
         self.dem_settings = dem_settings
         self.logger.info("DEM settings: %s", dem_settings)
         self.background_settings = background_settings

@@ -131,7 +131,7 @@ class I3d(Component):
         """
         return []
 
-    # pylint: disable=R0914
+    # pylint: disable=R0914, R0915
     def _add_splines(self) -> None:
         """Adds splines to the map I3D file."""
         splines_i3d_path = os.path.join(self.map_directory, "map", "splines.i3d")
@@ -164,6 +164,23 @@ class I3d(Component):
         shapes_node = root.find(".//Shapes")
         # Find <Scene> element in the I3D file.
         scene_node = root.find(".//Scene")
+
+        # Read the not resized DEM to obtain Z values for spline points.
+        background_component = self.map.get_component("Background")
+        if not background_component:
+            self.logger.warning("Background component not found.")
+            return
+
+        # pylint: disable=no-member
+        not_resized_dem = cv2.imread(
+            background_component.not_resized_path, cv2.IMREAD_UNCHANGED  # type: ignore
+        )
+        self.logger.debug(
+            "Not resized DEM loaded from: %s. Shape: %s.",
+            background_component.not_resized_path,  # type: ignore
+            not_resized_dem.shape,
+        )
+        dem_x_size, dem_y_size = not_resized_dem.shape
 
         if shapes_node is not None and scene_node is not None:
             node_id = SPLINES_NODE_ID_STARTING_VALUE
@@ -209,11 +226,21 @@ class I3d(Component):
                 # <cv c="-224.548401, 427.297546, -2047.570312" />
                 # The second coordinate (Z) will be 0 at the moment.
 
-                for point_ccs in road_ccs:
+                for point_ccs, point in zip(road_ccs, fitted_road):
                     cx, cy = point_ccs
+                    x, y = point
+
+                    x = int(x)
+                    y = int(y)
+
+                    x = max(0, min(x, dem_x_size - 1))
+                    y = max(0, min(y, dem_y_size - 1))
+
+                    z = not_resized_dem[y, x]
+                    z /= 32  # Yes, it's a magic number here.
 
                     cv_node = ET.Element("cv")
-                    cv_node.set("c", f"{cx}, 0, {cy}")
+                    cv_node.set("c", f"{cx}, {z}, {cy}")
 
                     nurbs_curve_node.append(cv_node)
 

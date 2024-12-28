@@ -7,7 +7,7 @@ import os
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
-import cv2
+import cv2  # type: ignore
 import osmnx as ox  # type: ignore
 from pyproj import Transformer
 from shapely.affinity import rotate, translate  # type: ignore

@@ -63,6 +63,7 @@ class Background(Component):
             os.path.join(self.background_directory, f"{name}.png") for name in ELEMENTS
         ]
         self.not_substracted_path = os.path.join(self.background_directory, "not_substracted.png")
+        self.not_resized_path = os.path.join(self.background_directory, "not_resized.png")
 
         dems = []
 
@@ -109,6 +110,7 @@ class Background(Component):
             dem.process()
             if not dem.is_preview:  # type: ignore
                 shutil.copyfile(dem.dem_path, self.not_substracted_path)
+                self.cutout(dem.dem_path, save_path=self.not_resized_path)
 
         if self.map.dem_settings.water_depth:
             self.subtraction()
@@ -198,11 +200,12 @@ class Background(Component):
             self.plane_from_np(dem_data, save_path, is_preview=dem.is_preview)  # type: ignore
 
     # pylint: disable=too-many-locals
-    def cutout(self, dem_path: str) -> str:
+    def cutout(self, dem_path: str, save_path: str | None = None) -> str:
         """Cuts out the center of the DEM (the actual map) and saves it as a separate file.
 
         Arguments:
             dem_path (str): The path to the DEM file.
+            save_path (str, optional): The path where the cutout DEM file will be saved.
 
         Returns:
             str -- The path to the cutout DEM file.
@@ -216,6 +219,11 @@ class Background(Component):
         y1 = center[1] - half_size
         y2 = center[1] + half_size
         dem_data = dem_data[x1:x2, y1:y2]
+
+        if save_path:
+            cv2.imwrite(save_path, dem_data)  # pylint: disable=no-member
+            self.logger.debug("Not resized DEM saved: %s", save_path)
+            return save_path
 
         output_size = self.map_size + 1
 
