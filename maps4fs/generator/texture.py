@@ -635,7 +635,10 @@ class Texture(Component):
         """
         is_fieds = info_layer == "fields"
         try:
-            objects = ox.features_from_bbox(bbox=self.new_bbox, tags=tags)
+            if self.map.custom_osm is not None:
+                objects = ox.features_from_xml(self.map.custom_osm, tags=tags)
+            else:
+                objects = ox.features_from_bbox(bbox=self.new_bbox, tags=tags)
         except Exception:  # pylint: disable=W0718
             self.logger.debug("Error fetching objects for tags: %s.", tags)
             return

@@ -234,6 +234,29 @@ class GeneratorUI:
 
             st.info(Messages.AUTO_PRESET_DISABLED)
 
+        self.custom_osm_path = None
+
+        st.write("[ALPHA] Custom OSM:")
+        self.custom_osm_enabled = st.checkbox(
+            "Upload custom OSM file",
+            value=False,
+            key="custom_osm_enabled",
+        )
+
+        if self.custom_osm_enabled:
+            st.warning("⚠️ ALPHA FEATURE: Use it at your own risk.")
+            st.info(Messages.CUSTOM_OSM_INFO)
+
+            uploaded_file = st.file_uploader("Choose a file", type=["osm"])
+            if uploaded_file is not None:
+                timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                self.custom_osm_path = os.path.join(
+                    config.INPUT_DIRECTORY, f"custom_osm_{timestamp}.osm"
+                )
+                with open(self.custom_osm_path, "wb") as f:
+                    f.write(uploaded_file.read())
+                st.success(f"Custom OSM file uploaded: {uploaded_file.name}")
+
         # Add checkbox for advanced settings.
         st.write("Advanced settings:")
         self.advanced_settings = st.checkbox(
@@ -589,6 +612,11 @@ class GeneratorUI:
                     st.error("Invalid tree schema!")
                     return
 
+        if self.custom_osm_enabled:
+            osm_path = self.custom_osm_path
+        else:
+            osm_path = None
+
         mp = mfs.Map(
             game,
             coordinates,
@@ -596,6 +624,7 @@ class GeneratorUI:
             self.rotation,
             map_directory,
             logger=self.logger,
+            custom_osm=osm_path,
             dem_settings=dem_settings,
             background_settings=background_settings,
             grle_settings=grle_settings,
@@ -699,6 +728,7 @@ class GeneratorUI:
                         auto_rotate=True,
                         height="400",
                         key=None,
+                        max_view_distance=10000,
                     )
                 except Exception:
                     continue
