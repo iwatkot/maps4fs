@@ -234,6 +234,13 @@ class GeneratorUI:
 
             st.info(Messages.AUTO_PRESET_DISABLED)
 
+        if not self.public:
+            enable_debug = st.checkbox("Enable debug logs", key="debug_logs")
+            if enable_debug:
+                self.logger = mfs.Logger(level="DEBUG", to_file=False)
+            else:
+                self.logger = mfs.Logger(level="INFO", to_file=False)
+
         self.custom_osm_path = None
 
         st.write("[ALPHA] Custom OSM:")
