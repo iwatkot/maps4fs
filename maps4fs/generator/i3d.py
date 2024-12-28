@@ -131,6 +131,7 @@ class I3d(Component):
         """
         return []
 
+    # pylint: disable=R0914
     def _add_splines(self) -> None:
         """Adds splines to the map I3D file."""
         splines_i3d_path = os.path.join(self.map_directory, "map", "splines.i3d")
