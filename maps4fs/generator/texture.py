@@ -372,7 +372,7 @@ class Texture(Component):
             ),
         )
 
-    # pylint: disable=no-member
+    # pylint: disable=no-member, R0912
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
         layers = self.layers_by_priority()
@@ -409,10 +409,22 @@ class Texture(Component):
 
             mask = cv2.bitwise_not(cumulative_image)
 
-            for polygon in self.polygons(layer.tags, layer.width, layer.info_layer):  # type: ignore
+            for polygon in self.objects_generator(  # type: ignore
+                layer.tags, layer.width, layer.info_layer
+            ):
                 if layer.info_layer:
-                    info_layer_data[layer.info_layer].append(self.np_to_polygon_points(polygon))
+                    info_layer_data[layer.info_layer].append(
+                        self.np_to_polygon_points(polygon)  # type: ignore
+                    )
                 cv2.fillPoly(layer_image, [polygon], color=255)  # type: ignore
+
+            if layer.info_layer == "roads":
+                for linestring in self.objects_generator(
+                    layer.tags, layer.width, layer.info_layer, yield_linestrings=True
+                ):
+                    info_layer_data[f"{layer.info_layer}_polylines"].append(
+                        linestring  # type: ignore
+                    )
 
             output_image = cv2.bitwise_and(layer_image, mask)
 
@@ -422,8 +434,16 @@ class Texture(Component):
             self.logger.debug("Texture %s saved.", layer_path)
 
         # Save info layer data.
+        if os.path.isfile(self.info_layer_path):
+            self.logger.debug(
+                "File %s already exists, will update to avoid overwriting.", self.info_layer_path
+            )
+            with open(self.info_layer_path, "r", encoding="utf-8") as f:
+                info_layer_data.update(json.load(f))
+
         with open(self.info_layer_path, "w", encoding="utf-8") as f:
             json.dump(info_layer_data, f, ensure_ascii=False, indent=4)
+            self.logger.debug("Info layer data saved to %s.", self.info_layer_path)
 
         if cumulative_image is not None:
             self.draw_base_layer(cumulative_image)
@@ -617,21 +637,24 @@ class Texture(Component):
         converters = {"Polygon": self._skip, "LineString": self._sequence, "Point": self._sequence}
         return converters.get(geom_type)  # type: ignore
 
-    def polygons(
+    def objects_generator(
         self,
         tags: dict[str, str | list[str] | bool],
         width: int | None,
         info_layer: str | None = None,
-    ) -> Generator[np.ndarray, None, None]:
+        yield_linestrings: bool = False,
+    ) -> Generator[np.ndarray, None, None] | Generator[list[tuple[int, int]], None, None]:
         """Generator which yields numpy arrays of polygons from OSM data.
 
         Arguments:
             tags (dict[str, str | list[str]]): Dictionary of tags to search for.
             width (int | None): Width of the polygon in meters (only for LineString).
             info_layer (str | None): Name of the corresponding info layer.
+            yield_linestrings (bool): Flag to determine if the LineStrings should be yielded.
 
         Yields:
-            Generator[np.ndarray, None, None]: Numpy array of polygon points.
+            Generator[np.ndarray, None, None] | Generator[list[tuple[int, int]], None, None]:
+                Numpy array of polygon points or list of point coordinates.
         """
         is_fieds = info_layer == "fields"
         try:
@@ -645,6 +668,42 @@ class Texture(Component):
         objects_utm = ox.projection.project_gdf(objects, to_latlong=False)
         self.logger.debug("Fetched %s elements for tags: %s.", len(objects_utm), tags)
 
+        method = self.linestrings_generator if yield_linestrings else self.polygons_generator
+
+        yield from method(objects_utm, width, is_fieds)
+
+    def linestrings_generator(
+        self, objects_utm: pd.core.frame.DataFrame, *args, **kwargs
+    ) -> Generator[list[tuple[int, int]], None, None]:
+        """Generator which yields lists of point coordinates which represent LineStrings from OSM.
+
+        Arguments:
+            objects_utm (pd.core.frame.DataFrame): Dataframe with OSM objects in UTM format.
+
+        Yields:
+            Generator[list[tuple[int, int]], None, None]: List of point coordinates.
+        """
+        for _, obj in objects_utm.iterrows():
+            geometry = obj["geometry"]
+            if isinstance(geometry, shapely.geometry.linestring.LineString):
+                points = [
+                    (self.get_relative_x(x), self.get_relative_y(y)) for x, y in geometry.coords
+                ]
+                yield points
+
+    def polygons_generator(
+        self, objects_utm: pd.core.frame.DataFrame, width: int | None, is_fieds: bool
+    ) -> Generator[np.ndarray, None, None]:
+        """Generator which yields numpy arrays of polygons from OSM data.
+
+        Arguments:
+            objects_utm (pd.core.frame.DataFrame): Dataframe with OSM objects in UTM format.
+            width (int | None): Width of the polygon in meters (only for LineString).
+            is_fieds (bool): Flag to determine if the fields should be padded.
+
+        Yields:
+            Generator[np.ndarray, None, None]: Numpy array of polygon points.
+        """
         for _, obj in objects_utm.iterrows():
             polygon = self._to_polygon(obj, width)
             if polygon is None:
