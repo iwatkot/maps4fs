@@ -229,6 +229,7 @@ class GeneratorUI:
         self.generate_water = True
         self.skip_drains = False
         self.spline_density = 4
+        self.background_resize_factor = 8
 
         if not self.auto_process:
             self.logger.info("Auto preset is disabled.")
@@ -432,6 +433,25 @@ class GeneratorUI:
                     "Generate water", value=True, key="generate_water"
                 )
 
+                st.write("Background resize factor:")
+                st.write(Messages.BACKGROUND_RESIZE_FACTOR_INFO)
+
+                if self.public:
+                    disabled = True
+                    st.warning(Messages.SETTING_LOCAL)
+                else:
+                    disabled = False
+
+                self.background_resize_factor = st.number_input(
+                    "Background Resize Factor",
+                    value=8,
+                    min_value=1,
+                    max_value=16,
+                    key="background_resize_factor",
+                    label_visibility="collapsed",
+                    disabled=disabled,
+                )
+
             with st.expander("Spline Advanced Settings", icon="🛤️"):
                 st.info(
                     "ℹ️ Settings related to the spline component of the map, which represent the "
@@ -601,8 +621,12 @@ class GeneratorUI:
         )
         self.logger.debug("DEM settings: %s", dem_settings)
 
+        background_resize_factor = 1 / self.background_resize_factor
+
         background_settings = mfs.BackgroundSettings(
-            generate_background=self.generate_background, generate_water=self.generate_water
+            generate_background=self.generate_background,
+            generate_water=self.generate_water,
+            resize_factor=background_resize_factor,
         )
         self.logger.debug("Background settings: %s", background_settings)
 

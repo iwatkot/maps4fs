@@ -28,6 +28,7 @@ class Messages:
         "[maps4fs](https://pypi.org/project/maps4fs/) package to generate maps locally."
     )
     TOOL_LOCAL = "💡 This tool is available in the local version of the tool."
+    SETTING_LOCAL = "💡 This setting is available in the local version of the tool."
 
     AUTO_PRESET_INFO = (
         "Auto preset will automatically apply different algorithms to make terrain more "
@@ -133,4 +134,10 @@ class Messages:
         "This value represents the number of additional points, which will be added between "
         "each pair of existing points of the spline. The higher value will make the spline "
         "more smooth. Be careful with high values, because it may make your spline too complex."
+    )
+    BACKGROUND_RESIZE_FACTOR_INFO = (
+        "This value is used to resize the background terrain. The higher the value, "
+        "the less detailed the background terrain will be. If set to 1, the background terrain "
+        "will not be resized. Low values will result with a very long processing and "
+        "meshes of enormous size. Do not change it unless you know what you are doing."
     )

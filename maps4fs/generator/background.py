@@ -17,7 +17,6 @@ from maps4fs.generator.dem import DEM
 from maps4fs.generator.texture import Texture
 
 DEFAULT_DISTANCE = 2048
-RESIZE_FACTOR = 1 / 8
 FULL_NAME = "FULL"
 FULL_PREVIEW_NAME = "PREVIEW"
 ELEMENTS = [FULL_NAME, FULL_PREVIEW_NAME]
@@ -260,11 +259,12 @@ class Background(Component):
             is_preview (bool, optional) -- If True, the preview mesh will be generated.
             include_zeros (bool, optional) -- If True, the mesh will include the zero height values.
         """
+        resize_factor = self.map.background_settings.resize_factor
         dem_data = cv2.resize(  # pylint: disable=no-member
-            dem_data, (0, 0), fx=RESIZE_FACTOR, fy=RESIZE_FACTOR
+            dem_data, (0, 0), fx=resize_factor, fy=resize_factor
         )
         self.logger.debug(
-            "DEM data resized to shape: %s with factor: %s", dem_data.shape, RESIZE_FACTOR
+            "DEM data resized to shape: %s with factor: %s", dem_data.shape, resize_factor
         )
 
         # Invert the height values.
@@ -330,7 +330,7 @@ class Background(Component):
                 else:
                     z_scaling_factor = 1 / 2**5
                 self.logger.debug("Z scaling factor: %s", z_scaling_factor)
-                mesh.apply_scale([1 / RESIZE_FACTOR, 1 / RESIZE_FACTOR, z_scaling_factor])
+                mesh.apply_scale([1 / resize_factor, 1 / resize_factor, z_scaling_factor])
 
         mesh.export(save_path)
         self.logger.debug("Obj file saved: %s", save_path)
