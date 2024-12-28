@@ -15,4 +15,4 @@ pyproj
 trimesh
 pympler
 pydoc-markdown
-streamlit-stl==0.0.2
+streamlit-stl==0.0.4

@@ -728,6 +728,7 @@ class GeneratorUI:
                         auto_rotate=True,
                         height="400",
                         key=None,
+                        max_view_distance=10000,
                     )
                 except Exception:
                     continue
