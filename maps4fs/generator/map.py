@@ -99,6 +99,7 @@ class Map:
         rotation: int,
         map_directory: str,
         logger: Any = None,
+        custom_osm: str | None = None,
         dem_settings: DEMSettings = DEMSettings(),
         background_settings: BackgroundSettings = BackgroundSettings(),
         grle_settings: GRLESettings = GRLESettings(),
@@ -125,6 +126,9 @@ class Map:
         self.map_directory = map_directory
 
         self.logger.info("Game was set to %s", game.code)
+
+        self.custom_osm = custom_osm
+        self.logger.info("Custom OSM file: %s", custom_osm)
 
         self.dem_settings = dem_settings
         self.logger.info("DEM settings: %s", dem_settings)

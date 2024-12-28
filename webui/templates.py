@@ -124,3 +124,8 @@ class Messages:
         "This section contains the schema which is used to generate the trees. "
         "Any changes here can lead to errors or completely broken map. "
     )
+    CUSTOM_OSM_INFO = (
+        "To prepare the custom OSM file, please refer to the [documentation]("
+        "https://github.com/iwatkot/maps4fs/blob/main/docs/custom_osm.md).  \n"
+        "Note, that incorrect file can lead to errors or completely broken map."
+    )
