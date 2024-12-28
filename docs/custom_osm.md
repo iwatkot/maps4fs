@@ -26,7 +26,7 @@ If you see the error message "Download area too large", download it in parts.
 
 ![Remove relations](https://github.com/user-attachments/assets/65e1ef68-fdc2-4117-8032-2429cbaeb574)
 
-8. Pay attention to the fact, that removing relations may lead to some areas to disappear, which was not defined separately from another objects. You can't do anything with it, os if you miss something, you'll need to add it manually.
+8. Pay attention to the fact, that removing relations may lead to some areas to disappear, which was not defined separately from another objects. You can't do anything with it; if you miss something, you'll need to add it manually.
 
 9. You can start editing your map. You can add new objects, remove existing ones, change their properties, etc. And there will be no one to tell you that you're doing something wrong or reverse your changes.
 
