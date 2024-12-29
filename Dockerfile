@@ -16,7 +16,7 @@ COPY requirements.txt /usr/src/app/requirements.txt
 RUN pip install -r requirements.txt
 
 # Ensure the latest version of maps4fs is installed.
-RUN pip install --update maps4fs
+RUN pip install --upgrade maps4fs
 
 EXPOSE 8501
 
