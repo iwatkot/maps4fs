@@ -48,6 +48,23 @@ class GeneratorUI:
         self.logger = mfs.Logger(level="INFO", to_file=False)
 
         self.public = config.is_public()
+        self.locked = False
+        if self.public and config.public_password_is_set():
+            # Maintainance mode is enabled.
+            self.locked = True
+            st.warning("The app is in maintenance mode, enter the password or get back later.")
+
+            password = st.text_input("Password", type="password", key="password")
+
+            if st.button("Enter", key="enter_btn"):
+                if not config.public_password_is_correct(password):
+                    return
+                else:
+                    self.locked = False
+
+        if self.locked:
+            return
+
         self.logger.debug("The application launched on a public server: %s", self.public)
 
         self.left_column, self.right_column = st.columns(2, gap="large")
