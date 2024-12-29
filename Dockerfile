@@ -13,8 +13,10 @@ COPY docs /usr/src/app/docs
 COPY webui /usr/src/app/webui
 COPY requirements.txt /usr/src/app/requirements.txt
 
-# RUN pip install "opencv-python" "pyproj" "folium" "geopy" "pympler" "streamlit-stl==0.0.2" "osmnx>=2.0.0" "fast-simplification" "rasterio" "trimesh" "streamlit" "maps4fs"
 RUN pip install -r requirements.txt
+
+# Ensure the latest version of maps4fs is installed.
+RUN pip install --update maps4fs
 
 EXPOSE 8501
 
