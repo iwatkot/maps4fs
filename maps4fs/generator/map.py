@@ -73,12 +73,13 @@ class BackgroundSettings(SettingsModel):
     Attributes:
         generate_background (bool): generate obj files for the background terrain.
         generate_water (bool): generate obj files for the water.
-        resize_factor (float): resize factor for the background and water.
+        resize_factor (int): resize factor for the background terrain and water.
+            It will be used as 1 / resize_factor of the original size.
     """
 
     generate_background: bool = True
     generate_water: bool = True
-    resize_factor: float = 1 / 8
+    resize_factor: int = 8
 
 
 class GRLESettings(SettingsModel):

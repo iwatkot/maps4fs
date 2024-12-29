@@ -480,7 +480,7 @@ You can also apply some advanced settings to the map generation process. Note th
 
 - Generate water - if enabled, the water planes obj files will be generated. You can turn it off if you already have those files or don't need them. By default, it's set to True.
 
-- Resize factor - the factor by which the background terrain will be resized. In UI it sets as an integer number (default 8), will be converted to 1/8 (0.125). In expert mode use the float number. The higher the value, the smaller the background terrain will be. Warning: higher terrain will result long processing time and enormous file size.
+- Resize factor - the factor by which the background terrain will be resized. It will be used as 1 / resize_factor while generating the models. Which means that the larger the value the more the terrain will be resized. The lowest value is 1, in this case background terrain will not be resized. Note, than low values will lead to long processing and enormous size of the obj files.
 
 ## Splines Advanced settings
 
