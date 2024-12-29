@@ -301,6 +301,7 @@ class Texture(Component):
             "bbox",
             "map_height",
             "map_width",
+            "rotation",
             "minimum_x",
             "minimum_y",
             "maximum_x",
