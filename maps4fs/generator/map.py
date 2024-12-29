@@ -4,14 +4,50 @@ from __future__ import annotations
 
 import os
 import shutil
-from typing import Any, Generator, NamedTuple
+from typing import Any, Generator
+
+from pydantic import BaseModel
 
 from maps4fs.generator.component import Component
 from maps4fs.generator.game import Game
 from maps4fs.logger import Logger
 
 
-class DEMSettings(NamedTuple):
+class SettingsModel(BaseModel):
+    """Base class for settings models. It provides methods to convert settings to and from JSON."""
+
+    @classmethod
+    def all_settings_to_json(cls) -> dict[str, dict[str, Any]]:
+        """Get all settings of the current class and its subclasses as a dictionary.
+
+        Returns:
+            dict[str, dict[str, Any]]: Dictionary with settings of the current class and its
+                subclasses.
+        """
+        all_settings = {}
+        for subclass in cls.__subclasses__():
+            all_settings[subclass.__name__] = subclass().model_dump()
+
+        return all_settings
+
+    @classmethod
+    def all_settings_from_json(cls, data: dict) -> dict[str, SettingsModel]:
+        """Create settings instances from JSON data.
+
+        Arguments:
+            data (dict): JSON data.
+
+        Returns:
+            dict[str, Type[SettingsModel]]: Dictionary with settings instances.
+        """
+        settings = {}
+        for subclass in cls.__subclasses__():
+            settings[subclass.__name__] = subclass(**data[subclass.__name__])
+
+        return settings
+
+
+class DEMSettings(SettingsModel):
     """Represents the advanced settings for DEM component.
 
     Attributes:
@@ -31,19 +67,21 @@ class DEMSettings(NamedTuple):
     water_depth: int = 0
 
 
-class BackgroundSettings(NamedTuple):
+class BackgroundSettings(SettingsModel):
     """Represents the advanced settings for background component.
 
     Attributes:
         generate_background (bool): generate obj files for the background terrain.
         generate_water (bool): generate obj files for the water.
+        resize_factor (float): resize factor for the background and water.
     """
 
     generate_background: bool = True
     generate_water: bool = True
+    resize_factor: float = 1 / 8
 
 
-class GRLESettings(NamedTuple):
+class GRLESettings(SettingsModel):
     """Represents the advanced settings for GRLE component.
 
     Attributes:
@@ -55,7 +93,7 @@ class GRLESettings(NamedTuple):
     random_plants: bool = True
 
 
-class I3DSettings(NamedTuple):
+class I3DSettings(SettingsModel):
     """Represents the advanced settings for I3D component.
 
     Attributes:
@@ -65,7 +103,7 @@ class I3DSettings(NamedTuple):
     forest_density: int = 10
 
 
-class TextureSettings(NamedTuple):
+class TextureSettings(SettingsModel):
     """Represents the advanced settings for texture component.
 
     Attributes:
@@ -77,6 +115,17 @@ class TextureSettings(NamedTuple):
     dissolve: bool = True
     fields_padding: int = 0
     skip_drains: bool = False
+
+
+class SplineSettings(SettingsModel):
+    """Represents the advanced settings for spline component.
+
+    Attributes:
+        spline_density (int): the number of extra points that will be added between each two
+            existing points.
+    """
+
+    spline_density: int = 4
 
 
 # pylint: disable=R0913, R0902, R0914
@@ -105,6 +154,7 @@ class Map:
         grle_settings: GRLESettings = GRLESettings(),
         i3d_settings: I3DSettings = I3DSettings(),
         texture_settings: TextureSettings = TextureSettings(),
+        spline_settings: SplineSettings = SplineSettings(),
         **kwargs,
     ):
         if not logger:
@@ -130,6 +180,13 @@ class Map:
         self.custom_osm = custom_osm
         self.logger.info("Custom OSM file: %s", custom_osm)
 
+        # Make a copy of a custom osm file to the map directory, so it will be
+        # included in the output archive.
+        if custom_osm:
+            copy_path = os.path.join(self.map_directory, "custom_osm.osm")
+            shutil.copyfile(custom_osm, copy_path)
+            self.logger.debug("Custom OSM file copied to %s", copy_path)
+
         self.dem_settings = dem_settings
         self.logger.info("DEM settings: %s", dem_settings)
         self.background_settings = background_settings
@@ -140,6 +197,8 @@ class Map:
         self.logger.info("I3D settings: %s", i3d_settings)
         self.texture_settings = texture_settings
         self.logger.info("Texture settings: %s", texture_settings)
+        self.spline_settings = spline_settings
+        self.logger.info("Spline settings: %s", spline_settings)
 
         os.makedirs(self.map_directory, exist_ok=True)
         self.logger.debug("Map directory created: %s", self.map_directory)

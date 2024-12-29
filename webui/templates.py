@@ -28,6 +28,7 @@ class Messages:
         "[maps4fs](https://pypi.org/project/maps4fs/) package to generate maps locally."
     )
     TOOL_LOCAL = "💡 This tool is available in the local version of the tool."
+    SETTING_LOCAL = "💡 This setting is available in the local version of the tool."
 
     AUTO_PRESET_INFO = (
         "Auto preset will automatically apply different algorithms to make terrain more "
@@ -43,18 +44,18 @@ class Messages:
         "multiplier option from Advanced settings to make the terrain more pronounced."
     )
     DEM_MULTIPLIER_INFO = (
-        "This multiplier can be used to make the terrain more pronounced. "
+        "DEM multiplier can be used to make the terrain more pronounced. "
         "By default the DEM file will be exact copy of the real terrain. "
         "If you want to make it more steep, you can increase this value. "
     )
     DEM_BLUR_RADIUS_INFO = (
-        "This value is used to blur the elevation map. Without blurring the terrain "
+        "DEM blur radius is used to blur the elevation map. Without blurring the terrain "
         "may look too sharp and unrealistic. By default the blur radius is set to 21 "
         "which corresponds to a 21x21 pixel kernel. You can increase this value to make "
         "the terrain more smooth. Or make it smaller to make the terrain more sharp."
     )
     DEM_PLATEAU_INFO = (
-        "This value is used to make the whole map higher or lower. "
+        "DEM plateau value is used to make the whole map higher or lower. "
         "This value will be added to each pixel of the DEM image, making it higher."
         "It can be useful if you're working on a plain area and need to add some "
         "negative height (to make rivers, for example)."
@@ -74,47 +75,48 @@ class Messages:
         "checked."
     )
     FIELD_PADDING_INFO = (
-        "This value is used to add some padding around the fields. "
+        "Field padding value is used to add some padding around the fields. "
         "It will make the fields smaller, can be useful if they are too close to each other."
     )
     FARMLAND_MARGIN_INFO = (
-        "This value is used to add some margin around the farmland. "
+        "Farmland margin value is used to add some margin around the farmland. "
         "It can be useful because without the margin, the farmland will end exact on the same "
         "position as the field ends. This can cause some issues with gameplay."
     )
     FOREST_DENSITY_INFO = (
-        "This value represents the distance between trees in the forest. "
+        "Forest density value represents the distance between trees in the forest. "
         "The higher the value, the more sparse the forest will be and less trees will be "
         "generated. Be careful with low values, because depending on the amount of forest areas "
         "and the map size, it may generate dozens of thousands of trees, which can cause "
         "performance issues."
     )
     RANDOMIZE_PLANTS_INFO = (
-        "If checked, random species of plants will be generated. "
+        "If random plants are enabled the different species of plants will be generated. "
         "If unchecked, only basic smallDenseMix will be applied."
     )
     WATER_DEPTH_INFO = (
-        "This value will be subtracted from the DEM image, making the water deeper. "
+        "Water depth value will be subtracted from the DEM image, making the water deeper. "
         "Pay attention to the fact, that this value IS NOT IN METERS, instead it uses the pixel "
         "value from the DEM image. So, if you set low values, you will probably see no "
         "difference. Also, this value will be added to the plateau value, to avoid negative "
         "height."
     )
     DISSOLVING_INFO = (
-        "If enabled, the textures will be dissolved (splitted between different files). "
+        "If texture dissolving is enabled, the textures will be splitted between different files. "
         "It makes them look better in game, but it will require some time. "
         "It's recommended to keep this option enabled."
     )
     GENERATE_BACKGROUND_INFO = (
-        "If enabled, the background terrain obj files will be generated to edit them in Blender. "
+        "The background terrain obj files will be generated to edit them in Blender if turned on. "
         "Turn it off if you already have them or don't need them."
     )
     GENERATE_WATER_INFO = (
-        "If enabled, the water planes obj files will be generated to edit them in Blender. "
+        "The water planes obj files will be generated to edit them in Blender if turned on. "
         "Turn it off if you already have them or don't need them."
     )
     SKIP_DRAINS_INFO = (
-        "If enabled, the drains and ditches will be ignored while generating the map."
+        "If skip drains is enabled, the drains and ditches will be ignored while generating "
+        "the map."
     )
     TEXTURE_SCHEMA_INFO = (
         "This section contains the schema which is used to generate the textures. "
@@ -128,4 +130,15 @@ class Messages:
         "To prepare the custom OSM file, please refer to the [documentation]("
         "https://github.com/iwatkot/maps4fs/blob/main/docs/custom_osm.md).  \n"
         "Note, that incorrect file can lead to errors or completely broken map."
+    )
+    SPLINE_DENSITY_INFO = (
+        "Spline density value represents the number of additional points, which will be added between "
+        "each pair of existing points of the spline. The higher value will make the spline "
+        "more smooth. Be careful with high values, because it may make your spline too complex."
+    )
+    BACKGROUND_RESIZE_FACTOR_INFO = (
+        "The background resize factor is used to resize the background terrain. The higher the value, "
+        "the less detailed the background terrain will be. If set to 1, the background terrain "
+        "will not be resized. Low values will result with a very long processing and "
+        "meshes of enormous size. Do not change it unless you know what you are doing."
     )

@@ -7,11 +7,11 @@ import os
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
-import cv2
+import cv2  # type: ignore
 import osmnx as ox  # type: ignore
 from pyproj import Transformer
 from shapely.affinity import rotate, translate  # type: ignore
-from shapely.geometry import Polygon, box  # type: ignore
+from shapely.geometry import LineString, Polygon, box  # type: ignore
 
 from maps4fs.generator.qgis import save_scripts
 
@@ -338,62 +338,79 @@ class Component:
         return cs_x, cs_y
 
     # pylint: disable=R0914
-    def fit_polygon_into_bounds(
-        self, polygon_points: list[tuple[int, int]], margin: int = 0, angle: int = 0
+    def fit_object_into_bounds(
+        self,
+        polygon_points: list[tuple[int, int]] | None = None,
+        linestring_points: list[tuple[int, int]] | None = None,
+        margin: int = 0,
+        angle: int = 0,
     ) -> list[tuple[int, int]]:
         """Fits a polygon into the bounds of the map.
 
         Arguments:
             polygon_points (list[tuple[int, int]]): The points of the polygon.
+            linestring_points (list[tuple[int, int]]): The points of the linestring.
             margin (int, optional): The margin to add to the polygon. Defaults to 0.
             angle (int, optional): The angle to rotate the polygon by. Defaults to 0.
 
         Returns:
             list[tuple[int, int]]: The points of the polygon fitted into the map bounds.
         """
+        if polygon_points is None and linestring_points is None:
+            raise ValueError("Either polygon or linestring points must be provided.")
+
         min_x = min_y = 0
         max_x = max_y = self.map_size
 
-        polygon = Polygon(polygon_points)
+        object_type = Polygon if polygon_points else LineString
+
+        # polygon = Polygon(polygon_points)
+        osm_object = object_type(polygon_points or linestring_points)
 
         if angle:
             center_x = center_y = self.map_rotated_size // 2
             self.logger.debug(
-                "Rotating the polygon by %s degrees with center at %sx%s",
+                "Rotating the osm_object by %s degrees with center at %sx%s",
                 angle,
                 center_x,
                 center_y,
             )
-            polygon = rotate(polygon, -angle, origin=(center_x, center_y))
+            osm_object = rotate(osm_object, -angle, origin=(center_x, center_y))
             offset = (self.map_size / 2) - (self.map_rotated_size / 2)
-            self.logger.debug("Translating the polygon by %s", offset)
-            polygon = translate(polygon, xoff=offset, yoff=offset)
-            self.logger.debug("Rotated and translated polygon.")
+            self.logger.debug("Translating the osm_object by %s", offset)
+            osm_object = translate(osm_object, xoff=offset, yoff=offset)
+            self.logger.debug("Rotated and translated the osm_object.")
 
-        if margin:
-            polygon = polygon.buffer(margin, join_style="mitre")
-            if polygon.is_empty:
-                raise ValueError("The polygon is empty after adding the margin.")
+        if margin and object_type is Polygon:
+            osm_object = osm_object.buffer(margin, join_style="mitre")
+            if osm_object.is_empty:
+                raise ValueError("The osm_object is empty after adding the margin.")
 
         # Create a bounding box for the map bounds
         bounds = box(min_x, min_y, max_x, max_y)
 
-        # Intersect the polygon with the bounds to fit it within the map
+        # Intersect the osm_object with the bounds to fit it within the map
         try:
-            fitted_polygon = polygon.intersection(bounds)
-            self.logger.debug("Fitted the polygon into the bounds: %s", bounds)
+            fitted_osm_object = osm_object.intersection(bounds)
+            self.logger.debug("Fitted the osm_object into the bounds: %s", bounds)
         except Exception as e:
             raise ValueError(  # pylint: disable=W0707
-                f"Could not fit the polygon into the bounds: {e}"
+                f"Could not fit the osm_object into the bounds: {e}"
             )
 
-        if not isinstance(fitted_polygon, Polygon):
-            raise ValueError("The fitted polygon is not a valid polygon.")
+        if not isinstance(fitted_osm_object, object_type):
+            raise ValueError("The fitted osm_object is not valid (probably splitted into parts).")
 
         # Return the fitted polygon points
-        as_list = list(fitted_polygon.exterior.coords)
+        if object_type is Polygon:
+            as_list = list(fitted_osm_object.exterior.coords)
+        elif object_type is LineString:
+            as_list = list(fitted_osm_object.coords)
+        else:
+            raise ValueError("The object type is not supported.")
+
         if not as_list:
-            raise ValueError("The fitted polygon has no points.")
+            raise ValueError("The fitted osm_object has no points.")
         return as_list
 
     def get_infolayer_path(self, layer_name: str) -> str | None:
@@ -476,3 +493,35 @@ class Component:
         self.logger.debug("Shape of the cropped image: %s", cropped.shape)
 
         cv2.imwrite(output_path, cropped)
+
+    @staticmethod
+    def interpolate_points(
+        polyline: list[tuple[int, int]], num_points: int = 4
+    ) -> list[tuple[int, int]]:
+        """Receives a list of tuples, which represents a polyline. Add additional points
+        between the existing points to make the polyline smoother.
+
+        Arguments:
+            polyline (list[tuple[int, int]]): The list of points to interpolate.
+            num_points (int): The number of additional points to add between each pair of points.
+
+        Returns:
+            list[tuple[int, int]]: The list of points with additional points.
+        """
+        if not polyline or num_points < 1:
+            return polyline
+
+        interpolated_polyline = []
+        for i in range(len(polyline) - 1):
+            p1 = polyline[i]
+            p2 = polyline[i + 1]
+            interpolated_polyline.append(p1)
+            for j in range(1, num_points + 1):
+                new_point = (
+                    p1[0] + (p2[0] - p1[0]) * j / (num_points + 1),
+                    p1[1] + (p2[1] - p1[1]) * j / (num_points + 1),
+                )
+                interpolated_polyline.append((int(new_point[0]), int(new_point[1])))
+        interpolated_polyline.append(polyline[-1])
+
+        return interpolated_polyline

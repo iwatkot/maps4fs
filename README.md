@@ -46,6 +46,7 @@
 🌿 Automatically generates decorative foliage 🆕<br>
 🌲 Automatically generates forests 🆕<br>
 🌊 Automatically generates water planes 🆕<br>
+📈 Automatically generates splines 🆕<br>
 🌍 Based on real-world data from OpenStreetMap<br>
 🗺️ Supports [custom OSM maps](/docs/custom_osm.md)<br>
 🏞️ Generates height map using SRTM dataset<br>
@@ -69,6 +70,8 @@
 🌲 Automatically generates forests.<br><br>
 <img src="https://github.com/user-attachments/assets/cce7d4e0-cba2-4dd2-b22d-03137fb2e860"><br>
 🌊 Automatically generates water planes.<br><br>
+<img src="https://github.com/user-attachments/assets/0b05b511-a595-48e7-a353-8298081314a4"><br>
+📈 Automatically generates splines.<br><br>
 <img src="https://github.com/user-attachments/assets/80e5923c-22c7-4dc0-8906-680902511f3a"><br>
 🗒️ True-to-life blueprints for fast and precise modding.<br><br>
 <img width="480" src="https://github.com/user-attachments/assets/1a8802d2-6a3b-4bfa-af2b-7c09478e199b"><br>
@@ -476,6 +479,12 @@ You can also apply some advanced settings to the map generation process. Note th
 - Generate background - if enabled, the obj files for the background terrain will be generated. You can turn it off if you already have those files or don't need them. By default, it's set to True.
 
 - Generate water - if enabled, the water planes obj files will be generated. You can turn it off if you already have those files or don't need them. By default, it's set to True.
+
+- Resize factor - the factor by which the background terrain will be resized. In UI it sets as an integer number (default 8), will be converted to 1/8 (0.125). In expert mode use the float number. The higher the value, the smaller the background terrain will be. Warning: higher terrain will result long processing time and enormous file size.
+
+## Splines Advanced settings
+
+- Splines density - number of points, which will be added (interpolate) between each pair of existing points. The higher the value, the denser the spline will be. It can smooth the splines, but high values can in opposite make the splines look unnatural.
 
 ## Resources
 In this section, you'll find a list of the resources that you need to create a map for the Farming Simulator.<br>

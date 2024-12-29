@@ -39,7 +39,7 @@ class Game:
     _tree_schema: str | None = None
 
     # Order matters! Some components depend on others.
-    components = [Texture, I3d, GRLE, Background, Config]
+    components = [Texture, GRLE, Background, I3d, Config]
 
     def __init__(self, map_template_path: str | None = None):
         if map_template_path:

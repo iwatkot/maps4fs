@@ -144,8 +144,10 @@ class GRLE(Component):
 
         for field in fields:
             try:
-                fitted_field = self.fit_polygon_into_bounds(
-                    field, self.map.grle_settings.farmland_margin, angle=self.rotation
+                fitted_field = self.fit_object_into_bounds(
+                    polygon_points=field,
+                    margin=self.map.grle_settings.farmland_margin,
+                    angle=self.rotation,
                 )
             except ValueError as e:
                 self.logger.warning(

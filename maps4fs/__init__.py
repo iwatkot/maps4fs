@@ -6,6 +6,8 @@ from maps4fs.generator.map import (
     GRLESettings,
     I3DSettings,
     Map,
+    SettingsModel,
+    SplineSettings,
     TextureSettings,
 )
 from maps4fs.logger import Logger
