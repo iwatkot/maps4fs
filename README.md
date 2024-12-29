@@ -514,3 +514,4 @@ But also, I want to thank the people who helped me with the project in some way,
 - [gamerdesigns](https://github.com/gamerdesigns) - for the manual tests of the app. 
 - [Tox3](https://github.com/Tox3) - for the manual tests of the app. 
 - [Lucandia](https://github.com/Lucandia) - for the awesome StreamLit [widget to preview STL files](https://github.com/Lucandia/streamlit_stl).
+- [H4rdB4se](https://github.com/H4rdB4se) - for investigating the issue with custom OSM files and finding a proper way to work with the files in JOSM.
