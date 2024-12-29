@@ -30,7 +30,6 @@ STREAMLIT_COMMUNITY_KEY = "HOSTNAME"
 STREAMLIT_COMMUNITY_VALUE = "streamlit"
 PUBLIC_HOSTNAME_KEY = "PUBLIC_HOSTNAME"
 PUBLIC_HOSTNAME_VALUE = "maps4fs"
-PUBLIC_PASSWORD_KEY = "PUBLIC_PASSWORD"
 
 DOCS_DIRECTORY = os.path.join(WORKING_DIRECTORY, "docs")
 MD_FILES = {
@@ -76,27 +75,6 @@ def is_public() -> bool:
         bool: True if the script is running on a public server, False otherwise.
     """
     return os.environ.get(PUBLIC_HOSTNAME_KEY) == PUBLIC_HOSTNAME_VALUE
-
-
-def public_password_is_correct(password: str) -> bool:
-    """Check if the public password is correct.
-
-    Arguments:
-        password (str): The password to check.
-
-    Returns:
-        bool: True if the password is correct, False otherwise.
-    """
-    return password == os.environ.get(PUBLIC_PASSWORD_KEY)
-
-
-def public_password_is_set() -> bool:
-    """Check if the public password is set.
-
-    Returns:
-        bool: True if the public password is set, False otherwise.
-    """
-    return PUBLIC_PASSWORD_KEY in os.environ
 
 
 def remove_with_delay_without_blocking(
