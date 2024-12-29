@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 from typing import Any, Generator
@@ -205,7 +206,18 @@ class Map:
         self.logger.debug("Map directory created: %s", self.map_directory)
 
         self.texture_custom_schema = kwargs.get("texture_custom_schema", None)
+        if self.texture_custom_schema:
+            save_path = os.path.join(self.map_directory, "texture_custom_schema.json")
+            with open(save_path, "w") as file:
+                json.dump(self.texture_custom_schema, file, indent=4)
+            self.logger.debug("Texture custom schema saved to %s", save_path)
+
         self.tree_custom_schema = kwargs.get("tree_custom_schema", None)
+        if self.tree_custom_schema:
+            save_path = os.path.join(self.map_directory, "tree_custom_schema.json")
+            with open(save_path, "w") as file:
+                json.dump(self.tree_custom_schema, file, indent=4)
+            self.logger.debug("Tree custom schema saved to %s", save_path)
 
         try:
             shutil.unpack_archive(game.template_path, self.map_directory)
