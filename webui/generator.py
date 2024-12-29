@@ -244,8 +244,6 @@ class GeneratorUI:
                 self.logger = mfs.Logger(level="INFO", to_file=False)
 
         self.custom_osm_path = None
-
-        st.write("[ALPHA] Custom OSM:")
         self.custom_osm_enabled = st.checkbox(
             "Upload custom OSM file",
             value=False,
@@ -266,8 +264,6 @@ class GeneratorUI:
                     f.write(uploaded_file.read())
                 st.success(f"Custom OSM file uploaded: {uploaded_file.name}")
 
-        # Add checkbox for advanced settings.
-        st.write("Advanced settings:")
         self.advanced_settings = st.checkbox(
             "Show advanced settings",
             key="advanced_settings",
@@ -284,7 +280,6 @@ class GeneratorUI:
                     "This file is used to generate the terrain of the map (hills, valleys, etc.)."
                 )
                 # Show multiplier and blur radius inputs.
-                st.write("Enter the multiplier for the elevation map:")
                 st.write(Messages.DEM_MULTIPLIER_INFO)
 
                 if self.auto_process:
@@ -297,24 +292,19 @@ class GeneratorUI:
                     max_value=10000,
                     step=1,
                     key="multiplier",
-                    label_visibility="collapsed",
                     disabled=self.auto_process,
                 )
 
-                st.write("Enter the blur radius for the elevation map:")
                 st.write(Messages.DEM_BLUR_RADIUS_INFO)
-
                 self.blur_radius_input = st.number_input(
                     "Blur Radius",
                     value=DEFAULT_BLUR_RADIUS,
                     min_value=0,
                     max_value=300,
                     key="blur_radius",
-                    label_visibility="collapsed",
                     step=2,
                 )
 
-                st.write("Enter the plateau height (which will be added to the whole map):")
                 st.write(Messages.DEM_PLATEAU_INFO)
                 self.plateau_height_input = st.number_input(
                     "Plateau Height",
@@ -322,19 +312,15 @@ class GeneratorUI:
                     min_value=0,
                     max_value=10000,
                     key="plateau_height",
-                    label_visibility="collapsed",
                 )
 
-                st.write("Enter the water depth (pixel value):")
                 st.write(Messages.WATER_DEPTH_INFO)
-
                 self.water_depth = st.number_input(
                     "Water Depth",
                     value=200,
                     min_value=0,
                     max_value=10000,
                     key="water_depth",
-                    label_visibility="collapsed",
                 )
 
             with st.expander("Textures Advanced Settings", icon="🎨"):
@@ -343,7 +329,6 @@ class GeneratorUI:
                     "types of terrain, such as grass, dirt, etc."
                 )
 
-                st.write("Enter the field padding (in meters):")
                 st.write(Messages.FIELD_PADDING_INFO)
                 self.fields_padding = st.number_input(
                     "Field Padding",
@@ -351,18 +336,15 @@ class GeneratorUI:
                     min_value=0,
                     max_value=100,
                     key="field_padding",
-                    label_visibility="collapsed",
                 )
 
-                st.write("Dissolving:")
                 st.write(Messages.DISSOLVING_INFO)
                 self.dissolving_enabled = st.checkbox(
-                    "Dissolving enabled",
+                    "Texture dissolving",
                     value=True,
                     key="dissolving_enabled",
                 )
 
-                st.write("Skip drains:")
                 st.write(Messages.SKIP_DRAINS_INFO)
                 self.skip_drains = st.checkbox(
                     "Skip drains",
@@ -376,7 +358,6 @@ class GeneratorUI:
                     "that can be bought in the game by the player."
                 )
 
-                st.write("Enter the farmland margin (in meters):")
                 st.write(Messages.FARMLAND_MARGIN_INFO)
 
                 self.farmland_margin = st.number_input(
@@ -385,7 +366,6 @@ class GeneratorUI:
                     min_value=0,
                     max_value=100,
                     key="farmland_margin",
-                    label_visibility="collapsed",
                 )
 
             with st.expander("Vegetation Advanced Settings", icon="🌲"):
@@ -394,21 +374,16 @@ class GeneratorUI:
                     "grass, etc."
                 )
 
-                st.write("Enter the forest density (in meters):")
                 st.write(Messages.FOREST_DENSITY_INFO)
-
                 self.forest_density = st.number_input(
                     "Forest Density",
                     value=10,
                     min_value=2,
                     max_value=50,
                     key="forest_density",
-                    label_visibility="collapsed",
                 )
 
-                st.write("Random plants:")
                 st.write(Messages.RANDOMIZE_PLANTS_INFO)
-
                 self.randomize_plants = st.checkbox(
                     "Random plants", value=True, key="randomize_plants"
                 )
@@ -419,21 +394,16 @@ class GeneratorUI:
                     "surrounding area of the map."
                 )
 
-                st.write("Generate background:")
                 st.write(Messages.GENERATE_BACKGROUND_INFO)
-
                 self.generate_background = st.checkbox(
                     "Generate background", value=True, key="generate_background"
                 )
 
-                st.write("Generate water:")
                 st.write(Messages.GENERATE_WATER_INFO)
-
                 self.generate_water = st.checkbox(
                     "Generate water", value=True, key="generate_water"
                 )
 
-                st.write("Background resize factor:")
                 st.write(Messages.BACKGROUND_RESIZE_FACTOR_INFO)
 
                 if self.public:
@@ -448,7 +418,6 @@ class GeneratorUI:
                     min_value=1,
                     max_value=16,
                     key="background_resize_factor",
-                    label_visibility="collapsed",
                     disabled=disabled,
                 )
 
@@ -458,7 +427,6 @@ class GeneratorUI:
                     "roads, paths, etc."
                 )
 
-                st.write("Enter the spline density:")
                 st.write(Messages.SPLINE_DENSITY_INFO)
 
                 self.spline_density = st.number_input(
@@ -467,7 +435,6 @@ class GeneratorUI:
                     min_value=1,
                     max_value=20,
                     key="spline_density",
-                    label_visibility="collapsed",
                 )
 
         self.custom_schemas = False
@@ -475,7 +442,6 @@ class GeneratorUI:
         self.tree_schema_input = None
 
         if self.game_code == "FS25":
-            st.write("Custom schemas:")
             self.custom_schemas = st.checkbox(
                 "Show schemas editor", value=False, key="custom_schemas"
             )
