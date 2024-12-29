@@ -142,7 +142,7 @@ class Map:
         logger (Any): Logger instance
     """
 
-    def __init__(  # pylint: disable=R0917
+    def __init__(  # pylint: disable=R0917, R0915
         self,
         game: Game,
         coordinates: tuple[float, float],
@@ -208,14 +208,14 @@ class Map:
         self.texture_custom_schema = kwargs.get("texture_custom_schema", None)
         if self.texture_custom_schema:
             save_path = os.path.join(self.map_directory, "texture_custom_schema.json")
-            with open(save_path, "w") as file:
+            with open(save_path, "w", encoding="utf-8") as file:
                 json.dump(self.texture_custom_schema, file, indent=4)
             self.logger.debug("Texture custom schema saved to %s", save_path)
 
         self.tree_custom_schema = kwargs.get("tree_custom_schema", None)
         if self.tree_custom_schema:
             save_path = os.path.join(self.map_directory, "tree_custom_schema.json")
-            with open(save_path, "w") as file:
+            with open(save_path, "w", encoding="utf-8") as file:
                 json.dump(self.tree_custom_schema, file, indent=4)
             self.logger.debug("Tree custom schema saved to %s", save_path)
 
