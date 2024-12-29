@@ -30,6 +30,14 @@ If you see the error message "Download area too large", download it in parts.
 
 9. You can start editing your map. You can add new objects, remove existing ones, change their properties, etc. And there will be no one to tell you that you're doing something wrong or reverse your changes.
 
-10. Save the file: **File** -> **Save as** (Ctrl + Shift + S).  
+10. Pay attention to the fact that if you simply delete the object it will result a broken OSM file. Instead of simply removing something, you need to **Purge** it. To see this option, you need to enable the **Expert mode** in the settings.
+
+![Enable expert mode](https://github.com/user-attachments/assets/eaee73df-76bb-48db-be6b-d4ddb7c5ea7c)
+
+11. After it, you will see the **Purge** option in the **Edit** menu. Use it to remove the object properly.
+
+![Purge object](https://github.com/user-attachments/assets/75c90888-cf6d-437b-906f-89b029350044)
+
+12. Save the file: **File** -> **Save as** (Ctrl + Shift + S).  
 Now, you can use this file in the generator.  
-Friendly reminder: save your file in some safe place, so you won't lose your changes.
+Friendly reminder: save your file in some safe place, so you won't lose your changes. It's also recommended to use version control systems like Git to track your changes, so you can easily revert them if something goes wrong.

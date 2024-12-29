@@ -605,12 +605,10 @@ class GeneratorUI:
             )
             self.logger.debug("DEM settings: %s", dem_settings)
 
-            background_resize_factor = 1 / self.background_resize_factor
-
             background_settings = mfs.BackgroundSettings(
                 generate_background=self.generate_background,
                 generate_water=self.generate_water,
-                resize_factor=background_resize_factor,
+                resize_factor=self.background_resize_factor,
             )
             self.logger.debug("Background settings: %s", background_settings)
 
@@ -642,11 +640,10 @@ class GeneratorUI:
 
                     if self.public:
                         # Override the background resize factor for the public server.
-                        # resize_factor = 0.125 for the public server.
                         background_settings = mfs.BackgroundSettings(
                             generate_background=background_settings.generate_background,
                             generate_water=background_settings.generate_water,
-                            resize_factor=0.125,
+                            resize_factor=8,
                         )
 
                     grle_settings = all_settings["GRLESettings"]

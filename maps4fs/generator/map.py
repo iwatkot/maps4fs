@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 from typing import Any, Generator
@@ -73,12 +74,13 @@ class BackgroundSettings(SettingsModel):
     Attributes:
         generate_background (bool): generate obj files for the background terrain.
         generate_water (bool): generate obj files for the water.
-        resize_factor (float): resize factor for the background and water.
+        resize_factor (int): resize factor for the background terrain and water.
+            It will be used as 1 / resize_factor of the original size.
     """
 
     generate_background: bool = True
     generate_water: bool = True
-    resize_factor: float = 1 / 8
+    resize_factor: int = 8
 
 
 class GRLESettings(SettingsModel):
@@ -140,7 +142,7 @@ class Map:
         logger (Any): Logger instance
     """
 
-    def __init__(  # pylint: disable=R0917
+    def __init__(  # pylint: disable=R0917, R0915
         self,
         game: Game,
         coordinates: tuple[float, float],
@@ -204,7 +206,18 @@ class Map:
         self.logger.debug("Map directory created: %s", self.map_directory)
 
         self.texture_custom_schema = kwargs.get("texture_custom_schema", None)
+        if self.texture_custom_schema:
+            save_path = os.path.join(self.map_directory, "texture_custom_schema.json")
+            with open(save_path, "w", encoding="utf-8") as file:
+                json.dump(self.texture_custom_schema, file, indent=4)
+            self.logger.debug("Texture custom schema saved to %s", save_path)
+
         self.tree_custom_schema = kwargs.get("tree_custom_schema", None)
+        if self.tree_custom_schema:
+            save_path = os.path.join(self.map_directory, "tree_custom_schema.json")
+            with open(save_path, "w", encoding="utf-8") as file:
+                json.dump(self.tree_custom_schema, file, indent=4)
+            self.logger.debug("Tree custom schema saved to %s", save_path)
 
         try:
             shutil.unpack_archive(game.template_path, self.map_directory)

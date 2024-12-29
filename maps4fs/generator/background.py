@@ -259,7 +259,7 @@ class Background(Component):
             is_preview (bool, optional) -- If True, the preview mesh will be generated.
             include_zeros (bool, optional) -- If True, the mesh will include the zero height values.
         """
-        resize_factor = self.map.background_settings.resize_factor
+        resize_factor = 1 / self.map.background_settings.resize_factor
         dem_data = cv2.resize(  # pylint: disable=no-member
             dem_data, (0, 0), fx=resize_factor, fy=resize_factor
         )
