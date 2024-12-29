@@ -230,6 +230,8 @@ class GeneratorUI:
         self.skip_drains = False
         self.spline_density = 4
         self.background_resize_factor = 8
+        self.expert_mode = False
+        self.raw_config = None
 
         if not self.auto_process:
             self.logger.info("Auto preset is disabled.")
@@ -274,168 +276,184 @@ class GeneratorUI:
 
             st.warning("⚠️ Changing these settings can lead to unexpected results.")
 
-            with st.expander("DEM Advanced Settings", icon="⛰️"):
-                st.info(
-                    "ℹ️ Settings related to the Digital Elevation Model (elevation map). "
-                    "This file is used to generate the terrain of the map (hills, valleys, etc.)."
-                )
-                # Show multiplier and blur radius inputs.
-                st.write(Messages.DEM_MULTIPLIER_INFO)
+            self.expert_mode = st.checkbox("Expert mode", key="expert_mode")
 
-                if self.auto_process:
-                    st.info("When the auto preset is enabled, the multiplier is set to 1.")
+            if self.expert_mode:
+                st.info("ℹ️ In expert mode you can change the raw configuration of the generation.")
 
-                self.multiplier_input = st.number_input(
-                    "Multiplier",
-                    value=DEFAULT_MULTIPLIER,
-                    min_value=0,
-                    max_value=10000,
-                    step=1,
-                    key="multiplier",
-                    disabled=self.auto_process,
+                settings_model = mfs.SettingsModel
+                all_settings = settings_model.all_settings_to_json()
+
+                self.raw_config = st.text_area(
+                    "Raw configuration",
+                    value=json.dumps(all_settings, indent=2),
+                    height=600,
+                    label_visibility="collapsed",
                 )
 
-                st.write(Messages.DEM_BLUR_RADIUS_INFO)
-                self.blur_radius_input = st.number_input(
-                    "Blur Radius",
-                    value=DEFAULT_BLUR_RADIUS,
-                    min_value=0,
-                    max_value=300,
-                    key="blur_radius",
-                    step=2,
-                )
+            else:
+                with st.expander("DEM Advanced Settings", icon="⛰️"):
+                    st.info(
+                        "ℹ️ Settings related to the Digital Elevation Model (elevation map). "
+                        "This file is used to generate the terrain of the map (hills, valleys, etc.)."
+                    )
+                    # Show multiplier and blur radius inputs.
+                    st.write(Messages.DEM_MULTIPLIER_INFO)
 
-                st.write(Messages.DEM_PLATEAU_INFO)
-                self.plateau_height_input = st.number_input(
-                    "Plateau Height",
-                    value=0,
-                    min_value=0,
-                    max_value=10000,
-                    key="plateau_height",
-                )
+                    if self.auto_process:
+                        st.info("When the auto preset is enabled, the multiplier is set to 1.")
 
-                st.write(Messages.WATER_DEPTH_INFO)
-                self.water_depth = st.number_input(
-                    "Water Depth",
-                    value=200,
-                    min_value=0,
-                    max_value=10000,
-                    key="water_depth",
-                )
+                    self.multiplier_input = st.number_input(
+                        "Multiplier",
+                        value=DEFAULT_MULTIPLIER,
+                        min_value=0,
+                        max_value=10000,
+                        step=1,
+                        key="multiplier",
+                        disabled=self.auto_process,
+                    )
 
-            with st.expander("Textures Advanced Settings", icon="🎨"):
-                st.info(
-                    "ℹ️ Settings related to the textures of the map, which represent different "
-                    "types of terrain, such as grass, dirt, etc."
-                )
+                    st.write(Messages.DEM_BLUR_RADIUS_INFO)
+                    self.blur_radius_input = st.number_input(
+                        "Blur Radius",
+                        value=DEFAULT_BLUR_RADIUS,
+                        min_value=0,
+                        max_value=300,
+                        key="blur_radius",
+                        step=2,
+                    )
 
-                st.write(Messages.FIELD_PADDING_INFO)
-                self.fields_padding = st.number_input(
-                    "Field Padding",
-                    value=0,
-                    min_value=0,
-                    max_value=100,
-                    key="field_padding",
-                )
+                    st.write(Messages.DEM_PLATEAU_INFO)
+                    self.plateau_height_input = st.number_input(
+                        "Plateau Height",
+                        value=0,
+                        min_value=0,
+                        max_value=10000,
+                        key="plateau_height",
+                    )
 
-                st.write(Messages.DISSOLVING_INFO)
-                self.dissolving_enabled = st.checkbox(
-                    "Texture dissolving",
-                    value=True,
-                    key="dissolving_enabled",
-                )
+                    st.write(Messages.WATER_DEPTH_INFO)
+                    self.water_depth = st.number_input(
+                        "Water Depth",
+                        value=200,
+                        min_value=0,
+                        max_value=10000,
+                        key="water_depth",
+                    )
 
-                st.write(Messages.SKIP_DRAINS_INFO)
-                self.skip_drains = st.checkbox(
-                    "Skip drains",
-                    value=False,
-                    key="skip_drains",
-                )
+                with st.expander("Textures Advanced Settings", icon="🎨"):
+                    st.info(
+                        "ℹ️ Settings related to the textures of the map, which represent different "
+                        "types of terrain, such as grass, dirt, etc."
+                    )
 
-            with st.expander("Farmlands Advanced Settings", icon="🌾"):
-                st.info(
-                    "ℹ️ Settings related to the farmlands of the map, which represent the lands "
-                    "that can be bought in the game by the player."
-                )
+                    st.write(Messages.FIELD_PADDING_INFO)
+                    self.fields_padding = st.number_input(
+                        "Field Padding",
+                        value=0,
+                        min_value=0,
+                        max_value=100,
+                        key="field_padding",
+                    )
 
-                st.write(Messages.FARMLAND_MARGIN_INFO)
+                    st.write(Messages.DISSOLVING_INFO)
+                    self.dissolving_enabled = st.checkbox(
+                        "Texture dissolving",
+                        value=True,
+                        key="dissolving_enabled",
+                    )
 
-                self.farmland_margin = st.number_input(
-                    "Farmland Margin",
-                    value=3,
-                    min_value=0,
-                    max_value=100,
-                    key="farmland_margin",
-                )
+                    st.write(Messages.SKIP_DRAINS_INFO)
+                    self.skip_drains = st.checkbox(
+                        "Skip drains",
+                        value=False,
+                        key="skip_drains",
+                    )
 
-            with st.expander("Vegetation Advanced Settings", icon="🌲"):
-                st.info(
-                    "ℹ️ Settings related to the vegetation of the map, which represent the trees, "
-                    "grass, etc."
-                )
+                with st.expander("Farmlands Advanced Settings", icon="🌾"):
+                    st.info(
+                        "ℹ️ Settings related to the farmlands of the map, which represent the lands "
+                        "that can be bought in the game by the player."
+                    )
 
-                st.write(Messages.FOREST_DENSITY_INFO)
-                self.forest_density = st.number_input(
-                    "Forest Density",
-                    value=10,
-                    min_value=2,
-                    max_value=50,
-                    key="forest_density",
-                )
+                    st.write(Messages.FARMLAND_MARGIN_INFO)
 
-                st.write(Messages.RANDOMIZE_PLANTS_INFO)
-                self.randomize_plants = st.checkbox(
-                    "Random plants", value=True, key="randomize_plants"
-                )
+                    self.farmland_margin = st.number_input(
+                        "Farmland Margin",
+                        value=3,
+                        min_value=0,
+                        max_value=100,
+                        key="farmland_margin",
+                    )
 
-            with st.expander("Background Advanced Settings", icon="🖼️"):
-                st.info(
-                    "ℹ️ Settings related to the background of the map, which represent the "
-                    "surrounding area of the map."
-                )
+                with st.expander("Vegetation Advanced Settings", icon="🌲"):
+                    st.info(
+                        "ℹ️ Settings related to the vegetation of the map, which represent the trees, "
+                        "grass, etc."
+                    )
 
-                st.write(Messages.GENERATE_BACKGROUND_INFO)
-                self.generate_background = st.checkbox(
-                    "Generate background", value=True, key="generate_background"
-                )
+                    st.write(Messages.FOREST_DENSITY_INFO)
+                    self.forest_density = st.number_input(
+                        "Forest Density",
+                        value=10,
+                        min_value=2,
+                        max_value=50,
+                        key="forest_density",
+                    )
 
-                st.write(Messages.GENERATE_WATER_INFO)
-                self.generate_water = st.checkbox(
-                    "Generate water", value=True, key="generate_water"
-                )
+                    st.write(Messages.RANDOMIZE_PLANTS_INFO)
+                    self.randomize_plants = st.checkbox(
+                        "Random plants", value=True, key="randomize_plants"
+                    )
 
-                st.write(Messages.BACKGROUND_RESIZE_FACTOR_INFO)
+                with st.expander("Background Advanced Settings", icon="🖼️"):
+                    st.info(
+                        "ℹ️ Settings related to the background of the map, which represent the "
+                        "surrounding area of the map."
+                    )
 
-                if self.public:
-                    disabled = True
-                    st.warning(Messages.SETTING_LOCAL)
-                else:
-                    disabled = False
+                    st.write(Messages.GENERATE_BACKGROUND_INFO)
+                    self.generate_background = st.checkbox(
+                        "Generate background", value=True, key="generate_background"
+                    )
 
-                self.background_resize_factor = st.number_input(
-                    "Background Resize Factor",
-                    value=8,
-                    min_value=1,
-                    max_value=16,
-                    key="background_resize_factor",
-                    disabled=disabled,
-                )
+                    st.write(Messages.GENERATE_WATER_INFO)
+                    self.generate_water = st.checkbox(
+                        "Generate water", value=True, key="generate_water"
+                    )
 
-            with st.expander("Spline Advanced Settings", icon="🛤️"):
-                st.info(
-                    "ℹ️ Settings related to the spline component of the map, which represent the "
-                    "roads, paths, etc."
-                )
+                    st.write(Messages.BACKGROUND_RESIZE_FACTOR_INFO)
 
-                st.write(Messages.SPLINE_DENSITY_INFO)
+                    if self.public:
+                        disabled = True
+                        st.warning(Messages.SETTING_LOCAL)
+                    else:
+                        disabled = False
 
-                self.spline_density = st.number_input(
-                    "Spline Density",
-                    value=4,
-                    min_value=1,
-                    max_value=20,
-                    key="spline_density",
-                )
+                    self.background_resize_factor = st.number_input(
+                        "Background Resize Factor",
+                        value=8,
+                        min_value=1,
+                        max_value=16,
+                        key="background_resize_factor",
+                        disabled=disabled,
+                    )
+
+                with st.expander("Spline Advanced Settings", icon="🛤️"):
+                    st.info(
+                        "ℹ️ Settings related to the spline component of the map, which represent the "
+                        "roads, paths, etc."
+                    )
+
+                    st.write(Messages.SPLINE_DENSITY_INFO)
+
+                    self.spline_density = st.number_input(
+                        "Spline Density",
+                        value=4,
+                        min_value=1,
+                        max_value=20,
+                        key="spline_density",
+                    )
 
         self.custom_schemas = False
         self.texture_schema_input = None
@@ -569,50 +587,80 @@ class GeneratorUI:
         map_directory = os.path.join(config.MAPS_DIRECTORY, session_name)
         os.makedirs(map_directory, exist_ok=True)
 
-        # Create an instance of the Map class and generate the map.
-        multiplier = self.multiplier_input if not self.auto_process else 1
+        if not self.expert_mode:
+            multiplier = self.multiplier_input if not self.auto_process else 1
 
-        plateau = (
-            self.plateau_height_input
-            if not self.water_depth
-            else self.plateau_height_input + self.water_depth
-        )
+            plateau = (
+                self.plateau_height_input
+                if not self.water_depth
+                else self.plateau_height_input + self.water_depth
+            )
 
-        dem_settings = mfs.DEMSettings(
-            auto_process=self.auto_process,
-            multiplier=multiplier,
-            blur_radius=self.blur_radius_input,
-            plateau=plateau,
-            water_depth=self.water_depth,
-        )
-        self.logger.debug("DEM settings: %s", dem_settings)
+            dem_settings = mfs.DEMSettings(
+                auto_process=self.auto_process,
+                multiplier=multiplier,
+                blur_radius=self.blur_radius_input,
+                plateau=plateau,
+                water_depth=self.water_depth,
+            )
+            self.logger.debug("DEM settings: %s", dem_settings)
 
-        background_resize_factor = 1 / self.background_resize_factor
+            background_resize_factor = 1 / self.background_resize_factor
 
-        background_settings = mfs.BackgroundSettings(
-            generate_background=self.generate_background,
-            generate_water=self.generate_water,
-            resize_factor=background_resize_factor,
-        )
-        self.logger.debug("Background settings: %s", background_settings)
+            background_settings = mfs.BackgroundSettings(
+                generate_background=self.generate_background,
+                generate_water=self.generate_water,
+                resize_factor=background_resize_factor,
+            )
+            self.logger.debug("Background settings: %s", background_settings)
 
-        grle_settings = mfs.GRLESettings(
-            farmland_margin=self.farmland_margin,
-            random_plants=self.randomize_plants,
-        )
-        self.logger.debug("GRLE settings: %s", grle_settings)
+            grle_settings = mfs.GRLESettings(
+                farmland_margin=self.farmland_margin,
+                random_plants=self.randomize_plants,
+            )
+            self.logger.debug("GRLE settings: %s", grle_settings)
 
-        i3d_settings = mfs.I3DSettings(forest_density=self.forest_density)
-        self.logger.debug("I3D settings: %s", i3d_settings)
+            i3d_settings = mfs.I3DSettings(forest_density=self.forest_density)
+            self.logger.debug("I3D settings: %s", i3d_settings)
 
-        texture_settings = mfs.TextureSettings(
-            dissolve=self.dissolving_enabled,
-            fields_padding=self.fields_padding,
-            skip_drains=self.skip_drains,
-        )
-        self.logger.debug("Texture settings: %s", texture_settings)
+            texture_settings = mfs.TextureSettings(
+                dissolve=self.dissolving_enabled,
+                fields_padding=self.fields_padding,
+                skip_drains=self.skip_drains,
+            )
+            self.logger.debug("Texture settings: %s", texture_settings)
 
-        spline_settings = mfs.SplineSettings(spline_density=self.spline_density)
+            spline_settings = mfs.SplineSettings(spline_density=self.spline_density)
+
+        else:
+            if self.raw_config is not None:
+                try:
+                    raw_config = json.loads(self.raw_config)
+                    all_settings = mfs.SettingsModel.all_settings_from_json(raw_config)
+                    dem_settings = all_settings["DEMSettings"]
+                    background_settings = all_settings["BackgroundSettings"]
+
+                    if self.public:
+                        # Override the background resize factor for the public server.
+                        # resize_factor = 0.125 for the public server.
+                        background_settings = mfs.BackgroundSettings(
+                            generate_background=background_settings.generate_background,
+                            generate_water=background_settings.generate_water,
+                            resize_factor=0.125,
+                        )
+
+                    grle_settings = all_settings["GRLESettings"]
+                    i3d_settings = all_settings["I3DSettings"]
+                    texture_settings = all_settings["TextureSettings"]
+                    spline_settings = all_settings["SplineSettings"]
+
+                    config_save_path = os.path.join(map_directory, "raw_config.json")
+                    with open(config_save_path, "w", encoding="utf-8") as f:
+                        json.dump(raw_config, f, indent=4)
+
+                except Exception as e:
+                    st.error(f"Invalid raw configuration: {repr(e)}")
+                    return
 
         texture_schema = None
         tree_schema = None

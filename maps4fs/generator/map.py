@@ -4,14 +4,50 @@ from __future__ import annotations
 
 import os
 import shutil
-from typing import Any, Generator, NamedTuple
+from typing import Any, Generator
+
+from pydantic import BaseModel
 
 from maps4fs.generator.component import Component
 from maps4fs.generator.game import Game
 from maps4fs.logger import Logger
 
 
-class DEMSettings(NamedTuple):
+class SettingsModel(BaseModel):
+    """Base class for settings models. It provides methods to convert settings to and from JSON."""
+
+    @classmethod
+    def all_settings_to_json(cls) -> dict[str, dict[str, Any]]:
+        """Get all settings of the current class and its subclasses as a dictionary.
+
+        Returns:
+            dict[str, dict[str, Any]]: Dictionary with settings of the current class and its
+                subclasses.
+        """
+        all_settings = {}
+        for subclass in cls.__subclasses__():
+            all_settings[subclass.__name__] = subclass().model_dump()
+
+        return all_settings
+
+    @classmethod
+    def all_settings_from_json(cls, data: dict) -> dict[str, SettingsModel]:
+        """Create settings instances from JSON data.
+
+        Arguments:
+            data (dict): JSON data.
+
+        Returns:
+            dict[str, Type[SettingsModel]]: Dictionary with settings instances.
+        """
+        settings = {}
+        for subclass in cls.__subclasses__():
+            settings[subclass.__name__] = subclass(**data[subclass.__name__])
+
+        return settings
+
+
+class DEMSettings(SettingsModel):
     """Represents the advanced settings for DEM component.
 
     Attributes:
@@ -31,7 +67,7 @@ class DEMSettings(NamedTuple):
     water_depth: int = 0
 
 
-class BackgroundSettings(NamedTuple):
+class BackgroundSettings(SettingsModel):
     """Represents the advanced settings for background component.
 
     Attributes:
@@ -45,7 +81,7 @@ class BackgroundSettings(NamedTuple):
     resize_factor: float = 1 / 8
 
 
-class GRLESettings(NamedTuple):
+class GRLESettings(SettingsModel):
     """Represents the advanced settings for GRLE component.
 
     Attributes:
@@ -57,7 +93,7 @@ class GRLESettings(NamedTuple):
     random_plants: bool = True
 
 
-class I3DSettings(NamedTuple):
+class I3DSettings(SettingsModel):
     """Represents the advanced settings for I3D component.
 
     Attributes:
@@ -67,7 +103,7 @@ class I3DSettings(NamedTuple):
     forest_density: int = 10
 
 
-class TextureSettings(NamedTuple):
+class TextureSettings(SettingsModel):
     """Represents the advanced settings for texture component.
 
     Attributes:
@@ -81,7 +117,7 @@ class TextureSettings(NamedTuple):
     skip_drains: bool = False
 
 
-class SplineSettings(NamedTuple):
+class SplineSettings(SettingsModel):
     """Represents the advanced settings for spline component.
 
     Attributes:

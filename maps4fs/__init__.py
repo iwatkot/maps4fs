@@ -6,6 +6,7 @@ from maps4fs.generator.map import (
     GRLESettings,
     I3DSettings,
     Map,
+    SettingsModel,
     SplineSettings,
     TextureSettings,
 )

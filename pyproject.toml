@@ -26,6 +26,7 @@ dependencies = [
     "imageio",
     "tifffile",
     "pympler",
+    "pydantic",
 ]
 
 [project.urls]
