@@ -253,7 +253,6 @@ class GeneratorUI:
         )
 
         if self.custom_osm_enabled:
-            st.warning("⚠️ ALPHA FEATURE: Use it at your own risk.")
             st.info(Messages.CUSTOM_OSM_INFO)
 
             uploaded_file = st.file_uploader("Choose a file", type=["osm"])
