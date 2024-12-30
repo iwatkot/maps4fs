@@ -184,6 +184,10 @@ class I3d(Component):
 
         if shapes_node is not None and scene_node is not None:
             node_id = SPLINES_NODE_ID_STARTING_VALUE
+            user_attributes_node = root.find(".//UserAttributes")
+            if user_attributes_node is None:
+                self.logger.warning("UserAttributes node not found in I3D file.")
+                return
 
             for road_id, road in enumerate(roads_polylines, start=1):
                 # Add to scene node
@@ -253,6 +257,25 @@ class I3d(Component):
                     nurbs_curve_node.append(cv_node)
 
                 shapes_node.append(nurbs_curve_node)
+
+                # Add UserAttributes to the shape node.
+                # <UserAttribute nodeId="5000">
+                # <Attribute name="maxSpeedScale" type="integer" value="1"/>
+                # <Attribute name="speedLimit" type="integer" value="100"/>
+                # </UserAttribute>
+
+                user_attribute_node = ET.Element("UserAttribute")
+                user_attribute_node.set("nodeId", str(node_id))
+
+                attributes = [
+                    ("maxSpeedScale", "integer", "1"),
+                    ("speedLimit", "integer", "100"),
+                ]
+
+                for name, attr_type, value in attributes:
+                    user_attribute_node.append(I3d.create_attribute_node(name, attr_type, value))
+
+                user_attributes_node.append(user_attribute_node)  # type: ignore
 
                 node_id += 1
 
