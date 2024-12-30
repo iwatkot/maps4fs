@@ -706,7 +706,11 @@ class Texture(Component):
             Generator[np.ndarray, None, None]: Numpy array of polygon points.
         """
         for _, obj in objects_utm.iterrows():
-            polygon = self._to_polygon(obj, width)
+            try:
+                polygon = self._to_polygon(obj, width)
+            except Exception as e:  # pylint: disable=W0703
+                self.logger.warning("Error converting object to polygon: %s.", e)
+                continue
             if polygon is None:
                 continue
 
