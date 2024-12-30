@@ -16,3 +16,4 @@ Recommended reading order:
 12. Read about working with [fields](fields.md) in Giants Editor.
 13. Read about working with [farmlands](farmlands.md) in Giants Editor.
 14. Check out the documentation about [usage of custom OSM files](custom_osm.md) in maps4fs.
+15. Learn how to work with the [splines](splines.md) and how to use them.

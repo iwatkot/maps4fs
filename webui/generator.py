@@ -253,7 +253,6 @@ class GeneratorUI:
         )
 
         if self.custom_osm_enabled:
-            st.warning("⚠️ ALPHA FEATURE: Use it at your own risk.")
             st.info(Messages.CUSTOM_OSM_INFO)
 
             uploaded_file = st.file_uploader("Choose a file", type=["osm"])
@@ -449,9 +448,9 @@ class GeneratorUI:
 
                     self.spline_density = st.number_input(
                         "Spline Density",
-                        value=4,
-                        min_value=1,
-                        max_value=20,
+                        value=2,
+                        min_value=0,
+                        max_value=10,
                         key="spline_density",
                     )
 
