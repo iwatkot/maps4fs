@@ -46,6 +46,6 @@ Friendly reminder: save your file in some safe place, so you won't lose your cha
 If your custom OSM file is not working, throws errors or outputs a blank map try the following approach:
 1. Open your OSM file in any text editor. Search for ```action='delete'```. If there are any occurences, the file cannot be handled properly. Delete all elements that contain the action delete attribute and save the file.
 
-   Actions which could lead to this issue:
-   * **Deleting elements**. Workaround: Use **Purge** instead of **Delete** to completely remove them from the OSM file.
-   * **Combine Way** (shortcut "C") when combining two or more ways (e.g. roads) together. No workaround for now. You have to manually delete the marked elements from the OSM file.
+Actions which could lead to this issue:
+- **Deleting elements**. Workaround: Use **Purge** instead of **Delete** to completely remove them from the OSM file.
+- **Combine Way** (shortcut "C") when combining two or more ways (e.g. roads) together. No workaround for now. You have to manually delete the marked elements from the OSM file.
