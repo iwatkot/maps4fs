@@ -127,7 +127,7 @@ class SplineSettings(SettingsModel):
             existing points.
     """
 
-    spline_density: int = 4
+    spline_density: int = 2
 
 
 # pylint: disable=R0913, R0902, R0914

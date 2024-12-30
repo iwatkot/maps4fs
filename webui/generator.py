@@ -448,9 +448,9 @@ class GeneratorUI:
 
                     self.spline_density = st.number_input(
                         "Spline Density",
-                        value=4,
-                        min_value=1,
-                        max_value=20,
+                        value=2,
+                        min_value=0,
+                        max_value=10,
                         key="spline_density",
                     )
 
