@@ -86,7 +86,7 @@
     "count": 2,
     "tags": { "natural": ["wood", "tree_row"], "landuse": "forest" },
     "width": 2,
-    "color": [0, 252, 124],
+    "color": [11, 66, 0],
     "usage": "forest",
     "priority": 5
   },
