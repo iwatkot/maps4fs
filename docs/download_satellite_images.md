@@ -18,7 +18,7 @@ Now, let's start downloading the images:
 
 ![Settings](https://github.com/user-attachments/assets/c79ce93f-f3a6-49ab-a4b8-a8250db38b7a)
 
-5. Opetn the tab `More Services` and click on `Get contributed pack` and then click on `Save`.
+5. Open the tab `More Services` and click on `Get contributed pack` and then click on `Save`.
 
 ![Get contributed pack](https://github.com/user-attachments/assets/a4fc7fe7-64b3-4815-ad9b-f885bf6d7a21)
 
