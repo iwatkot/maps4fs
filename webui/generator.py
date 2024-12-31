@@ -232,6 +232,7 @@ class GeneratorUI:
         self.background_resize_factor = 8
         self.expert_mode = False
         self.raw_config = None
+        self.add_farmyards = False
 
         if not self.auto_process:
             self.logger.info("Auto preset is disabled.")
@@ -383,6 +384,14 @@ class GeneratorUI:
                         min_value=0,
                         max_value=100,
                         key="farmland_margin",
+                    )
+
+                    st.write(Messages.ADD_FARMYARDS_INFO)
+
+                    self.add_farmyards = st.checkbox(
+                        "Add farmyards",
+                        value=False,
+                        key="add_farmyards",
                     )
 
                 with st.expander("Vegetation Advanced Settings", icon="🌲"):
@@ -614,6 +623,7 @@ class GeneratorUI:
             grle_settings = mfs.GRLESettings(
                 farmland_margin=self.farmland_margin,
                 random_plants=self.randomize_plants,
+                add_farmyards=self.add_farmyards,
             )
             self.logger.debug("GRLE settings: %s", grle_settings)
 

@@ -100,7 +100,11 @@
   },
   {
     "name": "grassFreshMiddle",
-    "count": 2
+    "count": 2,
+    "tags": { "landuse": "farmyard" },
+    "info_layer": "farmyards",
+    "color": [34, 255, 34],
+    "invisible": true
   },
   {
     "name": "grassFreshShort",

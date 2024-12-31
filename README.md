@@ -392,6 +392,10 @@ Let's have a closer look at the fields:
 - `priority` - the priority of the texture for overlapping. Textures with higher priorities will be drawn over the textures with lower priorities.
 ℹ️ The texture with 0 priority considers the base layer, which means that all empty areas will be filled with this texture.
 - `exclude_weight` - this is only used for the forestRockRoots texture from FS25. It just means that this texture has no `weight` postfix, that's all.
+- `usage` - the usage of the texture. Mainly used to group different textures by the purpose. For example, the `grass`, `forest`, `drain`.
+- `background` - set it to True for the textures, which should have impact on the Background Terrain, by default it's used to subtract the water depth from the DEM and background terrain.
+- `info_layer` - if the layer is saving some data in JSON format, this section will describe it's name in the JSON file. Used to find the needed JSON data, for example for fields it will be `fields` and as a value - list of polygon coordinates.
+- `invisible` - set it to True for the textures, which should not be drawn in the files, but only to save the data in the JSON file (related to the previous field).
 
 ## Background terrain
 The tool now supports the generation of the background terrain. If you don't know what it is, here's a brief explanation. The background terrain is the world around the map. It's important to create it because if you don't, the map will look like it's floating in the void. The background terrain is a simple plane that can (and should) be textured to look fine.<br>
@@ -467,6 +471,8 @@ You can also apply some advanced settings to the map generation process. Note th
 ### Farmlands Advanced settings
 
 - Farmlands margin - this value (in meters) will be applied to each farmland, making it bigger. You can use the value to adjust how much the farmland should be bigger than the actual field. By default, it's set to 3.
+
+- Add Farmyards - if enabled, the tool will create farmlands from the regions that are marked as farmyards in the OSM data. Those farmlands will not have fields and also will not be drawn on textures. By default, it's turned off.
 
 ### Vegetation Advanced settings
 

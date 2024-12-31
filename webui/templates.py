@@ -142,3 +142,9 @@ class Messages:
         "will not be resized. Low values will result with a very long processing and "
         "meshes of enormous size. Do not change it unless you know what you are doing."
     )
+    ADD_FARMYARDS_INFO = (
+        "If add farmyards is enabled and info_layer: farmyards is present in the texture schema, "
+        "the regions with correspoding tas will be added as a farmland even without the "
+        "corresponding field. It can be useful if you want to add some farmland in the "
+        "regions without fields."
+    )
