@@ -89,10 +89,13 @@ class GRLESettings(SettingsModel):
     Attributes:
         farmland_margin (int): margin around the farmland.
         random_plants (bool): generate random plants on the map or use the default one.
+        add_farmyards (bool): If True, regions of frarmyards will be added to the map
+            without corresponding fields.
     """
 
     farmland_margin: int = 0
     random_plants: bool = True
+    add_farmyards: bool = False
 
 
 class I3DSettings(SettingsModel):

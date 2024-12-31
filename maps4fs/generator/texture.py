@@ -45,6 +45,9 @@ class Texture(Component):
             exclude_weight (bool): Flag to exclude weight from the texture.
             priority (int | None): Priority of the layer.
             info_layer (str | None): Name of the corresnponding info layer.
+            usage (str | None): Usage of the layer.
+            background (bool): Flag to determine if the layer is a background.
+            invisible (bool): Flag to determine if the layer is invisible.
 
         Attributes:
             name (str): Name of the layer.
@@ -65,6 +68,7 @@ class Texture(Component):
             info_layer: str | None = None,
             usage: str | None = None,
             background: bool = False,
+            invisible: bool = False,
         ):
             self.name = name
             self.count = count
@@ -76,6 +80,7 @@ class Texture(Component):
             self.info_layer = info_layer
             self.usage = usage
             self.background = background
+            self.invisible = invisible
 
         def to_json(self) -> dict[str, str | list[str] | bool]:  # type: ignore
             """Returns dictionary with layer data.
@@ -93,6 +98,7 @@ class Texture(Component):
                 "info_layer": self.info_layer,
                 "usage": self.usage,
                 "background": self.background,
+                "invisible": self.invisible,
             }
 
             data = {k: v for k, v in data.items() if v is not None}
@@ -417,7 +423,8 @@ class Texture(Component):
                     info_layer_data[layer.info_layer].append(
                         self.np_to_polygon_points(polygon)  # type: ignore
                     )
-                cv2.fillPoly(layer_image, [polygon], color=255)  # type: ignore
+                if not layer.invisible:
+                    cv2.fillPoly(layer_image, [polygon], color=255)  # type: ignore
 
             if layer.info_layer == "roads":
                 for linestring in self.objects_generator(
