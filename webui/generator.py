@@ -120,8 +120,8 @@ class GeneratorUI:
                 if not current_version:
                     self.logger.warning("Can't get the current version of the package.")
                     return
+                st.write(f"`{current_version}`")
                 if self.public:
-                    st.write(f"`{current_version}`")
                     return
                 if current_version != latest_version:
                     st.warning(
@@ -542,6 +542,7 @@ class GeneratorUI:
                 self.status_container.info(
                     f"Your position in the queue: {position}. Please wait...", icon="⏳"
                 )
+        self.status_container.info("Map generation started...", icon="🔄")
 
         try:
             step = int(100 / (len(game.components) + 2))
