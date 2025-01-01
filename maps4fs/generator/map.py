@@ -218,6 +218,9 @@ class Map:
         self.spline_settings = spline_settings
         self.logger.info("Spline settings: %s", spline_settings)
 
+        os.makedirs(self.map_directory, exist_ok=True)
+        self.logger.debug("Map directory created: %s", self.map_directory)
+
         settings = [
             dem_settings,
             background_settings,
@@ -236,9 +239,6 @@ class Map:
 
         with open(save_path, "w", encoding="utf-8") as file:
             json.dump(settings_json, file, indent=4)
-
-        os.makedirs(self.map_directory, exist_ok=True)
-        self.logger.debug("Map directory created: %s", self.map_directory)
 
         self.texture_custom_schema = kwargs.get("texture_custom_schema", None)
         if self.texture_custom_schema:
