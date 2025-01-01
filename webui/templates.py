@@ -66,7 +66,9 @@ class Messages:
         "Be careful, any incorrect value can lead to errors or completely broken map."
     )
     EXPERT_SETTINGS_INFO = (
-        "Before changing anything here, read the documentation, otherwise, you probably will get "
+        "Before changing anything here, read the [documentation]"
+        "(https://github.com/iwatkot/maps4fs/tree/main/docs)"
+        ", otherwise, you probably will get "
         "a completely broken map."
     )
     OVERLOADED = (

@@ -308,13 +308,6 @@ class GeneratorUI:
         self.expert_mode = False
         self.raw_config = None
 
-        if not self.public:
-            enable_debug = st.checkbox("Enable debug logs", key="debug_logs")
-            if enable_debug:
-                self.logger = mfs.Logger(level="DEBUG", to_file=False)
-            else:
-                self.logger = mfs.Logger(level="INFO", to_file=False)
-
         self.custom_osm_path = None
 
         self.get_settings()
@@ -322,6 +315,14 @@ class GeneratorUI:
         with st.sidebar:
             st.title("Expert Settings")
             st.write(Messages.EXPERT_SETTINGS_INFO)
+
+            if not self.public:
+                enable_debug = st.checkbox("Enable debug logs", key="debug_logs")
+            if enable_debug:
+                self.logger = mfs.Logger(level="DEBUG", to_file=False)
+            else:
+                self.logger = mfs.Logger(level="INFO", to_file=False)
+
             self.custom_osm_enabled = st.checkbox(
                 "Upload custom OSM file",
                 value=False,
@@ -339,7 +340,7 @@ class GeneratorUI:
                     with open(self.custom_osm_path, "wb") as f:
                         f.write(uploaded_file.read())
                     st.success(f"Custom OSM file uploaded: {uploaded_file.name}")
-            self.expert_mode = st.checkbox("Edit raw configuration", key="expert_mode")
+            self.expert_mode = st.checkbox("Show raw configuration", key="expert_mode")
             if self.expert_mode:
                 st.info(Messages.EXPERT_MODE_INFO)
 
@@ -355,9 +356,7 @@ class GeneratorUI:
             self.tree_schema_input = None
 
             if self.game_code == "FS25":
-                self.custom_schemas = st.checkbox(
-                    "Show schemas editor", value=False, key="custom_schemas"
-                )
+                self.custom_schemas = st.checkbox("Show schemas", value=False, key="custom_schemas")
 
                 if self.custom_schemas:
                     self.logger.debug("Custom schemas are enabled.")
