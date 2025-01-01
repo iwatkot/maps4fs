@@ -47,6 +47,19 @@ class SettingsModel(BaseModel):
 
         return settings
 
+    @classmethod
+    def all_settings(cls) -> list[SettingsModel]:
+        """Get all settings of the current class and its subclasses.
+
+        Returns:
+            list[SettingsModel]: List with settings of the current class and its subclasses.
+        """
+        settings = []
+        for subclass in cls.__subclasses__():
+            settings.append(subclass())
+
+        return settings
+
 
 class DEMSettings(SettingsModel):
     """Represents the advanced settings for DEM component.
@@ -117,7 +130,7 @@ class TextureSettings(SettingsModel):
         skip_drains (bool): skip drains generation.
     """
 
-    dissolve: bool = True
+    dissolve: bool = False
     fields_padding: int = 0
     skip_drains: bool = False
 
@@ -207,6 +220,25 @@ class Map:
 
         os.makedirs(self.map_directory, exist_ok=True)
         self.logger.debug("Map directory created: %s", self.map_directory)
+
+        settings = [
+            dem_settings,
+            background_settings,
+            grle_settings,
+            i3d_settings,
+            texture_settings,
+            spline_settings,
+        ]
+
+        settings_json = {}
+
+        for setting in settings:
+            settings_json[setting.__class__.__name__] = setting.model_dump()
+
+        save_path = os.path.join(self.map_directory, "generation_settings.json")
+
+        with open(save_path, "w", encoding="utf-8") as file:
+            json.dump(settings_json, file, indent=4)
 
         self.texture_custom_schema = kwargs.get("texture_custom_schema", None)
         if self.texture_custom_schema:
