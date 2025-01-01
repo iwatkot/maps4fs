@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 from PIL import Image
 from queuing import add_to_queue, remove_from_queue, wait_in_queue
 from streamlit_stl import stl_from_file
-from templates import Messages
+from templates import Messages, Settings
 
 import maps4fs as mfs
 
@@ -113,33 +113,129 @@ class GeneratorUI:
         self.map_selector_container = st.container()
         self.preview_container = st.container()
 
+    def _show_version(self) -> None:
+        """Show the current version of the package."""
+        versions = config.get_versions(self.logger)
+        try:
+            if versions:
+                latest_version, current_version = versions
+                if not current_version:
+                    self.logger.warning("Can't get the current version of the package.")
+                    return
+                if self.public:
+                    st.write(f"`{current_version}`")
+                    return
+                if current_version != latest_version:
+                    st.warning(
+                        f"🆕 New version is available!   \n"
+                        f"Your current version: `{current_version}`, "
+                        f"latest version: `{latest_version}`.   \n"
+                        "Use the following commands to upgrade:   \n"
+                        "```bash   \n"
+                        "docker stop maps4fs   \n"
+                        "docker rm maps4fs   \n"
+                        "docker run -d -p 8501:8501 --name maps4fs "
+                        f"iwatkot/maps4fs:{latest_version}   \n"
+                        "```"
+                    )
+        except Exception as e:
+            self.logger.error("An error occurred while checking the package version: %s", e)
+
+    def is_disabled_on_public(self, raw_field_name: str) -> bool:
+        """Check if the field should be disabled on the public server.
+
+        Arguments:
+            raw_field_name (str): The raw field name.
+
+        Returns:
+            bool: True if the field should be disabled, False otherwise.
+        """
+        if not self.public:
+            return False
+
+        disabled_fields = ["resize_factor", "dissolve"]
+        return raw_field_name in disabled_fields
+
+    def limit_on_public(self, settings_json: dict) -> dict:
+        """Limit settings on the public server.
+
+        Arguments:
+            settings_json (dict): The settings JSON.
+
+        Returns:
+            dict: The limited settings JSON.
+        """
+        if not self.public:
+            return settings_json
+
+        limited_settings = settings_json.copy()
+        limited_settings["BackgroundSettings"]["resize_factor"] = 8
+        limited_settings["TextureSettings"]["dissolve"] = False
+        return limited_settings
+
+    def get_settings(self):
+        map_settings = mfs.SettingsModel.all_settings()
+        settings = {}
+        for model in map_settings:
+            raw_category_name = model.__class__.__name__
+            category_name = raw_category_name.replace("Settings", " Settings")
+
+            category = {}
+            with st.expander(category_name, expanded=False):
+                for raw_field_name, field_value in model.__dict__.items():
+                    field_name = self.snake_to_human(raw_field_name)
+                    disabled = self.is_disabled_on_public(raw_field_name)
+                    st.write(getattr(Settings, raw_field_name.upper()))
+                    widget = self._create_widget(field_name, raw_field_name, field_value, disabled)
+
+                    category[raw_field_name] = widget
+
+            settings[raw_category_name] = category
+
+        self.settings = settings
+
+    def _create_widget(
+        self, field_name: str, raw_field_name: str, value: int | bool, disabled: bool = False
+    ) -> int | bool:
+        """Create a widget for the given field.
+
+        Arguments:
+            field_name (str): The field name.
+            raw_field_name (str): The raw field name.
+            value (int | bool): The value of the field.
+            disabled (bool): True if the field should be disabled, False otherwise.
+
+        Returns:
+            int | bool: The widget for the field.
+        """
+        if disabled:
+            st.warning(Messages.SETTING_DISABLED_ON_PUBLIC.format(setting=field_name))
+        if type(value) is int:
+            return st.number_input(
+                label=field_name, value=value, min_value=0, key=raw_field_name, disabled=disabled
+            )
+        elif type(value) is bool:
+            return st.checkbox(label=field_name, value=value, key=raw_field_name, disabled=disabled)
+        else:
+            raise ValueError(f"Unsupported type of the value: {type(value)}")
+
+    def snake_to_human(self, snake_str: str) -> str:
+        """Convert a snake_case string to a human readable string.
+
+        Arguments:
+            snake_str (str): The snake_case string to convert.
+
+        Returns:
+            str: The human readable string.
+        """
+        return " ".join(map(str.capitalize, snake_str.split("_")))
+
     def add_left_widgets(self) -> None:
         """Add widgets to the left column."""
         self.logger.debug("Adding widgets to the left column...")
 
         st.title(Messages.TITLE)
-
-        # Only for a local Docker version.
-        if not self.public:
-            versions = config.get_versions(self.logger)
-            try:
-                if versions:
-                    latest_version, current_version = versions
-                    if current_version != latest_version and len(current_version) > 0:
-                        st.warning(
-                            f"🆕 New version is available!   \n"
-                            f"Your current version: `{current_version}`, "
-                            f"latest version: `{latest_version}`.   \n"
-                            "Use the following commands to upgrade:   \n"
-                            "```bash   \n"
-                            "docker stop maps4fs   \n"
-                            "docker rm maps4fs   \n"
-                            "docker run -d -p 8501:8501 --name maps4fs "
-                            f"iwatkot/maps4fs:{latest_version}   \n"
-                            "```"
-                        )
-            except Exception as e:
-                self.logger.error("An error occurred while checking the package version: %s", e)
+        self._show_version()
 
         st.write(Messages.MAIN_PAGE_DESCRIPTION)
         st.markdown("---")
@@ -211,33 +307,8 @@ class GeneratorUI:
             on_change=self.map_preview,
         )
 
-        self.auto_process = st.checkbox("Use auto preset", value=True, key="auto_process")
-        if self.auto_process:
-            self.logger.debug("Auto preset is enabled.")
-            st.info(Messages.AUTO_PRESET_INFO)
-
-        self.multiplier_input = DEFAULT_MULTIPLIER
-        self.blur_radius_input = DEFAULT_BLUR_RADIUS
-        self.plateau_height_input = DEFAULT_PLATEAU
-        self.fields_padding = 0
-        self.farmland_margin = 3
-        self.forest_density = 10
-        self.randomize_plants = True
-        self.water_depth = 200
-        self.dissolving_enabled = True
-        self.generate_background = True
-        self.generate_water = True
-        self.skip_drains = False
-        self.spline_density = 4
-        self.background_resize_factor = 8
         self.expert_mode = False
         self.raw_config = None
-        self.add_farmyards = False
-
-        if not self.auto_process:
-            self.logger.info("Auto preset is disabled.")
-
-            st.info(Messages.AUTO_PRESET_DISABLED)
 
         if not self.public:
             enable_debug = st.checkbox("Enable debug logs", key="debug_logs")
@@ -247,263 +318,77 @@ class GeneratorUI:
                 self.logger = mfs.Logger(level="INFO", to_file=False)
 
         self.custom_osm_path = None
-        self.custom_osm_enabled = st.checkbox(
-            "Upload custom OSM file",
-            value=False,
-            key="custom_osm_enabled",
-        )
 
-        if self.custom_osm_enabled:
-            st.info(Messages.CUSTOM_OSM_INFO)
+        self.get_settings()
 
-            uploaded_file = st.file_uploader("Choose a file", type=["osm"])
-            if uploaded_file is not None:
-                timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-                self.custom_osm_path = os.path.join(
-                    config.INPUT_DIRECTORY, f"custom_osm_{timestamp}.osm"
-                )
-                with open(self.custom_osm_path, "wb") as f:
-                    f.write(uploaded_file.read())
-                st.success(f"Custom OSM file uploaded: {uploaded_file.name}")
+        with st.sidebar:
+            st.title("Expert Settings")
+            st.write(Messages.EXPERT_SETTINGS_INFO)
+            self.custom_osm_enabled = st.checkbox(
+                "Upload custom OSM file",
+                value=False,
+                key="custom_osm_enabled",
+            )
+            if self.custom_osm_enabled:
+                st.info(Messages.CUSTOM_OSM_INFO)
 
-        self.advanced_settings = st.checkbox(
-            "Show advanced settings",
-            key="advanced_settings",
-        )
-
-        if self.advanced_settings:
-            self.logger.debug("Advanced settings are enabled.")
-
-            st.warning("⚠️ Changing these settings can lead to unexpected results.")
-
-            self.expert_mode = st.checkbox("Expert mode", key="expert_mode")
-
+                uploaded_file = st.file_uploader("Choose a file", type=["osm"])
+                if uploaded_file is not None:
+                    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                    self.custom_osm_path = os.path.join(
+                        config.INPUT_DIRECTORY, f"custom_osm_{timestamp}.osm"
+                    )
+                    with open(self.custom_osm_path, "wb") as f:
+                        f.write(uploaded_file.read())
+                    st.success(f"Custom OSM file uploaded: {uploaded_file.name}")
+            self.expert_mode = st.checkbox("Edit raw configuration", key="expert_mode")
             if self.expert_mode:
-                st.info("ℹ️ In expert mode you can change the raw configuration of the generation.")
-
-                settings_model = mfs.SettingsModel
-                all_settings = settings_model.all_settings_to_json()
+                st.info(Messages.EXPERT_MODE_INFO)
 
                 self.raw_config = st.text_area(
                     "Raw configuration",
-                    value=json.dumps(all_settings, indent=2),
+                    value=json.dumps(self.settings, indent=2),
                     height=600,
                     label_visibility="collapsed",
                 )
 
-            else:
-                with st.expander("DEM Advanced Settings", icon="⛰️"):
-                    st.info(
-                        "ℹ️ Settings related to the Digital Elevation Model (elevation map). "
-                        "This file is used to generate the terrain of the map (hills, valleys, etc.)."
-                    )
-                    # Show multiplier and blur radius inputs.
-                    st.write(Messages.DEM_MULTIPLIER_INFO)
+            self.custom_schemas = False
+            self.texture_schema_input = None
+            self.tree_schema_input = None
 
-                    if self.auto_process:
-                        st.info("When the auto preset is enabled, the multiplier is set to 1.")
+            if self.game_code == "FS25":
+                self.custom_schemas = st.checkbox(
+                    "Show schemas editor", value=False, key="custom_schemas"
+                )
 
-                    self.multiplier_input = st.number_input(
-                        "Multiplier",
-                        value=DEFAULT_MULTIPLIER,
-                        min_value=0,
-                        max_value=10000,
-                        step=1,
-                        key="multiplier",
-                        disabled=self.auto_process,
-                    )
+                if self.custom_schemas:
+                    self.logger.debug("Custom schemas are enabled.")
 
-                    st.write(Messages.DEM_BLUR_RADIUS_INFO)
-                    self.blur_radius_input = st.number_input(
-                        "Blur Radius",
-                        value=DEFAULT_BLUR_RADIUS,
-                        min_value=0,
-                        max_value=300,
-                        key="blur_radius",
-                        step=2,
-                    )
+                    with st.expander("Texture custom schema"):
+                        st.write(Messages.TEXTURE_SCHEMA_INFO)
 
-                    st.write(Messages.DEM_PLATEAU_INFO)
-                    self.plateau_height_input = st.number_input(
-                        "Plateau Height",
-                        value=0,
-                        min_value=0,
-                        max_value=10000,
-                        key="plateau_height",
-                    )
+                        with open(config.FS25_TEXTURE_SCHEMA_PATH, "r", encoding="utf-8") as f:
+                            schema = json.load(f)
 
-                    st.write(Messages.WATER_DEPTH_INFO)
-                    self.water_depth = st.number_input(
-                        "Water Depth",
-                        value=200,
-                        min_value=0,
-                        max_value=10000,
-                        key="water_depth",
-                    )
+                        self.texture_schema_input = st.text_area(
+                            "Texture Schema",
+                            value=json.dumps(schema, indent=2),
+                            height=600,
+                            label_visibility="collapsed",
+                        )
 
-                with st.expander("Textures Advanced Settings", icon="🎨"):
-                    st.info(
-                        "ℹ️ Settings related to the textures of the map, which represent different "
-                        "types of terrain, such as grass, dirt, etc."
-                    )
+                    with st.expander("Tree custom schema"):
+                        st.write(Messages.TEXTURE_SCHEMA_INFO)
 
-                    st.write(Messages.FIELD_PADDING_INFO)
-                    self.fields_padding = st.number_input(
-                        "Field Padding",
-                        value=0,
-                        min_value=0,
-                        max_value=100,
-                        key="field_padding",
-                    )
+                        with open(config.FS25_TREE_SCHEMA_PATH, "r", encoding="utf-8") as f:
+                            schema = json.load(f)
 
-                    st.write(Messages.DISSOLVING_INFO)
-                    self.dissolving_enabled = st.checkbox(
-                        "Texture dissolving",
-                        value=True,
-                        key="dissolving_enabled",
-                    )
-
-                    st.write(Messages.SKIP_DRAINS_INFO)
-                    self.skip_drains = st.checkbox(
-                        "Skip drains",
-                        value=False,
-                        key="skip_drains",
-                    )
-
-                with st.expander("Farmlands Advanced Settings", icon="🌾"):
-                    st.info(
-                        "ℹ️ Settings related to the farmlands of the map, which represent the lands "
-                        "that can be bought in the game by the player."
-                    )
-
-                    st.write(Messages.FARMLAND_MARGIN_INFO)
-
-                    self.farmland_margin = st.number_input(
-                        "Farmland Margin",
-                        value=3,
-                        min_value=0,
-                        max_value=100,
-                        key="farmland_margin",
-                    )
-
-                    st.write(Messages.ADD_FARMYARDS_INFO)
-
-                    self.add_farmyards = st.checkbox(
-                        "Add farmyards",
-                        value=False,
-                        key="add_farmyards",
-                    )
-
-                with st.expander("Vegetation Advanced Settings", icon="🌲"):
-                    st.info(
-                        "ℹ️ Settings related to the vegetation of the map, which represent the trees, "
-                        "grass, etc."
-                    )
-
-                    st.write(Messages.FOREST_DENSITY_INFO)
-                    self.forest_density = st.number_input(
-                        "Forest Density",
-                        value=10,
-                        min_value=2,
-                        max_value=50,
-                        key="forest_density",
-                    )
-
-                    st.write(Messages.RANDOMIZE_PLANTS_INFO)
-                    self.randomize_plants = st.checkbox(
-                        "Random plants", value=True, key="randomize_plants"
-                    )
-
-                with st.expander("Background Advanced Settings", icon="🖼️"):
-                    st.info(
-                        "ℹ️ Settings related to the background of the map, which represent the "
-                        "surrounding area of the map."
-                    )
-
-                    st.write(Messages.GENERATE_BACKGROUND_INFO)
-                    self.generate_background = st.checkbox(
-                        "Generate background", value=True, key="generate_background"
-                    )
-
-                    st.write(Messages.GENERATE_WATER_INFO)
-                    self.generate_water = st.checkbox(
-                        "Generate water", value=True, key="generate_water"
-                    )
-
-                    st.write(Messages.BACKGROUND_RESIZE_FACTOR_INFO)
-
-                    if self.public:
-                        disabled = True
-                        st.warning(Messages.SETTING_LOCAL)
-                    else:
-                        disabled = False
-
-                    self.background_resize_factor = st.number_input(
-                        "Background Resize Factor",
-                        value=8,
-                        min_value=1,
-                        max_value=16,
-                        key="background_resize_factor",
-                        disabled=disabled,
-                    )
-
-                with st.expander("Spline Advanced Settings", icon="🛤️"):
-                    st.info(
-                        "ℹ️ Settings related to the spline component of the map, which represent the "
-                        "roads, paths, etc."
-                    )
-
-                    st.write(Messages.SPLINE_DENSITY_INFO)
-
-                    self.spline_density = st.number_input(
-                        "Spline Density",
-                        value=2,
-                        min_value=0,
-                        max_value=10,
-                        key="spline_density",
-                    )
-
-        self.custom_schemas = False
-        self.texture_schema_input = None
-        self.tree_schema_input = None
-
-        if self.game_code == "FS25":
-            self.custom_schemas = st.checkbox(
-                "Show schemas editor", value=False, key="custom_schemas"
-            )
-
-            if self.custom_schemas:
-                self.logger.debug("Custom schemas are enabled.")
-
-                st.warning("⚠️ Changing these settings can lead to unexpected results.")
-
-                with st.expander("Texture custom schema", icon="🎨"):
-                    st.write("Enter the texture schema:")
-                    st.write(Messages.TEXTURE_SCHEMA_INFO)
-
-                    with open(config.FS25_TEXTURE_SCHEMA_PATH, "r", encoding="utf-8") as f:
-                        schema = json.load(f)
-
-                    self.texture_schema_input = st.text_area(
-                        "Texture Schema",
-                        value=json.dumps(schema, indent=2),
-                        height=600,
-                        label_visibility="collapsed",
-                    )
-
-                with st.expander("Tree custom schema", icon="🌲"):
-                    st.write("Enter the tree schema:")
-                    st.write(Messages.TEXTURE_SCHEMA_INFO)
-
-                    with open(config.FS25_TREE_SCHEMA_PATH, "r", encoding="utf-8") as f:
-                        schema = json.load(f)
-
-                    self.tree_schema_input = st.text_area(
-                        "Tree Schema",
-                        value=json.dumps(schema, indent=2),
-                        height=600,
-                        label_visibility="collapsed",
-                    )
+                        self.tree_schema_input = st.text_area(
+                            "Tree Schema",
+                            value=json.dumps(schema, indent=2),
+                            height=600,
+                            label_visibility="collapsed",
+                        )
 
         # Add an empty container for status messages.
         self.status_container = st.empty()
@@ -596,77 +481,19 @@ class GeneratorUI:
         os.makedirs(map_directory, exist_ok=True)
 
         if not self.expert_mode:
-            multiplier = self.multiplier_input if not self.auto_process else 1
-
-            plateau = (
-                self.plateau_height_input
-                if not self.water_depth
-                else self.plateau_height_input + self.water_depth
-            )
-
-            dem_settings = mfs.DEMSettings(
-                auto_process=self.auto_process,
-                multiplier=multiplier,
-                blur_radius=self.blur_radius_input,
-                plateau=plateau,
-                water_depth=self.water_depth,
-            )
-            self.logger.debug("DEM settings: %s", dem_settings)
-
-            background_settings = mfs.BackgroundSettings(
-                generate_background=self.generate_background,
-                generate_water=self.generate_water,
-                resize_factor=self.background_resize_factor,
-            )
-            self.logger.debug("Background settings: %s", background_settings)
-
-            grle_settings = mfs.GRLESettings(
-                farmland_margin=self.farmland_margin,
-                random_plants=self.randomize_plants,
-                add_farmyards=self.add_farmyards,
-            )
-            self.logger.debug("GRLE settings: %s", grle_settings)
-
-            i3d_settings = mfs.I3DSettings(forest_density=self.forest_density)
-            self.logger.debug("I3D settings: %s", i3d_settings)
-
-            texture_settings = mfs.TextureSettings(
-                dissolve=self.dissolving_enabled,
-                fields_padding=self.fields_padding,
-                skip_drains=self.skip_drains,
-            )
-            self.logger.debug("Texture settings: %s", texture_settings)
-
-            spline_settings = mfs.SplineSettings(spline_density=self.spline_density)
-
+            json_settings = self.settings
         else:
-            if self.raw_config is not None:
-                try:
-                    raw_config = json.loads(self.raw_config)
-                    all_settings = mfs.SettingsModel.all_settings_from_json(raw_config)
-                    dem_settings = all_settings["DEMSettings"]
-                    background_settings = all_settings["BackgroundSettings"]
+            try:
+                json_settings = json.loads(self.raw_config)
+            except json.JSONDecodeError as e:
+                st.error(f"Invalid raw configuration was provided: {repr(e)}")
+                return
 
-                    if self.public:
-                        # Override the background resize factor for the public server.
-                        background_settings = mfs.BackgroundSettings(
-                            generate_background=background_settings.generate_background,
-                            generate_water=background_settings.generate_water,
-                            resize_factor=8,
-                        )
+        # Limit settings on the public server.
+        json_settings = self.limit_on_public(json_settings)
 
-                    grle_settings = all_settings["GRLESettings"]
-                    i3d_settings = all_settings["I3DSettings"]
-                    texture_settings = all_settings["TextureSettings"]
-                    spline_settings = all_settings["SplineSettings"]
-
-                    config_save_path = os.path.join(map_directory, "raw_config.json")
-                    with open(config_save_path, "w", encoding="utf-8") as f:
-                        json.dump(raw_config, f, indent=4)
-
-                except Exception as e:
-                    st.error(f"Invalid raw configuration: {repr(e)}")
-                    return
+        # Parse settings from the JSON.
+        all_settings = mfs.SettingsModel.all_settings_from_json(json_settings)
 
         texture_schema = None
         tree_schema = None
@@ -674,14 +501,14 @@ class GeneratorUI:
             if self.texture_schema_input:
                 try:
                     texture_schema = json.loads(self.texture_schema_input)
-                except json.JSONDecodeError:
-                    st.error("Invalid texture schema!")
+                except json.JSONDecodeError as e:
+                    st.error(f"Invalid texture schema was provided: {repr(e)}")
                     return
             if self.tree_schema_input:
                 try:
                     tree_schema = json.loads(self.tree_schema_input)
-                except json.JSONDecodeError:
-                    st.error("Invalid tree schema!")
+                except json.JSONDecodeError as e:
+                    st.error(f"Invalid tree schema was provided: {repr(e)}")
                     return
 
         if self.custom_osm_enabled:
@@ -697,12 +524,12 @@ class GeneratorUI:
             map_directory,
             logger=self.logger,
             custom_osm=osm_path,
-            dem_settings=dem_settings,
-            background_settings=background_settings,
-            grle_settings=grle_settings,
-            i3d_settings=i3d_settings,
-            texture_settings=texture_settings,
-            spline_settings=spline_settings,
+            dem_settings=all_settings["DEMSettings"],
+            background_settings=all_settings["BackgroundSettings"],
+            grle_settings=all_settings["GRLESettings"],
+            i3d_settings=all_settings["I3DSettings"],
+            texture_settings=all_settings["TextureSettings"],
+            spline_settings=all_settings["SplineSettings"],
             texture_custom_schema=texture_schema,
             tree_custom_schema=tree_schema,
         )

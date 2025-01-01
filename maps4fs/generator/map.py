@@ -47,6 +47,19 @@ class SettingsModel(BaseModel):
 
         return settings
 
+    @classmethod
+    def all_settings(cls) -> list[SettingsModel]:
+        """Get all settings of the current class and its subclasses.
+
+        Returns:
+            list[SettingsModel]: List with settings of the current class and its subclasses.
+        """
+        settings = []
+        for subclass in cls.__subclasses__():
+            settings.append(subclass())
+
+        return settings
+
 
 class DEMSettings(SettingsModel):
     """Represents the advanced settings for DEM component.
@@ -117,7 +130,7 @@ class TextureSettings(SettingsModel):
         skip_drains (bool): skip drains generation.
     """
 
-    dissolve: bool = True
+    dissolve: bool = False
     fields_padding: int = 0
     skip_drains: bool = False
 
