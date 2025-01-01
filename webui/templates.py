@@ -69,6 +69,11 @@ class Messages:
         "Before changing anything here, read the documentation, otherwise, you probably will get "
         "a completely broken map."
     )
+    OVERLOADED = (
+        "Right now the server is overloaded. Please try again later.  \n"
+        "Or use the [Docker version]("
+        "https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version)  of the tool."
+    )
 
 
 class Settings:

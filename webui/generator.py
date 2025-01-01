@@ -8,15 +8,13 @@ import osmp
 import streamlit as st
 import streamlit.components.v1 as components
 from PIL import Image
-from queuing import add_to_queue, remove_from_queue, wait_in_queue
+from queuing import add_to_queue, get_queue_length, remove_from_queue, wait_in_queue
 from streamlit_stl import stl_from_file
 from templates import Messages, Settings
 
 import maps4fs as mfs
 
-DEFAULT_MULTIPLIER = 1
-DEFAULT_BLUR_RADIUS = 35
-DEFAULT_PLATEAU = 0
+QUEUE_LIMIT = 2
 DEFAULT_LAT = 45.28571409289627
 DEFAULT_LON = 20.237433441210115
 Image.MAX_IMAGE_PIXELS = None
@@ -397,9 +395,14 @@ class GeneratorUI:
         self.buttons_container = st.empty()
 
         # Generate button.
+        generate_button_disabled = False
+        if self.public and get_queue_length() >= QUEUE_LIMIT:
+            generate_button_disabled = True
+            st.warning(Messages.OVERLOADED, icon="⚠️")
+
         with self.buttons_container:
             if not config.is_on_community_server():
-                if st.button("Generate", key="launch_btn"):
+                if st.button("Generate", key="launch_btn", disabled=generate_button_disabled):
                     self.generate_map()
 
         # Download button.
