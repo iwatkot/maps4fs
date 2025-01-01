@@ -19,6 +19,7 @@
   <a href="#Overview-image">Overview image</a><br>
   <a href="#DDS-conversion">DDS conversion</a> •
   <a href="#Advanced-settings">Advanced settings</a> •
+  <a href="#Expert-settings">Expert settings</a> •
   <a href="#Resources">Resources</a> •
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a><br>
   <a href="#Special-thanks">Special thanks</a>
@@ -230,18 +231,12 @@ Tools are divided into categories, which are listed below.
 
 ## Supported objects
 The project is based on the [OpenStreetMap](https://www.openstreetmap.org/) data. So, refer to [this page](https://wiki.openstreetmap.org/wiki/Map_Features) to understand the list below.
-- "building": True
-- "highway": ["motorway", "trunk", "primary"]
-- "highway": ["secondary", "tertiary", "road", "service"]
-- "highway": ["unclassified", "residential", "track"]
-- "natural": ["grassland", "scrub"]
-- "landuse": "farmland"
-- "natural": ["water"]
-- "waterway": True
-- "natural": ["wood", "tree_row"]
-- "railway": True
 
-The list will be updated as the project develops.
+You can find the active schemas here:
+- [FS25](/data/fs25-texture-schema.json)
+- [FS22](/data/fs22-texture-schema.json)
+
+Learn more how to work with the schema in the [Texture schema](#texture-schema) section. You can also use your own schema in the [Expert settings](#expert-settings) section.
 
 ## Generation info
 The script will generate the `generation_info.json` file in the `output` folder. It is split into different sections, which represent the components of the map generator. You may need this information to use some other tools and services to obtain additional data for your map.<br>
@@ -452,33 +447,15 @@ You can also apply some advanced settings to the map generation process. Note th
 
 ### DEM Advanced settings
 
+- Auto process: the tool will automatically try to find suitable multiplier. As a result, the DEM image WILL not match real world values. If this option is disabled, you'll probably see completely black DEM image, but it's not empty. It's just you can't see the values of 16-bit image by eye, because they're too small. Learn more what's DEM image and how to work with it in [docs](docs/dem.md). By default, it's set to True.
+
 - Multiplier: the height of the map is multiplied by this value. So the DEM map is just a 16-bit grayscale image, which means that the maximum available value there is 65535, while the actual difference between the deepest and the highest point on Earth is about 20 km. Just note that this setting mostly does not matter, because you can always adjust it in the Giants Editor, learn more about the DEM file and the heightScale parameter in [docs](docs/dem.md). By default, it's set to 1.
 
 - Blur radius: the radius of the Gaussian blur filter applied to the DEM map. By default, it's set to 21. This filter just makes the DEM map smoother, so the height transitions will be more natural. You can set it to 1 to disable the filter, but it will result in a Minecraft-like map.
 
-- Plateau height: this value will be added to each pixel of the DEM image, making it "higher". It's useful when you want to add some negative heights on the map, that appear to be in a "low" place. By default, it's set to 0.
+- Plateau: this value will be added to each pixel of the DEM image, making it "higher". It's useful when you want to add some negative heights on the map, that appear to be in a "low" place. By default, it's set to 0.
 
 - Water depth: this value will be subtracted from each pixel of the DEM image, where water resources are located. Pay attention that it's not in meters, instead it in the pixel value of DEM, which is 16 bit image with possible values from 0 to 65535. When this value is set, the same value will be added to the plateau setting to avoid negative heights.
-
-### Texture Advanced settings
-
-- Fields padding - this value (in meters) will be applied to each field, making it smaller. It's useful when the fields are too close to each other and you want to make them smaller. By default, it's set to 0.
-
-- Texture dissolving - if enabled, the values from one layer will be splitted between different layers of texture, making it look more natural. By default, it's set to True. Can be turned of for faster processing.
-
-- Skip drains - if enabled, the tool will not generate the drains and ditches on the map. By default, it's set to False. Use this if you don't need the drains on the map.
-
-### Farmlands Advanced settings
-
-- Farmlands margin - this value (in meters) will be applied to each farmland, making it bigger. You can use the value to adjust how much the farmland should be bigger than the actual field. By default, it's set to 3.
-
-- Add Farmyards - if enabled, the tool will create farmlands from the regions that are marked as farmyards in the OSM data. Those farmlands will not have fields and also will not be drawn on textures. By default, it's turned off.
-
-### Vegetation Advanced settings
-
-- Forest density - the density of the forest in meters. The lower the value, the lower the distance between the trees, which makes the forest denser. Note, that low values will lead to enormous number of trees, which may cause the Giants Editor to crash or lead to performance issues. By default, it's set to 10.
-
-- Random plants - when adding decorative foliage, enabling this option will add different species of plants to the map. If unchecked only basic grass (smallDenseMix) will be added. Defaults to True.
 
 ### Background terrain Advanced settings
 
@@ -488,9 +465,40 @@ You can also apply some advanced settings to the map generation process. Note th
 
 - Resize factor - the factor by which the background terrain will be resized. It will be used as 1 / resize_factor while generating the models. Which means that the larger the value the more the terrain will be resized. The lowest value is 1, in this case background terrain will not be resized. Note, than low values will lead to long processing and enormous size of the obj files.
 
+### GRLE Advanced settings
+
+- Farmlands margin - this value (in meters) will be applied to each farmland, making it bigger. You can use the value to adjust how much the farmland should be bigger than the actual field. By default, it's set to 3.
+
+- Random plants - when adding decorative foliage, enabling this option will add different species of plants to the map. If unchecked only basic grass (smallDenseMix) will be added. Defaults to True.
+
+- Add Farmyards - if enabled, the tool will create farmlands from the regions that are marked as farmyards in the OSM data. Those farmlands will not have fields and also will not be drawn on textures. By default, it's turned off.
+
+### I3D Advanced settings
+
+- Forest density - the density of the forest in meters. The lower the value, the lower the distance between the trees, which makes the forest denser. Note, that low values will lead to enormous number of trees, which may cause the Giants Editor to crash or lead to performance issues. By default, it's set to 10.
+
+### Texture Advanced settings
+
+- Dissolve - if enabled, the values from one layer will be splitted between different layers of texture, making it look more natural. Warning: it's a time-consuming process, recommended to enable it, when you generating the final version of the map, not some test versions.
+
+- Fields padding - this value (in meters) will be applied to each field, making it smaller. It's useful when the fields are too close to each other and you want to make them smaller. By default, it's set to 0.
+
+- Skip drains - if enabled, the tool will not generate the drains and ditches on the map. By default, it's set to False. Use this if you don't need the drains on the map.
+
 ## Splines Advanced settings
 
 - Splines density - number of points, which will be added (interpolate) between each pair of existing points. The higher the value, the denser the spline will be. It can smooth the splines, but high values can in opposite make the splines look unnatural.
+
+## Expert Settings
+The tool also supports the expert settings. Do not use them until you read the documentation and understand what they do. Here's the list of the expert settings:
+
+- Enable debug logs - if enabled, the tool will print the debug logs to the console. It can be useful if you're using with a custom OSM map, have some issues with it and want to know what's wrong. 
+
+- Upload custom OSM file - you'll be able to upload your own OSM file. Before using it, carefully read the [Custom OSM](docs/custom_osm.md) documentation, otherwise, the tool will not work as expected.
+
+- Show raw configuration - you'll be able to change all the settings in a single JSON file. It's useful if you want to save the configuration and use it later, without changing the settings in the UI. Be extremely careful with this setting, because you can break the tool with incorrect settings.
+
+- Show schemas - you'll be able to edit or define your own texture or tree schemas. It's useful if you want to add some custom textures or trees to the map. Refer to the [Texture schema](#texture-schema) section to learn more about the schema structure. Any incorrect value here will lead to the completely broken map.
 
 ## Resources
 In this section, you'll find a list of the resources that you need to create a map for the Farming Simulator.<br>
