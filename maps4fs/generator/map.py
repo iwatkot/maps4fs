@@ -218,6 +218,25 @@ class Map:
         self.spline_settings = spline_settings
         self.logger.info("Spline settings: %s", spline_settings)
 
+        settings = [
+            dem_settings,
+            background_settings,
+            grle_settings,
+            i3d_settings,
+            texture_settings,
+            spline_settings,
+        ]
+
+        settings_json = {}
+
+        for setting in settings:
+            settings_json[setting.__class__.__name__] = setting.model_dump()
+
+        save_path = os.path.join(self.map_directory, "generation_settings.json")
+
+        with open(save_path, "w", encoding="utf-8") as file:
+            json.dump(settings_json, file, indent=4)
+
         os.makedirs(self.map_directory, exist_ok=True)
         self.logger.debug("Map directory created: %s", self.map_directory)
 

@@ -543,8 +543,6 @@ class GeneratorUI:
                     f"Your position in the queue: {position}. Please wait...", icon="⏳"
                 )
 
-            self.status_container.info("Started the map generation...", icon="🔄")
-
         try:
             step = int(100 / (len(game.components) + 2))
             completed = 0
