@@ -41,7 +41,7 @@ If you got a better data model you might want to create your own DEM file for yo
 4. Drag and drop this new GeoTiff file (named "windowed" from now on in this guide) into QGIS. Make sure that the "windowed" layer is the top layer and hide or remove the "Merged" layer from step 4.
 5. Check the layer menu and note down both numbers from the "windowed" layer. These are the lowest and highest points in this area. We will need those numbers in the next step. 
 
-   ![Layer height values](https://github.com/user-attachments/assets/28ac3799-c40f-4347-b3b1-ea3e4287d319)
+   ![Layer height values](https://github.com/user-attachments/assets/2b266df5-81a0-4f2d-8218-2855d055ba4f)
 
 6. Convert the layer to a PNG image (**Raster** -> **Conversion** -> **Translate (Convert Format)...**). Select the **windowed layer** as `Input layer`. Set `-scale MIN MAX 0 65535 -outsize WIDTH HEIGHT` as `Additional command-line parameters`. Replace MIN, MAX, WIDTH & HEIGHT with your values:
 
