@@ -49,6 +49,7 @@
 🌲 Automatically generates forests 🆕<br>
 🌊 Automatically generates water planes 🆕<br>
 📈 Automatically generates splines 🆕<br>
+🛰️ Automatically downloads high resolution satellite images 🆕<br>
 🌍 Based on real-world data from OpenStreetMap<br>
 🗺️ Supports [custom OSM maps](/docs/custom_osm.md)<br>
 🏞️ Generates height map using SRTM dataset<br>

@@ -1,5 +1,10 @@
 ## How to download satellite images using QGIS
 
+The generator will automatically download satellite images for the map and put them in the `satellite` directory. The method of downloading them using QGIS is deprecated and no longer recommended, but you can still use it if you want to download the images manually.<br>
+
+<details>
+<summary>Deprecated method</summary>
+
 To texture the background models on the map you map need to obtain satellite images. In this tutorial, I will show you how to download them using [QGIS](https://qgis.org) software.<br>
 ℹ️ In this tutorials it's assumed that you have already generated the map. <br>
 
@@ -102,6 +107,10 @@ layers = [
 ]
 ```
 As a result of saving those `.tif` files, you'll get one image with the exact bounds and another one with the margin around it. In case you want manually adjust the bounds, you can use the image with the margin.
+
+</details>
+
+To align satellite images with the map, follow these steps:<br>
 
 2. Create a new image in Photoshop or any other image editor, which allows working with layers, put some of your texture files in center of it. For example for map of size 4096 x 4096 pixels, you need to create an image of size 8192 x 8192 pixels, and you need to put the texture in the center of it.
 
