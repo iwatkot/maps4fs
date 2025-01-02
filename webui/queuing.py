@@ -29,6 +29,15 @@ def get_queue(force: bool = False) -> list[str]:
         return json.load(f)
 
 
+def get_queue_length() -> int:
+    """Get the length of the queue.
+
+    Returns:
+        int: The length of the queue.
+    """
+    return len(get_queue())
+
+
 def save_queue(queue: list[str]) -> None:
     """Save the queue to the queue file.
 
