@@ -11,3 +11,4 @@ streamlit-stl==0.0.5
 pympler
 pydantic
 maps4fs
+pygmdl

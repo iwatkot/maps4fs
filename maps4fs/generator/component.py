@@ -68,6 +68,7 @@ class Component:
         os.makedirs(self.previews_directory, exist_ok=True)
         os.makedirs(self.scripts_directory, exist_ok=True)
         os.makedirs(self.info_layers_directory, exist_ok=True)
+        os.makedirs(self.satellite_directory, exist_ok=True)
 
         self.save_bbox()
         self.preprocess()
@@ -122,6 +123,15 @@ class Component:
             str: The directory where the scripts are stored.
         """
         return os.path.join(self.map_directory, "scripts")
+
+    @property
+    def satellite_directory(self) -> str:
+        """The directory where the satellite images are stored.
+
+        Returns:
+            str: The directory where the satellite images are stored.
+        """
+        return os.path.join(self.map_directory, "satellite")
 
     @property
     def generation_info_path(self) -> str:

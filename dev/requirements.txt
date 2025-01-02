@@ -17,3 +17,4 @@ pympler
 pydoc-markdown
 streamlit-stl==0.0.5
 pydantic
+pygmdl

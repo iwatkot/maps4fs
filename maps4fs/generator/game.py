@@ -10,6 +10,7 @@ from maps4fs.generator.background import Background
 from maps4fs.generator.config import Config
 from maps4fs.generator.grle import GRLE
 from maps4fs.generator.i3d import I3d
+from maps4fs.generator.satellite import Satellite
 from maps4fs.generator.texture import Texture
 
 working_directory = os.getcwd()
@@ -39,7 +40,7 @@ class Game:
     _tree_schema: str | None = None
 
     # Order matters! Some components depend on others.
-    components = [Texture, GRLE, Background, I3d, Config]
+    components = [Texture, GRLE, Background, I3d, Config, Satellite]
 
     def __init__(self, map_template_path: str | None = None):
         if map_template_path:

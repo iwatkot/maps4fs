@@ -146,6 +146,19 @@ class SplineSettings(SettingsModel):
     spline_density: int = 2
 
 
+class SatelliteSettings(SettingsModel):
+    """Represents the advanced settings for satellite component.
+
+    Attributes:
+        download_images (bool): download satellite images.
+        margin (int): margin around the map.
+    """
+
+    download_images: bool = False
+    satellite_margin: int = 100
+    zoom_level: int = 14
+
+
 # pylint: disable=R0913, R0902, R0914
 class Map:
     """Class used to generate map using all components.
@@ -173,6 +186,7 @@ class Map:
         i3d_settings: I3DSettings = I3DSettings(),
         texture_settings: TextureSettings = TextureSettings(),
         spline_settings: SplineSettings = SplineSettings(),
+        satellite_settings: SatelliteSettings = SatelliteSettings(),
         **kwargs,
     ):
         if not logger:
@@ -217,6 +231,7 @@ class Map:
         self.logger.info("Texture settings: %s", texture_settings)
         self.spline_settings = spline_settings
         self.logger.info("Spline settings: %s", spline_settings)
+        self.satellite_settings = satellite_settings
 
         os.makedirs(self.map_directory, exist_ok=True)
         self.logger.debug("Map directory created: %s", self.map_directory)
@@ -228,6 +243,7 @@ class Map:
             i3d_settings,
             texture_settings,
             spline_settings,
+            satellite_settings,
         ]
 
         settings_json = {}

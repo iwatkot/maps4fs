@@ -485,9 +485,15 @@ You can also apply some advanced settings to the map generation process. Note th
 
 - Skip drains - if enabled, the tool will not generate the drains and ditches on the map. By default, it's set to False. Use this if you don't need the drains on the map.
 
-## Splines Advanced settings
+### Splines Advanced settings
 
 - Splines density - number of points, which will be added (interpolate) between each pair of existing points. The higher the value, the denser the spline will be. It can smooth the splines, but high values can in opposite make the splines look unnatural.
+
+### Satellite Advanced settings
+
+- Download images - if enabled, the tool will download the satellite images for the background terrain and the overview image. If you already have the images, you can turn it off.
+- Satellite margin - the margin around the map in meters. It's useful when you want to have some space around the map on the satellite images. By default, it's set to 100.
+- Zoom level - the zoom level of the satellite images. The higher the value, the more detailed the images will be. By default, it's set to 14 and this option is disabled on a public version of the app.
 
 ## Expert Settings
 The tool also supports the expert settings. Do not use them until you read the documentation and understand what they do. Here's the list of the expert settings:
@@ -529,3 +535,4 @@ But also, I want to thank the people who helped me with the project in some way,
 - [Tox3](https://github.com/Tox3) - for the manual tests of the app. 
 - [Lucandia](https://github.com/Lucandia) - for the awesome StreamLit [widget to preview STL files](https://github.com/Lucandia/streamlit_stl).
 - [H4rdB4se](https://github.com/H4rdB4se) - for investigating the issue with custom OSM files and finding a proper way to work with the files in JOSM.
+- [kbrandwijk](https://github.com/kbrandwijk) - for providing [awesome tool](https://github.com/Paint-a-Farm/satmap_downloader) to download the satellite images from the Google Maps and giving a permission to modify it and create a Python Package.
