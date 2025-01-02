@@ -92,6 +92,9 @@ If you got a better data model you might want to create your own DEM file for yo
 
       Export the PNG (**File** -> **Export As...**) as `dem.png`.
 9. And now you got your final dem file for your map. Replace it with your existing `dem.png` in the FS **map -> data** folder.
-10. You have to set the proper Height scale from step 6 to your map.i3d. Either edit your map.i3d file or change the terrain in the Giants Editor.
+10. You have to set the proper **height scale** from step 6 to your map.i3d. Either edit your map.i3d file or change the terrain in the Giants Editor.
 ![Map.i3d Height scale](https://github.com/user-attachments/assets/bc8d5a9b-e4a6-4fed-b591-dcabc1af2b14)![Giants Editor Height scale](https://github.com/user-attachments/assets/64f10e5b-4a6f-438e-b426-f1cbcf9c6bc1)
 
+
+#### Credits:
+* Thanks to [kbrandwijk](https://github.com/kbrandwijk)'s [article](https://medium.com/farmsim-forensics/farmsim-forensics-real-world-terrains-a-k-a-dems-934c267a60e5) about creating DEM's from real world terrains. It helped me to get a better PNG export from QGIS using gdal. The default QGIS export compressed data which lead to poor results. Check out his approach, which works fine too but is more command-line based, while I tried to keep my guide a bit more user friendly using software with a interface.
