@@ -41,26 +41,25 @@ If you got a better data model you might want to create your own DEM file for yo
 4. Drag and drop this new GeoTiff file (named "windowed" from now on in this guide) into QGIS. Make sure that the "windowed" layer is the top layer and hide or remove the "Merged" layer from step 4.
 5. Check the layer menu and note down both numbers from the "windowed" layer. These are the lowest and highest points in this area. We will need those numbers in the next step. 
 
-   [TODO: Add image]
+   ![Layer height values](https://github.com/user-attachments/assets/28ac3799-c40f-4347-b3b1-ea3e4287d319)
 
 6. Convert the layer to a PNG image (**Raster** -> **Conversion** -> **Translate (Convert Format)...**). Select the **windowed layer** as `Input layer`. Set `-scale MIN MAX 0 65535 -outsize WIDTH HEIGHT` as `Additional command-line parameters`. Replace MIN, MAX, WIDTH & HEIGHT with your values:
 
-   * MIN should be below the lower value from the previous step.
-   * MAX should be above the higher value from the previous step. 
-   * The difference between MIN and MAX will be your Height scale. You have to set this value in your map.i3d file, which will be covered in step 10. More about the Height scale is described in the [Height scale section in Digital Elevation Models (DEM)](dem.md#height-scale).
-   * WIDTH & HEIGHT is the value you've set as size of ROI from step 3.
+   * **MIN** should be below the lower value from the previous step.
+   * **MAX** should be above the higher value from the previous step. 
+   * You can set the range (**MIN**, **MAX**) as you like, but make sure it covers both values from the previous step. The difference between **MIN** and **MAX** will be your Height scale. You have to set this value in your map.i3d file, which will be covered in step 10. More about the Height scale is described in the [Height scale section in Digital Elevation Models (DEM)](dem.md#height-scale).
+   * **WIDTH** & **HEIGHT** is the value you've set as size of ROI from step 3.
 
    Set **UInt16** as `Output data type`. Click the three dots next to `Converted` and select a location where you want to store your PNG. Make sure to select PNG as file type and choose the right filename ending. Remove the tick from `Open output file after running algorithm` checkbox.
 
    Click on `Run` and wait until the process is complete. Check the log file for **Input file size is X, Y**. If those values are much lower as your set **WIDTH** & **HEIGHT** you might get better results when using lower **WIDTH** & **HEIGHT** values and upscaling the generated image afterwards. Make sure to preserve the 16bit Grayscale format!
 
-   [TODO: Add image][TODO: Add image]
-
+   ![Translate menu](https://github.com/user-attachments/assets/140807a6-2338-4ca6-9eeb-2eccdbb6dfbb) ![Convert PNG config](https://github.com/user-attachments/assets/63e0828b-43ea-43fc-ae0f-4b638a7c2900)
+ ![Convert PNG log](https://github.com/user-attachments/assets/82aed77a-f19f-415d-be48-5c17651bbe02)
 
 7. This step is optional, but it is highly recommended because it helps a lot in the following step. In the **Windowed PNG** file it is hard to see structures like roads, fields and so on. Therefore, create a Hillshade of your "windowed" layer (**Raster** -> **Analysis** -> **Hillshade...**). Select your "windowed" layer as `Input layer`, tick the `Compute edges` checkbox and click `Run`. Convert the new Hillshade layer to PNG the same way as the windowed layer in the previous step, but remove the **-scale MIN MAX** part from `Additional command-line parameters` and set **Use Input Layer Data Type** as `Output data type`.
 
-   ![Hillshade menu](https://github.com/user-attachments/assets/aa7122d3-fd46-46ce-91dd-842aeed24d97) ![Create Hillshade settings](https://github.com/user-attachments/assets/0045187e-0816-418d-be40-fff3d8004ecb)[TODO: Add image]
-
+   ![Hillshade menu](https://github.com/user-attachments/assets/aa7122d3-fd46-46ce-91dd-842aeed24d97) ![Create Hillshade settings](https://github.com/user-attachments/assets/0045187e-0816-418d-be40-fff3d8004ecb) ![Hillshade PNG config](https://github.com/user-attachments/assets/85482ecf-4eb0-404f-8efa-c79f741518cc)
 
 8. Now comes the tricky part. We have to resize/rotate the PNG image to exactly fit to our FS map.
     * Create a new image in GIMP (**File** -> **New...**) with the required DEM width and height for your map. If you wish, it can also contain your background, which we will later cut to fit the main map only. E.g.: In FS25 a 2048x2048m map requires a DEM file, that has 2049x2049 pixels. As I also want to create the background from that DEM I choose 4096x4096 pixels. You can learn more about DEM sizes in [Digital Elevation Models (DEM)](dem.md#height-scale). Expand the `Advanced Options` and select **Grayscale** as `Color space` with a `Precision` of **16-bit integer**.
@@ -81,7 +80,6 @@ If you got a better data model you might want to create your own DEM file for yo
         * Once you've fitted the **Hillshade** perfectly you have to do the exact same changes to the **Windowed PNG layer**. Copy the rotation, width, height and offset from the **Hillshade** to the **Windowed PNG layer**
 
          ![Rotate & resize the image](https://github.com/user-attachments/assets/4d93f76e-970f-47bb-8f32-ba5949db9aa7)
-
 
     * Make sure the **Windowed PNG layer** is the top layer and set it's opacity back to 100%.
     * Save the Project file in case you want to make changes in the future if it doesn't fit as perfect as you'd liked it to be.
