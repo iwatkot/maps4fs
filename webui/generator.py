@@ -151,7 +151,7 @@ class GeneratorUI:
         if not self.public:
             return False
 
-        disabled_fields = ["resize_factor", "dissolve"]
+        disabled_fields = ["resize_factor", "dissolve", "zoom_level"]
         return raw_field_name in disabled_fields
 
     def limit_on_public(self, settings_json: dict) -> dict:
@@ -169,6 +169,7 @@ class GeneratorUI:
         limited_settings = settings_json.copy()
         limited_settings["BackgroundSettings"]["resize_factor"] = 8
         limited_settings["TextureSettings"]["dissolve"] = False
+        limited_settings["SatelliteSettings"]["zoom_level"] = 14
         return limited_settings
 
     def get_settings(self):
@@ -532,6 +533,7 @@ class GeneratorUI:
             i3d_settings=all_settings["I3DSettings"],
             texture_settings=all_settings["TextureSettings"],
             spline_settings=all_settings["SplineSettings"],
+            satellite_settings=all_settings["SatelliteSettings"],
             texture_custom_schema=texture_schema,
             tree_custom_schema=tree_schema,
         )
@@ -598,21 +600,26 @@ class GeneratorUI:
 
         with self.preview_container:
             st.markdown("---")
-            st.write("Previews of the generated map:")
+            ROW_SIZE = 4
 
             image_preview_paths = [
                 preview for preview in full_preview_paths if preview.endswith(".png")
             ]
 
-            columns = st.columns(len(image_preview_paths))
-            for column, image_preview_path in zip(columns, image_preview_paths):
-                if not os.path.isfile(image_preview_path):
-                    continue
-                try:
-                    image = Image.open(image_preview_path)
-                    column.image(image, use_container_width=True)
-                except Exception:
-                    continue
+            # Split image_preview_paths into ROW_SIZE chunks.
+
+            for row in range(0, len(image_preview_paths), ROW_SIZE):
+                columns = st.columns(ROW_SIZE)
+                for column, image_preview_path in zip(
+                    columns, image_preview_paths[row : row + ROW_SIZE]
+                ):
+                    if not os.path.isfile(image_preview_path):
+                        continue
+                    try:
+                        image = Image.open(image_preview_path)
+                        column.image(image, use_container_width=True)
+                    except Exception:
+                        continue
 
             stl_preview_paths = [
                 preview for preview in full_preview_paths if preview.endswith(".stl")

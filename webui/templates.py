@@ -185,3 +185,22 @@ class Settings:
         "each pair of existing points of the spline. The higher value will make the spline "
         "more smooth. Be careful with high values, because it may make your spline too complex."
     )
+
+    # Satellite Settings
+
+    DOWNLOAD_IMAGES = (
+        "If download images is enabled, the generator will download and merge the satellite images."
+    )
+
+    SATELLITE_MARGIN = (
+        "Satellite margin value is used to add some margin around the satellite images. "
+        "It will result satellite images to be bigger than the map size, which can be useful "
+        "for adjusting the images."
+    )
+
+    ZOOM_LEVEL = (
+        "Satellite zoom level is used to set the zoom level of the satellite images. "
+        "The higher the value, the more detailed the images will be. "
+        "Be careful with high values, because it may result in very large images and super long "
+        "download time."
+    )

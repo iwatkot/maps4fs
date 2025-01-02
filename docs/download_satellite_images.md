@@ -1,5 +1,11 @@
 ## How to download satellite images using QGIS
 
+The generator will automatically download satellite images for the map and put them in the `satellite` directory.  
+⚠️The method below of downloading them using QGIS is deprecated and no longer recommended, but you can still use it if you want to download the images manually.<br>
+
+<details>
+<summary>Deprecated method</summary>
+
 To texture the background models on the map you map need to obtain satellite images. In this tutorial, I will show you how to download them using [QGIS](https://qgis.org) software.<br>
 ℹ️ In this tutorials it's assumed that you have already generated the map. <br>
 
@@ -103,9 +109,13 @@ layers = [
 ```
 As a result of saving those `.tif` files, you'll get one image with the exact bounds and another one with the margin around it. In case you want manually adjust the bounds, you can use the image with the margin.
 
-2. Create a new image in Photoshop or any other image editor, which allows working with layers, put some of your texture files in center of it. For example for map of size 4096 x 4096 pixels, you need to create an image of size 8192 x 8192 pixels, and you need to put the texture in the center of it.
+</details>
 
-3. Now add there your satellite images with margins, lower the opacity of this layer and try to manually adjust it. Please note, that Earth is not flat, so it WONT be just scale and move, you also need to rotate it a bit and maybe skew it. The recommended approach is to use the `Free Transform` tool in Photoshop and just move the corners until it fits the map.
+To align satellite images with the map, follow these steps:<br>
+
+1. Create a new image in Photoshop or any other image editor, which allows working with layers, put some of your texture files in center of it. For example for map of size 4096 x 4096 pixels, you need to create an image of size 8192 x 8192 pixels, and you need to put the texture in the center of it.
+
+2. Now add there your satellite images with margins, lower the opacity of this layer and try to manually adjust it. Please note, that Earth is not flat, so it WONT be just scale and move, you also need to rotate it a bit and maybe skew it. The recommended approach is to use the `Free Transform` tool in Photoshop and just move the corners until it fits the map.
 
 ![Free Transform](https://github.com/user-attachments/assets/10969925-ccd3-488b-a5ab-dcccada02197)
 You can see the example of this approach on the image above. It took a while to adjust the image, but the result is worth it, everything was matched perfectly and when adding the background terrain and overviem image (in-game map) it will be perfectly aligned.
