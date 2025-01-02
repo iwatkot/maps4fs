@@ -39,18 +39,27 @@ If you got a better data model you might want to create your own DEM file for yo
     ![Modder Toolbox Windowing](https://github.com/user-attachments/assets/4de23e0b-ffa8-4ca4-923e-4e4cd47b7f57)
 
 4. Drag and drop this new GeoTiff file (named "windowed" from now on in this guide) into QGIS. Make sure that the "windowed" layer is the top layer and hide or remove the "Merged" layer from step 4.
-5. Right click the "windowed" layer, select `Properties...` and go to `Symbology`. Note down the **Min** and **Max** value from `Color gradient`. You should round down the minimum value and round up the maximum value to the nearest whole number. The difference between these two values will be your Height scale. You have to set this value in your map.i3d file. More about the Height scale is described in the [Height scale section in Digital Elevation Models (DEM)](dem.md#height-scale).
+5. Check the layer menu and note down both numbers from the "windowed" layer. These are the lowest and highest points in this area. We will need those numbers in the next step. 
 
-   ![Symbology values](https://github.com/user-attachments/assets/96832cc9-8845-4799-b125-4774ff4635e9)
+   [TODO: Add image]
 
-6. Export the layer as a PNG image (**File** -> **Import/Export** -> **Export Map to Image**). Select the **windowed layer** in the Extent section. Increase the resolution to a value where the pixels would be enough to cover your desired size. **Do not touch the `Output width` and `Output height` numbers!** Only adjust the resolution. Click on `Save` and select a location to save the PNG image (named **Windowed PNG** further on).
+6. Convert the layer to a PNG image (**Raster** -> **Conversion** -> **Translate (Convert Format)...**). Select the **windowed layer** as `Input layer`. Set `-scale MIN MAX 0 65535 -outsize WIDTH HEIGHT` as `Additional command-line parameters`. Replace MIN, MAX, WIDTH & HEIGHT with your values:
 
-   ![PNG export menu](https://github.com/user-attachments/assets/cb141a49-2445-440a-b690-49313f177431) ![PNG Export settings](https://github.com/user-attachments/assets/92e7fad7-d4a5-4d04-b821-e888009ffab0)
+   * MIN should be below the lower value from the previous step.
+   * MAX should be above the higher value from the previous step. 
+   * The difference between MIN and MAX will be your Height scale. You have to set this value in your map.i3d file, which will be covered in step 10. More about the Height scale is described in the [Height scale section in Digital Elevation Models (DEM)](dem.md#height-scale).
+   * WIDTH & HEIGHT is the value you've set as size of ROI from step 3.
+
+   Set **UInt16** as `Output data type`. Click the three dots next to `Converted` and select a location where you want to store your PNG. Make sure to select PNG as file type and choose the right filename ending. Remove the tick from `Open output file after running algorithm` checkbox.
+
+   Click on `Run` and wait until the process is complete. Check the log file for **Input file size is X, Y**. If those values are much lower as your set **WIDTH** & **HEIGHT** you might get better results when using lower **WIDTH** & **HEIGHT** values and upscaling the generated image afterwards. Make sure to preserve the 16bit Grayscale format!
+
+   [TODO: Add image][TODO: Add image]
 
 
-7. This step is optional, but it is highly recommended because it helps a lot in the following step. In the **Windowed PNG** file it is hard to see structures like roads, fields and so on. Therefore, create a Hillshade of your "windowed" layer (**Raster** -> **Analysis** -> **Hillshade...**). Select your "windowed" layer as `Input layer`, tick the `Compute edges` checkbox and click `Run`. Export the new Hillshade layer the same way as the windowed layer in the previous step.
+7. This step is optional, but it is highly recommended because it helps a lot in the following step. In the **Windowed PNG** file it is hard to see structures like roads, fields and so on. Therefore, create a Hillshade of your "windowed" layer (**Raster** -> **Analysis** -> **Hillshade...**). Select your "windowed" layer as `Input layer`, tick the `Compute edges` checkbox and click `Run`. Convert the new Hillshade layer to PNG the same way as the windowed layer in the previous step, but remove the **-scale MIN MAX** part from `Additional command-line parameters` and set **Use Input Layer Data Type** as `Output data type`.
 
-   ![Hillshade menu](https://github.com/user-attachments/assets/aa7122d3-fd46-46ce-91dd-842aeed24d97) ![Create Hillshade settings](https://github.com/user-attachments/assets/0045187e-0816-418d-be40-fff3d8004ecb)
+   ![Hillshade menu](https://github.com/user-attachments/assets/aa7122d3-fd46-46ce-91dd-842aeed24d97) ![Create Hillshade settings](https://github.com/user-attachments/assets/0045187e-0816-418d-be40-fff3d8004ecb)[TODO: Add image]
 
 
 8. Now comes the tricky part. We have to resize/rotate the PNG image to exactly fit to our FS map.
@@ -85,9 +94,6 @@ If you got a better data model you might want to create your own DEM file for yo
 
       Export the PNG (**File** -> **Export As...**) as `dem.png`.
 9. And now you got your final dem file for your map. Replace it with your existing `dem.png` in the FS **map -> data** folder.
-10. You have to set the proper Height scale from step 5 to your map.i3d. Either edit your map.i3d file or change the terrain in the Giants Editor.
+10. You have to set the proper Height scale from step 6 to your map.i3d. Either edit your map.i3d file or change the terrain in the Giants Editor.
 ![Map.i3d Height scale](https://github.com/user-attachments/assets/bc8d5a9b-e4a6-4fed-b591-dcabc1af2b14)![Giants Editor Height scale](https://github.com/user-attachments/assets/64f10e5b-4a6f-438e-b426-f1cbcf9c6bc1)
-
-11. Open the map in the Giants Editor and smooth the "steps" using the `Terrain sculpt mode`
-![Giants Editor smooth terrain](https://github.com/user-attachments/assets/44e09dbd-6785-4756-ba4e-cba14ce93e0f)
 
