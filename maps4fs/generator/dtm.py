@@ -10,12 +10,19 @@ import os
 import shutil
 from typing import Type
 
+from PIL import Image
 import numpy as np
 import osmnx as ox  # type: ignore
 import rasterio  # type: ignore
 import requests
+from rasterio._warp import Resampling
+from rasterio.merge import merge
+from rasterio.warp import calculate_default_transform, reproject
+from rasterio.windows import from_bounds
+from rasterio.enums import Resampling as enumsResampling
 
 from maps4fs.logger import Logger
+from datetime import datetime
 
 
 class DTMProvider:
@@ -264,3 +271,207 @@ class SRTM30Provider(DTMProvider):
                     shutil.copyfileobj(f_in, f_out)
 
         return self.extract_roi(decompressed_tile_path)
+
+class USGS1mProvider(DTMProvider):
+    """Provider of USGS."""
+
+    _code = "USGS1m"
+    _name = "USGS 1m"
+    _region = "USA"
+    _icon = ""
+    _resolution = 1
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    output_path = os.path.join("USGS_temp", f"timestamp_{timestamp}")
+
+    url = f"https://tnmaccess.nationalmap.gov/api/v1/products?prodFormats=GeoTIFF,IMG&prodExtents=10000 x 10000 meter&datasets=Digital Elevation Model (DEM) 1 meter&polygon="
+
+    def getDownloadUrls(self) -> list[str]:
+        urls = []
+        try:
+            # Make the GET request
+            (west, south, east, north) = self.get_bbox()
+            response = requests.get(self.url + f"{west} {south},{east} {south},{east} {north},{west} {north},{west} {south}&=")
+
+            # Check if the request was successful (HTTP status code 200)
+            if response.status_code == 200:
+                # Parse the JSON response
+                json_data = response.json()
+                items = json_data['items']
+                for item in items:
+                    urls.append(item['downloadURL'])
+                self.downloadTifFiles(urls)
+            else:
+                print(f"Failed to get data. HTTP Status Code: {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            print("An error occurred:", e)
+        return urls
+
+    def downloadTifFiles(self, urls) -> list[str]:
+        tif_files = []
+        for url in urls:
+            file_name = os.path.basename(url)
+            file_path = os.path.join(self.output_path, file_name)
+            if not os.path.exists(file_path):
+                print(f"Downloading file: {file_name}")
+                try:
+                    # Send a GET request to the file URL
+                    response = requests.get(url, stream=True)
+                    response.raise_for_status()  # Raise an error for HTTP status codes 4xx/5xx
+
+                    # Write the content of the response to the file
+                    with open(file_path, "wb") as file:
+                        for chunk in response.iter_content(chunk_size=8192):  # Download in chunks
+                            file.write(chunk)
+                    print(f"File downloaded successfully: {file_path}")
+                except requests.exceptions.RequestException as e:
+                    print(f"Failed to download file: {e}")
+            else:
+                print(f"File already exists: {file_name}")
+
+            tif_files.append(file_path)
+        return tif_files
+
+    def merge_geotiff(self, input_files, output_file):
+        # Open all input GeoTIFF files as datasets
+        datasets = [rasterio.open(file) for file in input_files]
+
+        # Merge datasets
+        mosaic, out_transform = merge(datasets)
+
+        # Get metadata from the first file and update it for the output
+        out_meta = datasets[0].meta.copy()
+        out_meta.update({
+            "driver": "GTiff",
+            "height": mosaic.shape[1],
+            "width": mosaic.shape[2],
+            "transform": out_transform,
+            "count": mosaic.shape[0]  # Number of bands
+        })
+
+        # Write merged GeoTIFF to the output file
+        with rasterio.open(output_file, "w", **out_meta) as dest:
+            dest.write(mosaic)
+
+        print(f"GeoTIFF images merged successfully into {output_file}")
+
+    def reproject_geotiff(input_tiff, output_tiff, target_crs):
+        # Open the source GeoTIFF
+        with rasterio.open(input_tiff) as src:
+            # Get the transform, width, and height of the target CRS
+            transform, width, height = calculate_default_transform(
+                src.crs,
+                target_crs,
+                src.width,
+                src.height,
+                *src.bounds
+            )
+
+            # Update the metadata for the target GeoTIFF
+            kwargs = src.meta.copy()
+            kwargs.update({
+                'crs': target_crs,
+                'transform': transform,
+                'width': width,
+                'height': height
+            })
+
+            # Open the destination GeoTIFF file and reproject
+            with rasterio.open(output_tiff, 'w', **kwargs) as dst:
+                for i in range(1, src.count + 1):  # Iterate over all raster bands
+                    reproject(
+                        source=rasterio.band(src, i),
+                        destination=rasterio.band(dst, i),
+                        src_transform=src.transform,
+                        src_crs=src.crs,
+                        dst_transform=transform,
+                        dst_crs=target_crs,
+                        resampling=Resampling.nearest  # Choose resampling method
+                    )
+        print(f"Reprojected GeoTIFF saved to {output_tiff}")
+
+    def crop_geotiff(self, input_tiff, output_tiff, bounds, target_crs):
+        """
+        Crop a GeoTIFF based on given geographic bounding box and save to a new file.
+
+        :param input_tiff: Path to the input GeoTIFF file.
+        :param output_tiff: Path to save the cropped GeoTIFF file.
+        :param bounds: Bounding box as (west, south, east, north) in the target CRS.
+        :param target_crs: Target CRS (e.g. EPSG:4326).
+        """
+        # Open the input GeoTIFF
+        with rasterio.open(self, input_tiff) as src:
+            # Ensure the source CRS matches the target CRS
+            if str(src.crs) != str(target_crs):
+                raise ValueError(
+                    f"The GeoTIFF CRS is {src.crs}, but the target CRS is {target_crs}. Reprojection may be required.")
+
+            # Create a rasterio window from the bounding box
+            (west, south, east, north) = self.get_bbox()
+            window = from_bounds(west, south, east, north, transform=src.transform)
+
+            # Update metadata for the cropped window
+            out_meta = src.meta.copy()
+            out_meta.update({
+                "height": int(window.height),
+                "width": int(window.width),
+                "transform": src.window_transform(window)  # Update the transform for the cropped region
+            })
+
+            # Read the cropped window and write to the output file
+            with rasterio.open(output_tiff, "w", **out_meta) as dst:
+                for i in range(1, src.count + 1):  # Iterate through all the bands
+                    dst.write(src.read(i, window=window), indexes=i)
+
+        print(f"Cropped GeoTIFF saved to {output_tiff}")
+
+    def convert_geotiff_to_png(self, input_tiff, output_png, min_height, max_height, target_crs, outsize):
+        """
+        Convert a GeoTIFF to a scaled PNG with UInt16 values using a specific coordinate system and output size.
+
+        :param input_tiff: Path to the input GeoTIFF file.
+        :param output_png: Path to save the output PNG file.
+        :param min_height: Minimum terrain height (input range).
+        :param max_height: Maximum terrain height (input range).
+        :param target_crs: Target CRS (e.g., EPSG:4326 for CRS:84).
+        :param outsize: Tuple for output image size (width, height).
+        """
+        # Open the input GeoTIFF file
+        with rasterio.open(input_tiff) as src:
+            # Ensure the input CRS is the desired one (or convert)
+            if str(src.crs) != str(target_crs):
+                raise ValueError(
+                    f"The GeoTIFF CRS is {src.crs}, but the target CRS is {target_crs}. Reprojection may be required.")
+
+            # Read the data resampled to the desired output size (mapSize + 1 x mapSize + 1)
+            data = src.read(
+                1,  # Read only the first band
+                out_shape=(outsize[1], outsize[0]),  # Resize (height, width)
+                resampling=enumsResampling.bilinear  # Use bilinear resampling for smoother resizing
+            )
+
+            # Scale the data to the 0–65535 range (UInt16)
+            scaled_data = np.clip((data - min_height) * (65535 / (max_height - min_height)), 0, 65535).astype(np.uint16)
+
+        # Save the scaled data as a PNG (UInt16)
+        Image.fromarray(scaled_data).save(output_png, format="PNG")
+        print(f"GeoTIFF successfully converted and saved to {output_png}")
+
+    def get_numpy(self) -> np.ndarray:
+        (west, south, east, north) = self.get_bbox()
+        download_urls = self.getDownloadUrls()
+        all_tif_files = self.downloadTifFiles(download_urls)
+        self.merge_geotiff(all_tif_files, os.path.join(self.output_path, "merged.tif"))
+        return self.extract_roi(os.path.join(self.output_path, "merged.tif"))
+        #self.reproject_geotiff(os.path.join(self.output_path, "merged.tif"), os.path.join(self.output_path, "reprojected.tif"),
+        #                  "EPSG:4326")
+        #self.crop_geotiff(os.path.join(self.output_path, "reprojected.tif"), os.path.join(self.output_path, "cropped.tif"),
+        #             (west, south, east, north), "EPSG:4326")
+        #self.convert_geotiff_to_png(
+        #    os.path.join(self.output_path, "cropped.tif"),
+        #    os.path.join(self.output_path, "dem.png"),
+        #    min_height=0,
+        #    max_height=200,
+        #    target_crs="EPSG:4326",
+        #    outsize=(mapSize + 1, mapSize + 1)
+        #)
+
