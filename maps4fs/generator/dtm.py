@@ -14,8 +14,13 @@ import numpy as np
 import osmnx as ox  # type: ignore
 import rasterio  # type: ignore
 import requests
+from pydantic import BaseModel
 
 from maps4fs.logger import Logger
+
+
+class DTMProviderSettings(BaseModel):
+    """Base class for DTM provider settings models."""
 
 
 class DTMProvider:
@@ -29,8 +34,23 @@ class DTMProvider:
 
     _url: str | None = None
 
-    def __init__(self, coordinates: tuple[float, float], size: int, directory: str, logger: Logger):
+    _author: str | None = None
+    _is_community: bool = False
+    _settings: Type[DTMProviderSettings] | None = None
+
+    _instructions: str | None = None
+
+    # pylint: disable=R0913, R0917
+    def __init__(
+        self,
+        coordinates: tuple[float, float],
+        user_settings: DTMProviderSettings | None,
+        size: int,
+        directory: str,
+        logger: Logger,
+    ):
         self._coordinates = coordinates
+        self._user_settings = user_settings
         self._size = size
 
         if not self._code:
@@ -68,6 +88,51 @@ class DTMProvider:
         if not self.url:
             raise ValueError("URL must be defined.")
         return self.url.format(**kwargs)
+
+    @classmethod
+    def author(cls) -> str | None:
+        """Author of the provider.
+
+        Returns:
+            str: Author of the provider.
+        """
+        return cls._author
+
+    @classmethod
+    def is_community(cls) -> bool:
+        """Is the provider a community-driven project.
+
+        Returns:
+            bool: True if the provider is a community-driven project, False otherwise.
+        """
+        return cls._is_community
+
+    @classmethod
+    def settings(cls) -> Type[DTMProviderSettings] | None:
+        """Settings model of the provider.
+
+        Returns:
+            Type[DTMProviderSettings]: Settings model of the provider.
+        """
+        return cls._settings
+
+    @classmethod
+    def instructions(cls) -> str | None:
+        """Instructions for using the provider.
+
+        Returns:
+            str: Instructions for using the provider.
+        """
+        return cls._instructions
+
+    @property
+    def user_settings(self) -> DTMProviderSettings | None:
+        """User settings of the provider.
+
+        Returns:
+            DTMProviderSettings: User settings of the provider.
+        """
+        return self._user_settings
 
     @classmethod
     def description(cls) -> str:
@@ -210,6 +275,8 @@ class SRTM30Provider(DTMProvider):
     _resolution = 30.0
 
     _url = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
+
+    _author = "[iwatkot](https://github.com/iwatkot)"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
