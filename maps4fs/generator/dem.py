@@ -1,19 +1,15 @@
 """This module contains DEM class for processing Digital Elevation Model data."""
 
-import gzip
-import math
 import os
-import shutil
 
 import cv2
 import numpy as np
-import rasterio  # type: ignore
-import requests
+
+# import rasterio  # type: ignore
 from pympler import asizeof  # type: ignore
 
 from maps4fs.generator.component import Component
-
-SRTM = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
+from maps4fs.generator.dtm import DTMProvider
 
 
 # pylint: disable=R0903, R0902
@@ -62,6 +58,13 @@ class DEM(Component):
         )
 
         self.auto_process = self.map.dem_settings.auto_process
+
+        self.dtm_provider: DTMProvider = self.map.dtm_provider(  # type: ignore
+            coordinates=self.coordinates,
+            size=self.map_rotated_size,
+            directory=self.temp_dir,
+            logger=self.logger,
+        )
 
     @property
     def dem_path(self) -> str:
@@ -132,36 +135,29 @@ class DEM(Component):
     def process(self) -> None:
         """Reads SRTM file, crops it to map size, normalizes and blurs it,
         saves to map directory."""
-        north, south, east, west = self.bbox
 
         dem_output_resolution = self.output_resolution
         self.logger.debug("DEM output resolution: %s.", dem_output_resolution)
 
-        tile_path = self._srtm_tile()
-        if not tile_path:
-            self.logger.warning("Tile was not downloaded, DEM file will be filled with zeros.")
+        try:
+            data = self.dtm_provider.get_numpy()
+        except Exception as e:  # pylint: disable=W0718
+            self.logger.error("Failed to get DEM data from SRTM: %s.", e)
             self._save_empty_dem(dem_output_resolution)
             return
 
-        with rasterio.open(tile_path) as src:
-            self.logger.debug("Opened tile, shape: %s, dtype: %s.", src.shape, src.dtypes[0])
-            window = rasterio.windows.from_bounds(west, south, east, north, src.transform)
-            self.logger.debug(
-                "Window parameters. Column offset: %s, row offset: %s, width: %s, height: %s.",
-                window.col_off,
-                window.row_off,
-                window.width,
-                window.height,
-            )
-            data = src.read(1, window=window)
+        if len(data.shape) != 2:
+            self.logger.error("DTM provider returned incorrect data: more than 1 channel.")
+            self._save_empty_dem(dem_output_resolution)
+            return
 
-        if not data.size > 0:
-            self.logger.warning("DEM data is empty, DEM file will be filled with zeros.")
+        if data.dtype not in ["int16", "uint16"]:
+            self.logger.error("DTM provider returned incorrect data type: %s.", data.dtype)
             self._save_empty_dem(dem_output_resolution)
             return
 
         self.logger.debug(
-            "DEM data was read from SRTM file. Shape: %s, dtype: %s. Min: %s, max: %s.",
+            "DEM data was retrieved from DTM provider. Shape: %s, dtype: %s. Min: %s, max: %s.",
             data.shape,
             data.dtype,
             data.min(),
@@ -275,81 +271,6 @@ class DEM(Component):
             output_height=output_height,
             output_width=output_width,
         )
-
-    def _tile_info(self, lat: float, lon: float) -> tuple[str, str]:
-        """Returns latitude band and tile name for SRTM tile from coordinates.
-
-        Arguments:
-            lat (float): Latitude.
-            lon (float): Longitude.
-
-        Returns:
-            tuple[str, str]: Latitude band and tile name.
-        """
-        tile_latitude = math.floor(lat)
-        tile_longitude = math.floor(lon)
-
-        latitude_band = f"N{abs(tile_latitude):02d}" if lat >= 0 else f"S{abs(tile_latitude):02d}"
-        if lon < 0:
-            tile_name = f"{latitude_band}W{abs(tile_longitude):03d}"
-        else:
-            tile_name = f"{latitude_band}E{abs(tile_longitude):03d}"
-
-        self.logger.debug(
-            "Detected tile name: %s for coordinates: lat %s, lon %s.", tile_name, lat, lon
-        )
-        return latitude_band, tile_name
-
-    def _download_tile(self) -> str | None:
-        """Downloads SRTM tile from Amazon S3 using coordinates.
-
-        Returns:
-            str: Path to compressed tile or None if download failed.
-        """
-        latitude_band, tile_name = self._tile_info(*self.coordinates)
-        compressed_file_path = os.path.join(self.gz_dir, f"{tile_name}.hgt.gz")
-        url = SRTM.format(latitude_band=latitude_band, tile_name=tile_name)
-        self.logger.debug("Trying to get response from %s...", url)
-        response = requests.get(url, stream=True, timeout=10)
-
-        if response.status_code == 200:
-            self.logger.debug("Response received. Saving to %s...", compressed_file_path)
-            with open(compressed_file_path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
-            self.logger.debug("Compressed tile successfully downloaded.")
-        else:
-            self.logger.error("Response was failed with status code %s.", response.status_code)
-            return None
-
-        return compressed_file_path
-
-    def _srtm_tile(self) -> str | None:
-        """Determines SRTM tile name from coordinates downloads it if necessary, and decompresses.
-
-        Returns:
-            str: Path to decompressed tile or None if download failed.
-        """
-        latitude_band, tile_name = self._tile_info(*self.coordinates)
-        self.logger.debug("SRTM tile name %s from latitude band %s.", tile_name, latitude_band)
-
-        decompressed_file_path = os.path.join(self.hgt_dir, f"{tile_name}.hgt")
-        if os.path.isfile(decompressed_file_path):
-            self.logger.debug(
-                "Decompressed tile already exists: %s, skipping download.",
-                decompressed_file_path,
-            )
-            return decompressed_file_path
-
-        compressed_file_path = self._download_tile()
-        if not compressed_file_path:
-            self.logger.error("Download from SRTM failed, DEM file will be filled with zeros.")
-            return None
-        with gzip.open(compressed_file_path, "rb") as f_in:
-            with open(decompressed_file_path, "wb") as f_out:
-                shutil.copyfileobj(f_in, f_out)
-        self.logger.debug("Tile decompressed to %s.", decompressed_file_path)
-        return decompressed_file_path
 
     def _save_empty_dem(self, dem_output_resolution: tuple[int, int]) -> None:
         """Saves empty DEM file filled with zeros."""

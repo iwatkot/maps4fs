@@ -14,7 +14,7 @@ from templates import Messages, Settings
 
 import maps4fs as mfs
 
-QUEUE_LIMIT = 2
+QUEUE_LIMIT = 3
 DEFAULT_LAT = 45.28571409289627
 DEFAULT_LON = 20.237433441210115
 Image.MAX_IMAGE_PIXELS = None
@@ -43,7 +43,7 @@ class GeneratorUI:
 
     def __init__(self):
         self.download_path = None
-        self.logger = mfs.Logger(level="INFO", to_file=False)
+        self.logger = mfs.Logger(level="DEBUG", to_file=False)
 
         self.public = config.is_public()
         self.logger.debug("The application launched on a public server: %s", self.public)
@@ -291,6 +291,21 @@ class GeneratorUI:
 
             self.map_size_input = f"{custom_map_size_input}x{custom_map_size_input}"
 
+        # DTM Provider selection.
+        providers: dict[str, str] = mfs.DTMProvider.get_provider_descriptions()
+        # Keys are provider codes, values are provider descriptions.
+        # In selector we'll show descriptions, but we'll use codes in the background.
+
+        st.write("Select the DTM provider:")
+        self.dtm_provider_code = st.selectbox(
+            "DTM Provider",
+            options=list(providers.keys()),
+            format_func=lambda code: providers[code],
+            key="dtm_provider",
+            label_visibility="collapsed",
+            disabled=self.public,
+        )
+
         # Rotation input.
         st.write("Enter the rotation of the map:")
 
@@ -317,12 +332,12 @@ class GeneratorUI:
             st.title("Expert Settings")
             st.write(Messages.EXPERT_SETTINGS_INFO)
 
-            if not self.public:
-                enable_debug = st.checkbox("Enable debug logs", key="debug_logs")
-                if enable_debug:
-                    self.logger = mfs.Logger(level="DEBUG", to_file=False)
-                else:
-                    self.logger = mfs.Logger(level="INFO", to_file=False)
+            # if not self.public:
+            #     enable_debug = st.checkbox("Enable debug logs", key="debug_logs")
+            #     if enable_debug:
+            #         self.logger = mfs.Logger(level="DEBUG", to_file=False)
+            #     else:
+            #         self.logger = mfs.Logger(level="INFO", to_file=False)
 
             self.custom_osm_enabled = st.checkbox(
                 "Upload custom OSM file",
@@ -519,8 +534,11 @@ class GeneratorUI:
         else:
             osm_path = None
 
+        dtm_provider = mfs.DTMProvider.get_provider_by_code(self.dtm_provider_code)
+
         mp = mfs.Map(
             game,
+            dtm_provider,
             coordinates,
             height,
             self.rotation,
