@@ -6,7 +6,7 @@ from time import time
 
 import cv2
 
-from maps4fs import Map
+from maps4fs import DTMProvider, Map
 from maps4fs.generator.game import Game
 
 working_directory = os.getcwd()
@@ -26,6 +26,9 @@ coordinates_cases = [
 ]
 
 game_code_cases = ["FS25"]
+
+dtm_provider_code = "srtm30"
+dtm_provider = DTMProvider.get_provider_by_code(dtm_provider_code)
 
 
 def get_random_size() -> tuple[int, int]:
@@ -76,6 +79,7 @@ def test_map():
 
             map = Map(
                 game=game,
+                dtm_provider=dtm_provider,
                 coordinates=coordinates,
                 size=height,
                 rotation=0,
@@ -136,6 +140,7 @@ def test_map_preview():
     directory = map_directory(game_code)
     map = Map(
         game=game,
+        dtm_provider=dtm_provider,
         coordinates=case,
         size=height,
         rotation=0,
@@ -164,6 +169,7 @@ def test_map_pack():
     directory = map_directory(game_code)
     map = Map(
         game=game,
+        dtm_provider=dtm_provider,
         coordinates=case,
         size=height,
         rotation=30,

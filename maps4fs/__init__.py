@@ -1,4 +1,5 @@
 # pylint: disable=missing-module-docstring
+from maps4fs.generator.dtm import DTMProvider
 from maps4fs.generator.game import Game
 from maps4fs.generator.map import (
     BackgroundSettings,

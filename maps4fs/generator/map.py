@@ -10,6 +10,7 @@ from typing import Any, Generator
 from pydantic import BaseModel
 
 from maps4fs.generator.component import Component
+from maps4fs.generator.dtm import DTMProvider
 from maps4fs.generator.game import Game
 from maps4fs.logger import Logger
 
@@ -91,8 +92,8 @@ class BackgroundSettings(SettingsModel):
             It will be used as 1 / resize_factor of the original size.
     """
 
-    generate_background: bool = True
-    generate_water: bool = True
+    generate_background: bool = False
+    generate_water: bool = False
     resize_factor: int = 8
 
 
@@ -174,6 +175,7 @@ class Map:
     def __init__(  # pylint: disable=R0917, R0915
         self,
         game: Game,
+        dtm_provider: DTMProvider,
         coordinates: tuple[float, float],
         size: int,
         rotation: int,
@@ -203,6 +205,7 @@ class Map:
         self.rotated_size = int(size * rotation_multiplier)
 
         self.game = game
+        self.dtm_provider = dtm_provider
         self.components: list[Component] = []
         self.coordinates = coordinates
         self.map_directory = map_directory
