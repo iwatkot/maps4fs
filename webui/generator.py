@@ -43,7 +43,7 @@ class GeneratorUI:
 
     def __init__(self):
         self.download_path = None
-        self.logger = mfs.Logger(level="DEBUG", to_file=False)
+        self.logger = mfs.Logger(level="INFO", to_file=False)
 
         self.public = config.is_public()
         self.logger.debug("The application launched on a public server: %s", self.public)
@@ -332,12 +332,12 @@ class GeneratorUI:
             st.title("Expert Settings")
             st.write(Messages.EXPERT_SETTINGS_INFO)
 
-            # if not self.public:
-            #     enable_debug = st.checkbox("Enable debug logs", key="debug_logs")
-            #     if enable_debug:
-            #         self.logger = mfs.Logger(level="DEBUG", to_file=False)
-            #     else:
-            #         self.logger = mfs.Logger(level="INFO", to_file=False)
+            if not self.public:
+                enable_debug = st.checkbox("Enable debug logs", key="debug_logs")
+                if enable_debug:
+                    self.logger = mfs.Logger(level="DEBUG", to_file=False)
+                else:
+                    self.logger = mfs.Logger(level="INFO", to_file=False)
 
             self.custom_osm_enabled = st.checkbox(
                 "Upload custom OSM file",
