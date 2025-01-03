@@ -229,6 +229,27 @@ class GeneratorUI:
         """
         return " ".join(map(str.capitalize, snake_str.split("_")))
 
+    def provider_info(self) -> None:
+        provider_code = self.dtm_provider_code
+        provider = mfs.DTMProvider.get_provider_by_code(provider_code)
+
+        with self.provider_info_container:
+            if provider.is_community():
+                st.warning(Messages.COMMUNITY_PROVIDER, icon="💡")
+                st.write(f"Author: {provider.author()}")
+
+            if provider.settings() is not None:
+                provider_settings = provider.settings()()
+                settings = {}
+                settings_json = provider_settings.model_dump()
+                for raw_field_name, value in settings_json.items():
+                    field_name = self.snake_to_human(raw_field_name)
+                    widget = self._create_widget(field_name, raw_field_name, value)
+
+                    settings[raw_field_name] = widget
+
+                self.provider_settings = settings
+
     def add_left_widgets(self) -> None:
         """Add widgets to the left column."""
         self.logger.debug("Adding widgets to the left column...")
@@ -304,7 +325,11 @@ class GeneratorUI:
             key="dtm_provider",
             label_visibility="collapsed",
             disabled=self.public,
+            on_change=self.provider_info,
         )
+        self.provider_settings = None
+        self.provider_info_container = st.container()
+        self.provider_info()
 
         # Rotation input.
         st.write("Enter the rotation of the map:")
@@ -536,9 +561,19 @@ class GeneratorUI:
 
         dtm_provider = mfs.DTMProvider.get_provider_by_code(self.dtm_provider_code)
 
+        if self.provider_settings is not None:
+            try:
+                dtm_provider_settings = dtm_provider.settings()(**self.provider_settings)
+            except Exception as e:
+                st.error(f"Invalid DTM provider settings: {repr(e)}")
+                return
+        else:
+            dtm_provider_settings = None
+
         mp = mfs.Map(
             game,
             dtm_provider,
+            dtm_provider_settings,
             coordinates,
             height,
             self.rotation,

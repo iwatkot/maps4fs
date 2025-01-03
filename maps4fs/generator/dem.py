@@ -61,6 +61,7 @@ class DEM(Component):
 
         self.dtm_provider: DTMProvider = self.map.dtm_provider(  # type: ignore
             coordinates=self.coordinates,
+            user_settings=self.map.dtm_provider_settings,
             size=self.map_rotated_size,
             directory=self.temp_dir,
             logger=self.logger,
