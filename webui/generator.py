@@ -255,7 +255,7 @@ class GeneratorUI:
         st.write("Enter latitude and longitude of the center point of the map:")
         self.lat_lon_input = st.text_input(
             "Latitude and Longitude",
-            f"40.213221826015015, -75.63574205265594",
+            f"{DEFAULT_LAT}, {DEFAULT_LON}",
             key="lat_lon",
             label_visibility="collapsed",
             on_change=self.map_preview,
