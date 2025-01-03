@@ -38,6 +38,8 @@ class DTMProvider:
     _is_community: bool = False
     _settings: Type[DTMProviderSettings] | None = None
 
+    _instructions: str | None = None
+
     # pylint: disable=R0913, R0917
     def __init__(
         self,
@@ -113,6 +115,15 @@ class DTMProvider:
             Type[DTMProviderSettings]: Settings model of the provider.
         """
         return cls._settings
+
+    @classmethod
+    def instructions(cls) -> str | None:
+        """Instructions for using the provider.
+
+        Returns:
+            str: Instructions for using the provider.
+        """
+        return cls._instructions
 
     @property
     def user_settings(self) -> DTMProviderSettings | None:

@@ -241,6 +241,9 @@ class GeneratorUI:
                 st.warning(Messages.COMMUNITY_PROVIDER, icon="💡")
                 st.write(f"Author: {provider.author()}")
 
+            if provider.instructions() is not None:
+                st.write(provider.instructions())
+
             if provider.settings() is not None:
                 provider_settings = provider.settings()()
                 settings = {}

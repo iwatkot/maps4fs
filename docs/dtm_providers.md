@@ -43,6 +43,8 @@ class SRTM30Provider(DTMProvider):
 
     _author = "[iwatkot](https://github.com/iwatkot)"
     _is_community = True
+
+    _instructions = "When working with SRTM provider..."
 ```
 
 So, we inherit from the `DTMProvider` class, add some properties to identify the Provider (such as code and region). The most important part is the `_url` property, which is a template for the URL to download the elevation data. But if your provider uses some other approach, you can reimplement related methods.  
@@ -50,6 +52,8 @@ So, we inherit from the `DTMProvider` class, add some properties to identify the
 Also, please provide MD-formatted author information, where in [] will be the name of the author and in () will be the link to the author's GitHub profile (or any other profile if you wish).
 
 Please, set the `_is_community` property to `True`, it means that it was developed not by me, but by the community.
+
+If you want some message to be displayed when the user selects your provider, you can set the `_instructions` property.
 
 **Step 3 (optional):** use the `DTMProviderSetting` class to define your own settings (if needed).  
 
