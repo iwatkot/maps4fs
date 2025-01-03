@@ -23,6 +23,8 @@ So the DTM provider is a simple class, that receives coordinate of the center po
 
 ### Example of a DTM provider
 
+➡️ Base class and existing providers can be found in the [dtm.py](../maps4fs/generator/dtm.py) file.
+
 Let's take a look at an example of a DTM provider implementation.  
 
 **Step 1:** define description of the provider.  
