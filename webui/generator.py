@@ -233,6 +233,9 @@ class GeneratorUI:
         provider_code = self.dtm_provider_code
         provider = mfs.DTMProvider.get_provider_by_code(provider_code)
 
+        del self.provider_info_container
+        self.provider_info_container = st.container()
+
         with self.provider_info_container:
             if provider.is_community():
                 st.warning(Messages.COMMUNITY_PROVIDER, icon="💡")
