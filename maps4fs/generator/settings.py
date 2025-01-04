@@ -66,7 +66,7 @@ class DEMSettings(SettingsModel):
             is present.
     """
 
-    multiplier: int = 300
+    multiplier: int = 1
     blur_radius: int = 35
     plateau: int = 0
     water_depth: int = 0
