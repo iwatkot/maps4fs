@@ -26,7 +26,7 @@ class SRTM30Provider(DTMProvider):
     _instructions = (
         "ℹ️ If you're a rookie in the Giants Editor check the **Apply the default multiplier** "
         "checkbox. Otherwise, you can change the multiplier value in the DEM Settings. "
-        "If you will not apply the default multiplier and change the value in the DEM Settings, "
+        "If you will not apply the default multiplier and not change the value in the DEM Settings, "
         "you'll have the DEM image with the original values as on Earth, which can not be seen "
         "by eye and will lead to completely flat terrain. "
     )
