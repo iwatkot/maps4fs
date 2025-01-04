@@ -165,7 +165,6 @@ class DTMProvider:
         """
         providers = {}
         for provider in cls.__subclasses__():
-            print(provider)
             providers[provider._code] = provider.description()  # pylint: disable=W0212
         return providers  # type: ignore
 

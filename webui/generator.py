@@ -1,7 +1,7 @@
 import json
 import os
 from datetime import datetime
-from time import perf_counter
+from time import perf_counter, sleep
 
 import config
 import osmp
@@ -233,28 +233,30 @@ class GeneratorUI:
         provider_code = self.dtm_provider_code
         provider = mfs.DTMProvider.get_provider_by_code(provider_code)
 
-        del self.provider_info_container
-        self.provider_info_container = st.container()
+        self.provider_settings = None
+        self.provider_info_container.empty()
+        sleep(0.1)
 
         with self.provider_info_container:
-            if provider.is_community():
-                st.warning(Messages.COMMUNITY_PROVIDER, icon="💡")
-                st.write(f"Author: {provider.author()}")
+            with st.container():
+                if provider.is_community():
+                    st.warning(Messages.COMMUNITY_PROVIDER, icon="💡")
+                    st.write(f"Author: {provider.author()}")
 
-            if provider.instructions() is not None:
-                st.write(provider.instructions())
+                if provider.instructions() is not None:
+                    st.write(provider.instructions())
 
-            if provider.settings() is not None:
-                provider_settings = provider.settings()()
-                settings = {}
-                settings_json = provider_settings.model_dump()
-                for raw_field_name, value in settings_json.items():
-                    field_name = self.snake_to_human(raw_field_name)
-                    widget = self._create_widget(field_name, raw_field_name, value)
+                if provider.settings() is not None:
+                    provider_settings = provider.settings()()
+                    settings = {}
+                    settings_json = provider_settings.model_dump()
+                    for raw_field_name, value in settings_json.items():
+                        field_name = self.snake_to_human(raw_field_name)
+                        widget = self._create_widget(field_name, raw_field_name, value)
 
-                    settings[raw_field_name] = widget
+                        settings[raw_field_name] = widget
 
-                self.provider_settings = settings
+                    self.provider_settings = settings
 
     def add_left_widgets(self) -> None:
         """Add widgets to the left column."""
@@ -334,7 +336,7 @@ class GeneratorUI:
             on_change=self.provider_info,
         )
         self.provider_settings = None
-        self.provider_info_container = st.container()
+        self.provider_info_container = st.empty()
         self.provider_info()
 
         # Rotation input.
