@@ -57,8 +57,6 @@ class DEM(Component):
             self.blur_radius,
         )
 
-        self.auto_process = self.map.dem_settings.auto_process
-
         self.dtm_provider: DTMProvider = self.map.dtm_provider(  # type: ignore
             coordinates=self.coordinates,
             user_settings=self.map.dtm_provider_settings,
@@ -181,11 +179,7 @@ class DEM(Component):
             resampled_data.dtype,
         )
 
-        if self.auto_process:
-            self.logger.debug("Auto processing is enabled, will normalize DEM data.")
-            resampled_data = self._normalize_dem(resampled_data)
-        else:
-            self.logger.debug("Auto processing is disabled, DEM data will not be normalized.")
+        if self.multiplier != 1:
             resampled_data = resampled_data * self.multiplier
 
             self.logger.debug(

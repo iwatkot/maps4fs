@@ -449,8 +449,6 @@ You can also apply some advanced settings to the map generation process. Note th
 
 ### DEM Advanced settings
 
-- Auto process: the tool will automatically try to find suitable multiplier. As a result, the DEM image WILL not match real world values. If this option is disabled, you'll probably see completely black DEM image, but it's not empty. It's just you can't see the values of 16-bit image by eye, because they're too small. Learn more what's DEM image and how to work with it in [docs](docs/dem.md). By default, it's set to True.
-
 - Multiplier: the height of the map is multiplied by this value. So the DEM map is just a 16-bit grayscale image, which means that the maximum available value there is 65535, while the actual difference between the deepest and the highest point on Earth is about 20 km. Just note that this setting mostly does not matter, because you can always adjust it in the Giants Editor, learn more about the DEM file and the heightScale parameter in [docs](docs/dem.md). By default, it's set to 1.
 
 - Blur radius: the radius of the Gaussian blur filter applied to the DEM map. By default, it's set to 21. This filter just makes the DEM map smoother, so the height transitions will be more natural. You can set it to 1 to disable the filter, but it will result in a Minecraft-like map.
