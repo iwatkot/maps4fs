@@ -99,10 +99,15 @@ class SRTM30Provider(DTMProvider):
 
         data = self.extract_roi(decompressed_tile_path)
 
-        if self.user_settings.normalize_data and self.user_settings.expected_maximum_height:
+        if (
+            self.user_settings.normalize_data  # type: ignore
+            and self.user_settings.expected_maximum_height  # type: ignore
+        ):
             try:
-                data = self.normalize_dem(data, self.user_settings.expected_maximum_height)
-            except Exception as e:
+                data = self.normalize_dem(
+                    data, self.user_settings.expected_maximum_height  # type: ignore
+                )
+            except Exception as e:  # pylint: disable=W0718
                 self.logger.error(
                     "Failed to normalize DEM data. Error: %s. Using original data.", e
                 )
@@ -122,7 +127,7 @@ class SRTM30Provider(DTMProvider):
         scaling_factor = max_dev / max_height if max_dev < max_height else 1
         adjusted_max_height = int(65535 * scaling_factor)
         self.logger.debug(
-            "Maximum deviation: %s. Scaling factor: %s. " "Adjusted max height: %s.",
+            "Maximum deviation: %s. Scaling factor: %s. Adjusted max height: %s.",
             max_dev,
             scaling_factor,
             adjusted_max_height,
