@@ -9,7 +9,7 @@ import numpy as np
 from pympler import asizeof  # type: ignore
 
 from maps4fs.generator.component import Component
-from maps4fs.generator.dtm import DTMProvider
+from maps4fs.generator.dtm.dtm import DTMProvider
 
 
 # pylint: disable=R0903, R0902

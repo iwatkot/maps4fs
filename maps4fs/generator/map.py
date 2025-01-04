@@ -8,7 +8,7 @@ import shutil
 from typing import Any, Generator
 
 from maps4fs.generator.component import Component
-from maps4fs.generator.dtm import DTMProvider, DTMProviderSettings
+from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
 from maps4fs.generator.game import Game
 from maps4fs.generator.settings import (
     BackgroundSettings,
