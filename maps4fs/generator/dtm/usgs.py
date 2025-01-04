@@ -32,6 +32,7 @@ class USGS1mProvider(DTMProvider):
     _data: np.ndarray | None = None
     _settings = USGS1mProviderSettings
     _author = "[ZenJakey](https://github.com/ZenJakey)"
+    _is_community = True
 
     _url = (
         "https://tnmaccess.nationalmap.gov/api/v1/products?prodFormats=GeoTIFF,IMG&prodExtents="

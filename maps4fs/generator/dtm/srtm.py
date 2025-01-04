@@ -23,6 +23,13 @@ class SRTM30Provider(DTMProvider):
 
     _author = "[iwatkot](https://github.com/iwatkot)"
 
+    _instructions = (
+        "ℹ️ Set the Multiplier value in the DEM Settings, when using this DTM provider. "
+        "Otherwise, the dem file will contain values in meters exactly as on Earth "
+        "and you probably won't see any terrain by eye. "
+        "Note that the multiplier value may be big enough to make the terrain visible."
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.hgt_directory = os.path.join(self._tile_directory, "hgt")
