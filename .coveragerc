@@ -1,0 +1,8 @@
+[run]
+omit =
+    maps4fs/generator/dtm/*
+
+[report]
+exclude_lines =
+    except Exception as e:
+    self.logger

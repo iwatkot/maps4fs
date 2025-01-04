@@ -8,6 +8,11 @@ import cv2
 
 from maps4fs import DTMProvider, Map
 from maps4fs.generator.game import Game
+from maps4fs.generator.settings import (
+    BackgroundSettings,
+    DEMSettings,
+    SatelliteSettings,
+)
 
 working_directory = os.getcwd()
 
@@ -168,6 +173,13 @@ def test_map_pack():
 
     height, width = get_random_size()
 
+    dem_settings = DEMSettings(multiplier=2, blur_radius=15, plateau=1000, water_depth=500)
+
+    background_settings = BackgroundSettings(
+        generate_background=True, generate_water=True, resize_factor=16
+    )
+    satellite_settings = SatelliteSettings(download_images=True, satellite_margin=0, zoom_level=14)
+
     directory = map_directory(game_code)
     map = Map(
         game=game,
@@ -177,6 +189,9 @@ def test_map_pack():
         size=height,
         rotation=30,
         map_directory=directory,
+        dem_settings=dem_settings,
+        background_settings=background_settings,
+        satellite_settings=satellite_settings,
     )
     for _ in map.generate():
         pass
