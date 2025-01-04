@@ -245,6 +245,10 @@ class GeneratorUI:
 
                 if provider.instructions() is not None:
                     st.write(provider.instructions())
+                if provider_code == "srtm30":
+                    self.multiplier_setter = st.checkbox(
+                        "Apply the default multiplier", key="multiplier_setter"
+                    )
 
                 if provider.settings() is not None:
                     provider_settings = provider.settings()()
@@ -335,6 +339,7 @@ class GeneratorUI:
             disabled=self.public,
             on_change=self.provider_info,
         )
+        self.multiplier_setter = False
         self.provider_settings = None
         self.provider_info_container = st.empty()
         self.provider_info()
@@ -542,6 +547,9 @@ class GeneratorUI:
 
         # Limit settings on the public server.
         json_settings = self.limit_on_public(json_settings)
+
+        if self.multiplier_setter:
+            json_settings["DEMSettings"]["multiplier"] = 255
 
         # Parse settings from the JSON.
         all_settings = mfs.SettingsModel.all_settings_from_json(json_settings)

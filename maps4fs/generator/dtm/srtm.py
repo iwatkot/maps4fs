@@ -24,10 +24,8 @@ class SRTM30Provider(DTMProvider):
     _author = "[iwatkot](https://github.com/iwatkot)"
 
     _instructions = (
-        "ℹ️ Set the Multiplier value in the DEM Settings, when using this DTM provider. "
-        "Otherwise, the dem file will contain values in meters exactly as on Earth "
-        "and you probably won't see any terrain by eye. "
-        "Note that the multiplier value may be big enough to make the terrain visible."
+        "ℹ️ If you're a rookie in the Giants Editor check the **Apply the default multiplier** "
+        "checkbox. Otherwise, you can change the multiplier value in the DEM Settings. "
     )
 
     def __init__(self, *args, **kwargs):
