@@ -337,6 +337,10 @@ class SRTM30Provider(DTMProvider):
 
         return self.extract_roi(decompressed_tile_path)
 
+class USGS1mProviderSettings(DTMProviderSettings):
+    """Settings for the USGS 1m provider."""
+    max_local_elevation: int = 255
+
 class USGS1mProvider(DTMProvider):
     """Provider of USGS."""
 
@@ -346,6 +350,8 @@ class USGS1mProvider(DTMProvider):
     _icon = "🇺🇸"
     _resolution = 1
     _data = None
+    _settings = USGS1mProviderSettings
+    _author = "[ZenJakey](https://github.com/ZenJakey)"
 
     url = f"https://tnmaccess.nationalmap.gov/api/v1/products?prodFormats=GeoTIFF,IMG&prodExtents=10000 x 10000 meter&datasets=Digital Elevation Model (DEM) 1 meter&polygon="
 
@@ -483,22 +489,9 @@ class USGS1mProvider(DTMProvider):
             window = from_bounds(west, south, east, north, transform=src.transform)
 
             data = src.read(1, window=window)
+            self.logger.debug(f"Extracted ROI")
             return data
 
-            # Update metadata for the cropped window
-            out_meta = src.meta.copy()
-            out_meta.update({
-                "height": int(window.height),
-                "width": int(window.width),
-                "transform": src.window_transform(window)  # Update the transform for the cropped region
-            })
-
-            # Read the cropped window and write to the output file
-            with rasterio.open(output_tiff, "w", **out_meta) as dst:
-                for i in range(1, src.count + 1):  # Iterate through all the bands
-                    dst.write(src.read(i, window=window), indexes=i)
-
-        self.logger.debug(f"Extracted ROI, saved to {output_tiff}")
 
     def convert_geotiff_to_geotiff(self, input_tiff, output_tiff, min_height, max_height, target_crs):
         """
@@ -569,12 +562,14 @@ class USGS1mProvider(DTMProvider):
             os.path.join(self.output_path, "reprojected.tif"),
             os.path.join(self.output_path, "translated.tif"),
             min_height=0,
-            max_height=300,
+            max_height=self.user_settings.max_local_elevation,
             target_crs="EPSG:4326"
         )
         self._data = self.extract_roi(os.path.join(self.output_path, "translated.tif"))
 
     def get_numpy(self) -> np.ndarray:
+        if self.user_settings.max_local_elevation <= 0:
+            raise ValueError("Entered 'max_local_elevation' value is unable to be used. Use a value greater than 0.")
         if not self._data:
             self.generate_data()
         return self._data
