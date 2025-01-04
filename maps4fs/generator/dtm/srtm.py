@@ -1,5 +1,7 @@
 """This module contains provider of Shuttle Radar Topography Mission (SRTM) 30m data."""
 
+# Author: https://github.com/iwatkot
+
 import gzip
 import math
 import os
@@ -7,7 +9,14 @@ import shutil
 
 import numpy as np
 
-from maps4fs.generator.dtm.dtm import DTMProvider
+from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
+
+
+class SRTM30ProviderSettings(DTMProviderSettings):
+    """Settings for SRTM 30m provider."""
+
+    normalize_data: bool = True
+    expected_maximum_height: int = 200
 
 
 class SRTM30Provider(DTMProvider):
@@ -24,12 +33,17 @@ class SRTM30Provider(DTMProvider):
     _author = "[iwatkot](https://github.com/iwatkot)"
 
     _instructions = (
-        "ℹ️ If you're a rookie in the Giants Editor check the **Apply the default multiplier** "
-        "checkbox. Otherwise, you can change the multiplier value in the DEM Settings. "
-        "If you will not apply the default multiplier and not change the value in the DEM "
-        "Settings, you'll have the DEM image with the original values as on Earth, which can "
-        "not be seen by eye and will lead to completely flat terrain. "
+        "ℹ️ If you want the data to be normalized to a specific maximum height, "
+        "check the **Normalize data** checkbox and enter the **Expected maximum height** in "
+        "meters. The expected maximum height is a maximum height of the terrain in meters in "
+        "real world. It is not necessary it should be very "
+        "precise, just an approximate value. If you want to receive the DEM data in an original "
+        "format, where pixel values will be in meters, uncheck the **Normalize data** checkbox. "
+        "Note, that if you disable the normalization, you probably get completely flat terrain "
+        "and you need to adjust the height scale paramter in the Giants Editor."
     )
+
+    _settings = SRTM30ProviderSettings
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -83,4 +97,42 @@ class SRTM30Provider(DTMProvider):
                 with open(decompressed_tile_path, "wb") as f_out:
                     shutil.copyfileobj(f_in, f_out)
 
-        return self.extract_roi(decompressed_tile_path)
+        data = self.extract_roi(decompressed_tile_path)
+
+        if self.user_settings.normalize_data and self.user_settings.expected_maximum_height:
+            try:
+                data = self.normalize_dem(data, self.user_settings.expected_maximum_height)
+            except Exception as e:
+                self.logger.error(
+                    "Failed to normalize DEM data. Error: %s. Using original data.", e
+                )
+
+        return data
+
+    def normalize_dem(self, data: np.ndarray, max_height: int) -> np.ndarray:
+        """Normalize DEM data to 16-bit unsigned integer using max height from settings.
+
+        Args:
+            data (np.ndarray): DEM data from SRTM file after cropping.
+
+        Returns:
+            np.ndarray: Normalized DEM data.
+        """
+        max_dev = data.max() - data.min()
+        scaling_factor = max_dev / max_height if max_dev < max_height else 1
+        adjusted_max_height = int(65535 * scaling_factor)
+        self.logger.debug(
+            "Maximum deviation: %s. Scaling factor: %s. " "Adjusted max height: %s.",
+            max_dev,
+            scaling_factor,
+            adjusted_max_height,
+        )
+        normalized_data = (
+            (data - data.min()) / (data.max() - data.min()) * adjusted_max_height
+        ).astype("uint16")
+        self.logger.debug(
+            "DEM data was normalized to %s - %s.",
+            normalized_data.min(),
+            normalized_data.max(),
+        )
+        return normalized_data
