@@ -40,11 +40,47 @@ class SRTM30Provider(DTMProvider):
     _resolution = 30.0
 
     _url = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
+
+    _author = "[iwatkot](https://github.com/iwatkot)"
+    _is_community = True
+
+    _instructions = "When working with SRTM provider..."
 ```
 
-So, we inherit from the `DTMProvider` class, add some properties to identify the Provider (such as code and region). The most important part is the `_url` property, which is a template for the URL to download the elevation data. But if your provider uses some other approach, you can reimplement related methods.
+So, we inherit from the `DTMProvider` class, add some properties to identify the Provider (such as code and region). The most important part is the `_url` property, which is a template for the URL to download the elevation data. But if your provider uses some other approach, you can reimplement related methods.  
 
-**Step 2:** implement the `get_tile_parameters` method.  
+Also, please provide MD-formatted author information, where in [] will be the name of the author and in () will be the link to the author's GitHub profile (or any other profile if you wish).
+
+Please, set the `_is_community` property to `True`, it means that it was developed not by me, but by the community.
+
+If you want some message to be displayed when the user selects your provider, you can set the `_instructions` property.
+
+**Step 3 (optional):** use the `DTMProviderSetting` class to define your own settings (if needed).  
+
+```python
+class SRTM30ProviderSettings(DTMProviderSettings):
+    """Settings for the SRTM 30 m provider."""
+
+    enable_something: bool = True
+    input_something: int = 255
+```
+
+Also, you will need to add a new `_settings` property to the provider class.  
+
+```python
+class SRTM30Provider(DTMProvider):
+    ...
+    _settings = SRTM30ProviderSettings
+```
+
+If those are provided you'll later be able to use the `user_settings` property to access the settings. In the example it would look like this:
+
+```python
+enable_something = self.user_settings.enable_something
+input_something = self.user_settings.input_something
+```
+
+**Step 3:** implement the `get_tile_parameters` method.  
 
 ```python
     def get_tile_parameters(self, *args, **kwargs) -> dict[str, str]:
@@ -76,7 +112,7 @@ So, we inherit from the `DTMProvider` class, add some properties to identify the
 
 This method is required to understand how to format the download url. Of course different sources store data in different ways, so by default in the parent class this method is not implemented and you need to implement it in your provider. And if you're not using direct download, you obviously don't need this method.
 
-**Step 3:** implement the `get_numpy` method.  
+**Step 4:** implement the `get_numpy` method.  
 
 ```python
     def get_numpy(self) -> np.ndarray:

@@ -80,6 +80,7 @@ def test_map():
             map = Map(
                 game=game,
                 dtm_provider=dtm_provider,
+                dtm_provider_settings=None,
                 coordinates=coordinates,
                 size=height,
                 rotation=0,
@@ -141,6 +142,7 @@ def test_map_preview():
     map = Map(
         game=game,
         dtm_provider=dtm_provider,
+        dtm_provider_settings=None,
         coordinates=case,
         size=height,
         rotation=0,
@@ -170,6 +172,7 @@ def test_map_pack():
     map = Map(
         game=game,
         dtm_provider=dtm_provider,
+        dtm_provider_settings=None,
         coordinates=case,
         size=height,
         rotation=30,

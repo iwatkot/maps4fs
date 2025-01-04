@@ -77,6 +77,11 @@ class Messages:
         "https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version)  of the tool."
     )
 
+    COMMUNITY_PROVIDER = (
+        "This DTM provider was developed by the community, if you have any issues with it "
+        "please contact the author."
+    )
+
 
 class Settings:
     # DEM Settings
