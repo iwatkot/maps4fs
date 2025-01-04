@@ -41,7 +41,6 @@ class Game:
 
     # Order matters! Some components depend on others.
     components = [Texture, GRLE, Background, I3d, Config, Satellite]
-    # components = [Background]
 
     def __init__(self, map_template_path: str | None = None):
         if map_template_path:
