@@ -15,10 +15,10 @@ import osmnx as ox  # type: ignore
 import rasterio  # type: ignore
 import requests
 from pydantic import BaseModel
-from rasterio._warp import Resampling
-from rasterio.merge import merge
-from rasterio.warp import calculate_default_transform, reproject
-from rasterio.windows import from_bounds
+from rasterio._warp import Resampling # type: ignore
+from rasterio.merge import merge # type: ignore
+from rasterio.warp import calculate_default_transform, reproject # type: ignore
+from rasterio.windows import from_bounds # type: ignore
 
 from maps4fs.logger import Logger
 from datetime import datetime
