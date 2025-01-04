@@ -85,14 +85,6 @@ class Messages:
 
 class Settings:
     # DEM Settings
-    AUTO_PROCESS = (
-        "Auto process will automatically apply different algorithms to make terrain more "
-        "realistic. It's recommended for most cases. If you want to have more control over the "
-        "terrain generation, you can disable this option and change the advanced settings. "
-        "If you disable this, you probably get a completely black DEM image, but it's not empty, "
-        "you just can't see the values of 16-bit image by eye. Read the documentation to learn "
-        "how to work with the DEM image."
-    )
     MULTIPLIER = (
         "DEM multiplier can be used to make the terrain more pronounced. "
         "By default the DEM file will be exact copy of the real terrain. "
