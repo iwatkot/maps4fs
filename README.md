@@ -22,6 +22,7 @@
   <a href="#Expert-settings">Expert settings</a> •
   <a href="#Resources">Resources</a> •
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a><br>
+  <a href="#DTM-Providers">DTM Providers</a> •
   <a href="#Special-thanks">Special thanks</a>
 </p>
 
@@ -43,6 +44,7 @@
 
 🗺️ Supports 2x2, 4x4, 8x8, 16x16 and any custom size maps<br>
 🔄 Support map rotation 🆕<br>
+🌐 Supports custom [DTM Providers](#DTM-Providers) 🆕<br>
 🌾 Automatically generates fields 🆕<br>
 🌽 Automatically generates farmlands 🆕<br>
 🌿 Automatically generates decorative foliage 🆕<br>
@@ -520,6 +522,15 @@ To create a basic map, you only need the Giants Editor. But if you want to creat
 ## Bugs and feature requests
 ➡️ Please, before creating an issue or asking some questions, check the [FAQ](docs/FAQ.md) section.<br>
 If you find a bug or have an idea for a new feature, please create an issue [here](https://github.com/iwatkot/maps4fs/issues) or contact me directly on [Telegram](https://t.me/iwatkot) or on Discord: `iwatkot`.
+
+## DTM Providers
+
+The generator supports adding the own DTM providers, please refer to the [DTM Providers](docs/dtm_providers.md) section to learn how to add the custom DTM provider.
+
+### Supported DTM providers
+
+- [SRTM 30m](https://dwtkns.com/srtm30m/) - the 30 meters resolution DEM data from the SRTM mission for the whole world.
+- [USGS 1m](https://portal.opentopography.org/raster?opentopoID=OTNED.012021.4269.3) - the 1-meter resolution DEM data from the USGS for the USA. Developed by [ZenJakey](https://github.com/ZenJakey).
 
 ## Special thanks
 
