@@ -72,15 +72,6 @@ class GeneratorUI:
         """
         return tuple(map(float, self.lat_lon_input.split(",")))
 
-    @property
-    def map_size(self) -> tuple[int, int]:
-        """Get the size of the map in meters.
-
-        Returns:
-            tuple[int, int]: The size of the map in meters.
-        """
-        return tuple(map(int, self.map_size_input.split("x")))
-
     def map_preview(self) -> None:
         """Generate a preview of the map in the HTML container.
         This method is called when the latitude, longitude, or map size is changed.
@@ -90,10 +81,7 @@ class GeneratorUI:
         except ValueError:
             return
 
-        try:
-            map_size, _ = self.map_size
-        except ValueError:
-            return
+        map_size = self.map_size_input
 
         self.logger.debug(
             "Generating map preview for lat=%s, lon=%s, map_size=%s", lat, lon, map_size
@@ -245,6 +233,10 @@ class GeneratorUI:
 
                 if provider.instructions() is not None:
                     st.write(provider.instructions())
+                if provider_code == "srtm30":
+                    self.multiplier_setter = st.checkbox(
+                        "Apply the default multiplier", key="multiplier_setter"
+                    )
 
                 if provider.settings() is not None:
                     provider_settings = provider.settings()()
@@ -290,7 +282,7 @@ class GeneratorUI:
             on_change=self.map_preview,
         )
 
-        size_options = ["2048x2048", "4096x4096", "8192x8192", "16384x16384", "Custom"]
+        size_options = [2048, 4096, 8192, 16384, "Custom"]
         if self.public:
             size_options = size_options[:3]
 
@@ -306,8 +298,6 @@ class GeneratorUI:
         if self.map_size_input == "Custom":
             self.logger.debug("Custom map size selected.")
 
-            st.info("ℹ️ Map size can be only a power of 2. For example: 2, 4, ... 2048, 4096, ...")
-            st.warning("⚠️ Large map sizes can crash on generation or import in the game.")
             st.write("Enter map size (meters):")
             custom_map_size_input = st.number_input(
                 label="Height (meters)",
@@ -318,7 +308,7 @@ class GeneratorUI:
                 on_change=self.map_preview,
             )
 
-            self.map_size_input = f"{custom_map_size_input}x{custom_map_size_input}"
+            self.map_size_input = custom_map_size_input
 
         # DTM Provider selection.
         providers: dict[str, str] = mfs.DTMProvider.get_provider_descriptions()
@@ -335,6 +325,7 @@ class GeneratorUI:
             disabled=self.public,
             on_change=self.provider_info,
         )
+        self.multiplier_setter = False
         self.provider_settings = None
         self.provider_info_container = st.empty()
         self.provider_info()
@@ -509,21 +500,6 @@ class GeneratorUI:
         # Prepare a tuple with the coordinates of the center point of the map.
         coordinates = (lat, lon)
 
-        # Read map size from the input widget.
-        try:
-            height, width = self.map_size
-        except ValueError:
-            st.error("Invalid map size!")
-            return
-
-        if height % 2 != 0 or width % 2 != 0:
-            st.error("Map size must be a power of 2. For example: 2, 4, ... 2048, 4096, ...")
-            return
-
-        if height != width:
-            st.error("Map size must be square (height == width).")
-            return
-
         # Session name will be used for a directory name as well as a zip file name.
 
         session_name = self.get_sesion_name(coordinates)
@@ -542,6 +518,9 @@ class GeneratorUI:
 
         # Limit settings on the public server.
         json_settings = self.limit_on_public(json_settings)
+
+        if self.multiplier_setter:
+            json_settings["DEMSettings"]["multiplier"] = 255
 
         # Parse settings from the JSON.
         all_settings = mfs.SettingsModel.all_settings_from_json(json_settings)
@@ -583,7 +562,7 @@ class GeneratorUI:
             dtm_provider,
             dtm_provider_settings,
             coordinates,
-            height,
+            self.map_size_input,
             self.rotation,
             map_directory,
             logger=self.logger,

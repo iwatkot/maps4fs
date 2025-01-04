@@ -305,8 +305,7 @@ class Texture(Component):
         useful_attributes = [
             "coordinates",
             "bbox",
-            "map_height",
-            "map_width",
+            "map_size",
             "rotation",
             "minimum_x",
             "minimum_y",
