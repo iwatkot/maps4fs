@@ -58,7 +58,6 @@ class DEMSettings(SettingsModel):
     """Represents the advanced settings for DEM component.
 
     Attributes:
-        auto_process (bool): use the auto preset to change the multiplier.
         multiplier (int): multiplier for the heightmap, every pixel will be multiplied by this
             value.
         blur_radius (int): radius of the blur filter.
@@ -67,7 +66,6 @@ class DEMSettings(SettingsModel):
             is present.
     """
 
-    auto_process: bool = True
     multiplier: int = 1
     blur_radius: int = 35
     plateau: int = 0

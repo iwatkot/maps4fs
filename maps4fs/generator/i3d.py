@@ -81,20 +81,6 @@ class I3d(Component):
 
         root = tree.getroot()
         for map_elem in root.iter("Scene"):
-            for terrain_elem in map_elem.iter("TerrainTransformGroup"):
-                if self.map.dem_settings.auto_process:
-                    terrain_elem.set("heightScale", str(DEFAULT_HEIGHT_SCALE))
-                    self.logger.debug(
-                        "heightScale attribute set to %s in TerrainTransformGroup element.",
-                        DEFAULT_HEIGHT_SCALE,
-                    )
-                else:
-                    self.logger.debug(
-                        "Auto process is disabled, skipping the heightScale attribute update."
-                    )
-
-                self.logger.debug("TerrainTransformGroup element updated in I3D file.")
-
             sun_elem = map_elem.find(".//Light[@name='sun']")
 
             if sun_elem is not None:
@@ -111,6 +97,10 @@ class I3d(Component):
                 )
 
         if self.map_size > 4096:
+            terrain_elem = root.find(".//TerrainTransformGroup")
+            if terrain_elem is None:
+                self.logger.warning("TerrainTransformGroup element not found in I3D file.")
+                return
             displacement_layer = terrain_elem.find(".//DisplacementLayer")  # pylint: disable=W0631
 
             if displacement_layer is not None:

@@ -57,36 +57,23 @@ class Background(Component):
         os.makedirs(self.background_directory, exist_ok=True)
         os.makedirs(self.water_directory, exist_ok=True)
 
-        autoprocesses = [self.map.dem_settings.auto_process, False]
-        self.output_paths = [
-            os.path.join(self.background_directory, f"{name}.png") for name in ELEMENTS
-        ]
+        self.output_path = os.path.join(self.background_directory, f"{FULL_NAME}.png")
         self.not_substracted_path = os.path.join(self.background_directory, "not_substracted.png")
         self.not_resized_path = os.path.join(self.background_directory, "not_resized.png")
 
-        dems = []
-
-        for name, autoprocess, output_path in zip(ELEMENTS, autoprocesses, self.output_paths):
-            dem = DEM(
-                self.game,
-                self.map,
-                self.coordinates,
-                self.background_size,
-                self.rotated_size,
-                self.rotation,
-                self.map_directory,
-                self.logger,
-            )
-            dem.preprocess()
-            dem.is_preview = self.is_preview(name)  # type: ignore
-            if dem.is_preview:  # type: ignore
-                dem.multiplier = 1
-            dem.auto_process = autoprocess
-            dem.set_output_resolution((self.rotated_size, self.rotated_size))
-            dem.set_dem_path(output_path)
-            dems.append(dem)
-
-        self.dems = dems
+        self.dem = DEM(
+            self.game,
+            self.map,
+            self.coordinates,
+            self.background_size,
+            self.rotated_size,
+            self.rotation,
+            self.map_directory,
+            self.logger,
+        )
+        self.dem.preprocess()
+        self.dem.set_output_resolution((self.rotated_size, self.rotated_size))
+        self.dem.set_dem_path(self.output_path)
 
     def is_preview(self, name: str) -> bool:
         """Checks if the DEM is a preview.
@@ -104,21 +91,17 @@ class Background(Component):
         as a result the DEM files will be saved, then based on them the obj files will be
         generated."""
         self.create_background_textures()
+        self.dem.process()
 
-        for dem in self.dems:
-            dem.process()
-            if not dem.is_preview:  # type: ignore
-                shutil.copyfile(dem.dem_path, self.not_substracted_path)
-                self.cutout(dem.dem_path, save_path=self.not_resized_path)
+        shutil.copyfile(self.dem.dem_path, self.not_substracted_path)
+        self.cutout(self.dem.dem_path, save_path=self.not_resized_path)
 
         if self.map.dem_settings.water_depth:
             self.subtraction()
 
-        for dem in self.dems:
-            if not dem.is_preview:  # type: ignore
-                cutted_dem_path = self.cutout(dem.dem_path)
-                if self.game.additional_dem_name is not None:
-                    self.make_copy(cutted_dem_path, self.game.additional_dem_name)
+        cutted_dem_path = self.cutout(self.dem.dem_path)
+        if self.game.additional_dem_name is not None:
+            self.make_copy(cutted_dem_path, self.game.additional_dem_name)
 
         if self.map.background_settings.generate_background:
             self.generate_obj_files()
@@ -149,19 +132,17 @@ class Background(Component):
         """
         self.qgis_sequence()
 
-        dem = self.dems[0]
-
-        north, south, east, west = dem.bbox
-        epsg3857_string = dem.get_epsg3857_string()
-        epsg3857_string_with_margin = dem.get_epsg3857_string(add_margin=True)
+        north, south, east, west = self.dem.bbox
+        epsg3857_string = self.dem.get_epsg3857_string()
+        epsg3857_string_with_margin = self.dem.get_epsg3857_string(add_margin=True)
 
         data = {
-            "center_latitude": dem.coordinates[0],
-            "center_longitude": dem.coordinates[1],
+            "center_latitude": self.dem.coordinates[0],
+            "center_longitude": self.dem.coordinates[1],
             "epsg3857_string": epsg3857_string,
             "epsg3857_string_with_margin": epsg3857_string_with_margin,
-            "height": dem.map_size,
-            "width": dem.map_size,
+            "height": self.dem.map_size,
+            "width": self.dem.map_size,
             "north": north,
             "south": south,
             "east": east,
@@ -171,10 +152,10 @@ class Background(Component):
 
     def qgis_sequence(self) -> None:
         """Generates QGIS scripts for creating bounding box layers and rasterizing them."""
-        qgis_layer = (f"Background_{FULL_NAME}", *self.dems[0].get_espg3857_bbox())
+        qgis_layer = (f"Background_{FULL_NAME}", *self.dem.get_espg3857_bbox())
         qgis_layer_with_margin = (
             f"Background_{FULL_NAME}_margin",
-            *self.dems[0].get_espg3857_bbox(add_margin=True),
+            *self.dem.get_espg3857_bbox(add_margin=True),
         )
         self.create_qgis_scripts([qgis_layer, qgis_layer_with_margin])
 
@@ -182,21 +163,20 @@ class Background(Component):
         """Iterates over all dems and generates 3D obj files based on DEM data.
         If at least one DEM file is missing, the generation will be stopped at all.
         """
-        for dem in self.dems:
-            if not os.path.isfile(dem.dem_path):
-                self.logger.warning(
-                    "DEM file not found, generation will be stopped: %s", dem.dem_path
-                )
-                return
+        if not os.path.isfile(self.dem.dem_path):
+            self.logger.warning(
+                "DEM file not found, generation will be stopped: %s", self.dem.dem_path
+            )
+            return
 
-            self.logger.debug("DEM file for found: %s", dem.dem_path)
+        self.logger.debug("DEM file for found: %s", self.dem.dem_path)
 
-            filename = os.path.splitext(os.path.basename(dem.dem_path))[0]
-            save_path = os.path.join(self.background_directory, f"{filename}.obj")
-            self.logger.debug("Generating obj file in path: %s", save_path)
+        filename = os.path.splitext(os.path.basename(self.dem.dem_path))[0]
+        save_path = os.path.join(self.background_directory, f"{filename}.obj")
+        self.logger.debug("Generating obj file in path: %s", save_path)
 
-            dem_data = cv2.imread(dem.dem_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
-            self.plane_from_np(dem_data, save_path, is_preview=dem.is_preview)  # type: ignore
+        dem_data = cv2.imread(self.dem.dem_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
+        self.plane_from_np(dem_data, save_path)  # type: ignore
 
     # pylint: disable=too-many-locals
     def cutout(self, dem_path: str, save_path: str | None = None) -> str:
@@ -248,7 +228,6 @@ class Background(Component):
         self,
         dem_data: np.ndarray,
         save_path: str,
-        is_preview: bool = False,
         include_zeros: bool = True,
     ) -> None:
         """Generates a 3D obj file based on DEM data.
@@ -256,7 +235,6 @@ class Background(Component):
         Arguments:
             dem_data (np.ndarray) -- The DEM data as a numpy array.
             save_path (str) -- The path where the obj file will be saved.
-            is_preview (bool, optional) -- If True, the preview mesh will be generated.
             include_zeros (bool, optional) -- If True, the mesh will include the zero height values.
         """
         resize_factor = 1 / self.map.background_settings.resize_factor
@@ -315,25 +293,21 @@ class Background(Component):
         mesh.apply_transform(rotation_matrix_y)
         mesh.apply_transform(rotation_matrix_z)
 
-        if is_preview:
+        # if not include_zeros:
+        z_scaling_factor = 1 / self.map.dem_settings.multiplier
+        self.logger.debug("Z scaling factor: %s", z_scaling_factor)
+        mesh.apply_scale([1 / resize_factor, 1 / resize_factor, z_scaling_factor])
+
+        mesh.export(save_path)
+        self.logger.debug("Obj file saved: %s", save_path)
+
+        if include_zeros:
             # Simplify the preview mesh to reduce the size of the file.
             mesh = mesh.simplify_quadric_decimation(face_count=len(mesh.faces) // 2**7)
 
             # Apply scale to make the preview mesh smaller in the UI.
             mesh.apply_scale([0.5, 0.5, 0.5])
             self.mesh_to_stl(mesh)
-        else:
-            if not include_zeros:
-                multiplier = self.map.dem_settings.multiplier
-                if multiplier != 1:
-                    z_scaling_factor = 1 / multiplier
-                else:
-                    z_scaling_factor = 1 / 2**5
-                self.logger.debug("Z scaling factor: %s", z_scaling_factor)
-                mesh.apply_scale([1 / resize_factor, 1 / resize_factor, z_scaling_factor])
-
-        mesh.export(save_path)
-        self.logger.debug("Obj file saved: %s", save_path)
 
     def mesh_to_stl(self, mesh: trimesh.Trimesh) -> None:
         """Converts the mesh to an STL file and saves it in the previews directory.
@@ -358,25 +332,22 @@ class Background(Component):
             list[str] -- A list of paths to the previews.
         """
         preview_paths = self.dem_previews(self.game.dem_file_path(self.map_directory))
-        for dem in self.dems:
-            if dem.is_preview:  # type: ignore
-                background_dem_preview_path = os.path.join(
-                    self.previews_directory, "background_dem.png"
-                )
-                background_dem_preview_image = cv2.imread(dem.dem_path, cv2.IMREAD_UNCHANGED)
 
-                background_dem_preview_image = cv2.resize(
-                    background_dem_preview_image, (0, 0), fx=1 / 4, fy=1 / 4
-                )
-                background_dem_preview_image = cv2.normalize(  # type: ignore
-                    background_dem_preview_image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U
-                )
-                background_dem_preview_image = cv2.cvtColor(
-                    background_dem_preview_image, cv2.COLOR_GRAY2BGR
-                )
+        background_dem_preview_path = os.path.join(self.previews_directory, "background_dem.png")
+        background_dem_preview_image = cv2.imread(self.dem.dem_path, cv2.IMREAD_UNCHANGED)
 
-                cv2.imwrite(background_dem_preview_path, background_dem_preview_image)
-                preview_paths.append(background_dem_preview_path)
+        background_dem_preview_image = cv2.resize(
+            background_dem_preview_image, (0, 0), fx=1 / 4, fy=1 / 4
+        )
+        background_dem_preview_image = cv2.normalize(  # type: ignore
+            background_dem_preview_image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U
+        )
+        background_dem_preview_image = cv2.cvtColor(
+            background_dem_preview_image, cv2.COLOR_GRAY2BGR
+        )
+
+        cv2.imwrite(background_dem_preview_path, background_dem_preview_image)
+        preview_paths.append(background_dem_preview_path)
 
         if self.stl_preview_path:
             preview_paths.append(self.stl_preview_path)
@@ -525,18 +496,15 @@ class Background(Component):
             bool
         )
 
-        for output_path in self.output_paths:
-            if FULL_PREVIEW_NAME in output_path:
-                continue
-            dem_image = cv2.imread(output_path, cv2.IMREAD_UNCHANGED)
+        dem_image = cv2.imread(self.output_path, cv2.IMREAD_UNCHANGED)
 
-            # Create a mask where water_resources_image is 255 (or not 0)
-            # Subtract water_depth from dem_image where mask is True
-            dem_image[mask] = dem_image[mask] - self.map.dem_settings.water_depth
+        # Create a mask where water_resources_image is 255 (or not 0)
+        # Subtract water_depth from dem_image where mask is True
+        dem_image[mask] = dem_image[mask] - self.map.dem_settings.water_depth
 
-            # Save the modified dem_image back to the output path
-            cv2.imwrite(output_path, dem_image)
-            self.logger.debug("Water depth subtracted from DEM data: %s", output_path)
+        # Save the modified dem_image back to the output path
+        cv2.imwrite(self.output_path, dem_image)
+        self.logger.debug("Water depth subtracted from DEM data: %s", self.output_path)
 
     def generate_water_resources_obj(self) -> None:
         """Generates 3D obj files based on water resources data."""
@@ -550,9 +518,7 @@ class Background(Component):
             plane_water.astype(np.uint8), np.ones((5, 5), np.uint8), iterations=5
         ).astype(np.uint8)
         plane_save_path = os.path.join(self.water_directory, "plane_water.obj")
-        self.plane_from_np(
-            dilated_plane_water, plane_save_path, is_preview=False, include_zeros=False
-        )
+        self.plane_from_np(dilated_plane_water, plane_save_path, include_zeros=False)
 
         # Single channeled 16 bit DEM image of terrain.
         background_dem = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
@@ -570,6 +536,4 @@ class Background(Component):
         elevated_water = np.where(mask, background_dem, elevated_water)
         elevated_save_path = os.path.join(self.water_directory, "elevated_water.obj")
 
-        self.plane_from_np(
-            elevated_water, elevated_save_path, is_preview=False, include_zeros=False
-        )
+        self.plane_from_np(elevated_water, elevated_save_path, include_zeros=False)
