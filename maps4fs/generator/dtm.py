@@ -14,6 +14,7 @@ import numpy as np
 import osmnx as ox  # type: ignore
 import rasterio  # type: ignore
 import requests
+from numpy import ndarray
 from pydantic import BaseModel
 from rasterio._warp import Resampling # type: ignore
 from rasterio.merge import merge # type: ignore
@@ -349,7 +350,7 @@ class USGS1mProvider(DTMProvider):
     _region = "USA"
     _icon = "🇺🇸"
     _resolution = 1
-    _data = None
+    _data: ndarray | None = None
     _settings = USGS1mProviderSettings
     _author = "[ZenJakey](https://github.com/ZenJakey)"
 
@@ -552,7 +553,7 @@ class USGS1mProvider(DTMProvider):
 
         print(f"GeoTIFF successfully converted and saved to {output_tiff}, with nodata value: {nodata_value}")
 
-    def generate_data(self):
+    def generate_data(self) -> np.ndarray:
         download_urls = self.get_download_urls()
         all_tif_files = self.download_tif_files(download_urls)
         self.merge_geotiff(all_tif_files, os.path.join(self.output_path, "merged.tif"))
@@ -565,12 +566,14 @@ class USGS1mProvider(DTMProvider):
             max_height=self.user_settings.max_local_elevation,
             target_crs="EPSG:4326"
         )
-        self._data = self.extract_roi(os.path.join(self.output_path, "translated.tif"))
+        return self.extract_roi(os.path.join(self.output_path, "translated.tif"))
 
     def get_numpy(self) -> np.ndarray:
+        if not self.user_settings:
+            raise ValueError("user_settings is 'none'")
         if self.user_settings.max_local_elevation <= 0:
             raise ValueError("Entered 'max_local_elevation' value is unable to be used. Use a value greater than 0.")
         if not self._data:
-            self.generate_data()
+            self._data = self.generate_data()
         return self._data
 
