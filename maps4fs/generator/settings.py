@@ -4,7 +4,20 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
+
+class SharedSettings(BaseModel):
+    """Represents the shared settings for all components."""
+
+    mesh_z_scaling_factor: float | None = None
+    height_scale_multiplier: float | None = None
+    height_scale_value: float | None = None
+    change_height_scale: bool = False
+
+    model_config = ConfigDict(
+        frozen=False,
+    )
 
 
 class SettingsModel(BaseModel):

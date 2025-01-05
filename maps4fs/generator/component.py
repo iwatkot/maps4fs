@@ -58,7 +58,7 @@ class Component:
         self.logger = logger
         self.kwargs = kwargs
 
-        self.logger.info(
+        self.logger.debug(
             "Component %s initialized. Map size: %s, map rotated size: %s",  # type: ignore
             self.__class__.__name__,
             self.map_size,

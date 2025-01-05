@@ -187,7 +187,7 @@ class Texture(Component):
         custom_schema = self.kwargs.get("texture_custom_schema")
         if custom_schema:
             layers_schema = custom_schema  # type: ignore
-            self.logger.info("Custom schema loaded with %s layers.", len(layers_schema))
+            self.logger.debug("Custom schema loaded with %s layers.", len(layers_schema))
         else:
             if not os.path.isfile(self.game.texture_schema):
                 raise FileNotFoundError(
@@ -202,15 +202,13 @@ class Texture(Component):
 
         try:
             self.layers = [self.Layer.from_json(layer) for layer in layers_schema]  # type: ignore
-            self.logger.info("Loaded %s layers.", len(self.layers))
+            self.logger.debug("Loaded %s layers.", len(self.layers))
         except Exception as e:  # pylint: disable=W0703
             raise ValueError(f"Error loading texture layers: {e}") from e
 
         base_layer = self.get_base_layer()
         if base_layer:
             self.logger.debug("Base layer found: %s.", base_layer.name)
-        else:
-            self.logger.warning("No base layer found.")
 
         self._weights_dir = self.game.weights_dir_path(self.map_directory)
         self.logger.debug("Weights directory: %s.", self._weights_dir)
@@ -595,7 +593,7 @@ class Texture(Component):
         geometry_type = geometry.geom_type
         converter = self._converters(geometry_type)
         if not converter:
-            self.logger.warning("Geometry type %s not supported.", geometry_type)
+            self.logger.debug("Geometry type %s not supported.", geometry_type)
             return None
         return converter(geometry, width)
 

@@ -16,6 +16,7 @@ from maps4fs.generator.settings import (
     GRLESettings,
     I3DSettings,
     SatelliteSettings,
+    SharedSettings,
     SplineSettings,
     TextureSettings,
 )
@@ -122,6 +123,8 @@ class Map:
 
         with open(save_path, "w", encoding="utf-8") as file:
             json.dump(settings_json, file, indent=4)
+
+        self.shared_settings = SharedSettings()
 
         self.texture_custom_schema = kwargs.get("texture_custom_schema", None)
         if self.texture_custom_schema:
@@ -245,7 +248,7 @@ class Map:
             str: Path to the archive.
         """
         archive_path = shutil.make_archive(archive_path, "zip", self.map_directory)
-        self.logger.info("Map packed to %s.zip", archive_path)
+        self.logger.debug("Map packed to %s.zip", archive_path)
         if remove_source:
             try:
                 shutil.rmtree(self.map_directory)

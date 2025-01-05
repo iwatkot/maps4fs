@@ -1,6 +1,7 @@
 """This module contains DEM class for processing Digital Elevation Model data."""
 
 import os
+from typing import Any
 
 import cv2
 import numpy as np
@@ -63,6 +64,7 @@ class DEM(Component):
             size=self.map_rotated_size,
             directory=self.temp_dir,
             logger=self.logger,
+            map=self.map,
         )
 
     @property
@@ -280,3 +282,16 @@ class DEM(Component):
             list: Empty list.
         """
         return []
+
+    def info_sequence(self) -> dict[Any, Any] | None:  # type: ignore
+        """Returns the information sequence for the component. Must be implemented in the child
+        class. If the component does not have an information sequence, an empty dictionary must be
+        returned.
+
+        Returns:
+            dict[Any, Any]: The information sequence for the component.
+        """
+        provider_info_sequence = self.dtm_provider.info_sequence()
+        if provider_info_sequence is None:
+            return {}
+        return provider_info_sequence

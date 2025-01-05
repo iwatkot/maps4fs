@@ -5,7 +5,7 @@ and specific settings for downloading and processing the data."""
 from __future__ import annotations
 
 import os
-from typing import Type
+from typing import TYPE_CHECKING, Type
 
 import numpy as np
 import osmnx as ox  # type: ignore
@@ -14,6 +14,9 @@ import requests
 from pydantic import BaseModel
 
 from maps4fs.logger import Logger
+
+if TYPE_CHECKING:
+    from maps4fs.generator.map import Map
 
 
 class DTMProviderSettings(BaseModel):
@@ -45,6 +48,7 @@ class DTMProvider:
         size: int,
         directory: str,
         logger: Logger,
+        map: Map | None = None,  # pylint: disable=W0622
     ):
         self._coordinates = coordinates
         self._user_settings = user_settings
@@ -56,6 +60,27 @@ class DTMProvider:
         os.makedirs(self._tile_directory, exist_ok=True)
 
         self.logger = logger
+        self.map = map
+
+        self._data_info: dict[str, int | str | float] | None = None
+
+    @property
+    def data_info(self) -> dict[str, int | str | float] | None:
+        """Information about the DTM data.
+
+        Returns:
+            dict: Information about the DTM data.
+        """
+        return self._data_info
+
+    @data_info.setter
+    def data_info(self, value: dict[str, int | str | float] | None) -> None:
+        """Set information about the DTM data.
+
+        Arguments:
+            value (dict): Information about the DTM data.
+        """
+        self._data_info = value
 
     @property
     def coordinates(self) -> tuple[float, float]:
@@ -260,3 +285,13 @@ class DTMProvider:
             raise ValueError("No data in the tile.")
 
         return data
+
+    def info_sequence(self) -> dict[str, int | str | float] | None:
+        """Returns the information sequence for the component. Must be implemented in the child
+        class. If the component does not have an information sequence, an empty dictionary must be
+        returned.
+
+        Returns:
+            dict[str, int | str | float] | None: Information sequence for the component.
+        """
+        return self.data_info

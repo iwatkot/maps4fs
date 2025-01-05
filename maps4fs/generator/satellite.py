@@ -34,7 +34,7 @@ class Satellite(Component):
         """Downloads the satellite images for the map."""
         self.image_paths = []  # pylint: disable=W0201
         if not self.map.satellite_settings.download_images:
-            self.logger.info("Satellite images download is disabled.")
+            self.logger.debug("Satellite images download is disabled.")
             return
 
         margin = self.map.satellite_settings.satellite_margin

@@ -7,6 +7,7 @@ from time import time
 import cv2
 
 from maps4fs import DTMProvider, Map
+from maps4fs.generator.dtm.srtm import SRTM30ProviderSettings
 from maps4fs.generator.game import Game
 from maps4fs.generator.settings import (
     BackgroundSettings,
@@ -34,6 +35,8 @@ game_code_cases = ["FS25"]
 
 dtm_provider_code = "srtm30"
 dtm_provider = DTMProvider.get_provider_by_code(dtm_provider_code)
+
+dtm_settings = SRTM30ProviderSettings()
 
 
 def get_random_size() -> tuple[int, int]:
@@ -85,7 +88,7 @@ def test_map():
             map = Map(
                 game=game,
                 dtm_provider=dtm_provider,
-                dtm_provider_settings=None,
+                dtm_provider_settings=dtm_settings,
                 coordinates=coordinates,
                 size=height,
                 rotation=0,
@@ -147,7 +150,7 @@ def test_map_preview():
     map = Map(
         game=game,
         dtm_provider=dtm_provider,
-        dtm_provider_settings=None,
+        dtm_provider_settings=dtm_settings,
         coordinates=case,
         size=height,
         rotation=0,
@@ -184,7 +187,7 @@ def test_map_pack():
     map = Map(
         game=game,
         dtm_provider=dtm_provider,
-        dtm_provider_settings=None,
+        dtm_provider_settings=dtm_settings,
         coordinates=case,
         size=height,
         rotation=30,
