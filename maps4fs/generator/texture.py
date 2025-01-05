@@ -209,8 +209,6 @@ class Texture(Component):
         base_layer = self.get_base_layer()
         if base_layer:
             self.logger.debug("Base layer found: %s.", base_layer.name)
-        else:
-            self.logger.warning("No base layer found.")
 
         self._weights_dir = self.game.weights_dir_path(self.map_directory)
         self.logger.debug("Weights directory: %s.", self._weights_dir)
@@ -595,7 +593,7 @@ class Texture(Component):
         geometry_type = geometry.geom_type
         converter = self._converters(geometry_type)
         if not converter:
-            self.logger.warning("Geometry type %s not supported.", geometry_type)
+            self.logger.info("Geometry type %s not supported.", geometry_type)
             return None
         return converter(geometry, width)
 

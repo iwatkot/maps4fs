@@ -15,8 +15,8 @@ from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
 class SRTM30ProviderSettings(DTMProviderSettings):
     """Settings for SRTM 30m provider."""
 
-    normalize_data: bool = True
-    expected_maximum_height: int = 200
+    easy_mode: bool = True
+    power_factor: int = 0
 
 
 class SRTM30Provider(DTMProvider):
@@ -33,14 +33,19 @@ class SRTM30Provider(DTMProvider):
     _author = "[iwatkot](https://github.com/iwatkot)"
 
     _instructions = (
-        "ℹ️ If you want the data to be normalized to a specific maximum height, "
-        "check the **Normalize data** checkbox and enter the **Expected maximum height** in "
-        "meters. The expected maximum height is a maximum height of the terrain in meters in "
-        "real world. It is not necessary it should be very "
-        "precise, just an approximate value. If you want to receive the DEM data in an original "
-        "format, where pixel values will be in meters, uncheck the **Normalize data** checkbox. "
-        "Note, that if you disable the normalization, you probably get completely flat terrain "
-        "and you need to adjust the height scale paramter in the Giants Editor."
+        "ℹ️ If you don't know how to work with DEM data, it is recommended to use the "
+        "**Easy mode** option. It will automatically change the values in the image, so the "
+        "terrain will be visible in the Giants Editor. If you're experienced modder, it's "
+        "recommended to disable this option and work with the DEM data in usual way.  \n"
+        "ℹ️ If the terrain height difference in the real world is bigger than 255 meters, "
+        "the [Height scale](https://github.com/iwatkot/maps4fs/blob/main/docs/dem.md#height-scale)"
+        " parameter in the **map.i3d** file will be changed automatically.  \n"
+        "⚡ If the **Easy mode** option is disabled, you will probably get completely flat "
+        "terrain, unless you adjust the DEM Multiplier Setting or the Height scale parameter in "
+        "the Giants Editor.  \n"
+        "💡 You can use the **Power factor** setting to make the difference between heights "
+        "biger. Be extremely careful with this setting, and use only low values, otherwise your "
+        "terrain may be completely broken.  \n"
     )
 
     _settings = SRTM30ProviderSettings
@@ -99,14 +104,9 @@ class SRTM30Provider(DTMProvider):
 
         data = self.extract_roi(decompressed_tile_path)
 
-        if (
-            self.user_settings.normalize_data  # type: ignore
-            and self.user_settings.expected_maximum_height  # type: ignore
-        ):
+        if self.user_settings.easy_mode:  # type: ignore
             try:
-                data = self.normalize_dem(
-                    data, self.user_settings.expected_maximum_height  # type: ignore
-                )
+                data = self.normalize_dem(data)
             except Exception as e:  # pylint: disable=W0718
                 self.logger.error(
                     "Failed to normalize DEM data. Error: %s. Using original data.", e
@@ -114,30 +114,62 @@ class SRTM30Provider(DTMProvider):
 
         return data
 
-    def normalize_dem(self, data: np.ndarray, max_height: int) -> np.ndarray:
+    def normalize_dem(self, data: np.ndarray) -> np.ndarray:
         """Normalize DEM data to 16-bit unsigned integer using max height from settings.
 
-        Args:
+        Arguments:
             data (np.ndarray): DEM data from SRTM file after cropping.
 
         Returns:
             np.ndarray: Normalized DEM data.
         """
-        max_dev = data.max() - data.min()
-        scaling_factor = max_dev / max_height if max_dev < max_height else 1
-        adjusted_max_height = int(65535 * scaling_factor)
         self.logger.debug(
-            "Maximum deviation: %s. Scaling factor: %s. Adjusted max height: %s.",
-            max_dev,
-            scaling_factor,
-            adjusted_max_height,
+            "Minimum height in original DEM data: %s. Maximum height in original DEM data: %s.",
+            data.min(),
+            data.max(),
         )
-        normalized_data = (
-            (data - data.min()) / (data.max() - data.min()) * adjusted_max_height
-        ).astype("uint16")
+
+        data = data - data.min()
+        data = data + 1
         self.logger.debug(
-            "DEM data was normalized to %s - %s.",
-            normalized_data.min(),
+            "Minimum height after offset: %s. Maximum height after offset: %s.",
+            data.min(),
+            data.max(),
+        )
+
+        maximum_height = int(data.max())
+        minimum_height = int(data.min())
+        deviation = maximum_height - minimum_height
+        self.logger.debug(
+            "Maximum height: %s. Minimum height: %s. Deviation: %s.",
+            maximum_height,
+            minimum_height,
+            deviation,
+        )
+        self.logger.debug("Number of unique values in original DEM data: %s.", np.unique(data).size)
+
+        adjusted_maximum_height = maximum_height * 255
+        adjusted_maximum_height = min(adjusted_maximum_height, 65535)
+        scaling_factor = adjusted_maximum_height / maximum_height
+        self.logger.debug(
+            "Adjusted maximum height: %s. Scaling factor: %s.",
+            adjusted_maximum_height,
+            scaling_factor,
+        )
+
+        if self.user_settings.power_factor:  # type: ignore
+            power_factor = 1 + self.user_settings.power_factor / 10
+            self.logger.debug(
+                "Applying power factor: %s to the DEM data.",
+                power_factor,
+            )
+            data = np.power(data, power_factor).astype(np.uint16)
+
+        normalized_data = np.round(data * scaling_factor).astype(np.uint16)
+        self.logger.debug(
+            "Normalized data maximum height: %s. Minimum height: %s. Number of unique values: %s.",
             normalized_data.max(),
+            normalized_data.min(),
+            np.unique(normalized_data).size,
         )
         return normalized_data
