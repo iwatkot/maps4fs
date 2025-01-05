@@ -148,6 +148,9 @@ class Background(Component):
             "east": east,
             "west": west,
         }
+
+        dem_info_sequence = self.dem.info_sequence()
+        data["DEM"] = dem_info_sequence
         return data  # type: ignore
 
     def qgis_sequence(self) -> None:

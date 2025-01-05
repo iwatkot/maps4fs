@@ -57,6 +57,26 @@ class DTMProvider:
 
         self.logger = logger
 
+        self._data_info: dict[str, int | str | float] | None = None
+
+    @property
+    def data_info(self) -> dict[str, int | str | float] | None:
+        """Information about the DTM data.
+
+        Returns:
+            dict: Information about the DTM data.
+        """
+        return self._data_info
+
+    @data_info.setter
+    def data_info(self, value: dict[str, int | str | float] | None) -> None:
+        """Set information about the DTM data.
+
+        Arguments:
+            value (dict): Information about the DTM data.
+        """
+        self._data_info = value
+
     @property
     def coordinates(self) -> tuple[float, float]:
         """Coordinates of the center point of the DTM data.
@@ -260,3 +280,13 @@ class DTMProvider:
             raise ValueError("No data in the tile.")
 
         return data
+
+    def info_sequence(self) -> dict[str, int | str | float] | None:
+        """Returns the information sequence for the component. Must be implemented in the child
+        class. If the component does not have an information sequence, an empty dictionary must be
+        returned.
+
+        Returns:
+            dict[str, int | str | float] | None: Information sequence for the component.
+        """
+        return self.data_info

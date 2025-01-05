@@ -35,8 +35,8 @@ class SRTM30Provider(DTMProvider):
     _instructions = (
         "ℹ️ If you don't know how to work with DEM data, it is recommended to use the "
         "**Easy mode** option. It will automatically change the values in the image, so the "
-        "terrain will be visible in the Giants Editor. If you're experienced modder, it's "
-        "recommended to disable this option and work with the DEM data in usual way.  \n"
+        "terrain will be visible in the Giants Editor. If you're an experienced modder, it's "
+        "recommended to disable this option and work with the DEM data in a usual way.  \n"
         "ℹ️ If the terrain height difference in the real world is bigger than 255 meters, "
         "the [Height scale](https://github.com/iwatkot/maps4fs/blob/main/docs/dem.md#height-scale)"
         " parameter in the **map.i3d** file will be changed automatically.  \n"
@@ -44,7 +44,7 @@ class SRTM30Provider(DTMProvider):
         "terrain, unless you adjust the DEM Multiplier Setting or the Height scale parameter in "
         "the Giants Editor.  \n"
         "💡 You can use the **Power factor** setting to make the difference between heights "
-        "biger. Be extremely careful with this setting, and use only low values, otherwise your "
+        "bigger. Be extremely careful with this setting, and use only low values, otherwise your "
         "terrain may be completely broken.  \n"
     )
 
@@ -56,6 +56,7 @@ class SRTM30Provider(DTMProvider):
         self.gz_directory = os.path.join(self._tile_directory, "gz")
         os.makedirs(self.hgt_directory, exist_ok=True)
         os.makedirs(self.gz_directory, exist_ok=True)
+        self.data_info: dict[str, int | str | float] | None = None
 
     def get_tile_parameters(self, *args, **kwargs) -> dict[str, str]:
         """Returns latitude band and tile name for SRTM tile from coordinates.
@@ -104,15 +105,71 @@ class SRTM30Provider(DTMProvider):
 
         data = self.extract_roi(decompressed_tile_path)
 
+        self.data_info = {}
+        self.add_numpy_params(data, "original")
+
+        data = self.signed_to_unsigned(data)
+        self.add_numpy_params(data, "grounded")
+
+        original_deviation = self.data_info["original_deviation"]
+        in_game_maximum_height = 65535 // 255
+        if original_deviation > in_game_maximum_height:
+            suggested_height_scale_multiplier = original_deviation / in_game_maximum_height
+            suggested_height_scale_value = int(255 * suggested_height_scale_multiplier)
+        else:
+            suggested_height_scale_multiplier = 1
+            suggested_height_scale_value = 255
+
+        self.data_info["suggested_height_scale_multiplier"] = suggested_height_scale_multiplier
+        self.data_info["suggested_height_scale_value"] = suggested_height_scale_value
+
         if self.user_settings.easy_mode:  # type: ignore
             try:
                 data = self.normalize_dem(data)
+                self.add_numpy_params(data, "normalized")
+
+                normalized_deviation = self.data_info["normalized_deviation"]
+                self.data_info["z_scaling_factor"] = normalized_deviation / original_deviation
+
             except Exception as e:  # pylint: disable=W0718
                 self.logger.error(
                     "Failed to normalize DEM data. Error: %s. Using original data.", e
                 )
 
+        # TODO: Save z_scaling_factor for the obj the Map instance via settings
+        # TODO: Save suggested_height_scale_value for the map.i3d file via settings
+
         return data
+
+    def add_numpy_params(
+        self,
+        data: np.ndarray,
+        prefix: str,
+    ) -> None:
+        """Add numpy array parameters to the data_info dictionary.
+
+        Arguments:
+            data (np.ndarray): Numpy array of the tile.
+            prefix (str): Prefix for the parameters.
+        """
+        self.data_info[f"{prefix}_minimum_height"] = int(data.min())
+        self.data_info[f"{prefix}_maximum_height"] = int(data.max())
+        self.data_info[f"{prefix}_deviation"] = int(data.max() - data.min())
+        self.data_info[f"{prefix}_unique_values"] = int(np.unique(data).size)
+
+    def signed_to_unsigned(self, data: np.ndarray, add_one: bool = True) -> np.ndarray:
+        """Convert signed 16-bit integer to unsigned 16-bit integer.
+
+        Arguments:
+            data (np.ndarray): DEM data from SRTM file after cropping.
+
+        Returns:
+            np.ndarray: Unsigned DEM data.
+        """
+        data = data - data.min()
+        if add_one:
+            data = data + 1
+        return data.astype(np.uint16)
 
     def normalize_dem(self, data: np.ndarray) -> np.ndarray:
         """Normalize DEM data to 16-bit unsigned integer using max height from settings.
@@ -123,20 +180,6 @@ class SRTM30Provider(DTMProvider):
         Returns:
             np.ndarray: Normalized DEM data.
         """
-        self.logger.debug(
-            "Minimum height in original DEM data: %s. Maximum height in original DEM data: %s.",
-            data.min(),
-            data.max(),
-        )
-
-        data = data - data.min()
-        data = data + 1
-        self.logger.debug(
-            "Minimum height after offset: %s. Maximum height after offset: %s.",
-            data.min(),
-            data.max(),
-        )
-
         maximum_height = int(data.max())
         minimum_height = int(data.min())
         deviation = maximum_height - minimum_height
@@ -156,6 +199,15 @@ class SRTM30Provider(DTMProvider):
             adjusted_maximum_height,
             scaling_factor,
         )
+        # * | 1000 * 255 = 255000 or maximum real world value / 255 | 1000 / 257 = 3.89
+        # * | 255000 / 65535 = 3.89
+        # * | 255 * 3.89 = 991.95
+
+        # TODO 1. Infosequence
+        # TODO 2. Save original max height and max height after scaling to know z_factor scale for obj
+        # TODO 3. Get maximum deviation and put it into the i3d file
+
+        # ? Pydantic allow mutation model SharedSettings for Map
 
         if self.user_settings.power_factor:  # type: ignore
             power_factor = 1 + self.user_settings.power_factor / 10
