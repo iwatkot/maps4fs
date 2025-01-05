@@ -248,7 +248,7 @@ class Map:
             str: Path to the archive.
         """
         archive_path = shutil.make_archive(archive_path, "zip", self.map_directory)
-        self.logger.info("Map packed to %s.zip", archive_path)
+        self.logger.debug("Map packed to %s.zip", archive_path)
         if remove_source:
             try:
                 shutil.rmtree(self.map_directory)

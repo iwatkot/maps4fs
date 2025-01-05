@@ -106,7 +106,7 @@ class GeneratorUI:
             if versions:
                 latest_version, current_version = versions
                 if not current_version:
-                    self.logger.warning("Can't get the current version of the package.")
+                    self.logger.debug("Can't get the current version of the package.")
                     return
                 st.write(f"`{current_version}`")
                 if self.public:

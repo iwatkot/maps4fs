@@ -187,7 +187,7 @@ class Texture(Component):
         custom_schema = self.kwargs.get("texture_custom_schema")
         if custom_schema:
             layers_schema = custom_schema  # type: ignore
-            self.logger.info("Custom schema loaded with %s layers.", len(layers_schema))
+            self.logger.debug("Custom schema loaded with %s layers.", len(layers_schema))
         else:
             if not os.path.isfile(self.game.texture_schema):
                 raise FileNotFoundError(
@@ -593,7 +593,7 @@ class Texture(Component):
         geometry_type = geometry.geom_type
         converter = self._converters(geometry_type)
         if not converter:
-            self.logger.info("Geometry type %s not supported.", geometry_type)
+            self.logger.debug("Geometry type %s not supported.", geometry_type)
             return None
         return converter(geometry, width)
 
