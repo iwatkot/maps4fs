@@ -56,7 +56,7 @@ class SRTM30Provider(DTMProvider):
         self.gz_directory = os.path.join(self._tile_directory, "gz")
         os.makedirs(self.hgt_directory, exist_ok=True)
         os.makedirs(self.gz_directory, exist_ok=True)
-        self.data_info: dict[str, int | str | float] | None = None
+        self.data_info: dict[str, int | str | float] | None = None  # type: ignore
 
     def get_tile_parameters(self, *args, **kwargs) -> dict[str, str]:
         """Returns latitude band and tile name for SRTM tile from coordinates.
@@ -111,10 +111,12 @@ class SRTM30Provider(DTMProvider):
         data = self.signed_to_unsigned(data)
         self.add_numpy_params(data, "grounded")
 
-        original_deviation = self.data_info["original_deviation"]
+        original_deviation = int(self.data_info["original_deviation"])
         in_game_maximum_height = 65535 // 255
         if original_deviation > in_game_maximum_height:
-            suggested_height_scale_multiplier = original_deviation / in_game_maximum_height
+            suggested_height_scale_multiplier = (
+                original_deviation / in_game_maximum_height  # type: ignore
+            )
             suggested_height_scale_value = int(255 * suggested_height_scale_multiplier)
         else:
             suggested_height_scale_multiplier = 1
@@ -123,8 +125,10 @@ class SRTM30Provider(DTMProvider):
         self.data_info["suggested_height_scale_multiplier"] = suggested_height_scale_multiplier
         self.data_info["suggested_height_scale_value"] = suggested_height_scale_value
 
-        self.map.shared_settings.height_scale_multiplier = suggested_height_scale_multiplier
-        self.map.shared_settings.height_scale_value = suggested_height_scale_value
+        self.map.shared_settings.height_scale_multiplier = (  # type: ignore
+            suggested_height_scale_multiplier
+        )
+        self.map.shared_settings.height_scale_value = suggested_height_scale_value  # type: ignore
 
         if self.user_settings.easy_mode:  # type: ignore
             try:
@@ -132,11 +136,11 @@ class SRTM30Provider(DTMProvider):
                 self.add_numpy_params(data, "normalized")
 
                 normalized_deviation = self.data_info["normalized_deviation"]
-                z_scaling_factor = normalized_deviation / original_deviation
+                z_scaling_factor = normalized_deviation / original_deviation  # type: ignore
                 self.data_info["z_scaling_factor"] = z_scaling_factor
 
-                self.map.shared_settings.mesh_z_scaling_factor = z_scaling_factor
-                self.map.shared_settings.change_height_scale = True
+                self.map.shared_settings.mesh_z_scaling_factor = z_scaling_factor  # type: ignore
+                self.map.shared_settings.change_height_scale = True  # type: ignore
 
             except Exception as e:  # pylint: disable=W0718
                 self.logger.error(
@@ -156,10 +160,10 @@ class SRTM30Provider(DTMProvider):
             data (np.ndarray): Numpy array of the tile.
             prefix (str): Prefix for the parameters.
         """
-        self.data_info[f"{prefix}_minimum_height"] = int(data.min())
-        self.data_info[f"{prefix}_maximum_height"] = int(data.max())
-        self.data_info[f"{prefix}_deviation"] = int(data.max() - data.min())
-        self.data_info[f"{prefix}_unique_values"] = int(np.unique(data).size)
+        self.data_info[f"{prefix}_minimum_height"] = int(data.min())  # type: ignore
+        self.data_info[f"{prefix}_maximum_height"] = int(data.max())  # type: ignore
+        self.data_info[f"{prefix}_deviation"] = int(data.max() - data.min())  # type: ignore
+        self.data_info[f"{prefix}_unique_values"] = int(np.unique(data).size)  # type: ignore
 
     def signed_to_unsigned(self, data: np.ndarray, add_one: bool = True) -> np.ndarray:
         """Convert signed 16-bit integer to unsigned 16-bit integer.
@@ -205,7 +209,7 @@ class SRTM30Provider(DTMProvider):
         )
 
         if self.user_settings.power_factor:  # type: ignore
-            power_factor = 1 + self.user_settings.power_factor / 10
+            power_factor = 1 + self.user_settings.power_factor / 10  # type: ignore
             self.logger.debug(
                 "Applying power factor: %s to the DEM data.",
                 power_factor,

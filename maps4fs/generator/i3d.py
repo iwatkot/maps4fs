@@ -84,7 +84,9 @@ class I3d(Component):
                 if self.map.shared_settings.change_height_scale:
                     suggested_height_scale = self.map.shared_settings.height_scale_value
                     if suggested_height_scale is not None and suggested_height_scale > 255:
-                        new_height_scale = int(self.map.shared_settings.height_scale_value)
+                        new_height_scale = int(
+                            self.map.shared_settings.height_scale_value  # type: ignore
+                        )
                         terrain_elem.set("heightScale", str(new_height_scale))
                         self.logger.info(
                             "heightScale attribute set to %s in TerrainTransformGroup element.",

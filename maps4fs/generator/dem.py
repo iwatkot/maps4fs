@@ -283,7 +283,7 @@ class DEM(Component):
         """
         return []
 
-    def info_sequence(self) -> dict[Any, Any] | None:
+    def info_sequence(self) -> dict[Any, Any] | None:  # type: ignore
         """Returns the information sequence for the component. Must be implemented in the child
         class. If the component does not have an information sequence, an empty dictionary must be
         returned.
