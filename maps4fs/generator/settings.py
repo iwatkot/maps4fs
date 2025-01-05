@@ -98,6 +98,10 @@ class BackgroundSettings(SettingsModel):
     generate_background: bool = False
     generate_water: bool = False
     resize_factor: int = 8
+    remove_center: bool = False
+    apply_decimation: bool = False
+    decimation_percent: int = 25
+    decimation_agression: int = 3
 
 
 class GRLESettings(SettingsModel):

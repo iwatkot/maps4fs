@@ -127,6 +127,26 @@ class Settings:
         "will not be resized. Low values will result with a very long processing and "
         "meshes of enormous size. Do not change it unless you know what you are doing."
     )
+    REMOVE_CENTER = (
+        "If remove center is enabled, the region of playable map terrain will be removed "
+        "from the background terrain 3D model. Note, that due to resizing, it's recommended "
+        "to use this feature only when **Resize factor** is set to 1, otherwise there will be "
+        "a gap between the background terrain and the playable map terrain."
+    )
+    APPLY_DECIMATION = (
+        "If apply decimation is enabled, the background terrain will be decimated to the "
+        "specified value. It can be useful if you want to reduce the size of the 3D model. "
+    )
+    DECIMATION_PERCENT = (
+        "Decimation percent value is used to set the decimation percent. The higher the value, "
+        "the more decimated the model will be. Be careful with high values, because it may "
+        "completely break the model."
+    )
+    DECIMATION_AGRESSION = (
+        "Decimation aggression value is used to set the decimation aggression. The higher the "
+        "the more faces will be removed. Note, that higher values will break the geometry of the "
+        "3D model and it won't match with the playable terrain. "
+    )
 
     # GRLE Settings
 

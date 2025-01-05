@@ -441,13 +441,8 @@ List of the important DDS files:
 - `mapsUS/overview.dds` - 4096x4096 pixels, the overview image of the map (in-game map)
 
 ## Advanced settings
-The tool supports the custom size of the map. To use this feature select `Custom` in the `Map size` dropdown and enter the desired size. The tool will generate a map with the size you entered.<br>
 
-⛔️ Do not use this feature, if you don't know what you're doing. In most cases, the Giants Editor will just crash on opening the file, because you need to enter specific values for the map size.<br><br>
-
-![Advanced settings](https://github.com/user-attachments/assets/9e8e178a-58d9-4aa6-aefd-4ed53408701d)
-
-You can also apply some advanced settings to the map generation process. Note that they're ADVANCED, so you don't need to use them if you're not sure what they do.<br>
+You can also apply some advanced settings to the map generation process.<br>
 
 ### DEM Advanced settings
 
@@ -466,6 +461,15 @@ You can also apply some advanced settings to the map generation process. Note th
 - Generate water - if enabled, the water planes obj files will be generated. You can turn it off if you already have those files or don't need them. By default, it's set to True.
 
 - Resize factor - the factor by which the background terrain will be resized. It will be used as 1 / resize_factor while generating the models. Which means that the larger the value the more the terrain will be resized. The lowest value is 1, in this case background terrain will not be resized. Note, than low values will lead to long processing and enormous size of the obj files.
+
+- Remove center - if enabled, the playable region (map terrain) will  be removed from the background terrain. Note, that it will require low resize factors, to avoid gaps between the map and the background terrain.
+
+- Apply decimation - if enabled, the mesh will be simplified to reduce the number of faces.
+
+- Decimation percent - the target percentage of decimation. The higher the value, the more simplified the mesh will be. Note, that high values will break the 3D model entirely.
+
+- Decimation agression - the aggression of the decimation. The higher the value, the more aggressive the
+decimation will be, which means the higher it will affect the geometry. It's not recommended to make it higher than the default value, otherwise the background terrain will not match the map terrain.
 
 ### GRLE Advanced settings
 
