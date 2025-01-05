@@ -48,7 +48,7 @@ class DTMProvider:
         size: int,
         directory: str,
         logger: Logger,
-        map: Map | None = None,
+        map: Map | None = None,  # pylint: disable=W0622
     ):
         self._coordinates = coordinates
         self._user_settings = user_settings

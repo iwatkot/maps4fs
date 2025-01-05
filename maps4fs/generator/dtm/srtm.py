@@ -203,15 +203,6 @@ class SRTM30Provider(DTMProvider):
             adjusted_maximum_height,
             scaling_factor,
         )
-        # * | 1000 * 255 = 255000 or maximum real world value / 255 | 1000 / 257 = 3.89
-        # * | 255000 / 65535 = 3.89
-        # * | 255 * 3.89 = 991.95
-
-        # TODO 1. Infosequence
-        # TODO 2. Save original max height and max height after scaling to know z_factor scale for obj
-        # TODO 3. Get maximum deviation and put it into the i3d file
-
-        # ? Pydantic allow mutation model SharedSettings for Map
 
         if self.user_settings.power_factor:  # type: ignore
             power_factor = 1 + self.user_settings.power_factor / 10
