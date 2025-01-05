@@ -64,6 +64,7 @@ class DEM(Component):
             size=self.map_rotated_size,
             directory=self.temp_dir,
             logger=self.logger,
+            map=self.map,
         )
 
     @property

@@ -14,7 +14,6 @@ import numpy as np
 from maps4fs.generator.component import Component
 from maps4fs.generator.texture import Texture
 
-DEFAULT_HEIGHT_SCALE = 2000
 DISPLACEMENT_LAYER_SIZE_FOR_BIG_MAPS = 32768
 DEFAULT_MAX_LOD_DISTANCE = 10000
 DEFAULT_MAX_LOD_OCCLUDER_DISTANCE = 10000
@@ -81,6 +80,18 @@ class I3d(Component):
 
         root = tree.getroot()
         for map_elem in root.iter("Scene"):
+            for terrain_elem in map_elem.iter("TerrainTransformGroup"):
+                if self.map.shared_settings.change_height_scale:
+                    suggested_height_scale = self.map.shared_settings.height_scale_value
+                    if suggested_height_scale is not None and suggested_height_scale > 255:
+                        new_height_scale = int(self.map.shared_settings.height_scale_value)
+                        terrain_elem.set("heightScale", str(new_height_scale))
+                        self.logger.info(
+                            "heightScale attribute set to %s in TerrainTransformGroup element.",
+                            new_height_scale,
+                        )
+
+                self.logger.debug("TerrainTransformGroup element updated in I3D file.")
             sun_elem = map_elem.find(".//Light[@name='sun']")
 
             if sun_elem is not None:
@@ -97,10 +108,6 @@ class I3d(Component):
                 )
 
         if self.map_size > 4096:
-            terrain_elem = root.find(".//TerrainTransformGroup")
-            if terrain_elem is None:
-                self.logger.warning("TerrainTransformGroup element not found in I3D file.")
-                return
             displacement_layer = terrain_elem.find(".//DisplacementLayer")  # pylint: disable=W0631
 
             if displacement_layer is not None:

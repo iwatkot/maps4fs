@@ -202,7 +202,7 @@ class Texture(Component):
 
         try:
             self.layers = [self.Layer.from_json(layer) for layer in layers_schema]  # type: ignore
-            self.logger.info("Loaded %s layers.", len(self.layers))
+            self.logger.debug("Loaded %s layers.", len(self.layers))
         except Exception as e:  # pylint: disable=W0703
             raise ValueError(f"Error loading texture layers: {e}") from e
 

@@ -123,21 +123,25 @@ class SRTM30Provider(DTMProvider):
         self.data_info["suggested_height_scale_multiplier"] = suggested_height_scale_multiplier
         self.data_info["suggested_height_scale_value"] = suggested_height_scale_value
 
+        self.map.shared_settings.height_scale_multiplier = suggested_height_scale_multiplier
+        self.map.shared_settings.height_scale_value = suggested_height_scale_value
+
         if self.user_settings.easy_mode:  # type: ignore
             try:
                 data = self.normalize_dem(data)
                 self.add_numpy_params(data, "normalized")
 
                 normalized_deviation = self.data_info["normalized_deviation"]
-                self.data_info["z_scaling_factor"] = normalized_deviation / original_deviation
+                z_scaling_factor = normalized_deviation / original_deviation
+                self.data_info["z_scaling_factor"] = z_scaling_factor
+
+                self.map.shared_settings.mesh_z_scaling_factor = z_scaling_factor
+                self.map.shared_settings.change_height_scale = True
 
             except Exception as e:  # pylint: disable=W0718
                 self.logger.error(
                     "Failed to normalize DEM data. Error: %s. Using original data.", e
                 )
-
-        # TODO: Save z_scaling_factor for the obj the Map instance via settings
-        # TODO: Save suggested_height_scale_value for the map.i3d file via settings
 
         return data
 

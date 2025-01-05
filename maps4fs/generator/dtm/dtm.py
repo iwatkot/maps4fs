@@ -5,7 +5,7 @@ and specific settings for downloading and processing the data."""
 from __future__ import annotations
 
 import os
-from typing import Type
+from typing import TYPE_CHECKING, Type
 
 import numpy as np
 import osmnx as ox  # type: ignore
@@ -14,6 +14,9 @@ import requests
 from pydantic import BaseModel
 
 from maps4fs.logger import Logger
+
+if TYPE_CHECKING:
+    from maps4fs.generator.map import Map
 
 
 class DTMProviderSettings(BaseModel):
@@ -45,6 +48,7 @@ class DTMProvider:
         size: int,
         directory: str,
         logger: Logger,
+        map: Map | None = None,
     ):
         self._coordinates = coordinates
         self._user_settings = user_settings
@@ -56,6 +60,7 @@ class DTMProvider:
         os.makedirs(self._tile_directory, exist_ok=True)
 
         self.logger = logger
+        self.map = map
 
         self._data_info: dict[str, int | str | float] | None = None
 
