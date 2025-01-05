@@ -155,7 +155,7 @@ class I3d(Component):
             self.logger.warning("Roads polylines data not found in textures info layer.")
             return
 
-        self.logger.info("Found %s roads polylines in textures info layer.", len(roads_polylines))
+        self.logger.debug("Found %s roads polylines in textures info layer.", len(roads_polylines))
         self.logger.debug("Starging to add roads polylines to the I3D file.")
 
         root = tree.getroot()
@@ -300,7 +300,7 @@ class I3d(Component):
             self.logger.warning("Fields data not found in textures info layer.")
             return
 
-        self.logger.info("Found %s fields in textures info layer.", len(fields))
+        self.logger.debug("Found %s fields in textures info layer.", len(fields))
         self.logger.debug("Starging to add fields to the I3D file.")
 
         root = tree.getroot()

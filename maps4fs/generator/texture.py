@@ -507,7 +507,7 @@ class Texture(Component):
                 cv2.imwrite(sublayer_path, sublayer)
                 self.logger.debug("Sublayer %s saved.", sublayer_path)
 
-            self.logger.info("Dissolved layer %s.", layer.name)
+            self.logger.debug("Dissolved layer %s.", layer.name)
 
     def draw_base_layer(self, cumulative_image: np.ndarray) -> None:
         """Draws base layer and saves it into the png file.

@@ -114,12 +114,12 @@ class GRLE(Component):
             self.logger.warning("Fields data not found in textures info layer.")
             return
 
-        self.logger.info("Found %s fields in textures info layer.", len(fields))
+        self.logger.debug("Found %s fields in textures info layer.", len(fields))
 
         farmyards: list[list[tuple[int, int]]] | None = textures_info_layer.get("farmyards")
         if farmyards and self.map.grle_settings.add_farmyards:
             fields.extend(farmyards)
-            self.logger.info("Found %s farmyards in textures info layer.", len(farmyards))
+            self.logger.debug("Found %s farmyards in textures info layer.", len(farmyards))
 
         info_layer_farmlands_path = os.path.join(
             self.game.weights_dir_path(self.map_directory), "infoLayer_farmlands.png"
