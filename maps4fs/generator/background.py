@@ -179,7 +179,7 @@ class Background(Component):
         self.logger.debug("Generating obj file in path: %s", save_path)
 
         dem_data = cv2.imread(self.dem.dem_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
-        self.plane_from_np(dem_data, save_path)  # type: ignore
+        self.plane_from_np(dem_data, save_path, create_preview=True)  # type: ignore
 
     # pylint: disable=too-many-locals
     def cutout(self, dem_path: str, save_path: str | None = None) -> str:
@@ -232,6 +232,7 @@ class Background(Component):
         dem_data: np.ndarray,
         save_path: str,
         include_zeros: bool = True,
+        create_preview: bool = False,
     ) -> None:
         """Generates a 3D obj file based on DEM data.
 
@@ -239,6 +240,7 @@ class Background(Component):
             dem_data (np.ndarray) -- The DEM data as a numpy array.
             save_path (str) -- The path where the obj file will be saved.
             include_zeros (bool, optional) -- If True, the mesh will include the zero height values.
+            create_preview (bool, optional) -- If True, a simplified mesh will be saved as an STL.
         """
         resize_factor = 1 / self.map.background_settings.resize_factor
         dem_data = cv2.resize(  # pylint: disable=no-member
@@ -278,7 +280,10 @@ class Background(Component):
                 bottom_left = top_left + cols
                 bottom_right = bottom_left + 1
 
-                if ground in [z[i, j], z[i, j + 1], z[i + 1, j], z[i + 1, j + 1]]:
+                if (
+                    ground in [z[i, j], z[i, j + 1], z[i + 1, j], z[i + 1, j + 1]]
+                    and not include_zeros
+                ):
                     skipped += 1
                     continue
 
@@ -304,7 +309,7 @@ class Background(Component):
         mesh.export(save_path)
         self.logger.debug("Obj file saved: %s", save_path)
 
-        if include_zeros:
+        if create_preview:
             # Simplify the preview mesh to reduce the size of the file.
             mesh = mesh.simplify_quadric_decimation(face_count=len(mesh.faces) // 2**7)
 
