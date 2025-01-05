@@ -33,6 +33,11 @@ class USGS1mProvider(DTMProvider):
     _settings = USGS1mProviderSettings
     _author = "[ZenJakey](https://github.com/ZenJakey)"
     _is_community = True
+    _instructions = (
+        "ℹ️ Set the max local elevation to approx the local max elevation for your area in"
+        " meters. This will allow you to use heightScale 255 in GE with minimal tweaking."
+        " Setting this value too low can cause a flat map!"
+    )
 
     _url = (
         "https://tnmaccess.nationalmap.gov/api/v1/products?prodFormats=GeoTIFF,IMG&prodExtents="
@@ -123,7 +128,7 @@ class USGS1mProvider(DTMProvider):
         datasets = [rasterio.open(file) for file in input_files]
 
         # Merge datasets
-        mosaic, out_transform = merge(datasets)
+        mosaic, out_transform = merge(datasets, nodata=0)
 
         # Get metadata from the first file and update it for the output
         out_meta = datasets[0].meta.copy()
