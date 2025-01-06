@@ -105,6 +105,7 @@ docker run -d -p 8501:8501 --name maps4fs iwatkot/maps4fs
 ```
 And open [http://localhost:8501](http://localhost:8501) in your browser.<br>
 If you don't know how to use Docker, navigate to the [Docker version](#option-2-docker-version), it's really simple.<br>
+Check out the [Docker FAQ](docs/FAQ_docker.md) if you have any questions.<br>
 
 ### 🤯 For developers
 **Option 3:** Python package. Install the package using the following command:
@@ -159,6 +160,7 @@ Using it is easy and doesn't require any guides. Enjoy!
 🗺️ Supported map sizes: 2x2, 4x4, 8x8, 16x16 km and any custom size.  
 ⚙️ Advanced settings: enabled.   
 🖼️ Texture dissolving: enabled.  
+Check out the [Docker FAQ](docs/FAQ_docker.md) if you have any questions.<br>
 You can launch the project with minimalistic UI in your browser using Docker. Follow these steps:
 
 1. Install [Docker](https://docs.docker.com/get-docker/) for your OS.
