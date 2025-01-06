@@ -340,6 +340,7 @@ class GeneratorUI:
             on_change=self.map_preview,
         )
 
+        self.custom_background_path = None
         self.expert_mode = False
         self.raw_config = None
 
@@ -421,6 +422,23 @@ class GeneratorUI:
                             height=600,
                             label_visibility="collapsed",
                         )
+
+            self.custom_background = st.checkbox(
+                "Upload custom background", value=False, key="custom_background"
+            )
+
+            if self.custom_background:
+                st.info(Messages.CUSTOM_BACKGROUND_INFO)
+
+                uploaded_file = st.file_uploader("Choose a file", type=["png"])
+                if uploaded_file is not None:
+                    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                    self.custom_background_path = os.path.join(
+                        config.INPUT_DIRECTORY, f"custom_background_{timestamp}.png"
+                    )
+                    with open(self.custom_background_path, "wb") as f:
+                        f.write(uploaded_file.read())
+                    st.success(f"Custom background uploaded: {uploaded_file.name}")
 
         # Add an empty container for status messages.
         self.status_container = st.empty()
@@ -568,6 +586,7 @@ class GeneratorUI:
             satellite_settings=all_settings["SatelliteSettings"],
             texture_custom_schema=texture_schema,
             tree_custom_schema=tree_schema,
+            custom_background_path=self.custom_background_path,
         )
 
         if self.public:

@@ -61,6 +61,14 @@ class Messages:
         "https://github.com/iwatkot/maps4fs/blob/main/docs/custom_osm.md).  \n"
         "Note, that incorrect file can lead to errors or completely broken map."
     )
+    CUSTOM_BACKGROUND_INFO = (
+        "The uploaded file should be:  \n"
+        "- Single-channel (grayscale) unsigned 16-bit PNG image.  \n"
+        "- The size of the image should be map size + 4096 in each dimension, where the map in "
+        "the center.  \n"
+        "- If rotation needed, the image should be rotated already.  \n  \n"
+        "If any of above conditions are not met, generation will fail."
+    )
     EXPERT_MODE_INFO = (
         "In this mode you can edit confuguration of the generation in a raw format. "
         "Be careful, any incorrect value can lead to errors or completely broken map."

@@ -140,6 +140,11 @@ class Map:
                 json.dump(self.tree_custom_schema, file, indent=4)
             self.logger.debug("Tree custom schema saved to %s", save_path)
 
+        self.custom_background_path = kwargs.get("custom_background_path", None)
+        if self.custom_background_path:
+            save_path = os.path.join(self.map_directory, "custom_background.png")
+            shutil.copyfile(self.custom_background_path, save_path)
+
         try:
             shutil.unpack_archive(game.template_path, self.map_directory)
             self.logger.debug("Map template unpacked to %s", self.map_directory)

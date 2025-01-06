@@ -58,6 +58,10 @@ class Background(Component):
         os.makedirs(self.water_directory, exist_ok=True)
 
         self.output_path = os.path.join(self.background_directory, f"{FULL_NAME}.png")
+        if self.map.custom_background_path:
+            self.check_custom_background(self.map.custom_background_path)
+            shutil.copyfile(self.map.custom_background_path, self.output_path)
+
         self.not_substracted_path = os.path.join(self.background_directory, "not_substracted.png")
         self.not_resized_path = os.path.join(self.background_directory, "not_resized.png")
 
@@ -75,6 +79,28 @@ class Background(Component):
         self.dem.set_output_resolution((self.rotated_size, self.rotated_size))
         self.dem.set_dem_path(self.output_path)
 
+    def check_custom_background(self, image_path: str) -> None:
+        """Checks if the custom background image meets the requirements.
+
+        Arguments:
+            image_path (str): The path to the custom background image.
+
+        Raises:
+            ValueError: If the custom background image does not meet the requirements.
+        """
+        image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
+        if image.shape[0] != image.shape[1]:
+            raise ValueError("The custom background image must be a square.")
+
+        if image.shape[0] != self.map_size + DEFAULT_DISTANCE * 2:
+            raise ValueError("The custom background image must have the size of the map + 4096.")
+
+        if len(image.shape) != 2:
+            raise ValueError("The custom background image must be a grayscale image.")
+
+        if image.dtype != np.uint16:
+            raise ValueError("The custom background image must be a 16-bit grayscale image.")
+
     def is_preview(self, name: str) -> bool:
         """Checks if the DEM is a preview.
 
@@ -91,7 +117,9 @@ class Background(Component):
         as a result the DEM files will be saved, then based on them the obj files will be
         generated."""
         self.create_background_textures()
-        self.dem.process()
+
+        if not self.map.custom_background_path:
+            self.dem.process()
 
         shutil.copyfile(self.dem.dem_path, self.not_substracted_path)
         self.cutout(self.dem.dem_path, save_path=self.not_resized_path)
