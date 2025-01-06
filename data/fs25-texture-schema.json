@@ -19,7 +19,8 @@
     "width": 8,
     "color": [70, 70, 70],
     "priority": 1,
-    "info_layer": "roads"
+    "info_layer": "roads",
+    "procedural": ["PG_roads"]
   },
   {
     "name": "asphaltGravel",
@@ -34,7 +35,8 @@
     "count": 2,
     "tags": { "building": true },
     "width": 8,
-    "color": [130, 130, 130]
+    "color": [130, 130, 130],
+    "procedural": ["PG_buildings"]
   },
   {
     "name": "concreteGravelSand",
@@ -71,7 +73,8 @@
     "tags": { "natural": "grassland" },
     "color": [34, 255, 34],
     "priority": 0,
-    "usage": "grass"
+    "usage": "grass",
+    "procedural": ["PG_grass"]
   },
   {
     "name": "grassClovers",
@@ -88,7 +91,8 @@
     "width": 2,
     "color": [11, 66, 0],
     "usage": "forest",
-    "priority": 5
+    "priority": 5,
+    "procedural": ["PG_forest"]
   },
   {
     "name": "grassDirtPatchyDry",
@@ -140,7 +144,8 @@
     "tags": { "highway": ["secondary", "tertiary", "road", "service"] },
     "width": 4,
     "color": [140, 180, 210],
-    "info_layer": "roads"
+    "info_layer": "roads",
+    "procedural": ["PG_roads"]
   },
   {
     "name": "mudDark",
@@ -148,7 +153,8 @@
     "tags": { "landuse": ["farmland", "meadow"] },
     "color": [47, 107, 85],
     "priority": 4,
-    "info_layer": "fields"
+    "info_layer": "fields",
+    "procedural": ["PG_meadow", "PG_acres"]
   },
   {
     "name": "mudDarkGrassPatchy",
@@ -221,6 +227,7 @@
     },
     "width": 10,
     "color": [255, 20, 20],
-    "background": true
+    "background": true,
+    "procedural": ["PG_water"]
   }
 ]
