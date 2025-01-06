@@ -23,6 +23,10 @@ class SharedSettings(BaseModel):
 class SettingsModel(BaseModel):
     """Base class for settings models. It provides methods to convert settings to and from JSON."""
 
+    model_config = ConfigDict(
+        frozen=False,
+    )
+
     @classmethod
     def all_settings_to_json(cls) -> dict[str, dict[str, Any]]:
         """Get all settings of the current class and its subclasses as a dictionary.

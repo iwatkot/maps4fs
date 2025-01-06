@@ -89,6 +89,17 @@ class Map:
 
         self.dem_settings = dem_settings
         self.logger.info("DEM settings: %s", dem_settings)
+        if self.dem_settings.water_depth > 0:
+            # Make sure that the plateau value is >= water_depth
+            self.dem_settings.plateau = max(
+                self.dem_settings.plateau, self.dem_settings.water_depth
+            )
+            self.logger.info(
+                "Plateau value was set to %s to be >= water_depth value %s",
+                self.dem_settings.plateau,
+                self.dem_settings.water_depth,
+            )
+
         self.background_settings = background_settings
         self.logger.info("Background settings: %s", background_settings)
         self.grle_settings = grle_settings
