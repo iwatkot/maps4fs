@@ -89,6 +89,9 @@ class Settings:
         "DEM multiplier can be used to make the terrain more pronounced. "
         "By default the DEM file will be exact copy of the real terrain. "
         "If you want to make it more steep, you can increase this value. "
+        "The recommended value of the multiplier is 255, which refers to the height scale "
+        "in Giants Editor. But it will not going to work with every place, you need to perform "
+        "experiments, play both with the multiplier and the height scale in GE."
     )
     BLUR_RADIUS = (
         "DEM blur radius is used to blur the elevation map. Without blurring the terrain "
