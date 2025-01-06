@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 from collections import defaultdict
 from typing import Any, Callable, Generator, Optional
 
@@ -69,6 +70,7 @@ class Texture(Component):
             usage: str | None = None,
             background: bool = False,
             invisible: bool = False,
+            procedural: list[str] | None = None,
         ):
             self.name = name
             self.count = count
@@ -81,6 +83,7 @@ class Texture(Component):
             self.usage = usage
             self.background = background
             self.invisible = invisible
+            self.procedural = procedural
 
         def to_json(self) -> dict[str, str | list[str] | bool]:  # type: ignore
             """Returns dictionary with layer data.
@@ -99,6 +102,7 @@ class Texture(Component):
                 "usage": self.usage,
                 "background": self.background,
                 "invisible": self.invisible,
+                "procedural": self.procedural,
             }
 
             data = {k: v for k, v in data.items() if v is not None}
@@ -212,6 +216,10 @@ class Texture(Component):
 
         self._weights_dir = self.game.weights_dir_path(self.map_directory)
         self.logger.debug("Weights directory: %s.", self._weights_dir)
+        self.procedural_dir = os.path.join(self._weights_dir, "masks")
+        os.makedirs(self.procedural_dir, exist_ok=True)
+        self.logger.debug("Procedural directory: %s.", self.procedural_dir)
+
         self.info_save_path = os.path.join(self.map_directory, "generation_info.json")
         self.logger.debug("Generation info save path: %s.", self.info_save_path)
 
@@ -251,11 +259,56 @@ class Texture(Component):
                 return layer
         return None
 
-    def process(self):
+    def process(self) -> None:
+        """Processes the data to generate textures."""
         self._prepare_weights()
         self._read_parameters()
         self.draw()
         self.rotate_textures()
+        self.copy_procedural()
+
+    def copy_procedural(self) -> None:
+        """Copies some of the textures to use them as mask for procedural generation.
+        Creates an empty blockmask if it does not exist."""
+        blockmask_path = os.path.join(self.procedural_dir, "BLOCKMASK.png")
+        if not os.path.isfile(blockmask_path):
+            self.logger.debug("BLOCKMASK.png not found, creating an empty file.")
+            img = np.zeros((self.map_size, self.map_size), dtype=np.uint8)
+            cv2.imwrite(blockmask_path, img)  # pylint: disable=no-member
+
+        pg_layers_by_type = defaultdict(list)
+        for layer in self.layers:
+            if layer.procedural:
+                # Get path to the original file.
+                texture_path = layer.get_preview_or_path(self._weights_dir)
+                for procedural_layer_name in layer.procedural:
+                    pg_layers_by_type[procedural_layer_name].append(texture_path)
+
+        if not pg_layers_by_type:
+            self.logger.debug("No procedural layers found.")
+            return
+
+        for procedural_layer_name, texture_paths in pg_layers_by_type.items():
+            procedural_save_path = os.path.join(self.procedural_dir, f"{procedural_layer_name}.png")
+            if len(texture_paths) > 1:
+                # If there are more than one texture, merge them.
+                merged_texture = np.zeros((self.map_size, self.map_size), dtype=np.uint8)
+                for texture_path in texture_paths:
+                    # pylint: disable=E1101
+                    texture = cv2.imread(texture_path, cv2.IMREAD_UNCHANGED)
+                    merged_texture[texture == 255] = 255
+                cv2.imwrite(procedural_save_path, merged_texture)  # pylint: disable=no-member
+                self.logger.debug(
+                    "Procedural file %s merged from %s textures.",
+                    procedural_save_path,
+                    len(texture_paths),
+                )
+            elif len(texture_paths) == 1:
+                # Otherwise, copy the texture.
+                shutil.copyfile(texture_paths[0], procedural_save_path)
+                self.logger.debug(
+                    "Procedural file %s copied from %s.", procedural_save_path, texture_paths[0]
+                )
 
     def rotate_textures(self) -> None:
         """Rotates textures of the layers which have tags."""
