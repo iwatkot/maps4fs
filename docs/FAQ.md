@@ -50,4 +50,10 @@ Make sure that **Always loaded** checkbox is checked, then save it and execute. 
 
 The script is downloading a huge GeoTIFF image, so it can take a while depending on the region size and hardware. Some guys reported that on old CPUs it can take up to 30 minutes. Just wait, and it will finish eventually.
 
+### I put the archive from the generator to the mods directory, but the map loading hangs, what should I do?
+
+After downloading the archive from the generator it is a **mandatory** to unpack it, open in the Giants Editor, save and pack it back. Otherwise it won't work.  
+Pay attention to the fact, that the archive name should be simple, like **FS25_MyMap.zip**. Avoid using special characters, spaces, and non-ASCII symbols in the archive name, or it won't work.
+
+
 If you think that some question should be added here, please, contact me in [Discord](https://discord.gg/Sj5QKKyE42) or open an issue on GitHub. Thank you! 
