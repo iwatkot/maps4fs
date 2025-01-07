@@ -6,6 +6,7 @@ import json
 import os
 import re
 import shutil
+import warnings
 from collections import defaultdict
 from typing import Any, Callable, Generator, Optional
 
@@ -327,8 +328,6 @@ class Texture(Component):
                                 output_height=self.map_size,
                                 output_width=self.map_size,
                             )
-                        else:
-                            self.logger.warning("Layer path %s not found.", layer_path)
                 else:
                     self.logger.debug(
                         "Skipping rotation of layer %s because it has no tags.", layer.name
@@ -717,7 +716,9 @@ class Texture(Component):
         is_fieds = info_layer == "fields"
         try:
             if self.map.custom_osm is not None:
-                objects = ox.features_from_xml(self.map.custom_osm, tags=tags)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", FutureWarning)
+                    objects = ox.features_from_xml(self.map.custom_osm, tags=tags)
             else:
                 objects = ox.features_from_bbox(bbox=self.new_bbox, tags=tags)
         except Exception as e:  # pylint: disable=W0718
@@ -775,6 +776,8 @@ class Texture(Component):
                 padded_polygon = polygon.buffer(-self.map.texture_settings.fields_padding)
 
                 if not isinstance(padded_polygon, shapely.geometry.polygon.Polygon):
+                    self.logger.warning("The padding value is too high, field will not padded.")
+                elif not list(padded_polygon.exterior.coords):
                     self.logger.warning("The padding value is too high, field will not padded.")
                 else:
                     polygon = padded_polygon

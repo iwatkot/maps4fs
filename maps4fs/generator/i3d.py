@@ -197,7 +197,7 @@ class I3d(Component):
                         linestring_points=road, angle=self.rotation
                     )
                 except ValueError as e:
-                    self.logger.warning(
+                    self.logger.debug(
                         "Road %s could not be fitted into the map bounds with error: %s",
                         road_id,
                         e,
@@ -322,7 +322,7 @@ class I3d(Component):
                             polygon_points=field, angle=self.rotation
                         )
                     except ValueError as e:
-                        self.logger.warning(
+                        self.logger.debug(
                             "Field %s could not be fitted into the map bounds with error: %s",
                             field_id,
                             e,
@@ -336,7 +336,7 @@ class I3d(Component):
                     try:
                         cx, cy = self.get_polygon_center(field_ccs)
                     except Exception as e:  # pylint: disable=W0718
-                        self.logger.warning(
+                        self.logger.debug(
                             "Field %s could not be fitted into the map bounds.", field_id
                         )
                         self.logger.debug("Error: %s", e)

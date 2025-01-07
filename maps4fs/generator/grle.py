@@ -10,7 +10,7 @@ import numpy as np
 from shapely.geometry import Polygon  # type: ignore
 
 from maps4fs.generator.component import Component
-from maps4fs.generator.texture import Texture
+from maps4fs.generator.texture import PREVIEW_MAXIMUM_SIZE, Texture
 
 ISLAND_SIZE_MIN = 10
 ISLAND_SIZE_MAX = 200
@@ -39,6 +39,7 @@ class GRLE(Component):
     def preprocess(self) -> None:
         """Gets the path to the map I3D file from the game instance and saves it to the instance
         attribute. If the game does not support I3D files, the attribute is set to None."""
+        self.preview_paths: dict[str, str] = {}
 
         try:
             grle_schema_path = self.game.grle_schema
@@ -89,6 +90,7 @@ class GRLE(Component):
         else:
             self.logger.warning("Adding plants it's not supported for the %s.", self.game.code)
 
+    # pylint: disable=no-member
     def previews(self) -> list[str]:
         """Returns a list of paths to the preview images (empty list).
         The component does not generate any preview images so it returns an empty list.
@@ -96,7 +98,57 @@ class GRLE(Component):
         Returns:
             list[str]: An empty list.
         """
-        return []
+        preview_paths = []
+        for preview_name, preview_path in self.preview_paths.items():
+            save_path = os.path.join(self.previews_directory, f"{preview_name}.png")
+            # Resize the preview image to the maximum size allowed for previews.
+            image = cv2.imread(preview_path, cv2.IMREAD_GRAYSCALE)
+            if image.shape[0] > PREVIEW_MAXIMUM_SIZE or image.shape[1] > PREVIEW_MAXIMUM_SIZE:
+                image = cv2.resize(image, (PREVIEW_MAXIMUM_SIZE, PREVIEW_MAXIMUM_SIZE))
+            image_normalized = np.empty_like(image)
+            cv2.normalize(image, image_normalized, 0, 255, cv2.NORM_MINMAX)
+            image_colored = cv2.applyColorMap(image_normalized, cv2.COLORMAP_JET)
+            cv2.imwrite(save_path, image_colored)
+            preview_paths.append(save_path)
+
+            with_fields_save_path = os.path.join(
+                self.previews_directory, f"{preview_name}_with_fields.png"
+            )
+            image_with_fields = self.overlay_fields(image_colored)
+            if image_with_fields is None:
+                continue
+            cv2.imwrite(with_fields_save_path, image_with_fields)  # pylint: disable=no-member
+            preview_paths.append(with_fields_save_path)
+
+        return preview_paths
+
+    def overlay_fields(self, farmlands_np: np.ndarray) -> np.ndarray | None:
+        """Overlay fields on the farmlands preview image.
+
+        Arguments:
+            farmlands_np (np.ndarray): The farmlands preview image.
+
+        Returns:
+            np.ndarray | None: The farmlands preview image with fields overlayed on top of it.
+        """
+        texture_component: Texture | None = self.map.get_component("Texture")  # type: ignore
+        if not texture_component:
+            self.logger.warning("Texture component not found in the map.")
+            return None
+
+        fields_layer = texture_component.get_layer_by_usage("field")
+        fields_layer_path = fields_layer.get_preview_or_path(  # type: ignore
+            self.game.weights_dir_path(self.map_directory)
+        )
+        if not fields_layer_path or not os.path.isfile(fields_layer_path):
+            self.logger.warning("Fields layer not found in the texture component.")
+            return None
+        fields_np = cv2.imread(fields_layer_path)
+        # Resize fields_np to the same size as farmlands_np.
+        fields_np = cv2.resize(fields_np, (farmlands_np.shape[1], farmlands_np.shape[0]))
+
+        # use fields_np as base layer and overlay farmlands_np on top of it with 50% alpha blending.
+        return cv2.addWeighted(fields_np, 0.5, farmlands_np, 0.5, 0)
 
     # pylint: disable=R0801, R0914
     def _add_farmlands(self) -> None:
@@ -155,7 +207,7 @@ class GRLE(Component):
                     angle=self.rotation,
                 )
             except ValueError as e:
-                self.logger.warning(
+                self.logger.debug(
                     "Farmland %s could not be fitted into the map bounds with error: %s",
                     farmland_id,
                     e,
@@ -180,7 +232,7 @@ class GRLE(Component):
             try:
                 cv2.fillPoly(image, [field_np], farmland_id)  # type: ignore
             except Exception as e:  # pylint: disable=W0718
-                self.logger.warning(
+                self.logger.debug(
                     "Farmland %s could not be added to the InfoLayer PNG file with error: %s",
                     farmland_id,
                     e,
@@ -203,6 +255,8 @@ class GRLE(Component):
         self.logger.debug(
             "Farmlands added to the InfoLayer PNG file: %s.", info_layer_farmlands_path
         )
+
+        self.preview_paths["farmlands"] = info_layer_farmlands_path  # type: ignore
 
     # pylint: disable=R0915
     def _add_plants(self) -> None:
