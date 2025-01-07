@@ -104,11 +104,6 @@ class Map:
         self.logger.info("Background settings: %s", background_settings)
         self.grle_settings = grle_settings
         self.logger.info("GRLE settings: %s", grle_settings)
-        if not isinstance(self.grle_settings.base_grass, str):
-            self.grle_settings.base_grass = self.grle_settings.base_grass[0]
-            self.logger.info(
-                "Updated value of the base grass to %s.", self.grle_settings.base_grass
-            )
         self.i3d_settings = i3d_settings
         self.logger.info("I3D settings: %s", i3d_settings)
         self.texture_settings = texture_settings
