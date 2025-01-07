@@ -178,6 +178,7 @@ class Settings:
         "corresponding field. It can be useful if you want to add some farmland in the "
         "regions without fields."
     )
+    BASE_GRASS = "Select the plant that will be used as a base grass."
 
     # I3D Settings
 

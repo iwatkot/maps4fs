@@ -203,6 +203,8 @@ class GeneratorUI:
             )
         elif type(value) is bool:
             return st.checkbox(label=field_name, value=value, key=raw_field_name, disabled=disabled)
+        elif type(value) is tuple:
+            return st.selectbox(label=field_name, options=value)
         else:
             raise ValueError(f"Unsupported type of the value: {type(value)}")
 

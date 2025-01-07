@@ -121,6 +121,7 @@ class GRLESettings(SettingsModel):
     farmland_margin: int = 0
     random_plants: bool = True
     add_farmyards: bool = False
+    base_grass: tuple | str = ("smallDenseMix", "meadow")
 
 
 class I3DSettings(SettingsModel):

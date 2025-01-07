@@ -19,6 +19,23 @@ ISLAND_VERTEX_COUNT = 30
 ISLAND_ROUNDING_RADIUS = 15
 
 
+def plant_to_pixel_value(plant_name: str) -> int | None:
+    """Returns the pixel value representation of the plant.
+    If not found, returns None.
+
+    Arguments:
+        plant_name (str): name of the plant
+
+    Returns:
+        int | None: pixel value of the plant or None if not found.
+    """
+    plants = {
+        "smallDenseMix": 33,
+        "meadow": 131,
+    }
+    return plants.get(plant_name)
+
+
 # pylint: disable=W0223
 class GRLE(Component):
     """Component for to generate InfoLayer PNG files based on GRLE schema.
@@ -324,10 +341,13 @@ class GRLE(Component):
             grass_image[forest_image != 0] = 255
 
         # B and G channels remain the same (zeros), while we change the R channel.
-        possible_R_values = [33, 65, 97, 129, 161, 193, 225]  # pylint: disable=C0103
+        possible_R_values = [65, 97, 129, 161, 193, 225]  # pylint: disable=C0103
 
-        # 1st approach: Change the non zero values in the base image to 33 (for debug).
-        # And use the base image as R channel in the density map.
+        base_layer_pixel_value = plant_to_pixel_value(
+            self.map.grle_settings.base_grass  # type:ignore
+        )
+        if not base_layer_pixel_value:
+            base_layer_pixel_value = 131
 
         # pylint: disable=no-member
         def create_island_of_plants(image: np.ndarray, count: int) -> np.ndarray:
@@ -409,9 +429,9 @@ class GRLE(Component):
         grass_image_copy = grass_image.copy()
         if forest_image is not None:
             # Add the forest layer to the base image, to merge the masks.
-            grass_image_copy[forest_image != 0] = 33
-        # Set all the non-zero values to 33.
-        grass_image_copy[grass_image != 0] = 33
+            grass_image_copy[forest_image != 0] = base_layer_pixel_value
+
+        grass_image_copy[grass_image != 0] = base_layer_pixel_value
 
         # Add islands of plants to the base image.
         island_count = self.map_size
@@ -434,7 +454,6 @@ class GRLE(Component):
         grass_image_copy[:, 0] = 0  # Left side
         grass_image_copy[:, -1] = 0  # Right side
 
-        # Value of 33 represents the base grass plant.
         # After painting it with base grass, we'll create multiple islands of different plants.
         # On the final step, we'll remove all the values which in pixels
         # where zerons in the original base image (so we don't paint grass where it should not be).
