@@ -12,11 +12,7 @@ from shapely.geometry import Polygon  # type: ignore
 from maps4fs.generator.component import Component
 from maps4fs.generator.texture import PREVIEW_MAXIMUM_SIZE, Texture
 
-ISLAND_SIZE_MIN = 10
-ISLAND_SIZE_MAX = 200
 ISLAND_DISTORTION = 0.3
-ISLAND_VERTEX_COUNT = 30
-ISLAND_ROUNDING_RADIUS = 15
 
 
 def plant_to_pixel_value(plant_name: str) -> int | None:
@@ -364,23 +360,20 @@ class GRLE(Component):
                 # Randomly choose the value for the island.
                 plant_value = choice(possible_R_values)
                 # Randomly choose the size of the island.
-                island_size = randint(ISLAND_SIZE_MIN, ISLAND_SIZE_MAX)
+                island_size = randint(
+                    self.map.grle_settings.plants_island_minimum_size,  # type:ignore
+                    self.map.grle_settings.plants_island_maximum_size,  # type:ignore
+                )
                 # Randomly choose the position of the island.
-                # x = np.random.randint(0, image.shape[1] - island_size)
-                # y = np.random.randint(0, image.shape[0] - island_size)
                 x = randint(0, image.shape[1] - island_size)
                 y = randint(0, image.shape[0] - island_size)
 
-                # Randomly choose the shape of the island.
-                # shapes = ["circle", "ellipse", "polygon"]
-                # shape = choice(shapes)
-
                 try:
                     polygon_points = get_rounded_polygon(
-                        num_vertices=ISLAND_VERTEX_COUNT,
+                        num_vertices=self.map.grle_settings.plants_island_vertex_count,
                         center=(x + island_size // 2, y + island_size // 2),
                         radius=island_size // 2,
-                        rounding_radius=ISLAND_ROUNDING_RADIUS,
+                        rounding_radius=self.map.grle_settings.plants_island_rounding_radius,
                     )
                     if not polygon_points:
                         continue

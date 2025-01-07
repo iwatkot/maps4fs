@@ -179,6 +179,23 @@ class Settings:
         "regions without fields."
     )
     BASE_GRASS = "Select the plant that will be used as a base grass."
+    # plants_island_minimum_size
+    PLANTS_ISLAND_MINIMUM_SIZE = (
+        "Plants island minimum size value is used to set the minimum size of the plants islands "
+        "when random size of the island will be selected, it will be the lowest possible size. "
+    )
+    PLANTS_ISLAND_MAXIMUM_SIZE = (
+        "Plants island maximum size value is used to set the maximum size of the plants islands "
+        "when random size of the island will be selected, it will be the highest possible size. "
+    )
+    PLANTS_ISLAND_VERTEX_COUNT = (
+        "Plants island vertex count value is used to set the number of vertices of the plants. "
+        "The higher the value, the more complex shapes of the island will be. "
+    )
+    PLANTS_ISLAND_ROUNDING_RADIUS = (
+        "Plants island rounding radius value is used to set the rounding radius of the plants. "
+        "The higher the value, the more rounded the vertices will be. "
+    )
 
     # I3D Settings
 

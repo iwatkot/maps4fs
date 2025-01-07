@@ -132,6 +132,10 @@ class GRLESettings(SettingsModel):
     random_plants: bool = True
     add_farmyards: bool = False
     base_grass: tuple | str = ("smallDenseMix", "meadow")
+    plants_island_minimum_size: int = 10
+    plants_island_maximum_size: int = 200
+    plants_island_vertex_count: int = 30
+    plants_island_rounding_radius: int = 15
 
 
 class I3DSettings(SettingsModel):
