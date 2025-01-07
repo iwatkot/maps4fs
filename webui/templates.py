@@ -196,6 +196,11 @@ class Settings:
         "Plants island rounding radius value is used to set the rounding radius of the plants. "
         "The higher the value, the more rounded the vertices will be. "
     )
+    PLANTS_ISLAND_PERCENT = (
+        "Plants island percent value is used to set the relation between the map size and the "
+        "number of islands of plants. For example, if set to 100% for map size of 2048, the number"
+        " of islands will be 2048."
+    )
 
     # I3D Settings
 

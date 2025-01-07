@@ -482,6 +482,18 @@ decimation will be, which means the higher it will affect the geometry. It's not
 
 - Add Farmyards - if enabled, the tool will create farmlands from the regions that are marked as farmyards in the OSM data. Those farmlands will not have fields and also will not be drawn on textures. By default, it's turned off.
 
+- Base grass - you can select which plant will be used as a base grass on the map. 
+
+- Plants island minimum size - when random plants are enabled, the generator will add islands of differents plants to the map and choose the random size of those island between the minimum and maximum values. This one is the minimum size of the island in meters.
+
+- Plants island maximum size - it's the same as above, but for the maximum size of the island in meters.
+
+- Plants island vertex count - the number of vertices in the island. The higher the value, the more detailed the island will be. Note, that high values will turn the smoothed island into geometric madness.
+
+- Plants insland rounding radius - used to round the vertices of the island. The higher the value, the more rounded the island will be.
+
+- Plants island percent - defines the relation between the map size and the number of islands of plants. For example, if set to 100% for map size of 2048 will be added 2048 islands of plants. 
+
 ### I3D Advanced settings
 
 - Forest density - the density of the forest in meters. The lower the value, the lower the distance between the trees, which makes the forest denser. Note, that low values will lead to enormous number of trees, which may cause the Giants Editor to crash or lead to performance issues. By default, it's set to 10.

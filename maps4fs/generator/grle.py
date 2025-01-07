@@ -427,11 +427,11 @@ class GRLE(Component):
         grass_image_copy[grass_image != 0] = base_layer_pixel_value
 
         # Add islands of plants to the base image.
-        island_count = self.map_size
+        island_count = int(self.map_size * self.map.grle_settings.plants_island_percent // 100)
         self.logger.debug("Adding %s islands of plants to the base image.", island_count)
         if self.map.grle_settings.random_plants:
             grass_image_copy = create_island_of_plants(grass_image_copy, island_count)
-        self.logger.debug("Islands of plants added to the base image.")
+            self.logger.info("Added %s islands of plants to the base image.", island_count)
 
         # Sligtly reduce the size of the grass_image, that we'll use as mask.
         kernel = np.ones((3, 3), np.uint8)
