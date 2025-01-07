@@ -154,6 +154,7 @@
     "color": [47, 107, 85],
     "priority": 4,
     "info_layer": "fields",
+    "usage": "field",
     "procedural": ["PG_meadow", "PG_acres"]
   },
   {

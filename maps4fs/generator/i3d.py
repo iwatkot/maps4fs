@@ -15,12 +15,9 @@ from maps4fs.generator.component import Component
 from maps4fs.generator.texture import Texture
 
 DISPLACEMENT_LAYER_SIZE_FOR_BIG_MAPS = 32768
-DEFAULT_MAX_LOD_DISTANCE = 10000
-DEFAULT_MAX_LOD_OCCLUDER_DISTANCE = 10000
 NODE_ID_STARTING_VALUE = 2000
 SPLINES_NODE_ID_STARTING_VALUE = 5000
 TREE_NODE_ID_STARTING_VALUE = 10000
-DEFAULT_FOREST_DENSITY = 10
 
 
 # pylint: disable=R0903
@@ -197,7 +194,7 @@ class I3d(Component):
                         linestring_points=road, angle=self.rotation
                     )
                 except ValueError as e:
-                    self.logger.warning(
+                    self.logger.debug(
                         "Road %s could not be fitted into the map bounds with error: %s",
                         road_id,
                         e,
@@ -248,7 +245,7 @@ class I3d(Component):
                     y = max(0, min(y, dem_y_size - 1))
 
                     z = not_resized_dem[y, x]
-                    z /= 32  # Yes, it's a magic number here.
+                    z *= self.get_z_scaling_factor()  # type: ignore
 
                     cv_node = ET.Element("cv")
                     cv_node.set("c", f"{cx}, {z}, {cy}")
@@ -322,7 +319,7 @@ class I3d(Component):
                             polygon_points=field, angle=self.rotation
                         )
                     except ValueError as e:
-                        self.logger.warning(
+                        self.logger.debug(
                             "Field %s could not be fitted into the map bounds with error: %s",
                             field_id,
                             e,
@@ -336,7 +333,7 @@ class I3d(Component):
                     try:
                         cx, cy = self.get_polygon_center(field_ccs)
                     except Exception as e:  # pylint: disable=W0718
-                        self.logger.warning(
+                        self.logger.debug(
                             "Field %s could not be fitted into the map bounds.", field_id
                         )
                         self.logger.debug("Error: %s", e)
