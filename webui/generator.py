@@ -182,7 +182,7 @@ class GeneratorUI:
         self.settings = settings
 
     def _create_widget(
-        self, field_name: str, raw_field_name: str, value: int | bool, disabled: bool = False
+        self, field_name: str, raw_field_name: str, value: int | bool | str, disabled: bool = False
     ) -> int | bool:
         """Create a widget for the given field.
 
@@ -197,14 +197,22 @@ class GeneratorUI:
         """
         if disabled:
             st.warning(Messages.SETTING_DISABLED_ON_PUBLIC.format(setting=field_name))
-        if type(value) is int:
+        if isinstance(value, int):
             return st.number_input(
                 label=field_name, value=value, min_value=0, key=raw_field_name, disabled=disabled
             )
-        elif type(value) is bool:
+        elif isinstance(value, bool):
             return st.checkbox(label=field_name, value=value, key=raw_field_name, disabled=disabled)
-        elif type(value) is tuple:
+        elif isinstance(value, tuple):
             return st.selectbox(label=field_name, options=value)
+        elif isinstance(value, dict):
+            return st.selectbox(
+                label=field_name,
+                options=value,
+                format_func=value.get,
+                key=raw_field_name,
+                disabled=disabled,
+            )
         else:
             raise ValueError(f"Unsupported type of the value: {type(value)}")
 
@@ -232,6 +240,8 @@ class GeneratorUI:
                 if provider.is_community():
                     st.warning(Messages.COMMUNITY_PROVIDER, icon="💡")
                     st.write(f"Author: {provider.author()}")
+                    if provider.contributors() is not None:
+                        st.write(f"Contributors: {provider.contributors()}")
 
                 if provider.instructions() is not None:
                     st.write(provider.instructions())
