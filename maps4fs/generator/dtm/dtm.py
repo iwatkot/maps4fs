@@ -24,6 +24,7 @@ class DTMProviderSettings(BaseModel):
     """Base class for DTM provider settings models."""
 
 
+# pylint: disable=too-many-public-methods
 class DTMProvider(ABC):
     """Base class for DTM providers."""
 
