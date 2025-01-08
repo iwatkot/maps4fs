@@ -4,6 +4,7 @@ and specific settings for downloading and processing the data."""
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 import os
 from typing import TYPE_CHECKING, Type
 
@@ -23,19 +24,21 @@ class DTMProviderSettings(BaseModel):
     """Base class for DTM provider settings models."""
 
 
-class DTMProvider:
+class DTMProvider(ABC):
     """Base class for DTM providers."""
 
     _code: str | None = None
     _name: str | None = None
     _region: str | None = None
     _icon: str | None = None
-    _resolution: float | None = None
+    _resolution: float | str | None = None
 
     _url: str | None = None
 
     _author: str | None = None
+    _contributors: str | None = None
     _is_community: bool = False
+    _is_base: bool = False
     _settings: Type[DTMProviderSettings] | None = None
 
     _instructions: str | None = None
@@ -121,6 +124,24 @@ class DTMProvider:
         return cls._author
 
     @classmethod
+    def contributors(cls) -> str | None:
+        """Contributors of the provider.
+
+        Returns:
+            str: Contributors of the provider.
+        """
+        return cls._contributors
+
+    @classmethod
+    def is_base(cls) -> bool:
+        """Is the provider a base provider.
+
+        Returns:
+            bool: True if the provider is a base provider, False otherwise.
+        """
+        return cls._is_base
+
+    @classmethod
     def is_community(cls) -> bool:
         """Is the provider a community-driven project.
 
@@ -190,7 +211,8 @@ class DTMProvider:
         """
         providers = {}
         for provider in cls.__subclasses__():
-            providers[provider._code] = provider.description()  # pylint: disable=W0212
+            if not provider.is_base():
+                providers[provider._code] = provider.description()  # pylint: disable=W0212
         return providers  # type: ignore
 
     def download_tile(self, output_path: str, **kwargs) -> bool:
@@ -235,6 +257,7 @@ class DTMProvider:
         """
         raise NotImplementedError
 
+    @abstractmethod
     def get_numpy(self) -> np.ndarray:
         """Get numpy array of the tile.
         Resulting array must be 16 bit (signed or unsigned) integer and it should be already

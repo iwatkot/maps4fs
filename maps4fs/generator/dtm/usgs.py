@@ -1,37 +1,47 @@
-"""This module contains provider of USGS 1m data."""
+"""This module contains provider of USGS data."""
 
 import os
 from datetime import datetime
+from zipfile import ZipFile
 
 import numpy as np
-import rasterio  # type: ignore
+import rasterio
 import requests
-from rasterio._warp import Resampling  # type: ignore # pylint: disable=E0611
-from rasterio.merge import merge  # type: ignore
-from rasterio.warp import calculate_default_transform, reproject  # type: ignore
-from rasterio.windows import from_bounds  # type: ignore
+from rasterio.enums import Resampling
+from rasterio.merge import merge
+from rasterio.warp import calculate_default_transform, reproject
+from rasterio.windows import from_bounds
 
 from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
 
 
-class USGS1mProviderSettings(DTMProviderSettings):
-    """Settings for the USGS 1m provider."""
+class USGSProviderSettings(DTMProviderSettings):
+    """Settings for the USGS provider."""
 
     max_local_elevation: int = 255
+    dataset: tuple | str = (
+        'Digital Elevation Model (DEM) 1 meter',
+        'Alaska IFSAR 5 meter DEM',
+        'National Elevation Dataset (NED) 1/9 arc-second',
+        'National Elevation Dataset (NED) 1/3 arc-second',
+        'National Elevation Dataset (NED) 1 arc-second',
+        'National Elevation Dataset (NED) Alaska 2 arc-second',
+        'Original Product Resolution (OPR) Digital Elevation Model (DEM)',
+    )
 
 
-# pylint: disable=W0223
-class USGS1mProvider(DTMProvider):
+class USGSProvider(DTMProvider):
     """Provider of USGS."""
 
-    _code = "USGS1m"
-    _name = "USGS 1m"
+    _code = "USGS"
+    _name = "USGS"
     _region = "USA"
     _icon = "🇺🇸"
-    _resolution = 1
+    _resolution = 'variable'
     _data: np.ndarray | None = None
-    _settings = USGS1mProviderSettings
+    _settings = USGSProviderSettings
     _author = "[ZenJakey](https://github.com/ZenJakey)"
+    _contributors = "[kbrandwijk](https://github.com/kbrandwijk)"
     _is_community = True
     _instructions = (
         "ℹ️ Set the max local elevation to approx the local max elevation for your area in"
@@ -40,8 +50,8 @@ class USGS1mProvider(DTMProvider):
     )
 
     _url = (
-        "https://tnmaccess.nationalmap.gov/api/v1/products?prodFormats=GeoTIFF,IMG&prodExtents="
-        "10000 x 10000 meter&datasets=Digital Elevation Model (DEM) 1 meter&polygon="
+        "https://tnmaccess.nationalmap.gov/api/v1/products?prodFormats=GeoTIFF,IMG"
+
     )
 
     def __init__(self, *args, **kwargs):
@@ -64,7 +74,8 @@ class USGS1mProvider(DTMProvider):
             (north, south, east, west) = self.get_bbox()
             response = requests.get(  # pylint: disable=W3101
                 self.url  # type: ignore
-                + f"{west} {south},{east} {south},{east} {north},{west} {north},{west} {south}&="
+                + f"&datasets={self.user_settings.dataset}"  # type: ignore
+                + f"&bbox={west},{north},{east},{south}"
             )
             self.logger.debug("Getting file locations from USGS...")
 
@@ -75,7 +86,7 @@ class USGS1mProvider(DTMProvider):
                 items = json_data["items"]
                 for item in items:
                     urls.append(item["downloadURL"])
-                self.download_tif_files(urls)
+                # self.download_tif_files(urls)
             else:
                 self.logger.error("Failed to get data. HTTP Status Code: %s", response.status_code)
         except requests.exceptions.RequestException as e:
@@ -108,12 +119,24 @@ class USGS1mProvider(DTMProvider):
                         for chunk in response.iter_content(chunk_size=8192):  # Download in chunks
                             file.write(chunk)
                     self.logger.info("File downloaded successfully: %s", file_path)
+                    if file_name.endswith('.zip'):
+                        with ZipFile(file_path, "r") as f_in:
+                            f_in.extract(file_name.replace('.zip', '.img'), self.shared_tiff_path)
+                        tif_files.append(file_path.replace('.zip', '.img'))
+                    else:
+                        tif_files.append(file_path)
                 except requests.exceptions.RequestException as e:
                     self.logger.error("Failed to download file: %s", e)
             else:
                 self.logger.debug("File already exists: %s", file_name)
+                if file_name.endswith('.zip'):
+                    if not os.path.exists(file_path.replace('.zip', '.img')):
+                        with ZipFile(file_path, "r") as f_in:
+                            f_in.extract(file_name.replace('.zip', '.img'), self.shared_tiff_path)
+                    tif_files.append(file_path.replace('.zip', '.img'))
+                else:
+                    tif_files.append(file_path)
 
-            tif_files.append(file_path)
         return tif_files
 
     def merge_geotiff(self, input_files: list[str], output_file: str) -> None:
