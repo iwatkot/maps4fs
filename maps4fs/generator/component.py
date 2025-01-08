@@ -188,7 +188,7 @@ class Component:
         self,
         coordinates: tuple[float, float] | None = None,
         distance: int | None = None,
-    ) -> tuple[int, int, int, int]:
+    ) -> tuple[float, float, float, float]:
         """Calculates the bounding box of the map from the coordinates and the height and
         width of the map.
         If coordinates and distance are not provided, the instance variables are used.
@@ -200,7 +200,7 @@ class Component:
                 map in all directions. Defaults to None.
 
         Returns:
-            tuple[int, int, int, int]: The bounding box of the map.
+            tuple[float, float, float, float]: The bounding box of the map.
         """
         coordinates = coordinates or self.coordinates
         distance = distance or int(self.map_rotated_size / 2)
