@@ -340,15 +340,8 @@ class Texture(Component):
         - map dimensions in meters
         - map coefficients (meters per pixel)
         """
-        north, south, east, west = self.get_bbox(project_utm=True)
-
-        # Parameters of the map in UTM format (meters).
-        self.minimum_x = min(west, east)
-        self.minimum_y = min(south, north)
-        self.maximum_x = max(west, east)
-        self.maximum_y = max(south, north)
-        self.logger.debug("Map minimum coordinates (XxY): %s x %s.", self.minimum_x, self.minimum_y)
-        self.logger.debug("Map maximum coordinates (XxY): %s x %s.", self.maximum_x, self.maximum_y)
+        bbox = ox.utils_geo.bbox_from_point(self.coordinates, dist=self.map_rotated_size / 2)
+        self.minimum_x, self.minimum_y, self.maximum_x, self.maximum_y = bbox
 
     def info_sequence(self) -> dict[str, Any]:
         """Returns the JSON representation of the generation info for textures."""
@@ -576,29 +569,19 @@ class Texture(Component):
             cv2.imwrite(layer_path, img)
             self.logger.debug("Base texture %s saved.", layer_path)
 
-    def get_relative_x(self, x: float) -> int:
-        """Converts UTM X coordinate to relative X coordinate in map image.
+    def latlon_to_pixel(self, lat: float, lon: float) -> tuple[int, int]:
+        """Converts latitude and longitude to pixel coordinates.
 
         Arguments:
-            x (float): UTM X coordinate.
+            lat (float): Latitude.
+            lon (float): Longitude.
 
         Returns:
-            int: Relative X coordinate in map image.
+            tuple[int, int]: Pixel coordinates.
         """
-        return int(self.map_rotated_size * (x - self.minimum_x) / (self.maximum_x - self.minimum_x))
-
-    def get_relative_y(self, y: float) -> int:
-        """Converts UTM Y coordinate to relative Y coordinate in map image.
-
-        Arguments:
-            y (float): UTM Y coordinate.
-
-        Returns:
-            int: Relative Y coordinate in map image.
-        """
-        return int(
-            self.map_rotated_size * (1 - (y - self.minimum_y) / (self.maximum_y - self.minimum_y))
-        )
+        x = int((lon - self.minimum_x) / (self.maximum_x - self.minimum_x) * self.map_rotated_size)
+        y = int((lat - self.maximum_y) / (self.minimum_y - self.maximum_y) * self.map_rotated_size)
+        return x, y
 
     def np_to_polygon_points(self, np_array: np.ndarray) -> list[tuple[int, int]]:
         """Converts numpy array of polygon points to list of tuples.
@@ -623,11 +606,13 @@ class Texture(Component):
         Returns:
             np.ndarray: Numpy array of polygon points.
         """
-        xs, ys = geometry.exterior.coords.xy
-        xs = [int(self.get_relative_x(x)) for x in xs.tolist()]
-        ys = [int(self.get_relative_y(y)) for y in ys.tolist()]
-        pairs = list(zip(xs, ys))
-        return np.array(pairs, dtype=np.int32).reshape((-1, 1, 2))
+        coords = list(geometry.exterior.coords)
+        pts = np.array(
+            [self.latlon_to_pixel(coord[1], coord[0]) for coord in coords],
+            np.int32,
+        )
+        pts = pts.reshape((-1, 1, 2))
+        return pts
 
     def _to_polygon(
         self, obj: pd.core.series.Series, width: int | None
@@ -664,8 +649,19 @@ class Texture(Component):
         Returns:
             shapely.geometry.polygon.Polygon: Polygon geometry.
         """
-        polygon = geometry.buffer(width)
+        polygon = geometry.buffer(self.meters_to_degrees(width) if width else 0)
         return polygon
+
+    def meters_to_degrees(self, meters: int) -> float:
+        """Converts meters to degrees.
+
+        Arguments:
+            meters (int): Meters.
+
+        Returns:
+            float: Degrees.
+        """
+        return meters / 111320
 
     def _skip(
         self, geometry: shapely.geometry.polygon.Polygon, *args, **kwargs
@@ -724,12 +720,11 @@ class Texture(Component):
         except Exception as e:  # pylint: disable=W0718
             self.logger.debug("Error fetching objects for tags: %s. Error: %s.", tags, e)
             return
-        objects_utm = ox.projection.project_gdf(objects, to_latlong=False)
-        self.logger.debug("Fetched %s elements for tags: %s.", len(objects_utm), tags)
+        self.logger.debug("Fetched %s elements for tags: %s.", len(objects), tags)
 
         method = self.linestrings_generator if yield_linestrings else self.polygons_generator
 
-        yield from method(objects_utm, width, is_fieds)
+        yield from method(objects, width, is_fieds)
 
     def linestrings_generator(
         self, objects_utm: pd.core.frame.DataFrame, *args, **kwargs
@@ -745,9 +740,7 @@ class Texture(Component):
         for _, obj in objects_utm.iterrows():
             geometry = obj["geometry"]
             if isinstance(geometry, shapely.geometry.linestring.LineString):
-                points = [
-                    (self.get_relative_x(x), self.get_relative_y(y)) for x, y in geometry.coords
-                ]
+                points = [self.latlon_to_pixel(x, y) for y, x in geometry.coords]
                 yield points
 
     def polygons_generator(
@@ -773,7 +766,9 @@ class Texture(Component):
                 continue
 
             if is_fieds and self.map.texture_settings.fields_padding > 0:
-                padded_polygon = polygon.buffer(-self.map.texture_settings.fields_padding)
+                padded_polygon = polygon.buffer(
+                    -self.meters_to_degrees(self.map.texture_settings.fields_padding)
+                )
 
                 if not isinstance(padded_polygon, shapely.geometry.polygon.Polygon):
                     self.logger.warning("The padding value is too high, field will not padded.")
