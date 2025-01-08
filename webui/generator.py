@@ -197,15 +197,15 @@ class GeneratorUI:
         """
         if disabled:
             st.warning(Messages.SETTING_DISABLED_ON_PUBLIC.format(setting=field_name))
-        if isinstance(value, int):
+        if type(value) is int:
             return st.number_input(
                 label=field_name, value=value, min_value=0, key=raw_field_name, disabled=disabled
             )
-        elif isinstance(value, bool):
+        elif type(value) is bool:
             return st.checkbox(label=field_name, value=value, key=raw_field_name, disabled=disabled)
-        elif isinstance(value, tuple):
+        elif type(value) is tuple:
             return st.selectbox(label=field_name, options=value)
-        elif isinstance(value, dict):
+        elif type(value) is dict:
             return st.selectbox(
                 label=field_name,
                 options=value,
