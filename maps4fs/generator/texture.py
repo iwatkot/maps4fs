@@ -336,7 +336,7 @@ class Texture(Component):
     # pylint: disable=W0201
     def _read_parameters(self) -> None:
         """Reads map parameters from OSM data, such as:
-        - minimum and maximum coordinates in UTM format
+        - minimum and maximum coordinates
         - map dimensions in meters
         - map coefficients (meters per pixel)
         """
@@ -727,36 +727,36 @@ class Texture(Component):
         yield from method(objects, width, is_fieds)
 
     def linestrings_generator(
-        self, objects_utm: pd.core.frame.DataFrame, *args, **kwargs
+        self, objects: pd.core.frame.DataFrame, *args, **kwargs
     ) -> Generator[list[tuple[int, int]], None, None]:
         """Generator which yields lists of point coordinates which represent LineStrings from OSM.
 
         Arguments:
-            objects_utm (pd.core.frame.DataFrame): Dataframe with OSM objects in UTM format.
+            objects (pd.core.frame.DataFrame): Dataframe with OSM objects.
 
         Yields:
             Generator[list[tuple[int, int]], None, None]: List of point coordinates.
         """
-        for _, obj in objects_utm.iterrows():
+        for _, obj in objects.iterrows():
             geometry = obj["geometry"]
             if isinstance(geometry, shapely.geometry.linestring.LineString):
                 points = [self.latlon_to_pixel(x, y) for y, x in geometry.coords]
                 yield points
 
     def polygons_generator(
-        self, objects_utm: pd.core.frame.DataFrame, width: int | None, is_fieds: bool
+        self, objects: pd.core.frame.DataFrame, width: int | None, is_fieds: bool
     ) -> Generator[np.ndarray, None, None]:
         """Generator which yields numpy arrays of polygons from OSM data.
 
         Arguments:
-            objects_utm (pd.core.frame.DataFrame): Dataframe with OSM objects in UTM format.
+            objects (pd.core.frame.DataFrame): Dataframe with OSM objects.
             width (int | None): Width of the polygon in meters (only for LineString).
             is_fieds (bool): Flag to determine if the fields should be padded.
 
         Yields:
             Generator[np.ndarray, None, None]: Numpy array of polygon points.
         """
-        for _, obj in objects_utm.iterrows():
+        for _, obj in objects.iterrows():
             try:
                 polygon = self._to_polygon(obj, width)
             except Exception as e:  # pylint: disable=W0703
