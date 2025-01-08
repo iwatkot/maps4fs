@@ -146,6 +146,7 @@ class Map:
 
         self.tree_custom_schema = kwargs.get("tree_custom_schema", None)
         if self.tree_custom_schema:
+            self.logger.info("Custom tree schema contains %s trees", len(self.tree_custom_schema))
             save_path = os.path.join(self.map_directory, "tree_custom_schema.json")
             with open(save_path, "w", encoding="utf-8") as file:
                 json.dump(self.tree_custom_schema, file, indent=4)

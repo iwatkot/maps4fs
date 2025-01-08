@@ -20,13 +20,13 @@ jobs:
           await wait(300000); // Wait for 5 minutes (300000 milliseconds)
 
     - name: Login to DockerHub
-      uses: docker/login-action@v1 
+      uses: docker/login-action@v2 
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     - name: Build and push Docker image
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v4
       with:
         context: .
         push: true
