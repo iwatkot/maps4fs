@@ -43,16 +43,15 @@
 </div>
 
 🗺️ Supports 2x2, 4x4, 8x8, 16x16 and any custom size maps<br>
-🔄 Support map rotation 🆕<br>
+🔄 Support map rotation<br>
 🌐 Supports custom [DTM Providers](#DTM-Providers) 🆕<br>
-🌾 Automatically generates fields 🆕<br>
-🌽 Automatically generates farmlands 🆕<br>
-🌿 Automatically generates decorative foliage 🆕<br>
-🌲 Automatically generates forests 🆕<br>
-🌊 Automatically generates water planes 🆕<br>
+🌾 Automatically generates fields<br>
+🌽 Automatically generates farmlands<br>
+🌿 Automatically generates decorative foliage<br>
+🌲 Automatically generates forests<br>
+🌊 Automatically generates water planes<br>
 📈 Automatically generates splines 🆕<br>
 🛰️ Automatically downloads high resolution satellite images 🆕<br>
-🏔️ Allows to use multiple DTM providers for elevation models 🆕<br>
 🌍 Based on real-world data from OpenStreetMap<br>
 🗺️ Supports [custom OSM maps](/docs/custom_osm.md)<br>
 🏞️ Generates height map using SRTM dataset<br>
@@ -73,10 +72,14 @@
 🌿 Automatically generates decorative foliage.<br><br>
 <img src="https://github.com/user-attachments/assets/27a5e541-a9f5-4504-b8d2-64aae9fb3e52"><br>
 🌲 Automatically generates forests.<br><br>
+<img src="https://github.com/user-attachments/assets/891911d7-081d-431e-a677-b4ae96870286"><br>
+🌲 Allows to select trees for generation.<br><br>
 <img src="https://github.com/user-attachments/assets/cce7d4e0-cba2-4dd2-b22d-03137fb2e860"><br>
 🌊 Automatically generates water planes.<br><br>
 <img src="https://github.com/user-attachments/assets/0b05b511-a595-48e7-a353-8298081314a4"><br>
 📈 Automatically generates splines.<br><br>
+<img src="https://github.com/user-attachments/assets/0957db9e-7b95-4951-969c-9d1edd9f073b"><br>
+🖌️ Allows customization of the texture schema.<br><br>
 <img src="https://github.com/user-attachments/assets/80e5923c-22c7-4dc0-8906-680902511f3a"><br>
 🗒️ True-to-life blueprints for fast and precise modding.<br><br>
 <img width="480" src="https://github.com/user-attachments/assets/1a8802d2-6a3b-4bfa-af2b-7c09478e199b"><br>
@@ -232,6 +235,8 @@ Tools are divided into categories, which are listed below.
 
 #### For custom schemas
 - **Tree Schema Editor** - allows you to view all the supported trees models and select the ones you need on your map. After it, you should click the Show updated schema button and copy the JSON schema to the clipboard. Then you can use it in the Expert settings to generate the map with the selected trees.
+
+- **Texture Schema Editor** - allows you to view all the supported textures and edit their parameters, such as priority, OSM tags and so on. After editing, you should click the Show updated schema button and copy the JSON schema to the clipboard. Then you can use it in the Expert settings to generate the map with the updated textures.
 
 #### For Textures and DEM
 - **GeoTIFF windowing** - allows you to upload your GeoTIFF file and select the region of interest to extract it from the image. It's useful when you have high-resolution DEM data and want to create a height map using it.
