@@ -468,7 +468,7 @@ class Texture(Component):
                 if not layer.invisible:
                     try:
                         cv2.fillPoly(layer_image, [polygon], color=255)  # type: ignore
-                    except Exception as e:
+                    except Exception as e:  # pylint: disable=W0718
                         self.logger.warning("Error drawing polygon: %s.", repr(e))
                         continue
 
