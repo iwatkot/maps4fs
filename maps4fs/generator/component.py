@@ -188,8 +188,7 @@ class Component:
         self,
         coordinates: tuple[float, float] | None = None,
         distance: int | None = None,
-        project_utm: bool = False,
-    ) -> tuple[int, int, int, int]:
+    ) -> tuple[float, float, float, float]:
         """Calculates the bounding box of the map from the coordinates and the height and
         width of the map.
         If coordinates and distance are not provided, the instance variables are used.
@@ -199,24 +198,23 @@ class Component:
                 of the map. Defaults to None.
             distance (int, optional): The distance from the center of the map to the edge of the
                 map in all directions. Defaults to None.
-            project_utm (bool, optional): Whether to project the bounding box to UTM.
 
         Returns:
-            tuple[int, int, int, int]: The bounding box of the map.
+            tuple[float, float, float, float]: The bounding box of the map.
         """
         coordinates = coordinates or self.coordinates
         distance = distance or int(self.map_rotated_size / 2)
 
         west, south, east, north = ox.utils_geo.bbox_from_point(  # type: ignore
-            coordinates, dist=distance, project_utm=project_utm
+            coordinates,
+            dist=distance,
         )
 
         bbox = north, south, east, west
         self.logger.debug(
-            "Calculated bounding box for component: %s: %s, project_utm: %s, distance: %s",
+            "Calculated bounding box for component: %s: %s, distance: %s",
             self.__class__.__name__,
             bbox,
-            project_utm,
             distance,
         )
         return bbox
@@ -225,7 +223,7 @@ class Component:
         """Saves the bounding box of the map to the component instance from the coordinates and the
         height and width of the map.
         """
-        self.bbox = self.get_bbox(project_utm=False)
+        self.bbox = self.get_bbox()
         self.logger.debug("Saved bounding box: %s", self.bbox)
 
     @property
@@ -544,17 +542,10 @@ class Component:
         """
 
         scaling_factor = 1 / self.map.dem_settings.multiplier
-        self.logger.debug("Z scaling factor including DEM multiplier: %s", scaling_factor)
 
         if self.map.shared_settings.height_scale_multiplier:
             scaling_factor *= self.map.shared_settings.height_scale_multiplier
-            self.logger.debug(
-                "Z scaling factor including height scale multiplier: %s", scaling_factor
-            )
         if self.map.shared_settings.mesh_z_scaling_factor:
             scaling_factor *= 1 / self.map.shared_settings.mesh_z_scaling_factor
-            self.logger.debug(
-                "Z scaling factor including mesh z scaling factor: %s", scaling_factor
-            )
 
         return scaling_factor
