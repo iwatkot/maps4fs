@@ -466,7 +466,11 @@ class Texture(Component):
                         self.np_to_polygon_points(polygon)  # type: ignore
                     )
                 if not layer.invisible:
-                    cv2.fillPoly(layer_image, [polygon], color=255)  # type: ignore
+                    try:
+                        cv2.fillPoly(layer_image, [polygon], color=255)  # type: ignore
+                    except Exception as e:
+                        self.logger.warning("Error drawing polygon: %s.", repr(e))
+                        continue
 
             if layer.info_layer == "roads":
                 for linestring in self.objects_generator(
