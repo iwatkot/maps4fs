@@ -43,16 +43,15 @@
 </div>
 
 🗺️ Supports 2x2, 4x4, 8x8, 16x16 and any custom size maps<br>
-🔄 Support map rotation 🆕<br>
+🔄 Support map rotation<br>
 🌐 Supports custom [DTM Providers](#DTM-Providers) 🆕<br>
-🌾 Automatically generates fields 🆕<br>
-🌽 Automatically generates farmlands 🆕<br>
-🌿 Automatically generates decorative foliage 🆕<br>
-🌲 Automatically generates forests 🆕<br>
-🌊 Automatically generates water planes 🆕<br>
+🌾 Automatically generates fields<br>
+🌽 Automatically generates farmlands<br>
+🌿 Automatically generates decorative foliage<br>
+🌲 Automatically generates forests<br>
+🌊 Automatically generates water planes<br>
 📈 Automatically generates splines 🆕<br>
 🛰️ Automatically downloads high resolution satellite images 🆕<br>
-🏔️ Allows to use multiple DTM providers for elevation models 🆕<br>
 🌍 Based on real-world data from OpenStreetMap<br>
 🗺️ Supports [custom OSM maps](/docs/custom_osm.md)<br>
 🏞️ Generates height map using SRTM dataset<br>
@@ -73,10 +72,14 @@
 🌿 Automatically generates decorative foliage.<br><br>
 <img src="https://github.com/user-attachments/assets/27a5e541-a9f5-4504-b8d2-64aae9fb3e52"><br>
 🌲 Automatically generates forests.<br><br>
+<img src="https://github.com/user-attachments/assets/891911d7-081d-431e-a677-b4ae96870286"><br>
+🌲 Allows to select trees for generation.<br><br>
 <img src="https://github.com/user-attachments/assets/cce7d4e0-cba2-4dd2-b22d-03137fb2e860"><br>
 🌊 Automatically generates water planes.<br><br>
 <img src="https://github.com/user-attachments/assets/0b05b511-a595-48e7-a353-8298081314a4"><br>
 📈 Automatically generates splines.<br><br>
+<img src="https://github.com/user-attachments/assets/0957db9e-7b95-4951-969c-9d1edd9f073b"><br>
+🖌️ Allows customization of the texture schema.<br><br>
 <img src="https://github.com/user-attachments/assets/80e5923c-22c7-4dc0-8906-680902511f3a"><br>
 🗒️ True-to-life blueprints for fast and precise modding.<br><br>
 <img width="480" src="https://github.com/user-attachments/assets/1a8802d2-6a3b-4bfa-af2b-7c09478e199b"><br>
@@ -112,7 +115,7 @@ Check out the [Docker FAQ](docs/FAQ_docker.md) if you have any questions.<br>
 ```bash
 pip install maps4fs
 ```
-And refer to the [Python package](#option-3-python-package) section to learn how to use it.<br>
+And refer to the [Python package or run from the source](#option-3-python-package-or-source-code) section to learn how to use it.<br>
 
 ## Overview
 The core idea is coming from the awesome [maps4cim](https://github.com/klamann/maps4cim) project.<br>
@@ -172,7 +175,7 @@ docker run -d -p 8501:8501 --name maps4fs iwatkot/maps4fs
 4. Fill in the required fields and click on the `Generate` button.
 5. When the map is generated click on the `Download` button to get the map.
 
-### Option 3: Python package
+### Option 3: Python package or source code
 🔴 Recommended for developers.  
 🗺️ Supported map sizes: 2x2, 4x4, 8x8, 16x16 km and any custom size.  
 ⚙️ Advanced settings: enabled.   
@@ -183,11 +186,50 @@ You can use the Python package to generate maps. Follow these steps:
 ```bash
 pip install maps4fs
 ```
+
+Or clone the repository and install the package from the source code:
+```bash
+git clone https://github.com/iwatkot/maps4fs.git
+cd maps4fs
+dev/create_venv.ps1 # for Windows
+sh dev/create_venv.sh # for Linux
+
+# Activate the virtual environment.
+./venv/scripts/activate # for Windows
+source venv/bin/activate # for Linux
+
+# Edit the demo.py file to set the parameters.
+python demo.py
+```
+
+
 2. Import the Game class and create an instance of it:
 ```python
 import maps4fs as mfs
 
-game = mfs.Game.from_code("FS25")
+game_code = "fs25"
+game = mfs.Game.from_code(game_code)
+
+dtm_provider = mfs.SRTM30Provider
+dtm_provider_settings = mfs.SRTM30ProviderSettings(easy_mode=True, power_factor=0)
+
+lat, lon = 45.28, 20.23
+coordinates = (lat, lon)
+size = 2048
+rotation = 25
+
+map_directory = "map_directory"
+os.makedirs(map_directory, exist_ok=True)
+
+mp = mfs.Map(
+    game,
+    dtm_provider,
+    dtm_provider_settings,
+    coordinates,
+    size,
+    rotation,
+    map_directory,
+)
 ```
 In this case, the library will use the default templates, which should be present in the `data` directory, which should be placed in the current working directory.<br>
 Structure example:<br>
@@ -200,27 +242,16 @@ Structure example:<br>
 
 So it's recommended to download the `data` directory from the repository and place it in the root of your project.<br>
 
-3. Create an instance of the Map class:
-```python
-import maps4fs as mfs
-
-map = mfs.Map(
-  game,
-  (52.5200, 13.4050),  # Latitude and longitude of the map center.
-  height=1024,  # The height of the map in meters.
-  width=1024,  # The width of the map in meters.
-  map_directory="path/to/your/map/directory",  # The directory where the map will be saved.
-)
-```
-
-4. Generate the map:
+3. Launch the generation process.  
 The `generate` method returns a generator, which yields the active component of the map. You can use it to track the progress of the generation process.
 ```python
-for active_component in map.generate():
-    print(active_component)
+for component_name in mp.generate():
+    print(f"Generating {component_name}...")
 ```
 
 The map will be saved in the `map_directory` directory.
+
+➡️ Check out the [demo.py](demo.py) file for a complete example.
 
 ## Modder Toolbox
 The tool now has a Modder Toolbox, which is a set of tools to help you with various tasks. You can open the toolbox by switching to the `🧰 Modder Toolbox` tab in the StreamLit app.<br>
@@ -232,6 +263,8 @@ Tools are divided into categories, which are listed below.
 
 #### For custom schemas
 - **Tree Schema Editor** - allows you to view all the supported trees models and select the ones you need on your map. After it, you should click the Show updated schema button and copy the JSON schema to the clipboard. Then you can use it in the Expert settings to generate the map with the selected trees.
+
+- **Texture Schema Editor** - allows you to view all the supported textures and edit their parameters, such as priority, OSM tags and so on. After editing, you should click the Show updated schema button and copy the JSON schema to the clipboard. Then you can use it in the Expert settings to generate the map with the updated textures.
 
 #### For Textures and DEM
 - **GeoTIFF windowing** - allows you to upload your GeoTIFF file and select the region of interest to extract it from the image. It's useful when you have high-resolution DEM data and want to create a height map using it.

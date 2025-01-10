@@ -3,9 +3,10 @@
     "configurations": [
         {
             "name": "Streamlit: webui",
-            "type": "process",
+            "type": "debugpy",
             "request": "launch",
-            "preLaunchTask": "Run Streamlit",
+            "module": "streamlit",
+            "args": ["run", "./webui/webui.py"],
             "presentation": {
                 "reveal": "always",
                 "panel": "new"

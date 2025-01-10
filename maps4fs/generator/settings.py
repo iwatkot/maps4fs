@@ -183,5 +183,5 @@ class SatelliteSettings(SettingsModel):
     """
 
     download_images: bool = False
-    satellite_margin: int = 100
+    satellite_margin: int = 0
     zoom_level: int = 14

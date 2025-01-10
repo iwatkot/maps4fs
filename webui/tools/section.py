@@ -2,6 +2,7 @@ from typing import Type
 
 from tools.background import ConvertImageToObj
 from tools.dem import GeoTIFFWindowingTool
+from tools.textures import TextureSchemaEditorTool
 from tools.tool import Tool
 from tools.trees import TreeSchemaEditorTool
 
@@ -24,7 +25,7 @@ class Section:
 class Shemas(Section):
     title = "📄 Schemas"
     description = "Tools to work with different schemas."
-    tools = [TreeSchemaEditorTool]
+    tools = [TreeSchemaEditorTool, TextureSchemaEditorTool]
 
 
 class TexturesAndDEM(Section):

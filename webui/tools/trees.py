@@ -54,7 +54,7 @@ class TreeSchemaEditorTool(Tool):
                     self.checkboxes[tree_info] = tree_checkbox
 
         with self.button_container:
-            if st.button("Show updated schema"):
+            if st.button("Show updated schema", key="show_updated_tree_schema"):
                 tree_schema = self.read_schema()
                 st.success(
                     "Tree schema was generated, click the copy button to copy it to the "
