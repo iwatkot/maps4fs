@@ -267,53 +267,63 @@ class NRWProvider(DTMProvider):
             nodata_value,
         )
 
-    def generate_data(self) -> np.ndarray:
-        """Generate data from the NRW provider.
+    def transform_bbox(self, bbox: tuple[float, float, float, float], to_crs: str) -> tuple[float, float, float, float]:
+        """Transform the bounding box to a different coordinate reference system (CRS).
+
+        Arguments:
+            bbox (tuple): Bounding box to transform (north, south, east, west).
+            to_crs (str): Target CRS (e.g., EPSG:4326 for CRS:84).
 
         Returns:
-            np.ndarray: Numpy array of the data.
+            tuple: Transformed bounding box (north, south, east, west).
         """
-        wcs = WebCoverageService('https://www.wcs.nrw.de/geobasis/wcs_nw_dgm', auth=Authentication(verify=False), timeout=600)
-        north, south, east, west = self.get_bbox()
-
-        # Because the target CRS is rotated compared to 4326, we need to transform all corners and get the bounding box that covers the rotated area
-        transformer = Transformer.from_crs("epsg:4326", "epsg:25832")
+        transformer = Transformer.from_crs("epsg:4326", to_crs)
+        north, south, east, west = bbox
         bottom_left_x, bottom_left_y = transformer.transform(xx=south, yy=west)
         top_left_x, top_left_y = transformer.transform(xx=north, yy=west)
         top_right_x, top_right_y = transformer.transform(xx=north, yy=east)
         bottom_right_x, bottom_right_y = transformer.transform(xx=south, yy=east)
 
-        # get the bounding box that covers the rotated area
-        # coordinate system is reversed, so this looks weird but it is correct
         west = min(bottom_left_y, bottom_right_y)
         east = max(top_left_y, top_right_y)
         south = min(bottom_left_x, top_left_x)
         north = max(bottom_right_x, top_right_x)
 
-        print(west, east, south, north)
+        return north, south, east, west
 
-        # Generate coordinates for the tile corners
-        x_coords = np.arange(west, east, 1000)
-        y_coords = np.arange(south, north, 1000)
+    def tile_bbox(self, bbox: tuple[float, float, float, float], tile_size: int) -> list[tuple[float, float, float, float]]:
+        """Tile the bounding box into smaller bounding boxes of a specified size.
 
-        # Append the edge coordinates because arange does not include the end value
+        Arguments:
+            bbox (tuple): Bounding box to tile (north, south, east, west).
+            tile_size (int): Size of the tiles in meters.
+
+        Returns:
+            list: List of smaller bounding boxes (north, south, east, west).
+        """
+        north, south, east, west = bbox
+        x_coords = np.arange(west, east, tile_size)
+        y_coords = np.arange(south, north, tile_size)
         x_coords = np.append(x_coords, east).astype(x_coords.dtype)
         y_coords = np.append(y_coords, north).astype(y_coords.dtype)
 
-        print(x_coords)
-        print(y_coords)
-
-        # Use meshgrid to create grid combinations
         x_min, y_min = np.meshgrid(x_coords[:-1], y_coords[:-1], indexing="ij")
         x_max, y_max = np.meshgrid(x_coords[1:], y_coords[1:], indexing="ij")
 
-        # Combine into a single array of bounding boxes
         tiles = np.stack([x_min.ravel(), y_min.ravel(), x_max.ravel(), y_max.ravel()], axis=1)
 
-        print(tiles)
+        return tiles
 
+    def download_tiles(self, tiles: list[tuple[float, float, float, float]]) -> list[str]:
+        """Download tiles from the NRW provider.
+
+        Arguments:
+            tiles (list): List of tiles to download.
+
+        Returns:
+            list: List of paths to the downloaded GeoTIFF files.
+        """
         all_tif_files = []
-
         for tile in tiles:
             file_name = '_'.join(map(str, tile)) + '.tif'
             file_path = os.path.join(self.shared_tiff_path, file_name)
@@ -328,6 +338,21 @@ class NRWProvider(DTMProvider):
                     f.write(output.read())
 
             all_tif_files.append(file_path)
+        return all_tif_files
+
+    def generate_data(self) -> np.ndarray:
+        """Generate data from the NRW provider.
+
+        Returns:
+            np.ndarray: Numpy array of the data.
+        """
+        north, south, east, west = self.get_bbox()
+
+        north, south, east, west = self.transform_bbox((north, south, east, west), "epsg:25832")
+
+        tiles = self.tile_bbox((north, south, east, west), 1000)
+
+        all_tif_files = self.download_tiles(tiles)
 
         self.merge_geotiff(all_tif_files, os.path.join(self.output_path, "merged.tif"))
 
