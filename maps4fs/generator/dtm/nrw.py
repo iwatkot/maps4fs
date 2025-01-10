@@ -274,7 +274,7 @@ class NRWProvider(DTMProvider):
             np.ndarray: Numpy array of the data.
         """
         wcs = WebCoverageService('https://www.wcs.nrw.de/geobasis/wcs_nw_dgm', auth=Authentication(verify=False), timeout=600)
-        (north, south, east, west) = self.get_bbox()
+        north, south, east, west = self.get_bbox()
 
         # Because the target CRS is rotated compared to 4326, we need to transform all corners and get the bounding box that covers the rotated area
         transformer = Transformer.from_crs("epsg:4326", "epsg:25832")
@@ -297,8 +297,8 @@ class NRWProvider(DTMProvider):
         y_coords = np.arange(south, north, 1000)
 
         # Append the edge coordinates because arange does not include the end value
-        x_coords = np.append(x_coords, east)
-        y_coords = np.append(y_coords, north)
+        x_coords = np.append(x_coords, east).astype(x_coords.dtype)
+        y_coords = np.append(y_coords, north).astype(y_coords.dtype)
 
         print(x_coords)
         print(y_coords)
