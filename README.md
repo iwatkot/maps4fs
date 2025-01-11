@@ -10,7 +10,6 @@
   <a href="#How-To-Run">How-To-Run</a><br>
   <a href="docs/FAQ.md">FAQ</a> •
   <a href="docs/map_structure.md">Map Structure</a> •
-  <a href="docs/tips_and_hints.md">Tips and Hints</a> •
   <a href="#Modder-Toolbox">Modder Toolbox</a><br>
   <a href="#Supported-objects">Supported objects</a> •
   <a href="#Generation-info">Generation info</a> •

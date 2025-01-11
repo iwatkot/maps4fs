@@ -55,5 +55,21 @@ The script is downloading a huge GeoTIFF image, so it can take a while depending
 After downloading the archive from the generator it is a **mandatory** to unpack it, open in the Giants Editor, save and pack it back. Otherwise it won't work.  
 Pay attention to the fact, that the archive name should be simple, like **FS25_MyMap.zip**. Avoid using special characters, spaces, and non-ASCII symbols in the archive name, or it won't work.
 
+### I opened the map in the game, it works, but crops destruction is not work and also I see some glitches with the terrain, what's wrong?
+
+At the end of the map creation process, you need to create a ground collision map. It's a very important step and without it you'll face a variety of issues in the game.
+To do it, in Giants Editor go to **Scripts** -> **Shared scripts** -> **Map** -> **Create Ground Collision Map**. If you don't do this, you'll face some issues in the game.  
+➡️ Any time you edit the map, you need to do it again.
+
+### I opened the map and see that the trees (or any other object) are floating above the terrain, what should I do?
+
+After generation, the trees (or any other object) may be floating above the terrain. To fix this, you need to put them on the terrain.  
+1. Select the objects in the **Scenegraph**.
+2. DO NOT ❌ Select the groups of objects, you need to select EACH OBJECT. Otherwise, it won't work. To make it easier, you can select and first one, scroll down to the last one, hold **Shift** and click on the last one.
+
+![Select objects](https://github.com/user-attachments/assets/2afbea4e-6d0c-4ee5-a3c1-ce021926c9fd)
+
+3. Click **Scripts** -> **Shared scripts** -> **Map** -> **Terrain** -> **Place objects on terrain**.
+
 
 If you think that some question should be added here, please, contact me in [Discord](https://discord.gg/Sj5QKKyE42) or open an issue on GitHub. Thank you! 

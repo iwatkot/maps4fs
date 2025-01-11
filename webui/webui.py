@@ -10,11 +10,10 @@ from toolbox import ToolboxUI
 class WebUI:
     def __init__(self):
         st.set_page_config(page_title="maps4FS", page_icon="🚜", layout="wide")
-        generator_tab, step_by_step_tab, tips_tab, toolbox_tab, knowledge_tab, faq_tab = st.tabs(
+        generator_tab, step_by_step_tab, toolbox_tab, knowledge_tab, faq_tab = st.tabs(
             [
                 "🗺️ Map Generator",
                 "🔢 Step by step",
-                "💡 Tips and Hints",
                 "🧰 Modder Toolbox",
                 "📖 Knowledge base",
                 "📝 FAQ",
@@ -27,10 +26,6 @@ class WebUI:
         with step_by_step_tab:
             step_by_step_tab_path = os.path.join(DOCS_DIRECTORY, "step_by_step.md")
             st.write(open(step_by_step_tab_path, "r", encoding="utf-8").read())
-
-        with tips_tab:
-            tips_tab_path = os.path.join(DOCS_DIRECTORY, "tips_and_hints.md")
-            st.write(open(tips_tab_path, "r", encoding="utf-8").read())
 
         with toolbox_tab:
             self.toolbox = ToolboxUI()
