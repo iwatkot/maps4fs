@@ -1,4 +1,4 @@
-"""This module contains provider of USGS data."""
+"""This module contains provider of NRW data."""
 
 import os
 
@@ -11,7 +11,7 @@ from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
 
 
 class NRWProviderSettings(DTMProviderSettings):
-    """Settings for the USGS provider."""
+    """Settings for the NRW provider."""
 
 
 # pylint: disable=too-many-locals

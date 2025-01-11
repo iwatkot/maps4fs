@@ -7,10 +7,12 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import os
 from typing import TYPE_CHECKING, Type
+from zipfile import ZipFile
 
 import numpy as np
 import osmnx as ox  # type: ignore
 import rasterio  # type: ignore
+import requests
 from rasterio.warp import calculate_default_transform, reproject
 from rasterio.enums import Resampling
 from rasterio.merge import merge
@@ -364,20 +366,64 @@ class DTMProvider(ABC):
         bbox = north, south, east, west
         return bbox
 
+    def download_tif_files(self, urls: list[str], output_path: str) -> list[str]:
+        """Download GeoTIFF files from the given URLs.
+
+        Arguments:
+            urls (list): List of URLs to download GeoTIFF files from.
+
+        Returns:
+            list: List of paths to the downloaded GeoTIFF files.
+        """
+        tif_files = []
+        for url in urls:
+            file_name = os.path.basename(url)
+            self.logger.debug("Retrieving TIFF: %s", file_name)
+            file_path = os.path.join(output_path, file_name)
+            if not os.path.exists(file_path):
+                try:
+                    # Send a GET request to the file URL
+                    response = requests.get(url, stream=True)  # pylint: disable=W3101
+                    response.raise_for_status()  # Raise an error for HTTP status codes 4xx/5xx
+
+                    # Write the content of the response to the file
+                    with open(file_path, "wb") as file:
+                        for chunk in response.iter_content(chunk_size=8192):  # Download in chunks
+                            file.write(chunk)
+                    self.logger.info("File downloaded successfully: %s", file_path)
+                    if file_name.endswith('.zip'):
+                        with ZipFile(file_path, "r") as f_in:
+                            f_in.extract(file_name.replace('.zip', '.img'), output_path)
+                        tif_files.append(file_path.replace('.zip', '.img'))
+                    else:
+                        tif_files.append(file_path)
+                except requests.exceptions.RequestException as e:
+                    self.logger.error("Failed to download file: %s", e)
+            else:
+                self.logger.debug("File already exists: %s", file_name)
+                if file_name.endswith('.zip'):
+                    if not os.path.exists(file_path.replace('.zip', '.img')):
+                        with ZipFile(file_path, "r") as f_in:
+                            f_in.extract(file_name.replace('.zip', '.img'), output_path)
+                    tif_files.append(file_path.replace('.zip', '.img'))
+                else:
+                    tif_files.append(file_path)
+
+        return tif_files
+
     def reproject_geotiff(self, input_tiff: str) -> str:
         """Reproject a GeoTIFF file to a new coordinate reference system (CRS).
 
         Arguments:
             input_tiff (str): Path to the input GeoTIFF file.
-            target_crs (str): Target CRS (e.g., EPSG:4326 for CRS:84).
 
         Returns:
             str: Path to the reprojected GeoTIFF file.
         """
-        output_tiff = os.path.join(self._tile_directory, "merged.tif")
+        output_tiff = os.path.join(self._tile_directory, "reprojected.tif")
 
         # Open the source GeoTIFF
-        self.logger.debug("Reprojecting GeoTIFF to %s CRS...", "EPSG:4326")
+        self.logger.debug("Reprojecting GeoTIFF to EPSG:4326 CRS...")
         with rasterio.open(input_tiff) as src:
             # Get the transform, width, and height of the target CRS
             transform, width, height = calculate_default_transform(
