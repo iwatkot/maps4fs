@@ -96,7 +96,7 @@ class SRTM30Provider(DTMProvider):
                 return None
         return output_path
 
-    def get_tile_parameters(self, *args, **kwargs) -> dict[str, str]:
+    def get_tile_parameters(self, *args) -> dict[str, str]:
         """Returns latitude band and tile name for SRTM tile from coordinates.
 
         Arguments:

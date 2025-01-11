@@ -14,6 +14,7 @@ class NRWProviderSettings(DTMProviderSettings):
     """Settings for the USGS provider."""
 
 
+# pylint: disable=too-many-locals
 class NRWProvider(DTMProvider):
     """Generic provider of WCS sources."""
 
@@ -42,7 +43,10 @@ class NRWProvider(DTMProvider):
         all_tif_files = self.download_all_tiles(tiles)
         return all_tif_files
 
-    def tile_bbox(self, bbox: tuple[float, float, float, float], tile_size: int) -> list[tuple[float, float, float, float]]:
+    def tile_bbox(
+            self,
+            bbox: tuple[float, float, float, float],
+            tile_size: int) -> list[tuple[float, float, float, float]]:
         """Tile the bounding box into smaller bounding boxes of a specified size.
 
         Arguments:
@@ -95,7 +99,10 @@ class NRWProvider(DTMProvider):
             all_tif_files.append(file_path)
         return all_tif_files
 
-    def transform_bbox(self, bbox: tuple[float, float, float, float], to_crs: str) -> tuple[float, float, float, float]:
+    def transform_bbox(
+            self,
+            bbox: tuple[float, float, float, float],
+            to_crs: str) -> tuple[float, float, float, float]:
         """Transform the bounding box to a different coordinate reference system (CRS).
 
         Arguments:

@@ -30,7 +30,7 @@ class DTMProviderSettings(BaseModel):
     power_factor: int = 0
 
 
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, too-many-instance-attributes
 class DTMProvider(ABC):
     """Base class for DTM providers."""
 
@@ -51,8 +51,9 @@ class DTMProvider(ABC):
     _instructions: str | None = None
 
     _base_instructions = (
-        "ℹ️ Using **Easy mode** is recommended, as it automatically adjusts the values in the image, "
-        "so the terrain elevation in Giants Editor will match real world elevation in meters.  \n"
+        "ℹ️ Using **Easy mode** is recommended, as it automatically adjusts the values in the "
+        "image, so the terrain elevation in Giants Editor will match real world "
+        "elevation in meters.  \n"
         "ℹ️ If the terrain height difference in the real world is bigger than 255 meters, "
         "the [Height scale](https://github.com/iwatkot/maps4fs/blob/main/docs/dem.md#height-scale)"
         " parameter in the **map.i3d** file will be automatically adjusted.  \n"
