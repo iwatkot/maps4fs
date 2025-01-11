@@ -1,7 +1,6 @@
 """This module contains provider of USGS data."""
 
 import os
-from datetime import datetime
 
 import numpy as np
 from owslib.wcs import WebCoverageService
