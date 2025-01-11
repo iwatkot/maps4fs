@@ -11,7 +11,10 @@ from typing import TYPE_CHECKING, Type
 import numpy as np
 import osmnx as ox  # type: ignore
 import rasterio  # type: ignore
-import requests
+from rasterio.warp import calculate_default_transform, reproject
+from rasterio.enums import Resampling
+from rasterio.merge import merge
+
 from pydantic import BaseModel
 
 from maps4fs.logger import Logger
@@ -22,6 +25,9 @@ if TYPE_CHECKING:
 
 class DTMProviderSettings(BaseModel):
     """Base class for DTM provider settings models."""
+
+    easy_mode: bool = True
+    power_factor: int = 0
 
 
 # pylint: disable=too-many-public-methods
@@ -43,6 +49,20 @@ class DTMProvider(ABC):
     _settings: Type[DTMProviderSettings] | None = None
 
     _instructions: str | None = None
+
+    _base_instructions = (
+        "ℹ️ Using **Easy mode** is recommended, as it automatically adjusts the values in the image, "
+        "so the terrain elevation in Giants Editor will match real world elevation in meters.  \n"
+        "ℹ️ If the terrain height difference in the real world is bigger than 255 meters, "
+        "the [Height scale](https://github.com/iwatkot/maps4fs/blob/main/docs/dem.md#height-scale)"
+        " parameter in the **map.i3d** file will be automatically adjusted.  \n"
+        "⚡ If the **Easy mode** option is disabled, you will probably get completely flat "
+        "terrain, unless you adjust the DEM Multiplier Setting or the Height scale parameter in "
+        "the Giants Editor.  \n"
+        "💡 You can use the **Power factor** setting to make the difference between heights "
+        "bigger. Be extremely careful with this setting, and use only low values, otherwise your "
+        "terrain may be completely broken.  \n"
+    )
 
     # pylint: disable=R0913, R0917
     def __init__(
@@ -152,7 +172,7 @@ class DTMProvider(ABC):
         return cls._is_community
 
     @classmethod
-    def settings(cls) -> Type[DTMProviderSettings] | None:
+    def settings(cls) -> Type[DTMProviderSettings]:
         """Settings model of the provider.
 
         Returns:
@@ -168,6 +188,15 @@ class DTMProvider(ABC):
             str: Instructions for using the provider.
         """
         return cls._instructions
+
+    @classmethod
+    def base_instructions(cls) -> str | None:
+        """Instructions for using any provider.
+
+        Returns:
+            str: Instructions for using any provider.
+        """
+        return cls._base_instructions
 
     @property
     def user_settings(self) -> DTMProviderSettings | None:
@@ -212,53 +241,18 @@ class DTMProvider(ABC):
         """
         providers = {}
         for provider in cls.__subclasses__():
-            if not provider.is_base():
-                providers[provider._code] = provider.description()  # pylint: disable=W0212
+            providers[provider._code] = provider.description()  # pylint: disable=W0212
         return providers  # type: ignore
 
-    def download_tile(self, output_path: str, **kwargs) -> bool:
-        """Download a tile from the provider.
-
-        Arguments:
-            output_path (str): Path to save the downloaded tile.
+    @abstractmethod
+    def download_tiles(self) -> list[str]:
+        """Download tiles from the provider.
 
         Returns:
-            bool: True if the tile was downloaded successfully, False otherwise.
-        """
-        url = self.formatted_url(**kwargs)
-        response = requests.get(url, stream=True, timeout=10)
-        if response.status_code == 200:
-            with open(output_path, "wb") as file:
-                for chunk in response.iter_content(chunk_size=1024):
-                    file.write(chunk)
-            return True
-        return False
-
-    def get_or_download_tile(self, output_path: str, **kwargs) -> str | None:
-        """Get or download a tile from the provider.
-
-        Arguments:
-            output_path (str): Path to save the downloaded tile.
-
-        Returns:
-            str: Path to the downloaded tile or None if the tile not exists and was
-                not downloaded.
-        """
-        if not os.path.exists(output_path):
-            if not self.download_tile(output_path, **kwargs):
-                return None
-        return output_path
-
-    def get_tile_parameters(self, *args, **kwargs) -> dict:
-        """Get parameters for the tile, that will be used to format the URL.
-        Must be implemented in subclasses.
-
-        Returns:
-            dict: Tile parameters to format the URL.
+            list: List of paths to the downloaded tiles.
         """
         raise NotImplementedError
 
-    @abstractmethod
     def get_numpy(self) -> np.ndarray:
         """Get numpy array of the tile.
         Resulting array must be 16 bit (signed or unsigned) integer and it should be already
@@ -267,8 +261,96 @@ class DTMProvider(ABC):
         Returns:
             np.ndarray: Numpy array of the tile.
         """
-        raise NotImplementedError
+        # download tiles using DTM provider implementation
+        tiles = self.download_tiles()
+        self.logger.debug(f"Downloaded {len(tiles)} DEM tiles")
 
+        # merge tiles if necessary
+        if len(tiles) > 1:
+            self.logger.debug("Multiple tiles downloaded. Merging tiles")
+            tile, _ = self.merge_geotiff(tiles)
+        else:
+            tile = tiles[0]
+
+        # determine CRS of the resulting tile and reproject if necessary
+        with rasterio.open(tile) as src:
+            crs = src.crs
+        if crs != "EPSG:4326":
+            self.logger.debug(f"Reprojecting GeoTIFF from {crs} to EPSG:4326...")
+            tile = self.reproject_geotiff(tile)
+
+        # extract region of interest from the tile
+        data = self.extract_roi(tile)
+
+        # process elevation data to be compatible with the game
+        data = self.process_elevation(data)
+
+        return data
+
+    def process_elevation(self, data: np.ndarray) -> np.ndarray:
+        """Process elevation data.
+
+        Arguments:
+            data (np.ndarray): Elevation data.
+
+        Returns:
+            np.ndarray: Processed elevation data.
+        """
+        self.data_info = {}
+        self.add_numpy_params(data, "original")
+
+        data = self.signed_to_unsigned(data)
+        self.add_numpy_params(data, "grounded")
+
+        original_deviation = int(self.data_info["original_deviation"])
+        in_game_maximum_height = 65535 // 255
+        if original_deviation > in_game_maximum_height:
+            suggested_height_scale_multiplier = (
+                original_deviation / in_game_maximum_height  # type: ignore
+            )
+            suggested_height_scale_value = int(255 * suggested_height_scale_multiplier)
+        else:
+            suggested_height_scale_multiplier = 1
+            suggested_height_scale_value = 255
+
+        self.data_info["suggested_height_scale_multiplier"] = suggested_height_scale_multiplier
+        self.data_info["suggested_height_scale_value"] = suggested_height_scale_value
+
+        self.map.shared_settings.height_scale_multiplier = (  # type: ignore
+            suggested_height_scale_multiplier
+        )
+        self.map.shared_settings.height_scale_value = suggested_height_scale_value  # type: ignore
+
+        if self.user_settings.easy_mode:  # type: ignore
+            try:
+                data = self.normalize_dem(data)
+                self.add_numpy_params(data, "normalized")
+
+                normalized_deviation = self.data_info["normalized_deviation"]
+                z_scaling_factor = normalized_deviation / original_deviation  # type: ignore
+                self.data_info["z_scaling_factor"] = z_scaling_factor
+
+                self.map.shared_settings.mesh_z_scaling_factor = z_scaling_factor  # type: ignore
+                self.map.shared_settings.change_height_scale = True  # type: ignore
+
+            except Exception as e:  # pylint: disable=W0718
+                self.logger.error(
+                    "Failed to normalize DEM data. Error: %s. Using original data.", e
+                )
+
+        return data
+
+    def info_sequence(self) -> dict[str, int | str | float] | None:
+        """Returns the information sequence for the component. Must be implemented in the child
+        class. If the component does not have an information sequence, an empty dictionary must be
+        returned.
+
+        Returns:
+            dict[str, int | str | float] | None: Information sequence for the component.
+        """
+        return self.data_info
+
+    # region helpers
     def get_bbox(self) -> tuple[float, float, float, float]:
         """Get bounding box of the tile based on the center point and size.
 
@@ -280,6 +362,83 @@ class DTMProvider(ABC):
         )
         bbox = north, south, east, west
         return bbox
+
+    def reproject_geotiff(self, input_tiff: str) -> str:
+        """Reproject a GeoTIFF file to a new coordinate reference system (CRS).
+
+        Arguments:
+            input_tiff (str): Path to the input GeoTIFF file.
+            target_crs (str): Target CRS (e.g., EPSG:4326 for CRS:84).
+
+        Returns:
+            str: Path to the reprojected GeoTIFF file.
+        """
+        output_tiff = os.path.join(self._tile_directory, "merged.tif")
+
+        # Open the source GeoTIFF
+        self.logger.debug("Reprojecting GeoTIFF to %s CRS...", "EPSG:4326")
+        with rasterio.open(input_tiff) as src:
+            # Get the transform, width, and height of the target CRS
+            transform, width, height = calculate_default_transform(
+                src.crs, "EPSG:4326", src.width, src.height, *src.bounds
+            )
+
+            # Update the metadata for the target GeoTIFF
+            kwargs = src.meta.copy()
+            kwargs.update(
+                {"crs": "EPSG:4326", "transform": transform, "width": width, "height": height}
+            )
+
+            # Open the destination GeoTIFF file and reproject
+            with rasterio.open(output_tiff, "w", **kwargs) as dst:
+                for i in range(1, src.count + 1):  # Iterate over all raster bands
+                    reproject(
+                        source=rasterio.band(src, i),
+                        destination=rasterio.band(dst, i),
+                        src_transform=src.transform,
+                        src_crs=src.crs,
+                        dst_transform=transform,
+                        dst_crs="EPSG:4326",
+                        resampling=Resampling.nearest,  # Choose resampling method
+                    )
+
+        self.logger.debug("Reprojected GeoTIFF saved to %s", output_tiff)
+        return output_tiff
+
+    def merge_geotiff(self, input_files: list[str]) -> tuple[str, str]:
+        """Merge multiple GeoTIFF files into a single GeoTIFF file.
+
+        Arguments:
+            input_files (list): List of input GeoTIFF files to merge.
+            output_file (str): Path to save the merged GeoTIFF file.
+        """
+        output_file = os.path.join(self._tile_directory, "merged.tif")
+        # Open all input GeoTIFF files as datasets
+        self.logger.debug("Merging tiff files...")
+        datasets = [rasterio.open(file) for file in input_files]
+
+        # Merge datasets
+        crs = datasets[0].crs
+        mosaic, out_transform = merge(datasets, nodata=0)
+
+        # Get metadata from the first file and update it for the output
+        out_meta = datasets[0].meta.copy()
+        out_meta.update(
+            {
+                "driver": "GTiff",
+                "height": mosaic.shape[1],
+                "width": mosaic.shape[2],
+                "transform": out_transform,
+                "count": mosaic.shape[0],  # Number of bands
+            }
+        )
+
+        # Write merged GeoTIFF to the output file
+        with rasterio.open(output_file, "w", **out_meta) as dest:
+            dest.write(mosaic)
+
+        self.logger.debug("GeoTIFF images merged successfully into %s", output_file)
+        return output_file, crs
 
     def extract_roi(self, tile_path: str) -> np.ndarray:
         """Extract region of interest (ROI) from the GeoTIFF file.
@@ -304,18 +463,86 @@ class DTMProvider(ABC):
                 window.width,
                 window.height,
             )
-            data = src.read(1, window=window)
+            data = src.read(1, window=window, masked=True)
         if not data.size > 0:
             raise ValueError("No data in the tile.")
 
         return data
 
-    def info_sequence(self) -> dict[str, int | str | float] | None:
-        """Returns the information sequence for the component. Must be implemented in the child
-        class. If the component does not have an information sequence, an empty dictionary must be
-        returned.
+    def normalize_dem(self, data: np.ndarray) -> np.ndarray:
+        """Normalize DEM data to 16-bit unsigned integer using max height from settings.
+
+        Arguments:
+            data (np.ndarray): DEM data from SRTM file after cropping.
 
         Returns:
-            dict[str, int | str | float] | None: Information sequence for the component.
+            np.ndarray: Normalized DEM data.
         """
-        return self.data_info
+        maximum_height = int(data.max())
+        minimum_height = int(data.min())
+        deviation = maximum_height - minimum_height
+        self.logger.debug(
+            "Maximum height: %s. Minimum height: %s. Deviation: %s.",
+            maximum_height,
+            minimum_height,
+            deviation,
+        )
+        self.logger.debug("Number of unique values in original DEM data: %s.", np.unique(data).size)
+
+        adjusted_maximum_height = maximum_height * 255
+        adjusted_maximum_height = min(adjusted_maximum_height, 65535)
+        scaling_factor = adjusted_maximum_height / maximum_height
+        self.logger.debug(
+            "Adjusted maximum height: %s. Scaling factor: %s.",
+            adjusted_maximum_height,
+            scaling_factor,
+        )
+
+        if self.user_settings.power_factor:  # type: ignore
+            power_factor = 1 + self.user_settings.power_factor / 10  # type: ignore
+            self.logger.debug(
+                "Applying power factor: %s to the DEM data.",
+                power_factor,
+            )
+            data = np.power(data, power_factor).astype(np.uint16)
+
+        normalized_data = np.round(data * scaling_factor).astype(np.uint16)
+        self.logger.debug(
+            "Normalized data maximum height: %s. Minimum height: %s. Number of unique values: %s.",
+            normalized_data.max(),
+            normalized_data.min(),
+            np.unique(normalized_data).size,
+        )
+        return normalized_data
+
+    def signed_to_unsigned(self, data: np.ndarray, add_one: bool = True) -> np.ndarray:
+        """Convert signed 16-bit integer to unsigned 16-bit integer.
+
+        Arguments:
+            data (np.ndarray): DEM data from SRTM file after cropping.
+
+        Returns:
+            np.ndarray: Unsigned DEM data.
+        """
+        data = data - data.min()
+        if add_one:
+            data = data + 1
+        return data.astype(np.uint16)
+
+    def add_numpy_params(
+        self,
+        data: np.ndarray,
+        prefix: str,
+    ) -> None:
+        """Add numpy array parameters to the data_info dictionary.
+
+        Arguments:
+            data (np.ndarray): Numpy array of the tile.
+            prefix (str): Prefix for the parameters.
+        """
+        self.data_info[f"{prefix}_minimum_height"] = int(data.min())  # type: ignore
+        self.data_info[f"{prefix}_maximum_height"] = int(data.max())  # type: ignore
+        self.data_info[f"{prefix}_deviation"] = int(data.max() - data.min())  # type: ignore
+        self.data_info[f"{prefix}_unique_values"] = int(np.unique(data).size)  # type: ignore
+
+    # endregion

@@ -233,6 +233,9 @@ class GeneratorUI:
         provider_code = self.dtm_provider_code
         provider = mfs.DTMProvider.get_provider_by_code(provider_code)
 
+        if provider is None:
+            return
+
         self.provider_settings = None
         self.provider_info_container.empty()
         sleep(0.1)
@@ -244,6 +247,9 @@ class GeneratorUI:
                     st.write(f"Author: {provider.author()}")
                     if provider.contributors() is not None:
                         st.write(f"Contributors: {provider.contributors()}")
+
+                if provider.base_instructions() is not None:
+                    st.write(provider.base_instructions())
 
                 if provider.instructions() is not None:
                     st.write(provider.instructions())
@@ -336,7 +342,7 @@ class GeneratorUI:
             on_change=self.provider_info,
         )
         self.provider_settings = None
-        self.provider_info_container = st.empty()
+        self.provider_info_container: st.delta_generator.DeltaGenerator = st.empty()
         self.provider_info()
 
         # Rotation input.
