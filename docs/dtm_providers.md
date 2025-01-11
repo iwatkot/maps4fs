@@ -15,19 +15,29 @@ For obvious reasons, in our case we need the DTM and the DSM won't be useful, be
 
 ### What a DTM provider does?
 
-A DTM provider is a service that provides elevation data for a given location. The generator will use this data to create a dem image for the map. While it's plenty of DTM providers available, only the ones that provide a free and open access to their data can be used by the generator.
+A DTM provider is a service that provides elevation data for a given location. The generator will use this data to create a dem image for the map. While there's plenty of DTM providers available, only the ones that provide a free and open access to their data can be used by the generator.
+
+The base provider class, [DTMProvider](../mapsfs/generator/dtm/dtm.py) that all DTM providers inherit from, is responsible for all processing of DEM data. Individual DTM providers are responsible only for downloading the DTM tile(s) for the map area.
+
+The process for generating the elevation data is:
+
+- Download all DTM tiles for the desired map area (implemented by each DTM provider)
+- If the DTM provider downloaded multiple tiles, merge these tiles into one
+- If the tile uses a different projection, reproject it to EPSG:4326, which is used for all other data (like OSM)
+- Extract the map area from the tile (some providers, like SRTM, return big tiles that are larger than just the desired area)
+- Process the elevation data in the tile (optionally, using Easy Mode, the terrain is moved to ground level, so it appears at z=0 in Giants Editor, and processed so the elevation corresponds to real world meters using the default heightScale in your map, if the elevation of your terrain is more than 255 meters, the heightScale property of your map will automatically be adjusted to fit this elevation)
 
 ### How to implement a DTM provider?
 
-So the DTM provider is a simple class, that receives coordinate of the center point, the size of the region of interest and should return a 16-bit single channeled numpy array with the elevation data. The elevation data should be in meters above the sea level.
+So the DTM provider is a simple class, that receives coordinate of the center point, the size of the region of interest and should download all the needed DTM tiles and return a list of downloaded tiles for further processing by the base class.
 
 ### Example of a DTM provider
 
-➡️ Base class and existing providers can be found in the [dtm.py](../maps4fs/generator/dtm.py) file.
+➡️ Base class and existing providers can be found in the [dtm](../maps4fs/generator/dtm) folder.
 
-Let's take a look at an example of a DTM provider implementation.  
+Let's take a look at an example of a DTM provider implementation.
 
-**Step 1:** define description of the provider.  
+**Step 1:** define description of the provider.
 
 ```python
 class SRTM30Provider(DTMProvider):
@@ -47,7 +57,7 @@ class SRTM30Provider(DTMProvider):
     _instructions = "When working with SRTM provider..."
 ```
 
-So, we inherit from the `DTMProvider` class, add some properties to identify the Provider (such as code and region). The most important part is the `_url` property, which is a template for the URL to download the elevation data. But if your provider uses some other approach, you can reimplement related methods.  
+So, we inherit from the `DTMProvider` class, add some properties to identify the Provider (such as code and region). The most important part is the `_url` property, which is a template for the URL to download the elevation data. But if your provider uses some other approach, you can reimplement related methods.
 
 Also, please provide MD-formatted author information, where in [] will be the name of the author and in () will be the link to the author's GitHub profile (or any other profile if you wish).
 
@@ -55,7 +65,7 @@ Please, set the `_is_community` property to `True`, it means that it was develop
 
 If you want some message to be displayed when the user selects your provider, you can set the `_instructions` property.
 
-**Step 3 (optional):** use the `DTMProviderSetting` class to define your own settings (if needed).  
+**Step 2 (optional):** use the `DTMProviderSetting` class to define your own settings (if needed).
 
 ```python
 class SRTM30ProviderSettings(DTMProviderSettings):
@@ -65,7 +75,7 @@ class SRTM30ProviderSettings(DTMProviderSettings):
     input_something: int = 255
 ```
 
-Also, you will need to add a new `_settings` property to the provider class.  
+Also, you will need to add a new `_settings` property to the provider class.
 
 ```python
 class SRTM30Provider(DTMProvider):
@@ -80,65 +90,36 @@ enable_something = self.user_settings.enable_something
 input_something = self.user_settings.input_something
 ```
 
-**Step 3:** implement the `get_tile_parameters` method.  
+**Step 3:** implement the `download_tiles` method.
 
 ```python
-    def get_tile_parameters(self, *args, **kwargs) -> dict[str, str]:
-        """Returns latitude band and tile name for SRTM tile from coordinates.
+    def download_tiles(self):
+        """Download SRTM tiles."""
+        north, south, east, west = self.get_bbox()
 
-        Arguments:
-            lat (float): Latitude.
-            lon (float): Longitude.
+        tiles = []
+        # Look at each corner of the bbox in case the bbox spans across multiple tiles
+        for pair in [(north, east), (south, west), (south, east), (north, west)]:
+            tile_parameters = self.get_tile_parameters(*pair)
+            tile_name = tile_parameters["tile_name"]
+            decompressed_tile_path = os.path.join(self.hgt_directory, f"{tile_name}.hgt")
 
-        Returns:
-            dict: Tile parameters.
-        """
-        lat, lon = args
+            if not os.path.isfile(decompressed_tile_path):
+                compressed_tile_path = os.path.join(self.gz_directory, f"{tile_name}.hgt.gz")
+                if not self.get_or_download_tile(compressed_tile_path, **tile_parameters):
+                    raise FileNotFoundError(f"Tile {tile_name} not found.")
 
-        tile_latitude = math.floor(lat)
-        tile_longitude = math.floor(lon)
+                with gzip.open(compressed_tile_path, "rb") as f_in:
+                    with open(decompressed_tile_path, "wb") as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+            tiles.append(decompressed_tile_path)
 
-        latitude_band = f"N{abs(tile_latitude):02d}" if lat >= 0 else f"S{abs(tile_latitude):02d}"
-        if lon < 0:
-            tile_name = f"{latitude_band}W{abs(tile_longitude):03d}"
-        else:
-            tile_name = f"{latitude_band}E{abs(tile_longitude):03d}"
-
-        self.logger.debug(
-            "Detected tile name: %s for coordinates: lat %s, lon %s.", tile_name, lat, lon
-        )
-        return {"latitude_band": latitude_band, "tile_name": tile_name}
+        return tiles
 ```
 
-This method is required to understand how to format the download url. Of course different sources store data in different ways, so by default in the parent class this method is not implemented and you need to implement it in your provider. And if you're not using direct download, you obviously don't need this method.
-
-**Step 4:** implement the `get_numpy` method.  
-
-```python
-    def get_numpy(self) -> np.ndarray:
-        """Get numpy array of the tile.
-
-        Returns:
-            np.ndarray: Numpy array of the tile.
-        """
-        tile_parameters = self.get_tile_parameters(*self.coordinates)
-        tile_name = tile_parameters["tile_name"]
-        decompressed_tile_path = os.path.join(self.hgt_directory, f"{tile_name}.hgt")
-
-        if not os.path.isfile(decompressed_tile_path):
-            compressed_tile_path = os.path.join(self.gz_directory, f"{tile_name}.hgt.gz")
-            if not self.get_or_download_tile(compressed_tile_path, **tile_parameters):
-                raise FileNotFoundError(f"Tile {tile_name} not found.")
-
-            with gzip.open(compressed_tile_path, "rb") as f_in:
-                with open(decompressed_tile_path, "wb") as f_out:
-                    shutil.copyfileobj(f_in, f_out)
-
-        return self.extract_roi(decompressed_tile_path)
-```
-
-As you can see, we're using the `get_tile_parameters` method, that we've implemented earlier. Then we're downloading the tile, decompressing it and extracting the region of interest. The `get_or_download_tile` and
-`extract_roi` methods are implemented in the parent class, so you don't need to reimplement them if you're using the same approach.  
+This method uses the helper method `get_bbox` to get the coordinates of the bounding box of the map area. If your DTM provider requires you to provide the coordinates in a different projection, you need to make sure you convert. For an example of this, see the `transform_bbox` method in [nrw.py](../maps4fs/generator/dtm/nrw.py).
+Then, it determines which tiles are needed, downloads them all to a temporary folder and extracts them. The base class provides a `_tile_directory` property for convenience that points to a temp folder for your provider.
+Finally, it returns a list of file paths to the downloaded tiles.
 
 As you can see, it's pretty simple to implement a DTM provider. You can use any source of elevation data, as long as it's free and open.
 NOTE: DTM Providers which require API keys, paid subscriptions, or any other form of payment will not be considered for implementation in the generator.
@@ -156,9 +137,9 @@ mesh_z_scaling_factor = self.map.shared_settings.mesh_z_scaling_factor
 
 Here's the list of the shared settings, which directly related to the DTM Provider:
 
-- `mesh_z_scaling_factor`: the scaling factor for the background terrain and water mesh. The simple explanation would be the following: to 3D model work properly it's Z coordinates should match the meters from real world. 
-Imagine the following: the highest point of your terrain is 200 meters, but in the 16-bit DEM file it's represented as 20000. So, the Z scaling factor should be 100.0.  
-Example of usage:
+- `mesh_z_scaling_factor`: the scaling factor for the background terrain and water mesh. The simple explanation would be the following: to 3D model work properly it's Z coordinates should match the meters from real world.
+  Imagine the following: the highest point of your terrain is 200 meters, but in the 16-bit DEM file it's represented as 20000. So, the Z scaling factor should be 100.0.  
+  Example of usage:
 
 ```python
 data: np.ndarray
@@ -205,7 +186,8 @@ if some_condition:
 ```
 
 ### Info sequence
-If you want your provider to add some information to the `generataion_info.json` file, you can use the `data_info` property of the `DTMProvider` class.
+
+If you want your provider to add some information to the `generation_info.json` file, you can use the `data_info` property of the `DTMProvider` class.
 
 Note, that the `data_info` must me a correct JSON-serializable dictionary.
 
