@@ -172,7 +172,7 @@ class DTMProvider(ABC):
         return cls._is_community
 
     @classmethod
-    def settings(cls) -> Type[DTMProviderSettings]:
+    def settings(cls) -> Type[DTMProviderSettings] | None:
         """Settings model of the provider.
 
         Returns:

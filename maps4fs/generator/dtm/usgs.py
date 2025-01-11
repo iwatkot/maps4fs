@@ -5,12 +5,7 @@ from datetime import datetime
 from zipfile import ZipFile
 
 import numpy as np
-import rasterio
 import requests
-from rasterio.enums import Resampling
-from rasterio.merge import merge
-from rasterio.warp import calculate_default_transform, reproject
-from rasterio.windows import from_bounds
 
 from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
 
@@ -18,7 +13,6 @@ from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
 class USGSProviderSettings(DTMProviderSettings):
     """Settings for the USGS provider."""
 
-    max_local_elevation: int = 255
     dataset: tuple | str = (
         'Digital Elevation Model (DEM) 1 meter',
         'Alaska IFSAR 5 meter DEM',
@@ -43,11 +37,7 @@ class USGSProvider(DTMProvider):
     _author = "[ZenJakey](https://github.com/ZenJakey)"
     _contributors = "[kbrandwijk](https://github.com/kbrandwijk)"
     _is_community = True
-    _instructions = (
-        "ℹ️ Set the max local elevation to approx the local max elevation for your area in"
-        " meters. This will allow you to use heightScale 255 in GE with minimal tweaking."
-        " Setting this value too low can cause a flat map!"
-    )
+    _instructions = None
 
     _url = (
         "https://tnmaccess.nationalmap.gov/api/v1/products?prodFormats=GeoTIFF,IMG"
