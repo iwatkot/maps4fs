@@ -12,4 +12,4 @@ pympler
 pydantic
 maps4fs
 pygmdl
-OWSLib
+owslib
