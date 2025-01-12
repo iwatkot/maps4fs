@@ -174,17 +174,19 @@ class GRLE(Component):
         with open(textures_info_layer_path, "r", encoding="utf-8") as textures_info_layer_file:
             textures_info_layer = json.load(textures_info_layer_file)
 
+        farmlands = []
+        farmyards: list[list[tuple[int, int]]] | None = textures_info_layer.get("farmyards")
+        if farmyards and self.map.grle_settings.add_farmyards:
+            farmlands.extend(farmyards)
+            self.logger.debug("Found %s farmyards in textures info layer.", len(farmyards))
+
         fields: list[list[tuple[int, int]]] | None = textures_info_layer.get("fields")
         if not fields:
             self.logger.warning("Fields data not found in textures info layer.")
             return
+        farmlands.extend(fields)
 
         self.logger.debug("Found %s fields in textures info layer.", len(fields))
-
-        farmyards: list[list[tuple[int, int]]] | None = textures_info_layer.get("farmyards")
-        if farmyards and self.map.grle_settings.add_farmyards:
-            fields.extend(farmyards)
-            self.logger.debug("Found %s farmyards in textures info layer.", len(farmyards))
 
         info_layer_farmlands_path = os.path.join(
             self.game.weights_dir_path(self.map_directory), "infoLayer_farmlands.png"
@@ -212,10 +214,10 @@ class GRLE(Component):
         # the farmland_id. So as a result we do not have a gap in the farmland IDs.
         farmland_id = 1
 
-        for field in fields:
+        for farmland in farmlands:
             try:
                 fitted_field = self.fit_object_into_bounds(
-                    polygon_points=field,
+                    polygon_points=farmland,
                     margin=self.map.grle_settings.farmland_margin,
                     angle=self.rotation,
                 )
