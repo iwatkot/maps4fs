@@ -11,9 +11,11 @@ class BavariaProviderSettings(DTMProviderSettings):
     """Settings for the Bavaria provider."""
 
 
-# pylint: disable=W0223
 class BavariaProvider(DTMProvider):
-    """Provider of Bavaria Digital terrain model (DTM) 1m data."""
+    """Provider of Bavaria Digital terrain model (DTM) 1m data.
+    Data is provided by the 'Bayerische Vermessungsverwaltung' and available
+    at https://geodaten.bayern.de/opengeodata/OpenDataDetail.html?pn=dgm1 under CC BY 4.0 license.
+    """
 
     _code = "bavaria"
     _name = "Bavaria DGM1"
@@ -44,35 +46,35 @@ class BavariaProvider(DTMProvider):
         Returns:
             list: List of download URLs.
         """
-        urls = []
+        urls: list[str] = []
         try:
             # Make the GET request
             (north, south, east, west) = self.get_bbox()
-            response = requests.post(  # pylint: disable=W3101
+            response = requests.post(
                 "https://geoservices.bayern.de/services/poly2metalink/metalink/dgm1",
                 (f"SRID=4326;POLYGON(({west} {south},{east} {south},"
-                 f"{east} {north},{west} {north},{west} {south}))")
+                 f"{east} {north},{west} {north},{west} {south}))"),
+                stream=True,
+                timeout=60
             )
 
             # Check if the request was successful (HTTP status code 200)
             if response.status_code == 200:
                 file_path = os.path.join(self.meta4_path, "download.meta4")
                 # Write the content of the response to the file
-                with open(file_path, "wb") as file:
+                with open(file_path, "wb") as meta_file:
                     for chunk in response.iter_content(chunk_size=8192):  # Download in chunks
-                        file.write(chunk)
+                        meta_file.write(chunk)
                 self.logger.info("File downloaded successfully: %s", file_path)
 
                 # Parse the XML response
-                tree = ET.parse(file_path)
-                root = tree.getroot()
+                root = ET.parse(file_path).getroot()
                 namespace = {'ml': 'urn:ietf:params:xml:ns:metalink'}
 
-                urls = []
                 for file in root.findall('.//ml:file', namespace):
                     url = file.find('ml:url', namespace)
                     if url is not None:
-                        urls.append(url.text)
+                        urls.append(str(url.text))
             # pylint: disable=R0801
             else:
                 self.logger.error("Failed to get data. HTTP Status Code: %s", response.status_code)
