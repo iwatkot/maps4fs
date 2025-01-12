@@ -58,18 +58,19 @@ class Game:
         return os.path.join(map_directory, "maps", "map", "map.xml")
 
     @classmethod
-    def from_code(cls, code: str) -> Game:
+    def from_code(cls, code: str, map_template_path: str | None = None) -> Game:
         """Returns the game instance based on the game code.
 
         Arguments:
             code (str): The code of the game.
+            map_template_path (str, optional): Path to the map template file. Defaults to None.
 
         Returns:
             Game: The game instance.
         """
         for game in cls.__subclasses__():
             if game.code and game.code.lower() == code.lower():
-                return game()
+                return game(map_template_path)
         raise ValueError(f"Game with code {code} not found.")
 
     @property

@@ -89,6 +89,12 @@ class Messages:
         "This DTM provider was developed by the community, if you have any issues with it "
         "please contact the author."
     )
+    CUSTOM_TEMPLATE_INFO = (
+        "This option allows you to upload your own map template.  \n"
+        "The template should match the structure of the default template, otherwise it will "
+        "not work. Prepare the template carefully, any mistake can lead to errors or completely "
+        "broken map. No support will be provided for custom templates."
+    )
 
 
 class Settings:

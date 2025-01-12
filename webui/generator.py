@@ -173,7 +173,9 @@ class GeneratorUI:
                     field_name = self.snake_to_human(raw_field_name)
                     disabled = self.is_disabled_on_public(raw_field_name)
                     st.write(getattr(Settings, raw_field_name.upper()))
-                    widget = self._create_widget('main', field_name, raw_field_name, field_value, disabled)
+                    widget = self._create_widget(
+                        "main", field_name, raw_field_name, field_value, disabled
+                    )
 
                     category[raw_field_name] = widget
 
@@ -182,7 +184,12 @@ class GeneratorUI:
         self.settings = settings
 
     def _create_widget(
-        self, prefix: str, field_name: str, raw_field_name: str, value: int | bool | str | tuple | dict, disabled: bool = False
+        self,
+        prefix: str,
+        field_name: str,
+        raw_field_name: str,
+        value: int | bool | str | tuple | dict,
+        disabled: bool = False,
     ) -> int | bool | str:
         """Create a widget for the given field.
 
@@ -260,7 +267,9 @@ class GeneratorUI:
                     settings_json = provider_settings.model_dump()
                     for raw_field_name, value in settings_json.items():
                         field_name = self.snake_to_human(raw_field_name)
-                        widget = self._create_widget(provider_code, field_name, raw_field_name, value)
+                        widget = self._create_widget(
+                            provider_code, field_name, raw_field_name, value
+                        )
 
                         settings[raw_field_name] = widget
 
@@ -365,6 +374,7 @@ class GeneratorUI:
         self.raw_config = None
 
         self.custom_osm_path = None
+        self.custom_template_path = None
 
         self.get_settings()
 
@@ -442,6 +452,24 @@ class GeneratorUI:
                             height=600,
                             label_visibility="collapsed",
                         )
+
+            self.custom_template = st.checkbox(
+                "Upload custom template", value=False, key="custom_template"
+            )
+
+            if self.custom_template:
+                self.logger.debug("Custom template is enabled.")
+                st.info(Messages.CUSTOM_TEMPLATE_INFO)
+
+                uploaded_template = st.file_uploader("Upload a zip file", type=["zip"])
+                if uploaded_template is not None:
+                    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                    self.custom_template_path = os.path.join(
+                        config.INPUT_DIRECTORY, f"custom_template_{timestamp}.zip"
+                    )
+                    with open(self.custom_template_path, "wb") as f:
+                        f.write(uploaded_template.read())
+                    st.success(f"Custom template uploaded: {uploaded_template.name}")
 
             self.custom_background = st.checkbox(
                 "Upload custom background", value=False, key="custom_background"
@@ -522,7 +550,7 @@ class GeneratorUI:
 
     def generate_map(self) -> None:
         """Generate the map."""
-        game = mfs.Game.from_code(self.game_code)
+        game = mfs.Game.from_code(self.game_code, self.custom_template_path)
 
         try:
             lat, lon = self.lat_lon
