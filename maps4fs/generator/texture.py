@@ -421,7 +421,7 @@ class Texture(Component):
             ),
         )
 
-    # pylint: disable=no-member, R0912
+    # pylint: disable=no-member, R0912, R0915
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
         layers = self.layers_by_priority()
