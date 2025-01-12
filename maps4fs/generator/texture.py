@@ -421,7 +421,7 @@ class Texture(Component):
             ),
         )
 
-    # pylint: disable=no-member, R0912
+    # pylint: disable=no-member, R0912, R0915
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
         layers = self.layers_by_priority()
@@ -461,6 +461,9 @@ class Texture(Component):
             for polygon in self.objects_generator(  # type: ignore
                 layer.tags, layer.width, layer.info_layer
             ):
+                if not len(polygon) > 2:
+                    self.logger.debug("Skipping polygon with less than 3 points.")
+                    continue
                 if layer.info_layer:
                     info_layer_data[layer.info_layer].append(
                         self.np_to_polygon_points(polygon)  # type: ignore
