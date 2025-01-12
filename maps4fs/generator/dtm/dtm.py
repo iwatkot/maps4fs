@@ -376,7 +376,7 @@ class DTMProvider(ABC):
         Returns:
             list: List of paths to the downloaded GeoTIFF files.
         """
-        tif_files = []
+        tif_files: list[str] = []
         for url in urls:
             file_name = os.path.basename(url)
             self.logger.debug("Retrieving TIFF: %s", file_name)
@@ -384,7 +384,7 @@ class DTMProvider(ABC):
             if not os.path.exists(file_path):
                 try:
                     # Send a GET request to the file URL
-                    response = requests.get(url, stream=True)  # pylint: disable=W3101
+                    response = requests.get(url, stream=True, timeout=60)
                     response.raise_for_status()  # Raise an error for HTTP status codes 4xx/5xx
 
                     # Write the content of the response to the file
@@ -392,25 +392,35 @@ class DTMProvider(ABC):
                         for chunk in response.iter_content(chunk_size=8192):  # Download in chunks
                             file.write(chunk)
                     self.logger.info("File downloaded successfully: %s", file_path)
-                    if file_name.endswith('.zip'):
-                        with ZipFile(file_path, "r") as f_in:
-                            f_in.extract(file_name.replace('.zip', '.img'), output_path)
-                        tif_files.append(file_path.replace('.zip', '.img'))
-                    else:
-                        tif_files.append(file_path)
                 except requests.exceptions.RequestException as e:
                     self.logger.error("Failed to download file: %s", e)
             else:
                 self.logger.debug("File already exists: %s", file_name)
-                if file_name.endswith('.zip'):
-                    if not os.path.exists(file_path.replace('.zip', '.img')):
-                        with ZipFile(file_path, "r") as f_in:
-                            f_in.extract(file_name.replace('.zip', '.img'), output_path)
-                    tif_files.append(file_path.replace('.zip', '.img'))
-                else:
-                    tif_files.append(file_path)
-
+            if file_name.endswith('.zip'):
+                file_path = self.unzip_img_from_tif(file_name, output_path)
+            tif_files.append(file_path)
         return tif_files
+
+    def unzip_img_from_tif(self, file_name: str, output_path: str) -> str:
+        """Unpacks the .img file from the zip file.
+
+        Arguments:
+            file_name (str): Name of the file to unzip.
+            output_path (str): Path to the output directory.
+
+        Returns:
+            str: Path to the unzipped file.
+        """
+        file_path = os.path.join(output_path, file_name)
+        img_file_name = file_name.replace('.zip', '.img')
+        img_file_path = os.path.join(output_path, img_file_name)
+        if not os.path.exists(img_file_path):
+            with ZipFile(file_path, "r") as f_in:
+                f_in.extract(img_file_name, output_path)
+            self.logger.debug("Unzipped file %s to %s", file_name, img_file_name)
+        else:
+            self.logger.debug("File already exists: %s", img_file_name)
+        return img_file_path
 
     def reproject_geotiff(self, input_tiff: str) -> str:
         """Reproject a GeoTIFF file to a new coordinate reference system (CRS).
