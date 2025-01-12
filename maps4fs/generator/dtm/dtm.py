@@ -7,10 +7,12 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import os
 from typing import TYPE_CHECKING, Type
+from zipfile import ZipFile
 
 import numpy as np
 import osmnx as ox  # type: ignore
 import rasterio  # type: ignore
+import requests
 from rasterio.warp import calculate_default_transform, reproject
 from rasterio.enums import Resampling
 from rasterio.merge import merge
@@ -364,20 +366,75 @@ class DTMProvider(ABC):
         bbox = north, south, east, west
         return bbox
 
+    def download_tif_files(self, urls: list[str], output_path: str) -> list[str]:
+        """Download GeoTIFF files from the given URLs.
+
+        Arguments:
+            urls (list): List of URLs to download GeoTIFF files from.
+            output_path (str): Path to save the downloaded GeoTIFF files.
+
+        Returns:
+            list: List of paths to the downloaded GeoTIFF files.
+        """
+        tif_files: list[str] = []
+        for url in urls:
+            file_name = os.path.basename(url)
+            self.logger.debug("Retrieving TIFF: %s", file_name)
+            file_path = os.path.join(output_path, file_name)
+            if not os.path.exists(file_path):
+                try:
+                    # Send a GET request to the file URL
+                    response = requests.get(url, stream=True, timeout=60)
+                    response.raise_for_status()  # Raise an error for HTTP status codes 4xx/5xx
+
+                    # Write the content of the response to the file
+                    with open(file_path, "wb") as file:
+                        for chunk in response.iter_content(chunk_size=8192):  # Download in chunks
+                            file.write(chunk)
+                    self.logger.info("File downloaded successfully: %s", file_path)
+                except requests.exceptions.RequestException as e:
+                    self.logger.error("Failed to download file: %s", e)
+            else:
+                self.logger.debug("File already exists: %s", file_name)
+            if file_name.endswith('.zip'):
+                file_path = self.unzip_img_from_tif(file_name, output_path)
+            tif_files.append(file_path)
+        return tif_files
+
+    def unzip_img_from_tif(self, file_name: str, output_path: str) -> str:
+        """Unpacks the .img file from the zip file.
+
+        Arguments:
+            file_name (str): Name of the file to unzip.
+            output_path (str): Path to the output directory.
+
+        Returns:
+            str: Path to the unzipped file.
+        """
+        file_path = os.path.join(output_path, file_name)
+        img_file_name = file_name.replace('.zip', '.img')
+        img_file_path = os.path.join(output_path, img_file_name)
+        if not os.path.exists(img_file_path):
+            with ZipFile(file_path, "r") as f_in:
+                f_in.extract(img_file_name, output_path)
+            self.logger.debug("Unzipped file %s to %s", file_name, img_file_name)
+        else:
+            self.logger.debug("File already exists: %s", img_file_name)
+        return img_file_path
+
     def reproject_geotiff(self, input_tiff: str) -> str:
         """Reproject a GeoTIFF file to a new coordinate reference system (CRS).
 
         Arguments:
             input_tiff (str): Path to the input GeoTIFF file.
-            target_crs (str): Target CRS (e.g., EPSG:4326 for CRS:84).
 
         Returns:
             str: Path to the reprojected GeoTIFF file.
         """
-        output_tiff = os.path.join(self._tile_directory, "merged.tif")
+        output_tiff = os.path.join(self._tile_directory, "reprojected.tif")
 
         # Open the source GeoTIFF
-        self.logger.debug("Reprojecting GeoTIFF to %s CRS...", "EPSG:4326")
+        self.logger.debug("Reprojecting GeoTIFF to EPSG:4326 CRS...")
         with rasterio.open(input_tiff) as src:
             # Get the transform, width, and height of the target CRS
             transform, width, height = calculate_default_transform(
@@ -411,7 +468,6 @@ class DTMProvider(ABC):
 
         Arguments:
             input_files (list): List of input GeoTIFF files to merge.
-            output_file (str): Path to save the merged GeoTIFF file.
         """
         output_file = os.path.join(self._tile_directory, "merged.tif")
         # Open all input GeoTIFF files as datasets

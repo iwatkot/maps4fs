@@ -2,7 +2,6 @@
 
 import os
 from datetime import datetime
-from zipfile import ZipFile
 
 import numpy as np
 import requests
@@ -46,7 +45,7 @@ class USGSProvider(DTMProvider):
 
     def download_tiles(self):
         download_urls = self.get_download_urls()
-        all_tif_files = self.download_tif_files(download_urls)
+        all_tif_files = self.download_tif_files(download_urls, self.shared_tiff_path)
         return all_tif_files
 
     def __init__(self, *args, **kwargs):
@@ -88,48 +87,3 @@ class USGSProvider(DTMProvider):
             self.logger.error("Failed to get data. Error: %s", e)
         self.logger.debug("Received %s urls", len(urls))
         return urls
-
-    def download_tif_files(self, urls: list[str]) -> list[str]:
-        """Download GeoTIFF files from the given URLs.
-
-        Arguments:
-            urls (list): List of URLs to download GeoTIFF files from.
-
-        Returns:
-            list: List of paths to the downloaded GeoTIFF files.
-        """
-        tif_files = []
-        for url in urls:
-            file_name = os.path.basename(url)
-            self.logger.debug("Retrieving TIFF: %s", file_name)
-            file_path = os.path.join(self.shared_tiff_path, file_name)
-            if not os.path.exists(file_path):
-                try:
-                    # Send a GET request to the file URL
-                    response = requests.get(url, stream=True)  # pylint: disable=W3101
-                    response.raise_for_status()  # Raise an error for HTTP status codes 4xx/5xx
-
-                    # Write the content of the response to the file
-                    with open(file_path, "wb") as file:
-                        for chunk in response.iter_content(chunk_size=8192):  # Download in chunks
-                            file.write(chunk)
-                    self.logger.info("File downloaded successfully: %s", file_path)
-                    if file_name.endswith('.zip'):
-                        with ZipFile(file_path, "r") as f_in:
-                            f_in.extract(file_name.replace('.zip', '.img'), self.shared_tiff_path)
-                        tif_files.append(file_path.replace('.zip', '.img'))
-                    else:
-                        tif_files.append(file_path)
-                except requests.exceptions.RequestException as e:
-                    self.logger.error("Failed to download file: %s", e)
-            else:
-                self.logger.debug("File already exists: %s", file_name)
-                if file_name.endswith('.zip'):
-                    if not os.path.exists(file_path.replace('.zip', '.img')):
-                        with ZipFile(file_path, "r") as f_in:
-                            f_in.extract(file_name.replace('.zip', '.img'), self.shared_tiff_path)
-                    tif_files.append(file_path.replace('.zip', '.img'))
-                else:
-                    tif_files.append(file_path)
-
-        return tif_files
