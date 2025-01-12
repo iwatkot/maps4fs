@@ -1,6 +1,7 @@
 from typing import Type
 
 from tools.background import ConvertImageToObj
+from tools.custom_osm import FixCustomOsmFile
 from tools.dem import GeoTIFFWindowingTool
 from tools.textures import TextureSchemaEditorTool
 from tools.tool import Tool
@@ -31,7 +32,7 @@ class Shemas(Section):
 class TexturesAndDEM(Section):
     title = "🖼️ Textures and DEM"
     description = "Tools to work with textures and digital elevation models."
-    tools = [GeoTIFFWindowingTool]
+    tools = [FixCustomOsmFile, GeoTIFFWindowingTool]
 
 
 class Background(Section):
