@@ -163,7 +163,7 @@ class GRLE(Component):
         # use fields_np as base layer and overlay farmlands_np on top of it with 50% alpha blending.
         return cv2.addWeighted(fields_np, 0.5, farmlands_np, 0.5, 0)
 
-    # pylint: disable=R0801, R0914
+    # pylint: disable=R0801, R0914, R0915
     def _add_farmlands(self) -> None:
         """Adds farmlands to the InfoLayer PNG file."""
 
@@ -214,10 +214,10 @@ class GRLE(Component):
         # the farmland_id. So as a result we do not have a gap in the farmland IDs.
         farmland_id = 1
 
-        for farmland in farmlands:
+        for farmland_data in farmlands:
             try:
                 fitted_field = self.fit_object_into_bounds(
-                    polygon_points=farmland,
+                    polygon_points=farmland_data,
                     margin=self.map.grle_settings.farmland_margin,
                     angle=self.rotation,
                 )
