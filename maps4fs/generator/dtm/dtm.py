@@ -339,7 +339,7 @@ class DTMProvider(ABC):
                     "Failed to normalize DEM data. Error: %s. Using original data.", e
                 )
 
-        return data
+        return data.astype(np.uint16)
 
     def info_sequence(self) -> dict[str, int | str | float] | None:
         """Returns the information sequence for the component. Must be implemented in the child
