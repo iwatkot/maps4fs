@@ -4,7 +4,6 @@ TREE_URLS = {
     "americanElm_stage03": "https://github.com/user-attachments/assets/298729cb-809f-4d1e-bdbc-945dfd45a365",
     "americanElm_stage04": "https://github.com/user-attachments/assets/c07e0d90-742b-4f9e-8799-71cc6a50f19d",
     "americanElm_stage05": "https://github.com/user-attachments/assets/a2a1943d-6ddb-4496-9526-58919cdecdd4",
-    "americanElmRavaged": "https://github.com/user-attachments/assets/7556fde4-7dae-4418-af42-64651479c23f",
     "apple_stage03": "https://github.com/user-attachments/assets/bbda1ccb-46a2-489c-b93d-ea51ce13683d",
     "aspen_stage01": "https://github.com/user-attachments/assets/d53ae74c-6971-4547-bd65-cf6cd75180c3",
     "aspen_stage02": "https://github.com/user-attachments/assets/e148daf8-066f-4a6f-be13-2838c632afce",
