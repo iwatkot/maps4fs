@@ -266,6 +266,9 @@ Tools are divided into categories, which are listed below.
 - **Texture Schema Editor** - allows you to view all the supported textures and edit their parameters, such as priority, OSM tags and so on. After editing, you should click the Show updated schema button and copy the JSON schema to the clipboard. Then you can use it in the Expert settings to generate the map with the updated textures.
 
 #### For Textures and DEM
+
+- **Fix custom OSM file** - this tool fixes the most common errors in the custom OSM file, but it can not guarantee that the file will be fixed completely if some non-common errors are present.
+
 - **GeoTIFF windowing** - allows you to upload your GeoTIFF file and select the region of interest to extract it from the image. It's useful when you have high-resolution DEM data and want to create a height map using it.
 
 #### For Background terrain
