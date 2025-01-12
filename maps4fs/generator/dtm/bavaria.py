@@ -3,6 +3,7 @@
 import os
 
 from xml.etree import ElementTree as ET
+import hashlib
 import numpy as np
 import requests
 from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
@@ -36,50 +37,79 @@ class BavariaProvider(DTMProvider):
         os.makedirs(self.meta4_path, exist_ok=True)
 
     def download_tiles(self) -> list[str]:
-        download_urls = self.get_download_urls()
+        download_urls = self.get_meta_file_from_coords()
         all_tif_files = self.download_tif_files(download_urls, self.tiff_path)
         return all_tif_files
 
-    def get_download_urls(self) -> list[str]:
-        """Download .meta4 (xml format) file and extract URLs of all required GeoTIFF files.
+    @staticmethod
+    def get_meta_file_name(north: float, south: float, east: float, west: float) -> str:
+        """Generate a hashed file name for the .meta4 file.
+
+        Arguments:
+            north (float): Northern latitude.
+            south (float): Southern latitude.
+            east (float): Eastern longitude.
+            west (float): Western longitude.
+
+        Returns:
+            str: Hashed file name.
+        """
+        coordinates = f"{north}_{south}_{east}_{west}"
+        hash_object = hashlib.md5(coordinates.encode())
+        hashed_file_name = "download_" + hash_object.hexdigest() + ".meta4"
+        return hashed_file_name
+
+    def get_meta_file_from_coords(self) -> list[str]:
+        """Download .meta4 (xml format) file
 
         Returns:
             list: List of download URLs.
         """
+        (north, south, east, west) = self.get_bbox()
+        file_path = os.path.join(self.meta4_path, self.get_meta_file_name(north, south, east, west))
+        if not os.path.exists(file_path):
+            try:
+                # Make the GET request
+                response = requests.post(
+                    "https://geoservices.bayern.de/services/poly2metalink/metalink/dgm1",
+                    (f"SRID=4326;POLYGON(({west} {south},{east} {south},"
+                     f"{east} {north},{west} {north},{west} {south}))"),
+                    stream=True,
+                    timeout=60
+                )
+
+                # Check if the request was successful (HTTP status code 200)
+                if response.status_code == 200:
+                    # Write the content of the response to the file
+                    with open(file_path, "wb") as meta_file:
+                        for chunk in response.iter_content(chunk_size=8192):  # Download in chunks
+                            meta_file.write(chunk)
+                    self.logger.info("File downloaded successfully: %s", file_path)
+                else:
+                    self.logger.error("Download error. HTTP Status Code: %s", response.status_code)
+            except requests.exceptions.RequestException as e:
+                self.logger.error("Failed to get data. Error: %s", e)
+        else:
+            self.logger.debug("File already exists: %s", file_path)
+        return self.extract_urls_from_xml(file_path)
+
+    def extract_urls_from_xml(self, file_path: str) -> list[str]:
+        """Extract URLs from the XML file.
+
+        Arguments:
+            file_path (str): Path to the XML file.
+
+        Returns:
+            list: List of URLs.
+        """
         urls: list[str] = []
-        try:
-            # Make the GET request
-            (north, south, east, west) = self.get_bbox()
-            response = requests.post(
-                "https://geoservices.bayern.de/services/poly2metalink/metalink/dgm1",
-                (f"SRID=4326;POLYGON(({west} {south},{east} {south},"
-                 f"{east} {north},{west} {north},{west} {south}))"),
-                stream=True,
-                timeout=60
-            )
+        root = ET.parse(file_path).getroot()
+        namespace = {'ml': 'urn:ietf:params:xml:ns:metalink'}
 
-            # Check if the request was successful (HTTP status code 200)
-            if response.status_code == 200:
-                file_path = os.path.join(self.meta4_path, "download.meta4")
-                # Write the content of the response to the file
-                with open(file_path, "wb") as meta_file:
-                    for chunk in response.iter_content(chunk_size=8192):  # Download in chunks
-                        meta_file.write(chunk)
-                self.logger.info("File downloaded successfully: %s", file_path)
+        for file in root.findall('.//ml:file', namespace):
+            url = file.find('ml:url', namespace)
+            if url is not None:
+                urls.append(str(url.text))
 
-                # Parse the XML response
-                root = ET.parse(file_path).getroot()
-                namespace = {'ml': 'urn:ietf:params:xml:ns:metalink'}
-
-                for file in root.findall('.//ml:file', namespace):
-                    url = file.find('ml:url', namespace)
-                    if url is not None:
-                        urls.append(str(url.text))
-            # pylint: disable=R0801
-            else:
-                self.logger.error("Failed to get data. HTTP Status Code: %s", response.status_code)
-        except requests.exceptions.RequestException as e:
-            self.logger.error("Failed to get data. Error: %s", e)
         self.logger.debug("Received %s urls", len(urls))
         return urls
-        # pylint: enable=R0801

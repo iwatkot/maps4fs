@@ -371,6 +371,7 @@ class DTMProvider(ABC):
 
         Arguments:
             urls (list): List of URLs to download GeoTIFF files from.
+            output_path (str): Path to save the downloaded GeoTIFF files.
 
         Returns:
             list: List of paths to the downloaded GeoTIFF files.
@@ -457,7 +458,6 @@ class DTMProvider(ABC):
 
         Arguments:
             input_files (list): List of input GeoTIFF files to merge.
-            output_file (str): Path to save the merged GeoTIFF file.
         """
         output_file = os.path.join(self._tile_directory, "merged.tif")
         # Open all input GeoTIFF files as datasets
