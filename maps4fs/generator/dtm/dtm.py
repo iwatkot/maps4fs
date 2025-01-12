@@ -302,7 +302,7 @@ class DTMProvider(ABC):
         self.data_info = {}
         self.add_numpy_params(data, "original")
 
-        data = self.signed_to_unsigned(data)
+        data = self.ground_height_data(data)
         self.add_numpy_params(data, "grounded")
 
         original_deviation = int(self.data_info["original_deviation"])
@@ -341,7 +341,7 @@ class DTMProvider(ABC):
                     "Failed to normalize DEM data. Error: %s. Using original data.", e
                 )
 
-        return data
+        return data.astype(np.uint16)
 
     def info_sequence(self) -> dict[str, int | str | float] | None:
         """Returns the information sequence for the component. Must be implemented in the child
@@ -572,11 +572,15 @@ class DTMProvider(ABC):
         )
         return normalized_data
 
-    def signed_to_unsigned(self, data: np.ndarray, add_one: bool = True) -> np.ndarray:
-        """Convert signed 16-bit integer to unsigned 16-bit integer.
+    @staticmethod
+    def ground_height_data(data: np.ndarray, add_one: bool = True) -> np.ndarray:
+        """Shift the data to ground level (0 meter).
+        Optionally add one meter to the data to leave some room
+        for the water level and pit modifications.
 
         Arguments:
-            data (np.ndarray): DEM data from SRTM file after cropping.
+            data (np.ndarray): DEM data after cropping.
+            add_one (bool): Add one meter to the data
 
         Returns:
             np.ndarray: Unsigned DEM data.
@@ -584,7 +588,7 @@ class DTMProvider(ABC):
         data = data - data.min()
         if add_one:
             data = data + 1
-        return data.astype(np.uint16)
+        return data
 
     def add_numpy_params(
         self,
