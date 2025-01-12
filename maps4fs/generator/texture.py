@@ -461,6 +461,9 @@ class Texture(Component):
             for polygon in self.objects_generator(  # type: ignore
                 layer.tags, layer.width, layer.info_layer
             ):
+                if not len(polygon) > 2:
+                    self.logger.debug("Skipping polygon with less than 3 points.")
+                    continue
                 if layer.info_layer:
                     info_layer_data[layer.info_layer].append(
                         self.np_to_polygon_points(polygon)  # type: ignore
