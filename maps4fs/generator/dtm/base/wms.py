@@ -4,7 +4,6 @@ from abc import abstractmethod
 import os
 
 from owslib.wms import WebMapService
-from owslib.util import Authentication
 
 from maps4fs.generator.dtm import utils
 from maps4fs.generator.dtm.dtm import DTMProvider
@@ -56,7 +55,7 @@ class WMSProvider(DTMProvider):
         wms = WebMapService(
             self._url,
             version=self._wms_version,
-            auth=Authentication(verify=False),
+            # auth=Authentication(verify=False),
             timeout=600,
         )
         for tile in tiles:

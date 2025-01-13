@@ -4,7 +4,7 @@ from abc import abstractmethod
 import os
 
 from owslib.wcs import WebCoverageService
-from owslib.util import Authentication
+from tqdm import tqdm
 
 from maps4fs.generator.dtm import utils
 from maps4fs.generator.dtm.dtm import DTMProvider
@@ -56,10 +56,10 @@ class WCSProvider(DTMProvider):
         wcs = WebCoverageService(
             self._url,
             version=self._wcs_version,
-            auth=Authentication(verify=False),
+            # auth=Authentication(verify=False),
             timeout=600,
         )
-        for tile in tiles:
+        for tile in tqdm(tiles, desc="Downloading tiles", unit="tile"):
             file_name = "_".join(map(str, tile)) + ".tif"
             file_path = os.path.join(self.shared_tiff_path, file_name)
             if not os.path.exists(file_path):
