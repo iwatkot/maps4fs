@@ -50,6 +50,9 @@ class DTMProvider(ABC):
     _is_base: bool = False
     _settings: Type[DTMProviderSettings] | None = DTMProviderSettings
 
+    """Bounding box of the provider in the format (north, south, east, west)."""
+    _extents: tuple[float, float, float, float] | None = None
+
     _instructions: str | None = None
 
     _base_instructions = (
@@ -235,7 +238,7 @@ class DTMProvider(ABC):
         return None
 
     @classmethod
-    def get_provider_descriptions(cls) -> dict[str, str]:
+    def get_valid_provider_descriptions(cls, lat_lon: tuple[float, float]) -> dict[str, str]:
         """Get descriptions of all providers, where keys are provider codes and
         values are provider descriptions.
 
@@ -244,9 +247,24 @@ class DTMProvider(ABC):
         """
         providers = {}
         for provider in cls.__subclasses__():
-            if not provider._is_base:  # pylint: disable=W0212
+            if not provider._is_base and provider.inside_bounding_box(
+                lat_lon
+            ):  # pylint: disable=W0212
                 providers[provider._code] = provider.description()  # pylint: disable=W0212
         return providers  # type: ignore
+
+    @classmethod
+    def inside_bounding_box(cls, lat_lon: tuple[float, float]) -> bool:
+        """Check if the coordinates are inside the bounding box of the provider.
+
+        Returns:
+            bool: True if the coordinates are inside the bounding box, False otherwise.
+        """
+        lat, lon = lat_lon
+        extents = cls._extents
+        return extents is None or (
+            extents[0] >= lat >= extents[1] and extents[2] >= lon >= extents[3]
+        )
 
     @abstractmethod
     def download_tiles(self) -> list[str]:
@@ -280,6 +298,8 @@ class DTMProvider(ABC):
         with rasterio.open(tile) as src:
             crs = src.crs
         if crs != "EPSG:4326":
+            print("crs:", crs)
+            print("reprojecting to EPSG:4326")
             self.logger.debug(f"Reprojecting GeoTIFF from {crs} to EPSG:4326...")
             tile = self.reproject_geotiff(tile)
 
@@ -480,10 +500,12 @@ class DTMProvider(ABC):
         # Open all input GeoTIFF files as datasets
         self.logger.debug("Merging tiff files...")
         datasets = [rasterio.open(file) for file in input_files]
+        print("datasets:", datasets)
 
         # Merge datasets
         crs = datasets[0].crs
         mosaic, out_transform = merge(datasets, nodata=0)
+        print("mosaic:", mosaic)
 
         # Get metadata from the first file and update it for the output
         out_meta = datasets[0].meta.copy()

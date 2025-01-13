@@ -37,6 +37,7 @@ class USGSProvider(DTMProvider):
     _contributors = "[kbrandwijk](https://github.com/kbrandwijk)"
     _is_community = True
     _instructions = None
+    _extents = (50.0, 17.0, -64.0, -162.0)
 
     _url = "https://tnmaccess.nationalmap.gov/api/v1/products?prodFormats=GeoTIFF,IMG"
 

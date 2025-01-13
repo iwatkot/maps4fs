@@ -29,6 +29,8 @@ class SRTM30Provider(DTMProvider):
 
     _author = "[iwatkot](https://github.com/iwatkot)"
 
+    _extents = (60, -65, 180, -180)
+
     _settings = SRTM30ProviderSettings
 
     def __init__(self, *args, **kwargs):
