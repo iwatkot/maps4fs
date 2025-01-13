@@ -23,7 +23,7 @@ from maps4fs.generator.component import Component
 PREVIEW_MAXIMUM_SIZE = 2048
 
 
-# pylint: disable=R0902
+# pylint: disable=R0902, R0904
 class Texture(Component):
     """Class which generates textures for the map using OSM data.
 
@@ -277,6 +277,7 @@ class Texture(Component):
             self.dissolve()
         self.copy_procedural()
 
+    # pylint: disable=no-member
     def add_borders(self) -> None:
         """Iterates over all the layers and picks the one which have the border propety defined.
         Borders are distance from the edge of the map on each side (top, right, bottom, left).
@@ -299,28 +300,28 @@ class Texture(Component):
             if border == 0:
                 continue
 
-            top = layer_image[:border, :]
-            right = layer_image[:, -border:]
-            bottom = layer_image[-border:, :]
-            left = layer_image[:, :border]
+            top = layer_image[:border, :]  # type: ignore
+            right = layer_image[:, -border:]  # type: ignore
+            bottom = layer_image[-border:, :]  # type: ignore
+            left = layer_image[:, :border]  # type: ignore
 
             if base_layer_image is not None:
-                base_layer_image[:border, :][top != 0] = 255
-                base_layer_image[:, -border:][right != 0] = 255
-                base_layer_image[-border:, :][bottom != 0] = 255
-                base_layer_image[:, :border][left != 0] = 255
+                base_layer_image[:border, :][top != 0] = 255  # type: ignore
+                base_layer_image[:, -border:][right != 0] = 255  # type: ignore
+                base_layer_image[-border:, :][bottom != 0] = 255  # type: ignore
+                base_layer_image[:, :border][left != 0] = 255  # type: ignore
 
-            layer_image[:border, :] = 0
-            layer_image[:, -border:] = 0
-            layer_image[-border:, :] = 0
-            layer_image[:, :border] = 0
+            layer_image[:border, :] = 0  # type: ignore
+            layer_image[:, -border:] = 0  # type: ignore
+            layer_image[-border:, :] = 0  # type: ignore
+            layer_image[:, :border] = 0  # type: ignore
 
             cv2.imwrite(layer.path(self._weights_dir), layer_image)
             self.logger.debug("Borders added to layer %s.", layer.name)
 
         if base_layer_image is not None:
-            cv2.imwrite(base_layer.path(self._weights_dir), base_layer_image)
-            self.logger.debug("Borders added to base layer %s.", base_layer.name)
+            cv2.imwrite(base_layer.path(self._weights_dir), base_layer_image)  # type: ignore
+            self.logger.debug("Borders added to base layer %s.", base_layer.name)  # type: ignore
 
     def copy_procedural(self) -> None:
         """Copies some of the textures to use them as mask for procedural generation.
