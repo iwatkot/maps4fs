@@ -78,7 +78,10 @@
   },
   {
     "name": "grassClovers",
-    "count": 2
+    "count": 2,
+    "tags": { "natural": "scrub" },
+    "color": [165, 197, 0],
+    "priority": 6
   },
   {
     "name": "grassCut",

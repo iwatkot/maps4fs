@@ -570,7 +570,7 @@ class I3d(Component):
             tree_count += 1
 
         scene_node.append(trees_node)
-        self.logger.info("Added %s trees to the I3D file.", tree_count)
+        self.logger.debug("Added %s trees to the I3D file.", tree_count)
 
         tree.write(self._map_i3d_path)  # type: ignore
         self.logger.debug("Map I3D file saved to: %s.", self._map_i3d_path)
