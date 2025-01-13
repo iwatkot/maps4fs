@@ -10,6 +10,7 @@ from xml.etree import ElementTree as ET
 
 import cv2
 import numpy as np
+from tqdm import tqdm
 
 from maps4fs.generator.component import Component
 from maps4fs.generator.texture import Texture
@@ -289,6 +290,11 @@ class I3d(Component):
         if not textures_info_layer_path:
             return
 
+        border = 0
+        textures_layer: Texture | None = self.map.get_component("Texture")  # type: ignore
+        if textures_layer:
+            border = textures_layer.get_layer_by_usage("field").border  # type: ignore
+
         with open(textures_info_layer_path, "r", encoding="utf-8") as textures_info_layer_file:
             textures_info_layer = json.load(textures_info_layer_file)
 
@@ -313,10 +319,10 @@ class I3d(Component):
                 # the field_id. So as a result we do not have a gap in the field IDs.
                 field_id = 1
 
-                for field in fields:
+                for field in tqdm(fields, desc="Adding fields", unit="field"):
                     try:
                         fitted_field = self.fit_object_into_bounds(
-                            polygon_points=field, angle=self.rotation
+                            polygon_points=field, angle=self.rotation, border=border
                         )
                     except ValueError as e:
                         self.logger.debug(
@@ -570,7 +576,7 @@ class I3d(Component):
             tree_count += 1
 
         scene_node.append(trees_node)
-        self.logger.info("Added %s trees to the I3D file.", tree_count)
+        self.logger.debug("Added %s trees to the I3D file.", tree_count)
 
         tree.write(self._map_i3d_path)  # type: ignore
         self.logger.debug("Map I3D file saved to: %s.", self._map_i3d_path)

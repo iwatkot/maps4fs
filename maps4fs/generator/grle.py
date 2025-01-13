@@ -8,6 +8,7 @@ from xml.etree import ElementTree as ET
 import cv2
 import numpy as np
 from shapely.geometry import Polygon  # type: ignore
+from tqdm import tqdm
 
 from maps4fs.generator.component import Component
 from maps4fs.generator.texture import PREVIEW_MAXIMUM_SIZE, Texture
@@ -74,7 +75,7 @@ class GRLE(Component):
             self.logger.debug("GRLE schema is not obtained, skipping the processing.")
             return
 
-        for info_layer in self._grle_schema:
+        for info_layer in tqdm(self._grle_schema, desc="Preparing GRLE files", unit="layer"):
             if isinstance(info_layer, dict):
                 file_path = os.path.join(
                     self.game.weights_dir_path(self.map_directory), info_layer["name"]
@@ -214,7 +215,7 @@ class GRLE(Component):
         # the farmland_id. So as a result we do not have a gap in the farmland IDs.
         farmland_id = 1
 
-        for farmland_data in farmlands:
+        for farmland_data in tqdm(farmlands, desc="Adding farmlands", unit="farmland"):
             try:
                 fitted_field = self.fit_object_into_bounds(
                     polygon_points=farmland_data,
@@ -358,7 +359,7 @@ class GRLE(Component):
             Returns:
                 np.ndarray: The image with the islands of plants.
             """
-            for _ in range(count):
+            for _ in tqdm(range(count), desc="Adding islands of plants", unit="island"):
                 # Randomly choose the value for the island.
                 plant_value = choice(possible_R_values)
                 # Randomly choose the size of the island.
@@ -433,7 +434,7 @@ class GRLE(Component):
         self.logger.debug("Adding %s islands of plants to the base image.", island_count)
         if self.map.grle_settings.random_plants:
             grass_image_copy = create_island_of_plants(grass_image_copy, island_count)
-            self.logger.info("Added %s islands of plants to the base image.", island_count)
+            self.logger.debug("Added %s islands of plants to the base image.", island_count)
 
         # Sligtly reduce the size of the grass_image, that we'll use as mask.
         kernel = np.ones((3, 3), np.uint8)

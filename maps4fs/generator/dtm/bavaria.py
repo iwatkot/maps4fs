@@ -1,12 +1,14 @@
 """This module contains provider of Bavaria data."""
 
-import os
-
-from xml.etree import ElementTree as ET
 import hashlib
+import os
+from xml.etree import ElementTree as ET
+
 import numpy as np
 import requests
+
 from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
+
 
 class BavariaProviderSettings(DTMProviderSettings):
     """Settings for the Bavaria provider."""
@@ -72,10 +74,12 @@ class BavariaProvider(DTMProvider):
                 # Make the GET request
                 response = requests.post(
                     "https://geoservices.bayern.de/services/poly2metalink/metalink/dgm1",
-                    (f"SRID=4326;POLYGON(({west} {south},{east} {south},"
-                     f"{east} {north},{west} {north},{west} {south}))"),
+                    (
+                        f"SRID=4326;POLYGON(({west} {south},{east} {south},"
+                        f"{east} {north},{west} {north},{west} {south}))"
+                    ),
                     stream=True,
-                    timeout=60
+                    timeout=60,
                 )
 
                 # Check if the request was successful (HTTP status code 200)
@@ -84,7 +88,7 @@ class BavariaProvider(DTMProvider):
                     with open(file_path, "wb") as meta_file:
                         for chunk in response.iter_content(chunk_size=8192):  # Download in chunks
                             meta_file.write(chunk)
-                    self.logger.info("File downloaded successfully: %s", file_path)
+                    self.logger.debug("File downloaded successfully: %s", file_path)
                 else:
                     self.logger.error("Download error. HTTP Status Code: %s", response.status_code)
             except requests.exceptions.RequestException as e:
@@ -104,10 +108,10 @@ class BavariaProvider(DTMProvider):
         """
         urls: list[str] = []
         root = ET.parse(file_path).getroot()
-        namespace = {'ml': 'urn:ietf:params:xml:ns:metalink'}
+        namespace = {"ml": "urn:ietf:params:xml:ns:metalink"}
 
-        for file in root.findall('.//ml:file', namespace):
-            url = file.find('ml:url', namespace)
+        for file in root.findall(".//ml:file", namespace):
+            url = file.find("ml:url", namespace)
             if url is not None:
                 urls.append(str(url.text))
 

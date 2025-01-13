@@ -4,8 +4,8 @@ and specific settings for downloading and processing the data."""
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 import os
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Type
 from zipfile import ZipFile
 
@@ -13,11 +13,10 @@ import numpy as np
 import osmnx as ox  # type: ignore
 import rasterio  # type: ignore
 import requests
-from rasterio.warp import calculate_default_transform, reproject
+from pydantic import BaseModel
 from rasterio.enums import Resampling
 from rasterio.merge import merge
-
-from pydantic import BaseModel
+from rasterio.warp import calculate_default_transform, reproject
 
 from maps4fs.logger import Logger
 
@@ -391,12 +390,12 @@ class DTMProvider(ABC):
                     with open(file_path, "wb") as file:
                         for chunk in response.iter_content(chunk_size=8192):  # Download in chunks
                             file.write(chunk)
-                    self.logger.info("File downloaded successfully: %s", file_path)
+                    self.logger.debug("File downloaded successfully: %s", file_path)
                 except requests.exceptions.RequestException as e:
                     self.logger.error("Failed to download file: %s", e)
             else:
                 self.logger.debug("File already exists: %s", file_name)
-            if file_name.endswith('.zip'):
+            if file_name.endswith(".zip"):
                 file_path = self.unzip_img_from_tif(file_name, output_path)
             tif_files.append(file_path)
         return tif_files
@@ -412,7 +411,7 @@ class DTMProvider(ABC):
             str: Path to the unzipped file.
         """
         file_path = os.path.join(output_path, file_name)
-        img_file_name = file_name.replace('.zip', '.img')
+        img_file_name = file_name.replace(".zip", ".img")
         img_file_path = os.path.join(output_path, img_file_name)
         if not os.path.exists(img_file_path):
             with ZipFile(file_path, "r") as f_in:

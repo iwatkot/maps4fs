@@ -17,6 +17,17 @@
             }
         },
         {
+            "name": "demo.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/demo.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+              "PYTHONPATH": "${workspaceFolder}"
+            }
+        }
+        {
             "name": "Current File",
             "type": "debugpy",
             "request": "launch",

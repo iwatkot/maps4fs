@@ -78,7 +78,10 @@
   },
   {
     "name": "grassClovers",
-    "count": 2
+    "count": 2,
+    "tags": { "natural": "scrub" },
+    "color": [165, 197, 0],
+    "priority": 6
   },
   {
     "name": "grassCut",
@@ -155,7 +158,8 @@
     "priority": 4,
     "info_layer": "fields",
     "usage": "field",
-    "procedural": ["PG_meadow", "PG_acres"]
+    "procedural": ["PG_meadow", "PG_acres"],
+    "border": 10
   },
   {
     "name": "mudDarkGrassPatchy",

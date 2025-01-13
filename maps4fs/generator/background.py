@@ -11,6 +11,7 @@ from copy import deepcopy
 import cv2
 import numpy as np
 import trimesh  # type: ignore
+from tqdm import tqdm
 
 from maps4fs.generator.component import Component
 from maps4fs.generator.dem import DEM
@@ -323,7 +324,7 @@ class Background(Component):
         self.logger.debug("Ground level: %s", ground)
 
         self.logger.debug(
-            "Starting to generate a mesh for with shape: %s x %s. This may take a while...",
+            "Starting to generate a mesh for with shape: %s x %s. This may take a while.",
             cols,
             rows,
         )
@@ -333,7 +334,7 @@ class Background(Component):
 
         skipped = 0
 
-        for i in range(rows - 1):
+        for i in tqdm(range(rows - 1), desc="Generating mesh", unit="row"):
             for j in range(cols - 1):
                 top_left = i * cols + j
                 top_right = top_left + 1
@@ -401,6 +402,7 @@ class Background(Component):
         Arguments:
             mesh (trimesh.Trimesh) -- The mesh to convert to an STL file.
         """
+        mesh = mesh.simplify_quadric_decimation(face_count=len(mesh.faces) // 2**6)
         preview_path = os.path.join(self.previews_directory, "background_dem.stl")
         mesh.export(preview_path)
 

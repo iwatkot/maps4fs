@@ -13,3 +13,4 @@ pydantic
 maps4fs
 pygmdl
 owslib
+tqdm
