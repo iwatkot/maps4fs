@@ -10,6 +10,7 @@ from xml.etree import ElementTree as ET
 
 import cv2
 import numpy as np
+from tqdm import tqdm
 
 from maps4fs.generator.component import Component
 from maps4fs.generator.texture import Texture
@@ -313,7 +314,7 @@ class I3d(Component):
                 # the field_id. So as a result we do not have a gap in the field IDs.
                 field_id = 1
 
-                for field in fields:
+                for field in tqdm(fields, desc="Adding fields", unit="field"):
                     try:
                         fitted_field = self.fit_object_into_bounds(
                             polygon_points=field, angle=self.rotation
