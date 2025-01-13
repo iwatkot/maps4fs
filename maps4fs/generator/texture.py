@@ -73,6 +73,7 @@ class Texture(Component):
             background: bool = False,
             invisible: bool = False,
             procedural: list[str] | None = None,
+            border: int | None = None,
         ):
             self.name = name
             self.count = count
@@ -86,6 +87,7 @@ class Texture(Component):
             self.background = background
             self.invisible = invisible
             self.procedural = procedural
+            self.border = border
 
         def to_json(self) -> dict[str, str | list[str] | bool]:  # type: ignore
             """Returns dictionary with layer data.
@@ -105,6 +107,7 @@ class Texture(Component):
                 "background": self.background,
                 "invisible": self.invisible,
                 "procedural": self.procedural,
+                "border": self.border,
             }
 
             data = {k: v for k, v in data.items() if v is not None}
@@ -267,7 +270,57 @@ class Texture(Component):
         self._read_parameters()
         self.draw()
         self.rotate_textures()
+        self.add_borders()
+        if self.map.texture_settings.dissolve and self.game.code != "FS22":
+            # FS22 has textures splitted into 4 sublayers, which leads to a very
+            # long processing time when dissolving them.
+            self.dissolve()
         self.copy_procedural()
+
+    def add_borders(self) -> None:
+        """Iterates over all the layers and picks the one which have the border propety defined.
+        Borders are distance from the edge of the map on each side (top, right, bottom, left).
+        On the layers those pixels will be removed (value set to 0). If the base layer exist in
+        the schema, those pixel values (not 0) will be added as 255 to the base layer."""
+        base_layer = self.get_base_layer()
+        base_layer_image = None
+        if base_layer:
+            base_layer_image = cv2.imread(base_layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED)
+
+        layers_with_borders = [layer for layer in self.layers if layer.border is not None]
+
+        for layer in layers_with_borders:
+            # Read the image.
+            # Read pixels on borders with specified width (border property).
+            # Where the pixel value is 255 - set it to 255 in base layer image.
+            # And set it to 0 in the current layer image.
+            layer_image = cv2.imread(layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED)
+            border = layer.border
+            if border == 0:
+                continue
+
+            top = layer_image[:border, :]
+            right = layer_image[:, -border:]
+            bottom = layer_image[-border:, :]
+            left = layer_image[:, :border]
+
+            if base_layer_image is not None:
+                base_layer_image[:border, :][top != 0] = 255
+                base_layer_image[:, -border:][right != 0] = 255
+                base_layer_image[-border:, :][bottom != 0] = 255
+                base_layer_image[:, :border][left != 0] = 255
+
+            layer_image[:border, :] = 0
+            layer_image[:, -border:] = 0
+            layer_image[-border:, :] = 0
+            layer_image[:, :border] = 0
+
+            cv2.imwrite(layer.path(self._weights_dir), layer_image)
+            self.logger.debug("Borders added to layer %s.", layer.name)
+
+        if base_layer_image is not None:
+            cv2.imwrite(base_layer.path(self._weights_dir), base_layer_image)
+            self.logger.debug("Borders added to base layer %s.", base_layer.name)
 
     def copy_procedural(self) -> None:
         """Copies some of the textures to use them as mask for procedural generation.
@@ -505,11 +558,6 @@ class Texture(Component):
 
         if cumulative_image is not None:
             self.draw_base_layer(cumulative_image)
-
-        if self.map.texture_settings.dissolve and self.game.code != "FS22":
-            # FS22 has textures splitted into 4 sublayers, which leads to a very
-            # long processing time when dissolving them.
-            self.dissolve()
 
     def dissolve(self) -> None:
         """Dissolves textures of the layers with tags into sublayers for them to look more

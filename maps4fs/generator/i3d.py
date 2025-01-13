@@ -290,6 +290,11 @@ class I3d(Component):
         if not textures_info_layer_path:
             return
 
+        border = 0
+        textures_layer: Texture | None = self.map.get_component("Texture")  # type: ignore
+        if textures_layer:
+            border = textures_layer.get_layer_by_usage("field").border  # type: ignore
+
         with open(textures_info_layer_path, "r", encoding="utf-8") as textures_info_layer_file:
             textures_info_layer = json.load(textures_info_layer_file)
 
@@ -317,7 +322,7 @@ class I3d(Component):
                 for field in tqdm(fields, desc="Adding fields", unit="field"):
                     try:
                         fitted_field = self.fit_object_into_bounds(
-                            polygon_points=field, angle=self.rotation
+                            polygon_points=field, angle=self.rotation, border=border
                         )
                     except ValueError as e:
                         self.logger.debug(

@@ -352,6 +352,7 @@ class Component:
         linestring_points: list[tuple[int, int]] | None = None,
         margin: int = 0,
         angle: int = 0,
+        border: int = 0,
     ) -> list[tuple[int, int]]:
         """Fits a polygon into the bounds of the map.
 
@@ -360,6 +361,7 @@ class Component:
             linestring_points (list[tuple[int, int]]): The points of the linestring.
             margin (int, optional): The margin to add to the polygon. Defaults to 0.
             angle (int, optional): The angle to rotate the polygon by. Defaults to 0.
+            border (int, optional): The border to add to the bounds. Defaults to 0.
 
         Returns:
             list[tuple[int, int]]: The points of the polygon fitted into the map bounds.
@@ -367,8 +369,8 @@ class Component:
         if polygon_points is None and linestring_points is None:
             raise ValueError("Either polygon or linestring points must be provided.")
 
-        min_x = min_y = 0
-        max_x = max_y = self.map_size
+        min_x = min_y = 0 + border
+        max_x = max_y = self.map_size - border
 
         object_type = Polygon if polygon_points else LineString
 
