@@ -13,13 +13,13 @@ class USGSProviderSettings(DTMProviderSettings):
     """Settings for the USGS provider."""
 
     dataset: tuple | str = (
-        'Digital Elevation Model (DEM) 1 meter',
-        'Alaska IFSAR 5 meter DEM',
-        'National Elevation Dataset (NED) 1/9 arc-second',
-        'National Elevation Dataset (NED) 1/3 arc-second',
-        'National Elevation Dataset (NED) 1 arc-second',
-        'National Elevation Dataset (NED) Alaska 2 arc-second',
-        'Original Product Resolution (OPR) Digital Elevation Model (DEM)',
+        "Digital Elevation Model (DEM) 1 meter",
+        "Alaska IFSAR 5 meter DEM",
+        "National Elevation Dataset (NED) 1/9 arc-second",
+        "National Elevation Dataset (NED) 1/3 arc-second",
+        "National Elevation Dataset (NED) 1 arc-second",
+        "National Elevation Dataset (NED) Alaska 2 arc-second",
+        "Original Product Resolution (OPR) Digital Elevation Model (DEM)",
     )
 
 
@@ -30,7 +30,7 @@ class USGSProvider(DTMProvider):
     _name = "USGS"
     _region = "USA"
     _icon = "🇺🇸"
-    _resolution = 'variable'
+    _resolution = "variable"
     _data: np.ndarray | None = None
     _settings = USGSProviderSettings
     _author = "[ZenJakey](https://github.com/ZenJakey)"
@@ -38,10 +38,7 @@ class USGSProvider(DTMProvider):
     _is_community = True
     _instructions = None
 
-    _url = (
-        "https://tnmaccess.nationalmap.gov/api/v1/products?prodFormats=GeoTIFF,IMG"
-
-    )
+    _url = "https://tnmaccess.nationalmap.gov/api/v1/products?prodFormats=GeoTIFF,IMG"
 
     def download_tiles(self):
         download_urls = self.get_download_urls()

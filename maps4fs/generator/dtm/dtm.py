@@ -47,7 +47,7 @@ class DTMProvider(ABC):
     _contributors: str | None = None
     _is_community: bool = False
     _is_base: bool = False
-    _settings: Type[DTMProviderSettings] | None = None
+    _settings: Type[DTMProviderSettings] | None = DTMProviderSettings
 
     _instructions: str | None = None
 
@@ -243,7 +243,8 @@ class DTMProvider(ABC):
         """
         providers = {}
         for provider in cls.__subclasses__():
-            providers[provider._code] = provider.description()  # pylint: disable=W0212
+            if not provider._is_base:  # pylint: disable=W0212
+                providers[provider._code] = provider.description()  # pylint: disable=W0212
         return providers  # type: ignore
 
     @abstractmethod
@@ -362,7 +363,7 @@ class DTMProvider(ABC):
         west, south, east, north = ox.utils_geo.bbox_from_point(  # type: ignore
             self.coordinates, dist=self.size // 2, project_utm=False
         )
-        bbox = north, south, east, west
+        bbox = float(north), float(south), float(east), float(west)
         return bbox
 
     def download_tif_files(self, urls: list[str], output_path: str) -> list[str]:
@@ -443,7 +444,13 @@ class DTMProvider(ABC):
             # Update the metadata for the target GeoTIFF
             kwargs = src.meta.copy()
             kwargs.update(
-                {"crs": "EPSG:4326", "transform": transform, "width": width, "height": height}
+                {
+                    "crs": "EPSG:4326",
+                    "transform": transform,
+                    "width": width,
+                    "height": height,
+                    "nodata": None,
+                }
             )
 
             # Open the destination GeoTIFF file and reproject
@@ -456,7 +463,7 @@ class DTMProvider(ABC):
                         src_crs=src.crs,
                         dst_transform=transform,
                         dst_crs="EPSG:4326",
-                        resampling=Resampling.nearest,  # Choose resampling method
+                        resampling=Resampling.average,  # Choose resampling method
                     )
 
         self.logger.debug("Reprojected GeoTIFF saved to %s", output_tiff)

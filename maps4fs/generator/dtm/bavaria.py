@@ -4,14 +4,9 @@ import hashlib
 import os
 from xml.etree import ElementTree as ET
 
-import numpy as np
 import requests
 
-from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
-
-
-class BavariaProviderSettings(DTMProviderSettings):
-    """Settings for the Bavaria provider."""
+from maps4fs.generator.dtm.dtm import DTMProvider
 
 
 class BavariaProvider(DTMProvider):
@@ -25,8 +20,6 @@ class BavariaProvider(DTMProvider):
     _region = "DE"
     _icon = "🇩🇪󠁥󠁢󠁹󠁿"
     _resolution = 1
-    _data: np.ndarray | None = None
-    _settings = BavariaProviderSettings
     _author = "[H4rdB4se](https://github.com/H4rdB4se)"
     _is_community = True
     _instructions = None

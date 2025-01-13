@@ -60,7 +60,7 @@ class SRTM30Provider(DTMProvider):
                         shutil.copyfileobj(f_in, f_out)
             tiles.append(decompressed_tile_path)
 
-        return tiles
+        return list(set(tiles))
 
     # region provider specific helpers
     def download_tile(self, output_path: str, **kwargs) -> bool:
@@ -121,4 +121,5 @@ class SRTM30Provider(DTMProvider):
             "Detected tile name: %s for coordinates: lat %s, lon %s.", tile_name, lat, lon
         )
         return {"latitude_band": latitude_band, "tile_name": tile_name}
+
     # endregion
