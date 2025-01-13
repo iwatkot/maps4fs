@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from rasterio.enums import Resampling
 from rasterio.merge import merge
 from rasterio.warp import calculate_default_transform, reproject
+from tqdm import tqdm
 
 from maps4fs.logger import Logger
 
@@ -377,7 +378,7 @@ class DTMProvider(ABC):
             list: List of paths to the downloaded GeoTIFF files.
         """
         tif_files: list[str] = []
-        for url in urls:
+        for url in tqdm(urls, desc="Downloading tiles", unit="tile"):
             file_name = os.path.basename(url)
             self.logger.debug("Retrieving TIFF: %s", file_name)
             file_path = os.path.join(output_path, file_name)
