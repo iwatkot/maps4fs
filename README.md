@@ -666,3 +666,5 @@ But also, I want to thank the people who helped me with the project in some way,
 - [H4rdB4se](https://github.com/H4rdB4se) - for investigating the issue with custom OSM files and finding a proper way to work with the files in JOSM.
 - [kbrandwijk](https://github.com/kbrandwijk) - for providing [awesome tool](https://github.com/Paint-a-Farm/satmap_downloader) to download the satellite images from the Google Maps and giving a permission to modify it and create a Python Package.
 - [Maaslandmods](https://github.com/Maaslandmods) - for the awesome idea to edit the tree schema in UI, images and code snippets on how to do it.
+- [StrauntMaunt](https://gitlab.com/StrauntMaunt) - for developing procedural generation scripts, providing with the required updates for maps4fs and preparing the docs on how to use procedural generation.
+
