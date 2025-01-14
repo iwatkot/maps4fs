@@ -18,6 +18,7 @@ Recommended reading order:
 13. Check out the documentation about [usage of custom OSM files](custom_osm.md) in maps4fs.
 14. Learn how to work with the [splines](splines.md) and how to use them.
 15. Check out the documentation about [creating your own DEM file](custom_dem.md).
+16. Learn how to use [Procedural Generation](procedural_generation.md) scripts.
 
 ## For developers
 

@@ -21,6 +21,7 @@
   <a href="#Expert-settings">Expert settings</a> •
   <a href="#Resources">Resources</a> •
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a><br>
+  <a href="docs/procedural_generation.md">Procedural Generation</a> •
   <a href="#DTM-Providers">DTM Providers</a> •
   <a href="#Special-thanks">Special thanks</a>
 </p>

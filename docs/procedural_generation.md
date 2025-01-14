@@ -5,25 +5,25 @@ By combining Maps4FS with the Giants Editor Procedural Generator tools we can ge
 1. Download the PG scripts from [gitlab](https://gitlab.com/fs25_guides/fs25_proceduralgeneration/-/tree/main/PG_Scripts)
 2. `Code Button` / download this directory / `zip`
 
-![Download Scripts](images/pg_download_scripts.png)
+![Download Scripts](https://github.com/user-attachments/assets/b698eb06-cdbf-484f-b458-10cfd0297ea0)
 
 3. Unzip the PG_Scripts into the `Farming Simulator 25\data\maps\proceduralPlacements` folder 
    
    The .lua files need to be directly in the `proceduralPlacements` folder.
 
-![Unzip Scripts](images/pg_unzip_scripts.png)
+![Unzip Scripts](https://github.com/user-attachments/assets/74246b9d-a871-4ea6-aca3-67d50bdfbec0)
 
 4. Generate your map with Maps4FS as usual. 
 5. Open the map in the Giants Editor
 6. Remove the Trees group object
  
-![Remove Trees](images/pg_remove_trees.png)
+![Remove Trees](https://github.com/user-attachments/assets/96ffa017-f32a-49ac-aa9d-ea89cc3397f3)
 
 7. Open `Window/Procedural Placement...` and go to the `Rule` tab.
 8. Before proceding, click back on your main window and save your map.
 9. Press `Place Objects`
 
-![Place Objects](images/pg_place_objects.png)
+![Place Objects](https://github.com/user-attachments/assets/6754cc83-1af2-4df0-a0f7-0494d80c1e7d)
 
 When running bigger rulesets this can take several minutes.
 
@@ -31,7 +31,7 @@ The editor will completly "hang" during this generation. Don't worry, just let i
 
 10. You can tweak the ruleset and masks and rerun the generation. Or use this as a base to start detailing your map from.
 
-![Result](images/pg_result.png)
+![Result](https://github.com/user-attachments/assets/04274220-42de-442a-b218-4792804948ca)
 
 ## Changing a texture rule
 1. Open `Window/Procedural Placement...` and go to the `Rule` tab.
@@ -39,7 +39,7 @@ The editor will completly "hang" during this generation. Don't worry, just let i
 3. Add or remove layers with the `X` buttons and the `Add Object` button.
 4. Finally press `Place Objects` to see your changes.
 
-![Change Texture](images/pg_change_texture.png)
+![Change Texture](https://github.com/user-attachments/assets/a447c080-6950-432a-aaab-91fc40c46124)
 
 ## Changing padding on fields
 1. Open `Window/Procedural Placement...` and go to the `Rule` tab.
@@ -48,7 +48,7 @@ The editor will completly "hang" during this generation. Don't worry, just let i
 4. Often times multiple rules will need to be adjusted. ex. also update the `T_Acres` rule.
 5. Finally press `Place Objects` to see your changes.
 
-![Change Padding](images/pg_change_padding.png)
+![Change Padding](https://github.com/user-attachments/assets/2b9206ab-cf03-432a-a2c2-65892f2ba851)
 
 ## Adding new I3D reference objects
 1. Open `Window/Procedural Placement...` and go to the `Objects` tab.
@@ -58,19 +58,19 @@ The editor will completly "hang" during this generation. Don't worry, just let i
     In the default game folder you can find the basegame tree objects: `Farming Simulator 25\data\maps\trees`
 4. Give it a name. 
 
-![Create Object](images/pg_create_object.png)
+![Create Object](https://github.com/user-attachments/assets/84ad0106-94a0-48f9-b94d-9687070ae504)
 
 5. Go to the Rules tab and press `Add Rule`
 6. Enter a name for the rule. ex. R_Grasslands
 7. Select the PG_Mask_Fill.lua script from the dropdown
-![Select Script](images/pg_select_script.png)
+![Select Script](https://github.com/user-attachments/assets/30ef7c41-3606-4ed5-a73a-4f9ba29b973c)
 
 8. Fill in a distance between the objects in `Object Min Distance`
 8. Fill in the name of the mask you want to scatter the object in `genMaskName`. ex. Grasslands
 8. Click `Add Object` and select your previously created object
 9. Press `Apply`
 10. Press `Place Objects`
-![Create Object Rule](images/pg_create_object_rule.png)
+![Create Object Rule](https://github.com/user-attachments/assets/20f989f1-e4ee-4453-9752-ce43dd4f00ee)
 
 
 
