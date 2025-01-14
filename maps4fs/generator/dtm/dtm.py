@@ -247,9 +247,8 @@ class DTMProvider(ABC):
         """
         providers = {}
         for provider in cls.__subclasses__():
-            if not provider._is_base and provider.inside_bounding_box(
-                lat_lon
-            ):  # pylint: disable=W0212
+            # pylint: disable=W0212
+            if not provider._is_base and provider.inside_bounding_box(lat_lon):
                 providers[provider._code] = provider.description()  # pylint: disable=W0212
         return providers  # type: ignore
 
