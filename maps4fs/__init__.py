@@ -9,6 +9,8 @@ from maps4fs.generator.dtm.hessen import HessenProvider
 from maps4fs.generator.dtm.england import England1MProvider
 from maps4fs.generator.dtm.canada import CanadaProvider
 from maps4fs.generator.dtm.scotland import ScotlandProvider
+from maps4fs.generator.dtm.finland import FinlandProvider
+from maps4fs.generator.dtm.italy import ItalyProvider
 from maps4fs.generator.game import Game
 from maps4fs.generator.map import Map
 from maps4fs.generator.settings import (
