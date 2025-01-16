@@ -585,6 +585,8 @@ You can also apply some advanced settings to the map generation process.<br>
 
 - Forest density - the density of the forest in meters. The lower the value, the lower the distance between the trees, which makes the forest denser. Note, that low values will lead to enormous number of trees, which may cause the Giants Editor to crash or lead to performance issues. By default, it's set to 10.
 
+- Trees relative shift - represents the maximum possible shift of the tree from it's original position in percents of the forest density value. The higher the value, the more the trees will be shifted from their original positions. Warning: higher values can lead to overlapping trees.
+
 ### Texture Advanced settings
 
 - Dissolve - if enabled, the values from one layer will be splitted between different layers of texture, making it look more natural. Warning: it's a time-consuming process, recommended to enable it, when you generating the final version of the map, not some test versions.

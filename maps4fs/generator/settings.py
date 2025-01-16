@@ -7,6 +7,16 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict
 
 
+class Parameters:
+    """Simple class to store string constants for parameters."""
+
+    FIELD = "field"
+    FIELDS = "fields"
+    TEXTURES = "textures"
+    FOREST = "forest"
+    ROADS_POLYLINES = "roads_polylines"
+
+
 class SharedSettings(BaseModel):
     """Represents the shared settings for all components."""
 
@@ -147,6 +157,7 @@ class I3DSettings(SettingsModel):
     """
 
     forest_density: int = 10
+    trees_relative_shift: int = 20
 
 
 class TextureSettings(SettingsModel):

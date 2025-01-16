@@ -7,7 +7,8 @@ import os
 import shutil
 from typing import Any, Generator
 
-from maps4fs.generator.component import Component
+from maps4fs.generator.background import Background
+from maps4fs.generator.component.base.component import Component
 from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
 from maps4fs.generator.game import Game
 from maps4fs.generator.settings import (
@@ -20,6 +21,7 @@ from maps4fs.generator.settings import (
     SplineSettings,
     TextureSettings,
 )
+from maps4fs.generator.texture import Texture
 from maps4fs.logger import Logger
 
 
@@ -234,6 +236,44 @@ class Map:
         for component in self.components:
             if component.__class__.__name__ == component_name:
                 return component
+        return None
+
+    def get_texture_component(self) -> Texture | None:
+        """Get texture component.
+
+        Returns:
+            Texture | None: Texture instance or None if not found.
+        """
+        component = self.get_component("Texture")
+        if not isinstance(component, Texture):
+            return None
+        return component
+
+    def get_background_component(self) -> Background | None:
+        """Get background component.
+
+        Returns:
+            Background | None: Background instance or None if not found.
+        """
+        component = self.get_component("Background")
+        if not isinstance(component, Background):
+            return None
+        return component
+
+    def get_texture_layer(self, by_usage: str | None = None) -> Texture.Layer | None:
+        """Get texture layer by usage.
+
+        Arguments:
+            by_usage (str, optional): Texture usage.
+
+        Returns:
+            Texture.Layer | None: Texture layer instance or None if not found.
+        """
+        texture_component = self.get_texture_component()
+        if not texture_component:
+            return None
+        if by_usage:
+            return texture_component.get_layer_by_usage(by_usage)
         return None
 
     def previews(self) -> list[str]:

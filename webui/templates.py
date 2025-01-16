@@ -215,7 +215,15 @@ class Settings:
         "The higher the value, the more sparse the forest will be and less trees will be "
         "generated. Be careful with low values, because depending on the amount of forest areas "
         "and the map size, it may generate dozens of thousands of trees, which can cause "
-        "performance issues."
+        "performance issues.  \n"
+        "ℹ️ **Units:** meters between trees."
+    )
+
+    TREES_RELATIVE_SHIFT = (
+        "Represents the maximum possible shift of the tree from it's original position in percents"
+        " of the density value. For example: if the density is set to 10 and the relative shift "
+        "is set to 20%, the tree can be shifted by 2 meters in each direction.  \n"
+        "ℹ️ **Units:** percents of the Forest Density value."
     )
 
     # Texture Settings

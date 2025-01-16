@@ -18,7 +18,7 @@ import shapely.geometry  # type: ignore
 from shapely.geometry.base import BaseGeometry  # type: ignore
 from tqdm import tqdm
 
-from maps4fs.generator.component import Component
+from maps4fs.generator.component.base.component import Component
 
 PREVIEW_MAXIMUM_SIZE = 2048
 
@@ -277,7 +277,6 @@ class Texture(Component):
             self.dissolve()
         self.copy_procedural()
 
-    # pylint: disable=no-member
     def add_borders(self) -> None:
         """Iterates over all the layers and picks the one which have the border propety defined.
         Borders are distance from the edge of the map on each side (top, right, bottom, left).
@@ -330,7 +329,7 @@ class Texture(Component):
         if not os.path.isfile(blockmask_path):
             self.logger.debug("BLOCKMASK.png not found, creating an empty file.")
             img = np.zeros((self.map_size, self.map_size), dtype=np.uint8)
-            cv2.imwrite(blockmask_path, img)  # pylint: disable=no-member
+            cv2.imwrite(blockmask_path, img)
 
         pg_layers_by_type = defaultdict(list)
         for layer in self.layers:
@@ -353,7 +352,7 @@ class Texture(Component):
                     # pylint: disable=E1101
                     texture = cv2.imread(texture_path, cv2.IMREAD_UNCHANGED)
                     merged_texture[texture == 255] = 255
-                cv2.imwrite(procedural_save_path, merged_texture)  # pylint: disable=no-member
+                cv2.imwrite(procedural_save_path, merged_texture)
                 self.logger.debug(
                     "Procedural file %s merged from %s textures.",
                     procedural_save_path,
@@ -441,7 +440,7 @@ class Texture(Component):
 
         for filepath in filepaths:
             img = np.zeros(size, dtype=np.uint8)
-            cv2.imwrite(filepath, img)  # pylint: disable=no-member
+            cv2.imwrite(filepath, img)
 
     @property
     def layers(self) -> list[Layer]:
@@ -476,7 +475,7 @@ class Texture(Component):
             ),
         )
 
-    # pylint: disable=no-member, R0912, R0915
+    # pylint: disable = R0912
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
         layers = self.layers_by_priority()
@@ -845,7 +844,6 @@ class Texture(Component):
         preview_paths.append(self._osm_preview())
         return preview_paths
 
-    # pylint: disable=no-member
     def _osm_preview(self) -> str:
         """Merges layers into one image and saves it into the png file.
 

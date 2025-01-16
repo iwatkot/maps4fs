@@ -9,7 +9,7 @@ import numpy as np
 # import rasterio  # type: ignore
 from pympler import asizeof  # type: ignore
 
-from maps4fs.generator.component import Component
+from maps4fs.generator.component.base.component import Component
 from maps4fs.generator.dtm.dtm import DTMProvider
 
 
@@ -132,7 +132,6 @@ class DEM(Component):
         )
         return data
 
-    # pylint: disable=no-member
     def process(self) -> None:
         """Reads SRTM file, crops it to map size, normalizes and blurs it,
         saves to map directory."""
@@ -274,14 +273,6 @@ class DEM(Component):
         dem_data = np.zeros(dem_output_resolution, dtype="uint16")
         cv2.imwrite(self._dem_path, dem_data)
         self.logger.warning("DEM data filled with zeros and saved to %s.", self._dem_path)
-
-    def previews(self) -> list:
-        """This component does not have previews, returns empty list.
-
-        Returns:
-            list: Empty list.
-        """
-        return []
 
     def info_sequence(self) -> dict[Any, Any] | None:  # type: ignore
         """Returns the information sequence for the component. Must be implemented in the child
