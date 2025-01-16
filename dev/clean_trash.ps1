@@ -1,5 +1,5 @@
 # Directories to be removed
-$dirs = @(".mypy_cache", ".pytest_cache", "htmlcov", "dist", "archives", "cache", "logs", "maps", "temp", "osmps", "tests/data")
+$dirs = @(".mypy_cache", ".pytest_cache", "htmlcov", "dist", "archives", "cache", "logs", "maps", "temp", "map_directory","osmps", "tests/data")
 
 # Files to be removed
 $files = @(".coverage", "queue.json")

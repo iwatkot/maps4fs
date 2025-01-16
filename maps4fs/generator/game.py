@@ -38,6 +38,7 @@ class Game:
     _texture_schema: str | None = None
     _grle_schema: str | None = None
     _tree_schema: str | None = None
+    _i3d_processing: bool = True
 
     # Order matters! Some components depend on others.
     components = [Texture, Background, GRLE, I3d, Config, Satellite]
@@ -157,6 +158,14 @@ class Game:
         raise NotImplementedError
 
     @property
+    def i3d_processing(self) -> bool:
+        """Returns whether the i3d file should be processed.
+
+        Returns:
+            bool: True if the i3d file should be processed, False otherwise."""
+        return self._i3d_processing
+
+    @property
     def additional_dem_name(self) -> str | None:
         """Returns the name of the additional DEM file.
 
@@ -172,6 +181,7 @@ class FS22(Game):
     code = "FS22"
     _map_template_path = os.path.join(working_directory, "data", "fs22-map-template.zip")
     _texture_schema = os.path.join(working_directory, "data", "fs22-texture-schema.json")
+    _i3d_processing = False
 
     def dem_file_path(self, map_directory: str) -> str:
         """Returns the path to the DEM file.
@@ -192,6 +202,16 @@ class FS22(Game):
         Returns:
             str: The path to the weights directory."""
         return os.path.join(map_directory, "maps", "map", "data")
+
+    def i3d_file_path(self, map_directory: str) -> str:
+        """Returns the path to the i3d file.
+
+        Arguments:
+            map_directory (str): The path to the map directory.
+
+        Returns:
+            str: The path to the i3d file."""
+        return os.path.join(map_directory, "maps", "map", "map.i3d")
 
 
 class FS25(Game):

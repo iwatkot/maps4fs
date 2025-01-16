@@ -16,3 +16,4 @@ htmlcov/
 tests/data/
 osmps/
 queue.json
+map_directory/

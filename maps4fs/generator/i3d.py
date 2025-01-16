@@ -12,9 +12,10 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-from maps4fs.generator.component import Component
+from maps4fs.generator.component import XMLComponent
 from maps4fs.generator.texture import Texture
 
+MAP_SIZE_LIMIT_FOR_DISPLACEMENT_LAYER = 4096
 DISPLACEMENT_LAYER_SIZE_FOR_BIG_MAPS = 32768
 NODE_ID_STARTING_VALUE = 2000
 SPLINES_NODE_ID_STARTING_VALUE = 5000
@@ -22,7 +23,7 @@ TREE_NODE_ID_STARTING_VALUE = 10000
 
 
 # pylint: disable=R0903
-class I3d(Component):
+class I3d(XMLComponent):
     """Component for map i3d file settings and configuration.
 
     Arguments:
@@ -36,88 +37,60 @@ class I3d(Component):
             info, warning. If not provided, default logging will be used.
     """
 
-    _map_i3d_path: str | None = None
-
     def preprocess(self) -> None:
         """Gets the path to the map I3D file from the game instance and saves it to the instance
         attribute. If the game does not support I3D files, the attribute is set to None."""
-        try:
-            self._map_i3d_path = self.game.i3d_file_path(self.map_directory)
-            self.logger.debug("Map I3D path: %s.", self._map_i3d_path)
-        except NotImplementedError:
-            self.logger.warning("I3D file processing is not implemented for this game.")
-            self._map_i3d_path = None
+        self.xml_path = self.game.i3d_file_path(self.map_directory)
 
     def process(self) -> None:
-        """Updates the map I3D file with the default settings."""
+        """Updates the map I3D file and creates splines in a separate I3D file."""
         self._update_i3d_file()
-        self._add_fields()
-        if self.game.code == "FS25":
+
+        if self.game.i3d_processing:
+            self._add_fields()
             self._add_forests()
             self._add_splines()
 
-    def _get_tree(self) -> ET.ElementTree | None:
-        """Returns the ElementTree instance of the map I3D file."""
-        if not self._map_i3d_path:
-            self.logger.debug("I3D is not obtained, skipping the update.")
-            return None
-        if not os.path.isfile(self._map_i3d_path):
-            self.logger.warning("I3D file not found: %s.", self._map_i3d_path)
-            return None
+    def update_height_scale(self, value: int | None = None) -> None:
+        if not value:
+            if (
+                self.map.shared_settings.change_height_scale
+                and self.map.shared_settings.height_scale_value
+            ):
+                value = int(self.map.shared_settings.height_scale_value)
+            else:
+                return
 
-        return ET.parse(self._map_i3d_path)
+        root = self.get_tree()
+        path = ".//Scene/TerrainTransformGroup"
+
+        data = {"heightScale": str(value)}
+
+        self.update_element(root, path, data)
 
     def _update_i3d_file(self) -> None:
-        """Updates the map I3D file with the default settings."""
+        """Updates the map I3D file with the default settings."""  # !
 
-        tree = self._get_tree()
-        if tree is None:
-            return
-
-        self.logger.debug("Map I3D file loaded from: %s.", self._map_i3d_path)
-
+        tree = self.get_tree()
         root = tree.getroot()
-        for map_elem in root.iter("Scene"):
-            for terrain_elem in map_elem.iter("TerrainTransformGroup"):
-                if self.map.shared_settings.change_height_scale:
-                    suggested_height_scale = self.map.shared_settings.height_scale_value
-                    if suggested_height_scale is not None and suggested_height_scale > 255:
-                        new_height_scale = int(
-                            self.map.shared_settings.height_scale_value  # type: ignore
-                        )
-                        terrain_elem.set("heightScale", str(new_height_scale))
-                        self.logger.info(
-                            "heightScale attribute set to %s in TerrainTransformGroup element.",
-                            new_height_scale,
-                        )
+        self.update_height_scale()
 
-                self.logger.debug("TerrainTransformGroup element updated in I3D file.")
-            sun_elem = map_elem.find(".//Light[@name='sun']")
+        sun_element_path = ".//Scene/Light[@name='sun']"
+        distance = self.map_size // 2
+        data = {
+            "lastShadowMapSplitBboxMin": f"-{distance},-128,-{distance}",
+            "lastShadowMapSplitBboxMax": f"{distance},148,{distance}",
+        }
 
-            if sun_elem is not None:
-                self.logger.debug("Sun element found in I3D file.")
+        self.update_element(root, sun_element_path, data)
 
-                distance = self.map_size // 2
+        if self.map_size > MAP_SIZE_LIMIT_FOR_DISPLACEMENT_LAYER:
+            displacement_layer_path = ".//Scene/TerrainTransformGroup/DisplacementLayer"
+            data = {"size": str(DISPLACEMENT_LAYER_SIZE_FOR_BIG_MAPS)}
 
-                sun_elem.set("lastShadowMapSplitBboxMin", f"-{distance},-128,-{distance}")
-                sun_elem.set("lastShadowMapSplitBboxMax", f"{distance},148,{distance}")
+            self.update_element(root, displacement_layer_path, data)
 
-                self.logger.debug(
-                    "Sun BBOX updated with half of the map size: %s.",
-                    distance,
-                )
-
-        if self.map_size > 4096:
-            displacement_layer = terrain_elem.find(".//DisplacementLayer")  # pylint: disable=W0631
-
-            if displacement_layer is not None:
-                displacement_layer.set("size", str(DISPLACEMENT_LAYER_SIZE_FOR_BIG_MAPS))
-                self.logger.debug(
-                    "Map size is greater than 4096, DisplacementLayer size set to %s.",
-                )
-
-        tree.write(self._map_i3d_path)  # type: ignore
-        self.logger.debug("Map I3D file saved to: %s.", self._map_i3d_path)
+        self.save_tree(tree)
 
     def previews(self) -> list[str]:
         """Returns a list of paths to the preview images (empty list).
@@ -282,7 +255,7 @@ class I3d(Component):
     # pylint: disable=R0914, R0915
     def _add_fields(self) -> None:
         """Adds fields to the map I3D file."""
-        tree = self._get_tree()
+        tree = self._get_tree()  # !
         if tree is None:
             return
 
@@ -526,7 +499,7 @@ class I3d(Component):
             self.logger.warning("Forest image not found.")
             return
 
-        tree = self._get_tree()
+        tree = self._get_tree()  # !
         if tree is None:
             return
 
