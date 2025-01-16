@@ -1,7 +1,6 @@
 """This module contains provider of Scotland data."""
 
 import os
-from datetime import datetime
 
 import requests
 
@@ -56,7 +55,6 @@ class ScotlandProvider(DTMProvider):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.shared_tiff_path = os.path.join(self._tile_directory, "shared")
         os.makedirs(self.shared_tiff_path, exist_ok=True)
 
@@ -73,7 +71,7 @@ class ScotlandProvider(DTMProvider):
             response = requests.post(  # pylint: disable=W3101
                 self.url,  # type: ignore
                 json={
-                    "collections": [self.user_settings.dataset] if self.user_settings else [],
+                    "collections": [self.user_settings.dataset] if self.user_settings else [],  # type: ignore
                     "footprint": f"POLYGON(({west} {south}, {west} {north}, {east} {north}, {east} {south}, {west} {south}))",
                     "offset": 0,
                     "limit": 100,
