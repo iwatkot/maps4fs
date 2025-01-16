@@ -20,6 +20,7 @@ from maps4fs.generator.settings import (
     SplineSettings,
     TextureSettings,
 )
+from maps4fs.generator.texture import Texture
 from maps4fs.logger import Logger
 
 
@@ -235,6 +236,29 @@ class Map:
             if component.__class__.__name__ == component_name:
                 return component
         return None
+
+    def get_texture_component(self) -> Texture | None:
+        """Get texture component.
+
+        Returns:
+            Texture | None: Texture instance or None if not found.
+        """
+        return self.get_component("Texture")
+
+    def get_texture_layer(self, by_usage: str | None = None) -> Texture.Layer | None:
+        """Get texture layer by usage.
+
+        Arguments:
+            by_usage (str, optional): Texture usage.
+
+        Returns:
+            Texture.Layer | None: Texture layer instance or None if not found.
+        """
+        texture_component = self.get_texture_component()
+        if not texture_component:
+            return None
+        if by_usage:
+            return texture_component.get_layer_by_usage(by_usage)
 
     def previews(self) -> list[str]:
         """Get list of preview images.

@@ -13,6 +13,7 @@ import numpy as np
 from tqdm import tqdm
 
 from maps4fs.generator.component import XMLComponent
+from maps4fs.generator.settings import Parameters
 from maps4fs.generator.texture import Texture
 
 MAP_SIZE_LIMIT_FOR_DISPLACEMENT_LAYER = 4096
@@ -20,6 +21,15 @@ DISPLACEMENT_LAYER_SIZE_FOR_BIG_MAPS = 32768
 NODE_ID_STARTING_VALUE = 2000
 SPLINES_NODE_ID_STARTING_VALUE = 5000
 TREE_NODE_ID_STARTING_VALUE = 10000
+
+FIELDS_ATTRIBUTES = [
+    ("angle", "integer", "0"),
+    ("missionAllowed", "boolean", "true"),
+    ("missionOnlyGrass", "boolean", "false"),
+    ("nameIndicatorIndex", "string", "1"),
+    ("polygonIndex", "string", "0"),
+    ("teleportIndicatorIndex", "string", "2"),
+]
 
 
 # pylint: disable=R0903
@@ -44,7 +54,9 @@ class I3d(XMLComponent):
 
     def process(self) -> None:
         """Updates the map I3D file and creates splines in a separate I3D file."""
-        self._update_i3d_file()
+        self.update_height_scale()
+
+        self._update_parameters()
 
         if self.game.i3d_processing:
             self._add_fields()
@@ -52,6 +64,14 @@ class I3d(XMLComponent):
             self._add_splines()
 
     def update_height_scale(self, value: int | None = None) -> None:
+        """Updates the height scale value in the map I3D file.
+        If the value is not provided, the method checks if the shared settings are set to change
+        the height scale and if the height scale value is set. If not, the method returns without
+        updating the height scale.
+
+        Arguments:
+            value (int, optional): The height scale value.
+        """
         if not value:
             if (
                 self.map.shared_settings.change_height_scale
@@ -66,14 +86,13 @@ class I3d(XMLComponent):
 
         data = {"heightScale": str(value)}
 
-        self.update_element(root, path, data)
+        self.get_and_update_element(root, path, data)
 
-    def _update_i3d_file(self) -> None:
-        """Updates the map I3D file with the default settings."""  # !
+    def _update_parameters(self) -> None:
+        """Updates the map I3D file with the  sun bounding box and displacement layer size."""
 
         tree = self.get_tree()
         root = tree.getroot()
-        self.update_height_scale()
 
         sun_element_path = ".//Scene/Light[@name='sun']"
         distance = self.map_size // 2
@@ -82,13 +101,13 @@ class I3d(XMLComponent):
             "lastShadowMapSplitBboxMax": f"{distance},148,{distance}",
         }
 
-        self.update_element(root, sun_element_path, data)
+        self.get_and_update_element(root, sun_element_path, data)
 
         if self.map_size > MAP_SIZE_LIMIT_FOR_DISPLACEMENT_LAYER:
             displacement_layer_path = ".//Scene/TerrainTransformGroup/DisplacementLayer"
             data = {"size": str(DISPLACEMENT_LAYER_SIZE_FOR_BIG_MAPS)}
 
-            self.update_element(root, displacement_layer_path, data)
+            self.get_and_update_element(root, displacement_layer_path, data)
 
         self.save_tree(tree)
 
@@ -255,23 +274,14 @@ class I3d(XMLComponent):
     # pylint: disable=R0914, R0915
     def _add_fields(self) -> None:
         """Adds fields to the map I3D file."""
-        tree = self._get_tree()  # !
-        if tree is None:
-            return
-
-        textures_info_layer_path = self.get_infolayer_path("textures")
-        if not textures_info_layer_path:
-            return
+        tree = self.get_tree()
 
         border = 0
-        textures_layer: Texture | None = self.map.get_component("Texture")  # type: ignore
-        if textures_layer:
-            border = textures_layer.get_layer_by_usage("field").border  # type: ignore
+        fields_layer = self.map.get_texture_layer(by_usage=Parameters.FIELD)
+        if fields_layer and fields_layer.border:
+            border = fields_layer.border
 
-        with open(textures_info_layer_path, "r", encoding="utf-8") as textures_info_layer_file:
-            textures_info_layer = json.load(textures_info_layer_file)
-
-        fields: list[list[tuple[int, int]]] | None = textures_info_layer.get("fields")
+        fields = self.get_infolayer_data(Parameters.TEXTURES, Parameters.FIELDS)
         if not fields:
             self.logger.warning("Fields data not found in textures info layer.")
             return
@@ -281,11 +291,12 @@ class I3d(XMLComponent):
 
         root = tree.getroot()
         gameplay_node = root.find(".//TransformGroup[@name='gameplay']")
+
         if gameplay_node is not None:
             fields_node = gameplay_node.find(".//TransformGroup[@name='fields']")
             user_attributes_node = root.find(".//UserAttributes")
 
-            if fields_node is not None:
+            if fields_node is not None and user_attributes_node is not None:
                 node_id = NODE_ID_STARTING_VALUE
 
                 # Not using enumerate because in case of the error, we do not increment
@@ -319,43 +330,50 @@ class I3d(XMLComponent):
                         continue
 
                     # Creating the main field node.
-                    field_node = ET.Element("TransformGroup")
-                    field_node.set("name", f"field{field_id}")
-                    field_node.set("translation", f"{cx} 0 {cy}")
-                    field_node.set("nodeId", str(node_id))
-
-                    # Adding UserAttributes to the field node.
-                    user_attribute_node = self.create_user_attribute_node(node_id)
-                    user_attributes_node.append(user_attribute_node)  # type: ignore
-
+                    data = {
+                        "name": f"field{field_id}",
+                        "translation": f"{cx} 0 {cy}",
+                        "nodeId": str(node_id),
+                    }
+                    field_node = self.create_element("TransformGroup", data)
+                    user_attributes_node.append(
+                        self.get_user_attribute_node(node_id, attributes=FIELDS_ATTRIBUTES)
+                    )
                     node_id += 1
 
                     # Creating the polygon points node, which contains the points of the field.
-                    polygon_points_node = ET.Element("TransformGroup")
-                    polygon_points_node.set("name", "polygonPoints")
-                    polygon_points_node.set("nodeId", str(node_id))
+                    polygon_points_node = self.create_element(
+                        "TransformGroup", {"name": "polygonPoints", "nodeId": str(node_id)}
+                    )
                     node_id += 1
 
                     for point_id, point in enumerate(field_ccs, start=1):
                         rx, ry = self.absolute_to_relative(point, (cx, cy))
 
                         node_id += 1
-                        point_node = ET.Element("TransformGroup")
-                        point_node.set("name", f"point{point_id}")
-                        point_node.set("translation", f"{rx} 0 {ry}")
-                        point_node.set("nodeId", str(node_id))
+                        point_node = self.create_element(
+                            "TransformGroup",
+                            {
+                                "name": f"point{point_id}",
+                                "translation": f"{rx} 0 {ry}",
+                                "nodeId": str(node_id),
+                            },
+                        )
 
                         polygon_points_node.append(point_node)
 
                     field_node.append(polygon_points_node)
 
                     # Adding the name indicator node to the field node.
-                    name_indicator_node, node_id = self.get_name_indicator_node(node_id, field_id)
+                    name_indicator_node, node_id = self._get_name_indicator_node(node_id, field_id)
                     field_node.append(name_indicator_node)
 
-                    # Adding the teleport indicator node to the field node.
-                    teleport_indicator_node, node_id = self.get_teleport_indicator_node(node_id)
-                    field_node.append(teleport_indicator_node)
+                    node_id += 1
+                    field_node.append(
+                        self.create_element(
+                            "TransformGroup", {"name": "teleportIndicator", "nodeId": str(node_id)}
+                        )
+                    )
 
                     # Adding the field node to the fields node.
                     fields_node.append(field_node)
@@ -364,10 +382,9 @@ class I3d(XMLComponent):
                     node_id += 1
                     field_id += 1
 
-            tree.write(self._map_i3d_path)  # type: ignore
-            self.logger.debug("Map I3D file saved to: %s.", self._map_i3d_path)
+            self.save_tree(tree)
 
-    def get_name_indicator_node(self, node_id: int, field_id: int) -> tuple[ET.Element, int]:
+    def _get_name_indicator_node(self, node_id: int, field_id: int) -> tuple[ET.Element, int]:
         """Creates a name indicator node with given node ID and field ID.
 
         Arguments:
@@ -378,44 +395,47 @@ class I3d(XMLComponent):
             tuple[ET.Element, int]: The name indicator node and the updated node ID.
         """
         node_id += 1
-        name_indicator_node = ET.Element("TransformGroup")
-        name_indicator_node.set("name", "nameIndicator")
-        name_indicator_node.set("nodeId", str(node_id))
+        name_indicator_node = self.create_element(
+            "TransformGroup", {"name": "nameIndicator", "nodeId": str(node_id)}
+        )
 
         node_id += 1
-        note_node = ET.Element("Note")
-        note_node.set("name", "Note")
-        note_node.set("nodeId", str(node_id))
-        note_node.set("text", f"field{field_id}&#xA;0.00 ha")
-        note_node.set("color", "4278190080")
-        note_node.set("fixedSize", "true")
-
+        data = {
+            "name": "Note",
+            "nodeId": str(node_id),
+            "text": f"field{field_id}&#xA;0.00 ha",
+            "color": "4278190080",
+            "fixedSize": "true",
+        }
+        note_node = self.create_element("Note", data)
         name_indicator_node.append(note_node)
 
         return name_indicator_node, node_id
 
-    def get_teleport_indicator_node(self, node_id: int) -> tuple[ET.Element, int]:
-        """Creates a teleport indicator node with given node ID.
+    # def get_teleport_indicator_node(self, node_id: int) -> tuple[ET.Element, int]:
+    #     """Creates a teleport indicator node with given node ID.
 
-        Arguments:
-            node_id (int): The node ID of the teleport indicator node.
+    #     Arguments:
+    #         node_id (int): The node ID of the teleport indicator node.
 
-        Returns:
-            tuple[ET.Element, int]: The teleport indicator node and the updated node ID.
-        """
-        node_id += 1
-        teleport_indicator_node = ET.Element("TransformGroup")
-        teleport_indicator_node.set("name", "teleportIndicator")
-        teleport_indicator_node.set("nodeId", str(node_id))
+    #     Returns:
+    #         tuple[ET.Element, int]: The teleport indicator node and the updated node ID.
+    #     """
+    #     node_id += 1
+    #     teleport_indicator_node = ET.Element("TransformGroup")
+    #     teleport_indicator_node.set("name", "teleportIndicator")
+    #     teleport_indicator_node.set("nodeId", str(node_id))
 
-        return teleport_indicator_node, node_id
+    #     return teleport_indicator_node, node_id
 
-    @staticmethod
-    def create_user_attribute_node(node_id: int) -> ET.Element:
+    def get_user_attribute_node(
+        self, node_id: int, attributes: list[tuple[str, str, str]]
+    ) -> ET.Element:
         """Creates an XML user attribute node with given node ID.
 
         Arguments:
             node_id (int): The node ID of the user attribute node.
+            attributes (list[tuple[str, str, str]]): The list of attributes to add to the node.
 
         Returns:
             ET.Element: The created user attribute node.
@@ -423,37 +443,33 @@ class I3d(XMLComponent):
         user_attribute_node = ET.Element("UserAttribute")
         user_attribute_node.set("nodeId", str(node_id))
 
-        attributes = [
-            ("angle", "integer", "0"),
-            ("missionAllowed", "boolean", "true"),
-            ("missionOnlyGrass", "boolean", "false"),
-            ("nameIndicatorIndex", "string", "1"),
-            ("polygonIndex", "string", "0"),
-            ("teleportIndicatorIndex", "string", "2"),
-        ]
-
         for name, attr_type, value in attributes:
-            user_attribute_node.append(I3d.create_attribute_node(name, attr_type, value))
+            data = {
+                "name": name,
+                "type": attr_type,
+                "value": value,
+            }
+            user_attribute_node.append(self.create_element("Attribute", data))
 
         return user_attribute_node
 
-    @staticmethod
-    def create_attribute_node(name: str, attr_type: str, value: str) -> ET.Element:
-        """Creates an XML attribute node with given name, type, and value.
+    # @staticmethod
+    # def create_attribute_node(name: str, attr_type: str, value: str) -> ET.Element:
+    #     """Creates an XML attribute node with given name, type, and value.
 
-        Arguments:
-            name (str): The name of the attribute.
-            attr_type (str): The type of the attribute.
-            value (str): The value of the attribute.
+    #     Arguments:
+    #         name (str): The name of the attribute.
+    #         attr_type (str): The type of the attribute.
+    #         value (str): The value of the attribute.
 
-        Returns:
-            ET.Element: The created attribute node.
-        """
-        attribute_node = ET.Element("Attribute")
-        attribute_node.set("name", name)
-        attribute_node.set("type", attr_type)
-        attribute_node.set("value", value)
-        return attribute_node
+    #     Returns:
+    #         ET.Element: The created attribute node.
+    #     """
+    #     attribute_node = ET.Element("Attribute")
+    #     attribute_node.set("name", name)
+    #     attribute_node.set("type", attr_type)
+    #     attribute_node.set("value", value)
+    #     return attribute_node
 
     # pylint: disable=R0911
     def _add_forests(self) -> None:

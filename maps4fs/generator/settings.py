@@ -7,6 +7,12 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict
 
 
+class Parameters:
+    FIELD = "field"
+    FIELDS = "fields"
+    TEXTURES = "textures"
+
+
 class SharedSettings(BaseModel):
     """Represents the shared settings for all components."""
 

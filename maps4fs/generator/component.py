@@ -438,6 +438,16 @@ class Component:
             return None
         return info_layer_path
 
+    def get_infolayer_data(self, layer_name: str, layer_key: str) -> Any | None:
+        infolayer_path = self.get_infolayer_path(layer_name)
+        if not infolayer_path:
+            return None
+
+        with open(infolayer_path, "r", encoding="utf-8") as file:
+            data = json.load(file)
+
+        return data.get(layer_key)
+
     # pylint: disable=R0913, R0917, R0914
     def rotate_image(
         self,
@@ -580,8 +590,17 @@ class XMLComponent(Component):
 
         tree.write(xml_path, encoding="utf-8", xml_declaration=True)
 
-    def update_element(self, root: ET.Element, path: str, data: dict[str, str]) -> None:
+    def get_and_update_element(self, root: ET.Element, path: str, data: dict[str, str]) -> None:
         element = root.find(path)
+        if element is not None:
+            self.update_element(element, data)
 
+    def update_element(self, element: ET.Element, data: dict[str, str]) -> None:
         for key, value in data.items():
             element.set(key, value)
+
+    def create_element(self, element_name: str, data: dict[str, str]) -> ET.Element:
+        element = ET.Element(element_name)
+        for key, value in data.items():
+            element.set(key, value)
+        return element
