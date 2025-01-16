@@ -72,6 +72,7 @@ class ScotlandProvider(DTMProvider):
         self.shared_tiff_path = os.path.join(self._tile_directory, "shared")
         os.makedirs(self.shared_tiff_path, exist_ok=True)
 
+    # pylint: disable=R0801
     def get_download_urls(self) -> list[str]:
         """Get download URLs of the GeoTIFF files from the USGS API.
 
@@ -85,8 +86,13 @@ class ScotlandProvider(DTMProvider):
             response = requests.post(  # pylint: disable=W3101
                 self.url,  # type: ignore
                 json={
-                    "collections": [self.user_settings.dataset] if self.user_settings else [],  # type: ignore
-                    "footprint": f"POLYGON(({west} {south}, {west} {north}, {east} {north}, {east} {south}, {west} {south}))",
+                    "collections": (
+                        [self.user_settings.dataset] if self.user_settings else []  # type: ignore
+                    ),
+                    "footprint": (
+                        f"POLYGON(({west} {south}, {west} {north}, "
+                        f"{east} {north}, {east} {south}, {west} {south}))"
+                    ),
                     "offset": 0,
                     "limit": 100,
                     "spatialop": "intersects",
