@@ -18,7 +18,8 @@ class CanadaProvider(WCSProvider, DTMProvider):
     _extents = (76.49491845750764, 33.66564101989275, -26.69697497450798, -157.7322455868316)
     _instructions = (
         "HRDEM coverage for Canada is limited. Make sure to check the "
-        "[coverage map](https://geo.ca/imagery/high-resolution-digital-elevation-model-hrdem-canelevation-series/)."  # pylint: disable=line-too-long
+        "[coverage map](https://geo.ca/imagery/high-resolution-digital"
+        "-elevation-model-hrdem-canelevation-series/)."
     )
 
     _url = "https://datacube.services.geo.ca/ows/elevation"
@@ -27,7 +28,6 @@ class CanadaProvider(WCSProvider, DTMProvider):
     _tile_size = 1000
 
     def get_wcs_parameters(self, tile: tuple[float, float, float, float]) -> dict:
-        print(f"{tile[1]},{tile[0]},{tile[3]},{tile[2]},urn:ogc:def:crs:EPSG::3979")
         return {
             "identifier": "dtm",
             "gridbasecrs": "urn:ogc:def:crs:EPSG::3979",
