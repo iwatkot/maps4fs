@@ -1,42 +1,43 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Streamlit: webui",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "streamlit",
-            "args": ["run", "./webui/webui.py"],
-            "presentation": {
-                "reveal": "always",
-                "panel": "new"
-            },
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}:${PYTHONPATH}",
-                "LOG_LEVEL": "DEBUG",
-            }
-        },
-        {
-            "name": "demo.py",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/demo.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "env": {
-              "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Current File",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "env": {
-              "PYTHONPATH": "${workspaceFolder}"
-            }
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Streamlit: webui",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "streamlit",
+      "args": ["run", "./webui/webui.py"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "env": {
+        "GEVENT_SUPPORT": "True",
+        "PYTHONPATH": "${workspaceFolder}:${PYTHONPATH}",
+        "LOG_LEVEL": "DEBUG"
+      }
+    },
+    {
+      "name": "demo.py",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/demo.py",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    },
+    {
+      "name": "Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    }
+  ]
 }

@@ -4,6 +4,7 @@ from abc import abstractmethod
 import os
 
 from owslib.wms import WebMapService
+from tqdm import tqdm
 
 from maps4fs.generator.dtm import utils
 from maps4fs.generator.dtm.dtm import DTMProvider
@@ -58,7 +59,7 @@ class WMSProvider(DTMProvider):
             # auth=Authentication(verify=False),
             timeout=600,
         )
-        for tile in tiles:
+        for tile in tqdm(tiles, desc="Downloading tiles", unit="tile"):
             file_name = "_".join(map(str, tile)) + ".tif"
             file_path = os.path.join(self.shared_tiff_path, file_name)
             if not os.path.exists(file_path):

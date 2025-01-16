@@ -21,3 +21,4 @@ pygmdl
 owslib
 tqdm
 types-tqdm
+grequests
