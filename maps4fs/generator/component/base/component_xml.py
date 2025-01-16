@@ -1,3 +1,5 @@
+"""Base class for all components that primarily used to work with XML files."""
+
 import os
 from xml.etree import ElementTree as ET
 

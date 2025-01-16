@@ -259,11 +259,11 @@ class Component:
         epsg3857_south, epsg3857_east = transformer.transform(south, east)
 
         if add_margin:
-            MARGIN = 500
-            epsg3857_north = int(epsg3857_north - MARGIN)
-            epsg3857_south = int(epsg3857_south + MARGIN)
-            epsg3857_east = int(epsg3857_east - MARGIN)
-            epsg3857_west = int(epsg3857_west + MARGIN)
+            margin = 500
+            epsg3857_north = int(epsg3857_north - margin)
+            epsg3857_south = int(epsg3857_south + margin)
+            epsg3857_east = int(epsg3857_east - margin)
+            epsg3857_west = int(epsg3857_west + margin)
 
         return epsg3857_north, epsg3857_south, epsg3857_east, epsg3857_west
 

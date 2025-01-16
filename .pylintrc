@@ -12,4 +12,12 @@ disable=raw-checker-failed,
         no-member,
         broad-exception-caught,
         too-few-public-methods,
-        abstract-method
+        abstract-method,
+        too-many-public-methods,
+        too-many-public-methods,
+        too-many-positional-arguments,
+        too-many-arguments,
+        raise-missing-from,
+        too-many-locals,
+        redefined-builtin,
+        too-many-instance-attributes

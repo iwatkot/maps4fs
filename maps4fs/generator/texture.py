@@ -475,6 +475,7 @@ class Texture(Component):
             ),
         )
 
+    # pylint: disable = R0912
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
         layers = self.layers_by_priority()
