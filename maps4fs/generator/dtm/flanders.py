@@ -23,7 +23,6 @@ class FlandersProvider(WCSProvider, DTMProvider):
     _tile_size = 0.02
 
     def get_wcs_parameters(self, tile: tuple[float, float, float, float]) -> dict:
-        print("tile", tile)
         return {
             "identifier": "EL.GridCoverage.DTM",
             "bbox": tile,
