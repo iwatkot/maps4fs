@@ -111,15 +111,6 @@ class I3d(XMLComponent):
 
         self.save_tree(tree)
 
-    def previews(self) -> list[str]:
-        """Returns a list of paths to the preview images (empty list).
-        The component does not generate any preview images so it returns an empty list.
-
-        Returns:
-            list[str]: An empty list.
-        """
-        return []
-
     def _add_splines(self) -> None:
         """Adds splines to the map I3D file."""
         splines_i3d_path = self.game.splines_file_path(self.map_directory)

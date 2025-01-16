@@ -89,12 +89,13 @@ class Component:
         raise NotImplementedError
 
     def previews(self) -> list[str]:
-        """Returns a list of paths to the preview images. Must be implemented in the child class.
+        """Returns a list of paths to the preview images. If the component does not generate any
+        previews, the method may not be re-implemented in the child class.
 
-        Raises:
-            NotImplementedError: If the method is not implemented in the child class.
+        Returns:
+            list[str]: A list of paths to the preview images.
         """
-        raise NotImplementedError
+        return []
 
     @property
     def previews_directory(self) -> str:

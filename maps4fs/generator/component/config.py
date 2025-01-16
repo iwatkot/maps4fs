@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import os
-from xml.etree import ElementTree as ET
-
-from maps4fs.generator.component.base.component import Component
+from maps4fs.generator.component.base.component_xml import XMLComponent
 
 
 # pylint: disable=R0903
-class Config(Component):
+class Config(XMLComponent):
     """Component for map settings and configuration.
 
     Arguments:
@@ -25,8 +22,7 @@ class Config(Component):
 
     def preprocess(self) -> None:
         """Gets the path to the map XML file and saves it to the instance variable."""
-        self._map_xml_path = self.game.map_xml_path(self.map_directory)
-        self.logger.debug("Map XML path: %s.", self._map_xml_path)
+        self.xml_path = self.game.map_xml_path(self.map_directory)
 
     def process(self) -> None:
         """Sets the map size in the map.xml file."""
@@ -34,31 +30,20 @@ class Config(Component):
 
     def _set_map_size(self) -> None:
         """Edits map.xml file to set correct map size."""
-        if not os.path.isfile(self._map_xml_path):
-            self.logger.warning("Map XML file not found: %s.", self._map_xml_path)
-            return
-        tree = ET.parse(self._map_xml_path)
-        self.logger.debug("Map XML file loaded from: %s.", self._map_xml_path)
+        tree = self.get_tree()
+        if not tree:
+            raise FileNotFoundError(f"Map XML file not found: {self.xml_path}")
+
         root = tree.getroot()
-        for map_elem in root.iter("map"):
-            map_elem.set("width", str(self.map_size))
-            map_elem.set("height", str(self.map_size))
-            self.logger.debug(
-                "Map size set to %sx%s in Map XML file.",
-                self.map_size,
-                self.map_size,
-            )
-        tree.write(self._map_xml_path)
-        self.logger.debug("Map XML file saved to: %s.", self._map_xml_path)
+        data = {
+            "width": str(self.map_size),
+            "height": str(self.map_size),
+        }
 
-    def previews(self) -> list[str]:
-        """Returns a list of paths to the preview images (empty list).
-        The component does not generate any preview images so it returns an empty list.
-
-        Returns:
-            list[str]: An empty list.
-        """
-        return []
+        for element in root.iter("map"):
+            self.update_element(element, data)
+            break
+        self.save_tree(tree)
 
     def info_sequence(self) -> dict[str, dict[str, str | float | int]]:
         """Returns information about the component.

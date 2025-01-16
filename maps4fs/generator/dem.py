@@ -274,14 +274,6 @@ class DEM(Component):
         cv2.imwrite(self._dem_path, dem_data)
         self.logger.warning("DEM data filled with zeros and saved to %s.", self._dem_path)
 
-    def previews(self) -> list:
-        """This component does not have previews, returns empty list.
-
-        Returns:
-            list: Empty list.
-        """
-        return []
-
     def info_sequence(self) -> dict[Any, Any] | None:  # type: ignore
         """Returns the information sequence for the component. Must be implemented in the child
         class. If the component does not have an information sequence, an empty dictionary must be
