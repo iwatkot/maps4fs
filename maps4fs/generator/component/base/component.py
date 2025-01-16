@@ -7,11 +7,11 @@ import os
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
-import cv2  # type: ignore
-import osmnx as ox  # type: ignore
+import cv2
+import osmnx as ox
 from pyproj import Transformer
-from shapely.affinity import rotate, translate  # type: ignore
-from shapely.geometry import LineString, Polygon, box  # type: ignore
+from shapely.affinity import rotate, translate
+from shapely.geometry import LineString, Polygon, box
 
 from maps4fs.generator.qgis import save_scripts
 
@@ -20,7 +20,6 @@ if TYPE_CHECKING:
     from maps4fs.generator.map import Map
 
 
-# pylint: disable=R0801, R0903, R0902, R0904, R0913, R0917
 class Component:
     """Base class for all map generation components.
 
@@ -39,7 +38,7 @@ class Component:
     def __init__(
         self,
         game: Game,
-        map: Map,  # pylint: disable=W0622
+        map: Map,
         coordinates: tuple[float, float],
         map_size: int,
         map_rotated_size: int,
@@ -59,7 +58,7 @@ class Component:
         self.kwargs = kwargs
 
         self.logger.debug(
-            "Component %s initialized. Map size: %s, map rotated size: %s",  # type: ignore
+            "Component %s initialized. Map size: %s, map rotated size: %s",
             self.__class__.__name__,
             self.map_size,
             self.map_rotated_size,
@@ -205,7 +204,7 @@ class Component:
         coordinates = coordinates or self.coordinates
         distance = distance or int(self.map_rotated_size / 2)
 
-        west, south, east, north = ox.utils_geo.bbox_from_point(  # type: ignore
+        west, south, east, north = ox.utils_geo.bbox_from_point(
             coordinates,
             dist=distance,
         )
@@ -260,7 +259,7 @@ class Component:
         epsg3857_south, epsg3857_east = transformer.transform(south, east)
 
         if add_margin:
-            MARGIN = 500  # pylint: disable=C0103
+            MARGIN = 500
             epsg3857_north = int(epsg3857_north - MARGIN)
             epsg3857_south = int(epsg3857_south + MARGIN)
             epsg3857_east = int(epsg3857_east - MARGIN)
@@ -345,7 +344,6 @@ class Component:
 
         return cs_x, cs_y
 
-    # pylint: disable=R0914
     def fit_object_into_bounds(
         self,
         polygon_points: list[tuple[int, int]] | None = None,
@@ -404,9 +402,7 @@ class Component:
             fitted_osm_object = osm_object.intersection(bounds)
             self.logger.debug("Fitted the osm_object into the bounds: %s", bounds)
         except Exception as e:
-            raise ValueError(  # pylint: disable=W0707
-                f"Could not fit the osm_object into the bounds: {e}"
-            )
+            raise ValueError(f"Could not fit the osm_object into the bounds: {e}")
 
         if not isinstance(fitted_osm_object, object_type):
             raise ValueError("The fitted osm_object is not valid (probably splitted into parts).")
@@ -459,7 +455,6 @@ class Component:
 
         return data.get(layer_key)
 
-    # pylint: disable=R0913, R0917, R0914
     def rotate_image(
         self,
         image_path: str,

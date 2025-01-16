@@ -80,7 +80,8 @@ class I3d(XMLComponent):
             else:
                 return
 
-        root = self.get_tree()
+        tree = self.get_tree()
+        root = tree.getroot()
         path = ".//Scene/TerrainTransformGroup"
 
         data = {"heightScale": str(value)}
@@ -294,13 +295,13 @@ class I3d(XMLComponent):
         self.save_tree(tree)
 
     def _get_field_xml_entry(
-        self, field_id: int, field_ccs: list[tuple[float, float]], node_id: int
+        self, field_id: int, field_ccs: list[tuple[int, int]], node_id: int
     ) -> tuple[ET.Element, int] | tuple[None, int]:
         """Creates an XML entry for the field with given field ID and field coordinates.
 
         Arguments:
             field_id (int): The ID of the field.
-            field_ccs (list[tuple[float, float]]): The coordinates of the field polygon points
+            field_ccs (list[tuple[int, int]]): The coordinates of the field polygon points
                 in the center coordinate system.
             node_id (int): The node ID of the field node.
 
@@ -413,7 +414,7 @@ class I3d(XMLComponent):
 
         return user_attribute_node
 
-    def _read_tree_schema(self) -> list[dict[str, int | str]] | None:
+    def _read_tree_schema(self) -> list[dict[str, str]] | None:
         """Reads the tree schema from the game instance or from the custom schema.
 
         Returns:
@@ -428,11 +429,11 @@ class I3d(XMLComponent):
                 tree_schema_path = self.game.tree_schema
             except ValueError:
                 self.logger.warning("Tree schema path not set for the Game %s.", self.game.code)
-                return
+                return None
 
             if not os.path.isfile(tree_schema_path):
                 self.logger.warning("Tree schema file was not found: %s.", tree_schema_path)
-                return
+                return None
 
             try:
                 with open(tree_schema_path, "r", encoding="utf-8") as tree_schema_file:
@@ -441,9 +442,9 @@ class I3d(XMLComponent):
                 self.logger.warning(
                     "Could not load tree schema from %s with error: %s", tree_schema_path, e
                 )
-                return
+                return None
 
-        return tree_schema
+        return tree_schema  # type: ignore
 
     def _add_forests(self) -> None:
         """Adds forests to the map I3D file."""
@@ -488,7 +489,7 @@ class I3d(XMLComponent):
             node_id += 1
 
             rotation = randint(-180, 180)
-            xcs, ycs = self.randomize_coordinates(
+            shifted_xcs, shifted_ycs = self.randomize_coordinates(
                 (xcs, ycs),
                 self.map.i3d_settings.forest_density,
                 self.map.i3d_settings.trees_relative_shift,
@@ -500,7 +501,7 @@ class I3d(XMLComponent):
 
             data = {
                 "name": tree_name,
-                "translation": f"{xcs} 0 {ycs}",
+                "translation": f"{shifted_xcs} 0 {shifted_ycs}",
                 "rotation": f"0 {rotation} 0",
                 "referenceId": str(tree_id),
                 "nodeId": str(node_id),
@@ -530,10 +531,8 @@ class I3d(XMLComponent):
         y_shift = uniform(-shift_range, shift_range)
 
         x, y = coordinates
-        x += x_shift
-        y += y_shift
 
-        return x, y
+        return x + x_shift, y + y_shift
 
     @staticmethod
     def non_empty_pixels(

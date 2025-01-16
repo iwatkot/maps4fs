@@ -244,7 +244,10 @@ class Map:
         Returns:
             Texture | None: Texture instance or None if not found.
         """
-        return self.get_component("Texture")
+        component = self.get_component("Texture")
+        if not isinstance(component, Texture):
+            return None
+        return component
 
     def get_background_component(self) -> Background | None:
         """Get background component.
@@ -252,7 +255,10 @@ class Map:
         Returns:
             Background | None: Background instance or None if not found.
         """
-        return self.get_component("Background")
+        component = self.get_component("Background")
+        if not isinstance(component, Background):
+            return None
+        return component
 
     def get_texture_layer(self, by_usage: str | None = None) -> Texture.Layer | None:
         """Get texture layer by usage.
@@ -268,6 +274,7 @@ class Map:
             return None
         if by_usage:
             return texture_component.get_layer_by_usage(by_usage)
+        return None
 
     def previews(self) -> list[str]:
         """Get list of preview images.
