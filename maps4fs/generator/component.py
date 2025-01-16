@@ -439,6 +439,17 @@ class Component:
         return info_layer_path
 
     def get_infolayer_data(self, layer_name: str, layer_key: str) -> Any | None:
+        """Reads the JSON file of the requested info layer and returns the value of the requested
+        key. If the layer or the key does not exist, None is returned.
+
+        Arguments:
+            layer_name (str): The name of the layer.
+            layer_key (str): The key to get the value of.
+
+        Returns:
+            Any | None: The value of the requested key or None if the layer or the key does not
+                exist.
+        """
         infolayer_path = self.get_infolayer_path(layer_name)
         if not infolayer_path:
             return None
@@ -470,7 +481,6 @@ class Component:
             self.logger.warning("Image %s does not exist", image_path)
             return
 
-        # pylint: disable=no-member
         image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
         if image is None:
             self.logger.warning("Image %s could not be read", image_path)

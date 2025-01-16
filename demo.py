@@ -31,7 +31,7 @@ dtm_provider_settings = mfs.SRTM30ProviderSettings(easy_mode=True, power_factor=
 lat, lon = 45.28, 20.23
 coordinates = (lat, lon)
 size = 2048
-rotation = 25
+rotation = 0
 
 # 4️⃣ Define the output directory.
 map_directory = "map_directory"
@@ -44,8 +44,8 @@ osm_file = "path/to/osm_file.osm"
 # it's recommended to change them according to your needs.
 dem_settings = mfs.DEMSettings(multiplier=1, blur_radius=15, plateau=3000, water_depth=2000)
 background_settings = mfs.BackgroundSettings(
-    generate_background=True,
-    generate_water=True,
+    # generate_background=True,
+    # generate_water=True,
     resize_factor=2,
     remove_center=True,
     apply_decimation=True,
@@ -55,7 +55,7 @@ background_settings = mfs.BackgroundSettings(
 grle_settings = mfs.GRLESettings(farmland_margin=10, random_plants=True, add_farmyards=True)
 i3d_settings = mfs.I3DSettings(forest_density=8)
 texture_settings = mfs.TextureSettings(
-    dissolve=True,
+    dissolve=False,
     fields_padding=10,
     skip_drains=True,
 )

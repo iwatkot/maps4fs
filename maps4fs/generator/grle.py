@@ -92,7 +92,7 @@ class GRLE(Component):
                 else:
                     info_layer_data = np.zeros((height, width, channels), dtype=data_type)
                 self.logger.debug("Shape of %s: %s.", info_layer["name"], info_layer_data.shape)
-                cv2.imwrite(file_path, info_layer_data)  # pylint: disable=no-member
+                cv2.imwrite(file_path, info_layer_data)
                 self.logger.debug("InfoLayer PNG file %s created.", file_path)
             else:
                 self.logger.warning("Invalid InfoLayer schema: %s.", info_layer)
@@ -104,7 +104,6 @@ class GRLE(Component):
         else:
             self.logger.warning("Adding plants it's not supported for the %s.", self.game.code)
 
-    # pylint: disable=no-member
     def previews(self) -> list[str]:
         """Returns a list of paths to the preview images (empty list).
         The component does not generate any preview images so it returns an empty list.
@@ -131,7 +130,7 @@ class GRLE(Component):
             image_with_fields = self.overlay_fields(image_colored)
             if image_with_fields is None:
                 continue
-            cv2.imwrite(with_fields_save_path, image_with_fields)  # pylint: disable=no-member
+            cv2.imwrite(with_fields_save_path, image_with_fields)
             preview_paths.append(with_fields_save_path)
 
         return preview_paths
@@ -201,7 +200,6 @@ class GRLE(Component):
             self.logger.warning("InfoLayer PNG file %s not found.", info_layer_farmlands_path)
             return
 
-        # pylint: disable=no-member
         image = cv2.imread(info_layer_farmlands_path, cv2.IMREAD_UNCHANGED)
         farmlands_xml_path = os.path.join(self.map_directory, "map/config/farmlands.xml")
         if not os.path.isfile(farmlands_xml_path):
@@ -244,7 +242,6 @@ class GRLE(Component):
             field_np = field_np // 2
             self.logger.debug("Divided the coordinates by 2.")
 
-            # pylint: disable=no-member
             try:
                 cv2.fillPoly(image, [field_np], farmland_id)  # type: ignore
             except Exception as e:  # pylint: disable=W0718
@@ -267,7 +264,7 @@ class GRLE(Component):
 
         self.logger.debug("Farmlands added to the farmlands XML file: %s.", farmlands_xml_path)
 
-        cv2.imwrite(info_layer_farmlands_path, image)  # pylint: disable=no-member
+        cv2.imwrite(info_layer_farmlands_path, image)
         self.logger.debug(
             "Farmlands added to the InfoLayer PNG file: %s.", info_layer_farmlands_path
         )
@@ -300,7 +297,7 @@ class GRLE(Component):
             forest_image_path = forest_layer.get_preview_or_path(weights_directory)
             self.logger.debug("Forest image path: %s.", forest_image_path)
             if forest_image_path:
-                # pylint: disable=no-member
+
                 forest_image = cv2.imread(forest_image_path, cv2.IMREAD_UNCHANGED)
 
         if not grass_image_path or not os.path.isfile(grass_image_path):
@@ -318,22 +315,20 @@ class GRLE(Component):
             return
 
         # Single channeled 8-bit image, where non-zero values (255) are where the grass is.
-        grass_image = cv2.imread(  # pylint: disable=no-member
-            grass_image_path, cv2.IMREAD_UNCHANGED  # pylint: disable=no-member
-        )
+        grass_image = cv2.imread(grass_image_path, cv2.IMREAD_UNCHANGED)
 
         # Density map of the fruits is 2X size of the base image, so we need to resize it.
         # We'll resize the base image to make it bigger, so we can compare the values.
-        grass_image = cv2.resize(  # pylint: disable=no-member
+        grass_image = cv2.resize(
             grass_image,
             (grass_image.shape[1] * 2, grass_image.shape[0] * 2),
-            interpolation=cv2.INTER_NEAREST,  # pylint: disable=no-member
+            interpolation=cv2.INTER_NEAREST,
         )
         if forest_image is not None:
-            forest_image = cv2.resize(  # pylint: disable=no-member
+            forest_image = cv2.resize(
                 forest_image,
                 (forest_image.shape[1] * 2, forest_image.shape[0] * 2),
-                interpolation=cv2.INTER_NEAREST,  # pylint: disable=no-member
+                interpolation=cv2.INTER_NEAREST,
             )
 
             # Add non zero values from the forest image to the grass image.
@@ -348,7 +343,6 @@ class GRLE(Component):
         if not base_layer_pixel_value:
             base_layer_pixel_value = 131
 
-        # pylint: disable=no-member
         def create_island_of_plants(image: np.ndarray, count: int) -> np.ndarray:
             """Create an island of plants in the image.
 

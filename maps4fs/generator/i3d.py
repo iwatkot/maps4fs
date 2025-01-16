@@ -21,6 +21,7 @@ DISPLACEMENT_LAYER_SIZE_FOR_BIG_MAPS = 32768
 NODE_ID_STARTING_VALUE = 2000
 SPLINES_NODE_ID_STARTING_VALUE = 5000
 TREE_NODE_ID_STARTING_VALUE = 10000
+TREES_DEFAULT_Z_VALUE = 400
 
 FIELDS_ATTRIBUTES = [
     ("angle", "integer", "0"),
@@ -160,7 +161,6 @@ class I3d(XMLComponent):
             self.logger.warning("Background component not found.")
             return
 
-        # pylint: disable=no-member
         not_resized_dem = cv2.imread(
             background_component.not_resized_path, cv2.IMREAD_UNCHANGED  # type: ignore
         )
@@ -430,22 +430,6 @@ class I3d(XMLComponent):
 
         return name_indicator_node, node_id
 
-    # def get_teleport_indicator_node(self, node_id: int) -> tuple[ET.Element, int]:
-    #     """Creates a teleport indicator node with given node ID.
-
-    #     Arguments:
-    #         node_id (int): The node ID of the teleport indicator node.
-
-    #     Returns:
-    #         tuple[ET.Element, int]: The teleport indicator node and the updated node ID.
-    #     """
-    #     node_id += 1
-    #     teleport_indicator_node = ET.Element("TransformGroup")
-    #     teleport_indicator_node.set("name", "teleportIndicator")
-    #     teleport_indicator_node.set("nodeId", str(node_id))
-
-    #     return teleport_indicator_node, node_id
-
     def get_user_attribute_node(
         self, node_id: int, attributes: list[tuple[str, str, str]]
     ) -> ET.Element:
@@ -470,24 +454,6 @@ class I3d(XMLComponent):
             user_attribute_node.append(self.create_element("Attribute", data))
 
         return user_attribute_node
-
-    # @staticmethod
-    # def create_attribute_node(name: str, attr_type: str, value: str) -> ET.Element:
-    #     """Creates an XML attribute node with given name, type, and value.
-
-    #     Arguments:
-    #         name (str): The name of the attribute.
-    #         attr_type (str): The type of the attribute.
-    #         value (str): The value of the attribute.
-
-    #     Returns:
-    #         ET.Element: The created attribute node.
-    #     """
-    #     attribute_node = ET.Element("Attribute")
-    #     attribute_node.set("name", name)
-    #     attribute_node.set("type", attr_type)
-    #     attribute_node.set("value", value)
-    #     return attribute_node
 
     # pylint: disable=R0911
     def _add_forests(self) -> None:
@@ -515,13 +481,7 @@ class I3d(XMLComponent):
                 )
                 return
 
-        texture_component: Texture | None = self.map.get_component("Texture")  # type: ignore
-        if not texture_component:
-            self.logger.warning("Texture component not found.")
-            return
-
-        forest_layer = texture_component.get_layer_by_usage("forest")
-
+        forest_layer = self.map.get_texture_layer(by_usage=Parameters.FOREST)
         if not forest_layer:
             self.logger.warning("Forest layer not found.")
             return
@@ -533,11 +493,7 @@ class I3d(XMLComponent):
             self.logger.warning("Forest image not found.")
             return
 
-        tree = self._get_tree()  # !
-        if tree is None:
-            return
-
-        # Find the <Scene> element in the I3D file.
+        tree = self.get_tree()
         root = tree.getroot()
         scene_node = root.find(".//Scene")
         if scene_node is None:
@@ -548,45 +504,39 @@ class I3d(XMLComponent):
 
         node_id = TREE_NODE_ID_STARTING_VALUE
 
-        # Create <TransformGroup name="trees" translation="0 400 0" nodeId="{node_id}"> element.
-        trees_node = ET.Element("TransformGroup")
-        trees_node.set("name", "trees")
-        trees_node.set("translation", "0 400 0")
-        trees_node.set("nodeId", str(node_id))
+        trees_node = self.create_element(
+            "TransformGroup",
+            {
+                "name": "trees",
+                "translation": f"0 {TREES_DEFAULT_Z_VALUE} 0",
+                "nodeId": str(node_id),
+            },
+        )
         node_id += 1
 
-        # pylint: disable=no-member
         forest_image = cv2.imread(forest_image_path, cv2.IMREAD_UNCHANGED)
-
-        tree_count = 0
         for x, y in self.non_empty_pixels(forest_image, step=self.map.i3d_settings.forest_density):
             xcs, ycs = self.top_left_coordinates_to_center((x, y))
             node_id += 1
 
             rotation = randint(-180, 180)
-            xcs, ycs = self.randomize_coordinates(  # type: ignore
-                (xcs, ycs), self.map.i3d_settings.forest_density
-            )
+            xcs, ycs = self.randomize_coordinates((xcs, ycs), self.map.i3d_settings.forest_density)
 
-            random_tree = choice(tree_schema)  # type: ignore
+            random_tree = choice(tree_schema)
             tree_name = random_tree["name"]
             tree_id = random_tree["reference_id"]
 
-            reference_node = ET.Element("ReferenceNode")
-            reference_node.set("name", tree_name)  # type: ignore
-            reference_node.set("translation", f"{xcs} 0 {ycs}")
-            reference_node.set("rotation", f"0 {rotation} 0")
-            reference_node.set("referenceId", str(tree_id))
-            reference_node.set("nodeId", str(node_id))
-
-            trees_node.append(reference_node)
-            tree_count += 1
+            data = {
+                "name": tree_name,
+                "translation": f"{xcs} 0 {ycs}",
+                "rotation": f"0 {rotation} 0",
+                "referenceId": str(tree_id),
+                "nodeId": str(node_id),
+            }
+            trees_node.append(self.create_element("ReferenceNode", data))
 
         scene_node.append(trees_node)
-        self.logger.debug("Added %s trees to the I3D file.", tree_count)
-
-        tree.write(self._map_i3d_path)  # type: ignore
-        self.logger.debug("Map I3D file saved to: %s.", self._map_i3d_path)
+        self.save_tree(tree)
 
     @staticmethod
     def randomize_coordinates(coordinates: tuple[int, int], density: int) -> tuple[float, float]:

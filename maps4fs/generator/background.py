@@ -89,7 +89,7 @@ class Background(Component):
         Raises:
             ValueError: If the custom background image does not meet the requirements.
         """
-        image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
+        image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
         if image.shape[0] != image.shape[1]:
             raise ValueError("The custom background image must be a square.")
 
@@ -207,7 +207,7 @@ class Background(Component):
         save_path = os.path.join(self.background_directory, f"{filename}.obj")
         self.logger.debug("Generating obj file in path: %s", save_path)
 
-        dem_data = cv2.imread(self.dem.dem_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
+        dem_data = cv2.imread(self.dem.dem_path, cv2.IMREAD_UNCHANGED)
         self.plane_from_np(
             dem_data,
             save_path,
@@ -227,7 +227,7 @@ class Background(Component):
         Returns:
             str -- The path to the cutout DEM file.
         """
-        dem_data = cv2.imread(dem_path, cv2.IMREAD_UNCHANGED)  # pylint: disable=no-member
+        dem_data = cv2.imread(dem_path, cv2.IMREAD_UNCHANGED)
 
         center = (dem_data.shape[0] // 2, dem_data.shape[1] // 2)
         half_size = self.map_size // 2
@@ -238,7 +238,7 @@ class Background(Component):
         dem_data = dem_data[x1:x2, y1:y2]
 
         if save_path:
-            cv2.imwrite(save_path, dem_data)  # pylint: disable=no-member
+            cv2.imwrite(save_path, dem_data)
             self.logger.debug("Not resized DEM saved: %s", save_path)
             return save_path
 
@@ -251,12 +251,11 @@ class Background(Component):
         except FileNotFoundError:
             pass
 
-        # pylint: disable=no-member
         resized_dem_data = cv2.resize(
             dem_data, (output_size, output_size), interpolation=cv2.INTER_LINEAR
         )
 
-        cv2.imwrite(main_dem_path, resized_dem_data)  # pylint: disable=no-member
+        cv2.imwrite(main_dem_path, resized_dem_data)
         self.logger.debug("DEM cutout saved: %s", main_dem_path)
 
         return main_dem_path
@@ -301,9 +300,7 @@ class Background(Component):
                 playable area is will be cut out.
         """
         resize_factor = 1 / self.map.background_settings.resize_factor
-        dem_data = cv2.resize(  # pylint: disable=no-member
-            dem_data, (0, 0), fx=resize_factor, fy=resize_factor
-        )
+        dem_data = cv2.resize(dem_data, (0, 0), fx=resize_factor, fy=resize_factor)
         if remove_center:
             dem_data = self.remove_center(dem_data, resize_factor)
             self.logger.debug("Center removed from DEM data.")
@@ -410,7 +407,6 @@ class Background(Component):
 
         self.stl_preview_path = preview_path  # pylint: disable=attribute-defined-outside-init
 
-    # pylint: disable=no-member
     def previews(self) -> list[str]:
         """Returns the path to the image previews paths and the path to the STL preview file.
 

@@ -132,7 +132,6 @@ class DEM(Component):
         )
         return data
 
-    # pylint: disable=no-member
     def process(self) -> None:
         """Reads SRTM file, crops it to map size, normalizes and blurs it,
         saves to map directory."""

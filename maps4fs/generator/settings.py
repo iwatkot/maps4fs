@@ -8,9 +8,12 @@ from pydantic import BaseModel, ConfigDict
 
 
 class Parameters:
+    """Simple class to store string constants for parameters."""
+
     FIELD = "field"
     FIELDS = "fields"
     TEXTURES = "textures"
+    FOREST = "forest"
 
 
 class SharedSettings(BaseModel):

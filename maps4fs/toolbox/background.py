@@ -22,9 +22,7 @@ def plane_from_np(
             will result in a simpler mesh.
         save_path (str) -- The path to save the obj file.
     """
-    dem_data = cv2.resize(  # pylint: disable=no-member
-        dem_data, (0, 0), fx=resize_factor, fy=resize_factor
-    )
+    dem_data = cv2.resize(dem_data, (0, 0), fx=resize_factor, fy=resize_factor)
 
     # Invert the height values.
     dem_data = dem_data.max() - dem_data

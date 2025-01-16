@@ -65,7 +65,6 @@ class Satellite(Component):
                 self.logger.error(f"Failed to download satellite image: {e}")
                 continue
 
-    # pylint: disable=no-member
     def previews(self) -> list[str]:
         """Returns the paths to the preview images.
 
