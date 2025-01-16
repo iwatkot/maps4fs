@@ -292,97 +292,115 @@ class I3d(XMLComponent):
         root = tree.getroot()
         gameplay_node = root.find(".//TransformGroup[@name='gameplay']")
 
-        if gameplay_node is not None:
-            fields_node = gameplay_node.find(".//TransformGroup[@name='fields']")
-            user_attributes_node = root.find(".//UserAttributes")
+        if gameplay_node is None:
+            return
+        fields_node = gameplay_node.find(".//TransformGroup[@name='fields']")
+        user_attributes_node = root.find(".//UserAttributes")
 
-            if fields_node is not None and user_attributes_node is not None:
-                node_id = NODE_ID_STARTING_VALUE
+        if fields_node is None or user_attributes_node is None:
+            return
 
-                # Not using enumerate because in case of the error, we do not increment
-                # the field_id. So as a result we do not have a gap in the field IDs.
-                field_id = 1
+        node_id = NODE_ID_STARTING_VALUE
+        field_id = 1
 
-                for field in tqdm(fields, desc="Adding fields", unit="field"):
-                    try:
-                        fitted_field = self.fit_object_into_bounds(
-                            polygon_points=field, angle=self.rotation, border=border
-                        )
-                    except ValueError as e:
-                        self.logger.debug(
-                            "Field %s could not be fitted into the map bounds with error: %s",
-                            field_id,
-                            e,
-                        )
-                        continue
+        for field in tqdm(fields, desc="Adding fields", unit="field"):
+            try:
+                fitted_field = self.fit_object_into_bounds(
+                    polygon_points=field, angle=self.rotation, border=border
+                )
+            except ValueError as e:
+                self.logger.debug(
+                    "Field %s could not be fitted into the map bounds with error: %s",
+                    field_id,
+                    e,
+                )
+                continue
 
-                    field_ccs = [
-                        self.top_left_coordinates_to_center(point) for point in fitted_field
-                    ]
+            field_ccs = [self.top_left_coordinates_to_center(point) for point in fitted_field]
 
-                    try:
-                        cx, cy = self.get_polygon_center(field_ccs)
-                    except Exception as e:  # pylint: disable=W0718
-                        self.logger.debug(
-                            "Field %s could not be fitted into the map bounds.", field_id
-                        )
-                        self.logger.debug("Error: %s", e)
-                        continue
+            field_node, updated_node_id = self._get_field_xml_entry(field_id, field_ccs, node_id)
+            if field_node is None:
+                continue
+            user_attributes_node.append(
+                self.get_user_attribute_node(node_id, attributes=FIELDS_ATTRIBUTES)
+            )
+            node_id = updated_node_id
 
-                    # Creating the main field node.
-                    data = {
-                        "name": f"field{field_id}",
-                        "translation": f"{cx} 0 {cy}",
-                        "nodeId": str(node_id),
-                    }
-                    field_node = self.create_element("TransformGroup", data)
-                    user_attributes_node.append(
-                        self.get_user_attribute_node(node_id, attributes=FIELDS_ATTRIBUTES)
-                    )
-                    node_id += 1
+            # Adding the field node to the fields node.
+            fields_node.append(field_node)
+            self.logger.debug("Field %s added to the I3D file.", field_id)
 
-                    # Creating the polygon points node, which contains the points of the field.
-                    polygon_points_node = self.create_element(
-                        "TransformGroup", {"name": "polygonPoints", "nodeId": str(node_id)}
-                    )
-                    node_id += 1
+            node_id += 1
+            field_id += 1
 
-                    for point_id, point in enumerate(field_ccs, start=1):
-                        rx, ry = self.absolute_to_relative(point, (cx, cy))
+        self.save_tree(tree)
 
-                        node_id += 1
-                        point_node = self.create_element(
-                            "TransformGroup",
-                            {
-                                "name": f"point{point_id}",
-                                "translation": f"{rx} 0 {ry}",
-                                "nodeId": str(node_id),
-                            },
-                        )
+    def _get_field_xml_entry(
+        self, field_id: int, field_ccs: list[tuple[float, float]], node_id: int
+    ) -> tuple[ET.Element, int] | tuple[None, int]:
+        """Creates an XML entry for the field with given field ID and field coordinates.
 
-                        polygon_points_node.append(point_node)
+        Arguments:
+            field_id (int): The ID of the field.
+            field_ccs (list[tuple[float, float]]): The coordinates of the field polygon points
+                in the center coordinate system.
+            node_id (int): The node ID of the field node.
 
-                    field_node.append(polygon_points_node)
+        Returns:
+            tuple[ET.Element, int] | tuple[None, int]: The field node and the updated node ID or
+                None and the node ID.
+        """
+        try:
+            cx, cy = self.get_polygon_center(field_ccs)
+        except Exception as e:  # pylint: disable=W0718
+            self.logger.debug("Field %s could not be fitted into the map bounds.", field_id)
+            self.logger.debug("Error: %s", e)
+            return None, node_id
 
-                    # Adding the name indicator node to the field node.
-                    name_indicator_node, node_id = self._get_name_indicator_node(node_id, field_id)
-                    field_node.append(name_indicator_node)
+        # Creating the main field node.
+        data = {
+            "name": f"field{field_id}",
+            "translation": f"{cx} 0 {cy}",
+            "nodeId": str(node_id),
+        }
+        field_node = self.create_element("TransformGroup", data)
+        node_id += 1
 
-                    node_id += 1
-                    field_node.append(
-                        self.create_element(
-                            "TransformGroup", {"name": "teleportIndicator", "nodeId": str(node_id)}
-                        )
-                    )
+        # Creating the polygon points node, which contains the points of the field.
+        polygon_points_node = self.create_element(
+            "TransformGroup", {"name": "polygonPoints", "nodeId": str(node_id)}
+        )
+        node_id += 1
 
-                    # Adding the field node to the fields node.
-                    fields_node.append(field_node)
-                    self.logger.debug("Field %s added to the I3D file.", field_id)
+        for point_id, point in enumerate(field_ccs, start=1):
+            rx, ry = self.absolute_to_relative(point, (cx, cy))
 
-                    node_id += 1
-                    field_id += 1
+            node_id += 1
+            point_node = self.create_element(
+                "TransformGroup",
+                {
+                    "name": f"point{point_id}",
+                    "translation": f"{rx} 0 {ry}",
+                    "nodeId": str(node_id),
+                },
+            )
 
-            self.save_tree(tree)
+            polygon_points_node.append(point_node)
+
+        field_node.append(polygon_points_node)
+
+        # Adding the name indicator node to the field node.
+        name_indicator_node, node_id = self._get_name_indicator_node(node_id, field_id)
+        field_node.append(name_indicator_node)
+
+        node_id += 1
+        field_node.append(
+            self.create_element(
+                "TransformGroup", {"name": "teleportIndicator", "nodeId": str(node_id)}
+            )
+        )
+
+        return field_node, node_id
 
     def _get_name_indicator_node(self, node_id: int, field_id: int) -> tuple[ET.Element, int]:
         """Creates a name indicator node with given node ID and field ID.
