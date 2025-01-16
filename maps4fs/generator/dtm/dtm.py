@@ -12,7 +12,6 @@ from zipfile import ZipFile
 import numpy as np
 import osmnx as ox  # type: ignore
 import rasterio  # type: ignore
-import requests
 from pydantic import BaseModel
 from rasterio.enums import Resampling
 from rasterio.merge import merge

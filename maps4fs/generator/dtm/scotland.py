@@ -17,13 +17,27 @@ class ScotlandProviderSettings(DTMProviderSettings):
         "scotland-gov/lidar/phase-4/dtm": "LiDAR for Scotland Phase IV DTM",
         "scotland-gov/lidar/phase-5/dtm": "LiDAR for Scotland Phase V DTM",
         "scotland-gov/lidar/phase-6/dtm": "LiDAR for Scotland Phase VI DTM",
-        "scotland-gov/lidar/hes/hes-2010/dtm": "HES LiDAR Data Stirling City and surrounding area (2010) DTM",
-        "scotland-gov/lidar/hes/hes-2010s10/dtm": "LiDAR for Historic Environment Scotland Scottish Ten Project (2010) DTM",
-        "scotland-gov/lidar/hes/hes-2016-2017/dtm": "LiDAR for Historic Environment Scotland Projects (2016-2017 sub project 4) DTM",
-        "scotland-gov/lidar/hes/hes-2016/dtm": "LiDAR for Historic Environment Scotland Projects (2016) DTM",
-        "scotland-gov/lidar/hes/hes-2017/dtm": "LiDAR for Historic Environment Scotland Projects (2017) DTM",
-        "scotland-gov/lidar/hes/hes-2017sp3/dtm": "LiDAR for Historic Environment Scotland Project (2017 Sub Project 3) DTM",
-        "scotland-gov/lidar/hes/hes-luing/dtm": "LiDAR for Historic Environment Scotland Projects Isle of Luing DTM",
+        "scotland-gov/lidar/hes/hes-2010/dtm": (
+            "HES LiDAR Data Stirling City and surrounding area (2010) DTM"
+        ),
+        "scotland-gov/lidar/hes/hes-2010s10/dtm": (
+            "LiDAR for Historic Environment Scotland Scottish Ten Project (2010) DTM"
+        ),
+        "scotland-gov/lidar/hes/hes-2016-2017/dtm": (
+            "LiDAR for Historic Environment Scotland Projects (2016-2017 sub project 4) DTM"
+        ),
+        "scotland-gov/lidar/hes/hes-2016/dtm": (
+            "LiDAR for Historic Environment Scotland Projects (2016) DTM"
+        ),
+        "scotland-gov/lidar/hes/hes-2017/dtm": (
+            "LiDAR for Historic Environment Scotland Projects (2017) DTM"
+        ),
+        "scotland-gov/lidar/hes/hes-2017sp3/dtm": (
+            "LiDAR for Historic Environment Scotland Project (2017 Sub Project 3) DTM"
+        ),
+        "scotland-gov/lidar/hes/hes-luing/dtm": (
+            "LiDAR for Historic Environment Scotland Projects Isle of Luing DTM"
+        ),
         "scotland-gov/lidar/outerheb-2019/dtm/25cm": "LiDAR for Outer Hebrides 2019 - 25cm DTM",
         "scotland-gov/lidar/outerheb-2019/dtm/50cm": "LiDAR for Outer Hebrides 2019 - 50cm DTM",
     }
