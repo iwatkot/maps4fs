@@ -298,8 +298,6 @@ class DTMProvider(ABC):
         with rasterio.open(tile) as src:
             crs = src.crs
         if crs != "EPSG:4326":
-            print("crs:", crs)
-            print("reprojecting to EPSG:4326")
             self.logger.debug(f"Reprojecting GeoTIFF from {crs} to EPSG:4326...")
             tile = self.reproject_geotiff(tile)
 
