@@ -206,6 +206,8 @@ class GeneratorUI:
         key = f"{prefix}_{raw_field_name}"
         if disabled:
             st.warning(Messages.SETTING_DISABLED_ON_PUBLIC.format(setting=field_name))
+        if type(value) is str:
+            return st.text_input(label=field_name, value=value, key=key, disabled=disabled)
         if type(value) is int:
             return st.number_input(
                 label=field_name, value=value, min_value=0, key=key, disabled=disabled

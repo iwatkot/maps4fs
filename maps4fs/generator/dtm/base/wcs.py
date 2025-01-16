@@ -30,6 +30,18 @@ class WCSProvider(DTMProvider):
             dict: The parameters for the WCS request.
         """
 
+    def get_wcs_instance_parameters(self) -> dict:
+        """Get the parameters for the WCS instance.
+
+        Returns:
+            dict: The parameters for the WCS instance.
+        """
+        return {
+            "url": self._url,
+            "version": self._wcs_version,
+            "timeout": 600,
+        }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.shared_tiff_path = os.path.join(self._tile_directory, "shared")
@@ -53,12 +65,9 @@ class WCSProvider(DTMProvider):
             list: List of paths to the downloaded GeoTIFF files.
         """
         all_tif_files = []
-        wcs = WebCoverageService(
-            self._url,
-            version=self._wcs_version,
-            # auth=Authentication(verify=False),
-            timeout=600,
-        )
+        params = self.get_wcs_instance_parameters()
+        wcs = WebCoverageService(**params)
+
         for tile in tqdm(tiles, desc="Downloading tiles", unit="tile"):
             file_name = "_".join(map(str, tile)) + ".tif"
             file_path = os.path.join(self.shared_tiff_path, file_name)
