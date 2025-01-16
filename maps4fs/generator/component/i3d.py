@@ -12,9 +12,8 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-from maps4fs.generator.component import XMLComponent
+from maps4fs.generator.component.base.component_xml import XMLComponent
 from maps4fs.generator.settings import Parameters
-from maps4fs.generator.texture import Texture
 
 MAP_SIZE_LIMIT_FOR_DISPLACEMENT_LAYER = 4096
 DISPLACEMENT_LAYER_SIZE_FOR_BIG_MAPS = 32768
@@ -33,7 +32,6 @@ FIELDS_ATTRIBUTES = [
 ]
 
 
-# pylint: disable=R0903
 class I3d(XMLComponent):
     """Component for map i3d file settings and configuration.
 
@@ -121,33 +119,19 @@ class I3d(XMLComponent):
         """
         return []
 
-    # pylint: disable=R0914, R0915
     def _add_splines(self) -> None:
         """Adds splines to the map I3D file."""
-        splines_i3d_path = os.path.join(self.map_directory, "map", "splines.i3d")
+        splines_i3d_path = self.game.splines_file_path(self.map_directory)
         if not os.path.isfile(splines_i3d_path):
             self.logger.warning("Splines I3D file not found: %s.", splines_i3d_path)
             return
 
-        tree = ET.parse(splines_i3d_path)
+        tree = self.get_tree(splines_i3d_path)
 
-        textures_info_layer_path = self.get_infolayer_path("textures")
-        if not textures_info_layer_path:
-            return
-
-        with open(textures_info_layer_path, "r", encoding="utf-8") as textures_info_layer_file:
-            textures_info_layer = json.load(textures_info_layer_file)
-
-        roads_polylines: list[list[tuple[int, int]]] | None = textures_info_layer.get(
-            "roads_polylines"
-        )
-
+        roads_polylines = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
         if not roads_polylines:
             self.logger.warning("Roads polylines data not found in textures info layer.")
             return
-
-        self.logger.debug("Found %s roads polylines in textures info layer.", len(roads_polylines))
-        self.logger.debug("Starging to add roads polylines to the I3D file.")
 
         root = tree.getroot()
         # Find <Shapes> element in the I3D file.
@@ -155,123 +139,97 @@ class I3d(XMLComponent):
         # Find <Scene> element in the I3D file.
         scene_node = root.find(".//Scene")
 
+        if shapes_node is None or scene_node is None:
+            self.logger.warning("Shapes or Scene node not found in I3D file.")
+            return
+
         # Read the not resized DEM to obtain Z values for spline points.
-        background_component = self.map.get_component("Background")
+        background_component = self.map.get_background_component()
         if not background_component:
             self.logger.warning("Background component not found.")
             return
 
-        not_resized_dem = cv2.imread(
-            background_component.not_resized_path, cv2.IMREAD_UNCHANGED  # type: ignore
-        )
-        self.logger.debug(
-            "Not resized DEM loaded from: %s. Shape: %s.",
-            background_component.not_resized_path,  # type: ignore
-            not_resized_dem.shape,
-        )
+        not_resized_dem = cv2.imread(background_component.not_resized_path, cv2.IMREAD_UNCHANGED)
+        if not_resized_dem is None:
+            self.logger.warning("Not resized DEM not found.")
+            return
         dem_x_size, dem_y_size = not_resized_dem.shape
 
-        if shapes_node is not None and scene_node is not None:
-            node_id = SPLINES_NODE_ID_STARTING_VALUE
-            user_attributes_node = root.find(".//UserAttributes")
-            if user_attributes_node is None:
-                self.logger.warning("UserAttributes node not found in I3D file.")
-                return
+        user_attributes_node = root.find(".//UserAttributes")
+        if user_attributes_node is None:
+            self.logger.warning("UserAttributes node not found in I3D file.")
+            return
 
-            for road_id, road in enumerate(roads_polylines, start=1):
-                # Add to scene node
-                # <Shape name="spline01_CSV" translation="0 0 0" nodeId="11" shapeId="11"/>
+        node_id = SPLINES_NODE_ID_STARTING_VALUE
+        for road_id, road in enumerate(roads_polylines, start=1):
+            # Add to scene node
+            # <Shape name="spline01_CSV" translation="0 0 0" nodeId="11" shapeId="11"/>
 
-                try:
-                    fitted_road = self.fit_object_into_bounds(
-                        linestring_points=road, angle=self.rotation
-                    )
-                except ValueError as e:
-                    self.logger.debug(
-                        "Road %s could not be fitted into the map bounds with error: %s",
-                        road_id,
-                        e,
-                    )
-                    continue
-
-                self.logger.debug("Road %s has %s points.", road_id, len(fitted_road))
-                fitted_road = self.interpolate_points(
-                    fitted_road, num_points=self.map.spline_settings.spline_density
+            try:
+                fitted_road = self.fit_object_into_bounds(
+                    linestring_points=road, angle=self.rotation
                 )
+            except ValueError as e:
                 self.logger.debug(
-                    "Road %s has %s points after interpolation.", road_id, len(fitted_road)
+                    "Road %s could not be fitted into the map bounds with error: %s",
+                    road_id,
+                    e,
                 )
+                continue
 
-                spline_name = f"spline{road_id}"
+            fitted_road = self.interpolate_points(
+                fitted_road, num_points=self.map.spline_settings.spline_density
+            )
 
-                shape_node = ET.Element("Shape")
-                shape_node.set("name", spline_name)
-                shape_node.set("translation", "0 0 0")
-                shape_node.set("nodeId", str(node_id))
-                shape_node.set("shapeId", str(node_id))
+            spline_name = f"spline{road_id}"
 
-                scene_node.append(shape_node)
+            data = {
+                "name": spline_name,
+                "translation": "0 0 0",
+                "nodeId": str(node_id),
+                "shapeId": str(node_id),
+            }
 
-                road_ccs = [self.top_left_coordinates_to_center(point) for point in fitted_road]
+            scene_node.append(self.create_element("Shape", data))
 
-                # Add to shapes node
-                # <NurbsCurve name="spline01_CSV" shapeId="11" degree="3" form="open">
+            road_ccs = [self.top_left_coordinates_to_center(point) for point in fitted_road]
 
-                nurbs_curve_node = ET.Element("NurbsCurve")
-                nurbs_curve_node.set("name", spline_name)
-                nurbs_curve_node.set("shapeId", str(node_id))
-                nurbs_curve_node.set("degree", "3")
-                nurbs_curve_node.set("form", "open")
+            data = {
+                "name": spline_name,
+                "shapeId": str(node_id),
+                "degree": "3",
+                "form": "open",
+            }
+            nurbs_curve_node = self.create_element("NurbsCurve", data)
 
-                # Now for each point in the road add the following entry to nurbs_curve_node
-                # <cv c="-224.548401, 427.297546, -2047.570312" />
-                # The second coordinate (Z) will be 0 at the moment.
+            for point_ccs, point in zip(road_ccs, fitted_road):
+                cx, cy = point_ccs
+                x, y = point
 
-                for point_ccs, point in zip(road_ccs, fitted_road):
-                    cx, cy = point_ccs
-                    x, y = point
+                x = max(0, min(int(x), dem_x_size - 1))
+                y = max(0, min(int(y), dem_y_size - 1))
 
-                    x = int(x)
-                    y = int(y)
+                z = not_resized_dem[y, x]
+                z *= self.get_z_scaling_factor()
 
-                    x = max(0, min(x, dem_x_size - 1))
-                    y = max(0, min(y, dem_y_size - 1))
+                nurbs_curve_node.append(self.create_element("cv", {"c": f"{cx}, {z}, {cy}"}))
 
-                    z = not_resized_dem[y, x]
-                    z *= self.get_z_scaling_factor()  # type: ignore
+            shapes_node.append(nurbs_curve_node)
 
-                    cv_node = ET.Element("cv")
-                    cv_node.set("c", f"{cx}, {z}, {cy}")
-
-                    nurbs_curve_node.append(cv_node)
-
-                shapes_node.append(nurbs_curve_node)
-
-                # Add UserAttributes to the shape node.
-                # <UserAttribute nodeId="5000">
-                # <Attribute name="maxSpeedScale" type="integer" value="1"/>
-                # <Attribute name="speedLimit" type="integer" value="100"/>
-                # </UserAttribute>
-
-                user_attribute_node = ET.Element("UserAttribute")
-                user_attribute_node.set("nodeId", str(node_id))
-
-                attributes = [
+            user_attribute_node = self.get_user_attribute_node(
+                node_id,
+                attributes=[
                     ("maxSpeedScale", "integer", "1"),
                     ("speedLimit", "integer", "100"),
-                ]
+                ],
+            )
 
-                for name, attr_type, value in attributes:
-                    user_attribute_node.append(I3d.create_attribute_node(name, attr_type, value))
+            user_attributes_node.append(user_attribute_node)
+            node_id += 1
 
-                user_attributes_node.append(user_attribute_node)  # type: ignore
+        tree.write(splines_i3d_path)  # type: ignore
+        self.logger.debug("Splines I3D file saved to: %s.", splines_i3d_path)
 
-                node_id += 1
-
-            tree.write(splines_i3d_path)  # type: ignore
-            self.logger.debug("Splines I3D file saved to: %s.", splines_i3d_path)
-
-    # pylint: disable=R0914, R0915
     def _add_fields(self) -> None:
         """Adds fields to the map I3D file."""
         tree = self.get_tree()
@@ -352,7 +310,7 @@ class I3d(XMLComponent):
         """
         try:
             cx, cy = self.get_polygon_center(field_ccs)
-        except Exception as e:  # pylint: disable=W0718
+        except Exception as e:
             self.logger.debug("Field %s could not be fitted into the map bounds.", field_id)
             self.logger.debug("Error: %s", e)
             return None, node_id
@@ -455,9 +413,13 @@ class I3d(XMLComponent):
 
         return user_attribute_node
 
-    # pylint: disable=R0911
-    def _add_forests(self) -> None:
-        """Adds forests to the map I3D file."""
+    def _read_tree_schema(self) -> list[dict[str, int | str]] | None:
+        """Reads the tree schema from the game instance or from the custom schema.
+
+        Returns:
+            list[dict[str, int | str]] | None: The tree schema or None if the schema could not be
+                read.
+        """
         custom_schema = self.kwargs.get("tree_custom_schema")
         if custom_schema:
             tree_schema = custom_schema
@@ -481,6 +443,14 @@ class I3d(XMLComponent):
                 )
                 return
 
+        return tree_schema
+
+    def _add_forests(self) -> None:
+        """Adds forests to the map I3D file."""
+        tree_schema = self._read_tree_schema()
+        if not tree_schema:
+            return
+
         forest_layer = self.map.get_texture_layer(by_usage=Parameters.FOREST)
         if not forest_layer:
             self.logger.warning("Forest layer not found.")
@@ -500,8 +470,6 @@ class I3d(XMLComponent):
             self.logger.warning("Scene element not found in I3D file.")
             return
 
-        self.logger.debug("Scene element found in I3D file, starting to add forests.")
-
         node_id = TREE_NODE_ID_STARTING_VALUE
 
         trees_node = self.create_element(
@@ -520,7 +488,11 @@ class I3d(XMLComponent):
             node_id += 1
 
             rotation = randint(-180, 180)
-            xcs, ycs = self.randomize_coordinates((xcs, ycs), self.map.i3d_settings.forest_density)
+            xcs, ycs = self.randomize_coordinates(
+                (xcs, ycs),
+                self.map.i3d_settings.forest_density,
+                self.map.i3d_settings.trees_relative_shift,
+            )
 
             random_tree = choice(tree_schema)
             tree_name = random_tree["name"]
@@ -539,25 +511,27 @@ class I3d(XMLComponent):
         self.save_tree(tree)
 
     @staticmethod
-    def randomize_coordinates(coordinates: tuple[int, int], density: int) -> tuple[float, float]:
+    def randomize_coordinates(
+        coordinates: tuple[int, int], density: int, shift_percent: int
+    ) -> tuple[float, float]:
         """Randomizes the coordinates of the point with the given density.
 
         Arguments:
             coordinates (tuple[int, int]): The coordinates of the point.
             density (int): The density of the randomization.
+            shift_percent (int): Maximum relative shift in percent.
 
         Returns:
             tuple[float, float]: The randomized coordinates of the point.
         """
-        MAXIMUM_RELATIVE_SHIFT = 0.2  # pylint: disable=C0103
-        shift_range = density * MAXIMUM_RELATIVE_SHIFT
+        shift_range = density * shift_percent / 100
 
         x_shift = uniform(-shift_range, shift_range)
         y_shift = uniform(-shift_range, shift_range)
 
         x, y = coordinates
-        x += x_shift  # type: ignore
-        y += y_shift  # type: ignore
+        x += x_shift
+        y += y_shift
 
         return x, y
 

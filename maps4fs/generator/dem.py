@@ -9,7 +9,7 @@ import numpy as np
 # import rasterio  # type: ignore
 from pympler import asizeof  # type: ignore
 
-from maps4fs.generator.component import Component
+from maps4fs.generator.component.base.component import Component
 from maps4fs.generator.dtm.dtm import DTMProvider
 
 

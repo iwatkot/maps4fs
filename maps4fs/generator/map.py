@@ -7,7 +7,8 @@ import os
 import shutil
 from typing import Any, Generator
 
-from maps4fs.generator.component import Component
+from maps4fs.generator.background import Background
+from maps4fs.generator.component.base.component import Component
 from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
 from maps4fs.generator.game import Game
 from maps4fs.generator.settings import (
@@ -244,6 +245,14 @@ class Map:
             Texture | None: Texture instance or None if not found.
         """
         return self.get_component("Texture")
+
+    def get_background_component(self) -> Background | None:
+        """Get background component.
+
+        Returns:
+            Background | None: Background instance or None if not found.
+        """
+        return self.get_component("Background")
 
     def get_texture_layer(self, by_usage: str | None = None) -> Texture.Layer | None:
         """Get texture layer by usage.

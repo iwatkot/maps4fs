@@ -10,7 +10,7 @@ import numpy as np
 from shapely.geometry import Polygon  # type: ignore
 from tqdm import tqdm
 
-from maps4fs.generator.component import Component
+from maps4fs.generator.component.base.component import Component
 from maps4fs.generator.texture import PREVIEW_MAXIMUM_SIZE, Texture
 
 ISLAND_DISTORTION = 0.3

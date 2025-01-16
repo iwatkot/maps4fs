@@ -13,7 +13,7 @@ import numpy as np
 import trimesh  # type: ignore
 from tqdm import tqdm
 
-from maps4fs.generator.component import Component
+from maps4fs.generator.component.base.component import Component
 from maps4fs.generator.dem import DEM
 from maps4fs.generator.texture import Texture
 

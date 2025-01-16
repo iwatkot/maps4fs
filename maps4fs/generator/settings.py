@@ -14,6 +14,7 @@ class Parameters:
     FIELDS = "fields"
     TEXTURES = "textures"
     FOREST = "forest"
+    ROADS_POLYLINES = "roads_polylines"
 
 
 class SharedSettings(BaseModel):
@@ -156,6 +157,7 @@ class I3DSettings(SettingsModel):
     """
 
     forest_density: int = 10
+    trees_relative_shift: int = 20
 
 
 class TextureSettings(SettingsModel):

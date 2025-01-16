@@ -7,9 +7,9 @@ from __future__ import annotations
 import os
 
 from maps4fs.generator.background import Background
+from maps4fs.generator.component.i3d import I3d
 from maps4fs.generator.config import Config
 from maps4fs.generator.grle import GRLE
-from maps4fs.generator.i3d import I3d
 from maps4fs.generator.satellite import Satellite
 from maps4fs.generator.texture import Texture
 
@@ -172,6 +172,17 @@ class Game:
         Returns:
             str | None: The name of the additional DEM file."""
         return self._additional_dem_name
+
+    def splines_file_path(self, map_directory: str) -> str:
+        """Returns the path to the splines file.
+
+        Arguments:
+            map_directory (str): The path to the map directory.
+
+        Returns:
+            str: The path to the splines file."""
+        i3d_base_directory = os.path.dirname(self.i3d_file_path(map_directory))
+        return os.path.join(i3d_base_directory, "splines.i3d")
 
 
 # pylint: disable=W0223

@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from xml.etree import ElementTree as ET
 
-from maps4fs.generator.component import Component
+from maps4fs.generator.component.base.component import Component
 
 
 # pylint: disable=R0903

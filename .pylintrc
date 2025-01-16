@@ -10,3 +10,6 @@ disable=raw-checker-failed,
         use-implicit-booleaness-not-comparison-to-string,
         use-implicit-booleaness-not-comparison-to-zero,
         no-member,
+        broad-exception-caught,
+        too-few-public-methods,
+        abstract-method

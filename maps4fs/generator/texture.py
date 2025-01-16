@@ -18,7 +18,7 @@ import shapely.geometry  # type: ignore
 from shapely.geometry.base import BaseGeometry  # type: ignore
 from tqdm import tqdm
 
-from maps4fs.generator.component import Component
+from maps4fs.generator.component.base.component import Component
 
 PREVIEW_MAXIMUM_SIZE = 2048
 
