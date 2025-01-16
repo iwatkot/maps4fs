@@ -551,3 +551,37 @@ class Component:
             scaling_factor *= 1 / self.map.shared_settings.mesh_z_scaling_factor
 
         return scaling_factor
+
+
+from xml.etree import ElementTree as ET
+
+
+class XMLComponent(Component):
+    xml_path: str | None = None
+
+    def get_tree(self, xml_path: str | None = None) -> ET.ElementTree:
+        xml_path = xml_path or self.xml_path
+        if not xml_path:
+            raise ValueError(
+                "XML path was not set as a class attribute nor provided as an argument."
+            )
+
+        if not os.path.isfile(xml_path):
+            raise FileNotFoundError(f"XML file {xml_path} does not exist.")
+
+        return ET.parse(xml_path)
+
+    def save_tree(self, tree: ET.ElementTree, xml_path: str | None = None) -> None:
+        xml_path = xml_path or self.xml_path
+        if not xml_path:
+            raise ValueError(
+                "XML path was not set as a class attribute nor provided as an argument."
+            )
+
+        tree.write(xml_path, encoding="utf-8", xml_declaration=True)
+
+    def update_element(self, root: ET.Element, path: str, data: dict[str, str]) -> None:
+        element = root.find(path)
+
+        for key, value in data.items():
+            element.set(key, value)
