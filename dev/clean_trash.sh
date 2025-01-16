@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Directories to be removed
-dirs=".mypy_cache .pytest_cache htmlcov dist archives cache logs maps temp osmps map_directory"
+dirs=".mypy_cache .pytest_cache htmlcov dist archives cache logs maps temp osmps map_directory tests/data"
 
 # Files to be removed
 files=".coverage queue.json"
