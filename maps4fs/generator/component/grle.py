@@ -3,17 +3,15 @@
 import json
 import os
 from random import choice, randint
-from xml.etree import ElementTree as ET
 
 import cv2
 import numpy as np
-from shapely.geometry import Polygon  # type: ignore
+from shapely.geometry import Polygon
 from tqdm import tqdm
 
-from maps4fs.generator.component.base.component import Component
-from maps4fs.generator.texture import PREVIEW_MAXIMUM_SIZE, Texture
-
-ISLAND_DISTORTION = 0.3
+from maps4fs.generator.component.base.component_image import ImageComponent
+from maps4fs.generator.component.base.component_xml import XMLComponent
+from maps4fs.generator.settings import Parameters
 
 
 def plant_to_pixel_value(plant_name: str) -> int | None:
@@ -33,8 +31,7 @@ def plant_to_pixel_value(plant_name: str) -> int | None:
     return plants.get(plant_name)
 
 
-# pylint: disable=W0223
-class GRLE(Component):
+class GRLE(ImageComponent, XMLComponent):
     """Component for to generate InfoLayer PNG files based on GRLE schema.
 
     Arguments:
@@ -48,34 +45,41 @@ class GRLE(Component):
             info, warning. If not provided, default logging will be used.
     """
 
-    _grle_schema: dict[str, float | int | str] | None = None
-
     def preprocess(self) -> None:
         """Gets the path to the map I3D file from the game instance and saves it to the instance
         attribute. If the game does not support I3D files, the attribute is set to None."""
         self.preview_paths: dict[str, str] = {}
+        try:
+            self.xml_path = self.game.get_farmlands_xml_path(self.map_directory)
+        except NotImplementedError:
+            self.logger.warning("Farmlands XML file processing is not implemented for this game.")
+            self.xml_path = None
 
+    def _read_grle_schema(self) -> dict[str, float | int | str] | None:
         try:
             grle_schema_path = self.game.grle_schema
         except ValueError:
             self.logger.warning("GRLE schema processing is not implemented for this game.")
-            return
+            return None
 
         try:
             with open(grle_schema_path, "r", encoding="utf-8") as file:
-                self._grle_schema = json.load(file)
+                grle_schema = json.load(file)
             self.logger.debug("GRLE schema loaded from: %s.", grle_schema_path)
         except (json.JSONDecodeError, FileNotFoundError) as error:
             self.logger.error("Error loading GRLE schema from %s: %s.", grle_schema_path, error)
-            self._grle_schema = None
+            grle_schema = None
+
+        return grle_schema
 
     def process(self) -> None:
         """Generates InfoLayer PNG files based on the GRLE schema."""
-        if not self._grle_schema:
+        grle_schema = self._read_grle_schema()
+        if not grle_schema:
             self.logger.debug("GRLE schema is not obtained, skipping the processing.")
             return
 
-        for info_layer in tqdm(self._grle_schema, desc="Preparing GRLE files", unit="layer"):
+        for info_layer in tqdm(grle_schema, desc="Preparing GRLE files", unit="layer"):
             if isinstance(info_layer, dict):
                 file_path = os.path.join(
                     self.game.weights_dir_path(self.map_directory), info_layer["name"]
@@ -98,8 +102,7 @@ class GRLE(Component):
                 self.logger.warning("Invalid InfoLayer schema: %s.", info_layer)
 
         self._add_farmlands()
-        if self.game.code == "FS25":
-            self.logger.debug("Game is %s, plants will be added.", self.game.code)
+        if self.game.plants_processing:
             self._add_plants()
         else:
             self.logger.warning("Adding plants it's not supported for the %s.", self.game.code)
@@ -116,8 +119,13 @@ class GRLE(Component):
             save_path = os.path.join(self.previews_directory, f"{preview_name}.png")
             # Resize the preview image to the maximum size allowed for previews.
             image = cv2.imread(preview_path, cv2.IMREAD_GRAYSCALE)
-            if image.shape[0] > PREVIEW_MAXIMUM_SIZE or image.shape[1] > PREVIEW_MAXIMUM_SIZE:
-                image = cv2.resize(image, (PREVIEW_MAXIMUM_SIZE, PREVIEW_MAXIMUM_SIZE))
+            if (
+                image.shape[0] > Parameters.PREVIEW_MAXIMUM_SIZE
+                or image.shape[1] > Parameters.PREVIEW_MAXIMUM_SIZE
+            ):
+                image = cv2.resize(
+                    image, (Parameters.PREVIEW_MAXIMUM_SIZE, Parameters.PREVIEW_MAXIMUM_SIZE)
+                )
             image_normalized = np.empty_like(image)
             cv2.normalize(image, image_normalized, 0, 255, cv2.NORM_MINMAX)
             image_colored = cv2.applyColorMap(image_normalized, cv2.COLORMAP_JET)
@@ -144,13 +152,12 @@ class GRLE(Component):
         Returns:
             np.ndarray | None: The farmlands preview image with fields overlayed on top of it.
         """
-        texture_component: Texture | None = self.map.get_component("Texture")  # type: ignore
-        if not texture_component:
-            self.logger.warning("Texture component not found in the map.")
+        fields_layer = self.map.get_texture_layer(by_usage="field")
+        if not fields_layer:
+            self.logger.warning("Fields layer not found in the texture component.")
             return None
 
-        fields_layer = texture_component.get_layer_by_usage("field")
-        fields_layer_path = fields_layer.get_preview_or_path(  # type: ignore
+        fields_layer_path = fields_layer.get_preview_or_path(
             self.game.weights_dir_path(self.map_directory)
         )
         if not fields_layer_path or not os.path.isfile(fields_layer_path):
@@ -163,24 +170,15 @@ class GRLE(Component):
         # use fields_np as base layer and overlay farmlands_np on top of it with 50% alpha blending.
         return cv2.addWeighted(fields_np, 0.5, farmlands_np, 0.5, 0)
 
-    # pylint: disable=R0801, R0914, R0915
     def _add_farmlands(self) -> None:
         """Adds farmlands to the InfoLayer PNG file."""
-
-        textures_info_layer_path = self.get_infolayer_path("textures")
-        if not textures_info_layer_path:
-            return
-
-        with open(textures_info_layer_path, "r", encoding="utf-8") as textures_info_layer_file:
-            textures_info_layer = json.load(textures_info_layer_file)
-
         farmlands = []
-        farmyards: list[list[tuple[int, int]]] | None = textures_info_layer.get("farmyards")
+        farmyards = self.get_infolayer_data(Parameters.TEXTURES, Parameters.FARMYARDS)
         if farmyards and self.map.grle_settings.add_farmyards:
             farmlands.extend(farmyards)
             self.logger.debug("Found %s farmyards in textures info layer.", len(farmyards))
 
-        fields: list[list[tuple[int, int]]] | None = textures_info_layer.get("fields")
+        fields = self.get_infolayer_data(Parameters.TEXTURES, Parameters.FIELDS)
         if not fields:
             self.logger.warning("Fields data not found in textures info layer.")
             return
@@ -188,9 +186,7 @@ class GRLE(Component):
 
         self.logger.debug("Found %s fields in textures info layer.", len(fields))
 
-        info_layer_farmlands_path = os.path.join(
-            self.game.weights_dir_path(self.map_directory), "infoLayer_farmlands.png"
-        )
+        info_layer_farmlands_path = self.game.get_farmlands_path(self.map_directory)
 
         self.logger.debug(
             "Adding farmlands to the InfoLayer PNG file: %s.", info_layer_farmlands_path
@@ -201,22 +197,21 @@ class GRLE(Component):
             return
 
         image = cv2.imread(info_layer_farmlands_path, cv2.IMREAD_UNCHANGED)
-        farmlands_xml_path = os.path.join(self.map_directory, "map/config/farmlands.xml")
-        if not os.path.isfile(farmlands_xml_path):
-            self.logger.warning("Farmlands XML file %s not found.", farmlands_xml_path)
-            return
 
-        tree = ET.parse(farmlands_xml_path)
-        farmlands_xml = tree.find("farmlands")
+        tree = self.get_tree()
+        root = tree.getroot()
+        farmlands_node = root.find("farmlands")
+        if farmlands_node is None:
+            raise ValueError("Farmlands XML element not found in the farmlands XML file.")
 
-        # Not using enumerate because in case of the error, we do not increment
-        # the farmland_id. So as a result we do not have a gap in the farmland IDs.
+        self.update_element(farmlands_node, {"pricePerHa": str(self.map.grle_settings.base_price)})
+
         farmland_id = 1
 
-        for farmland_data in tqdm(farmlands, desc="Adding farmlands", unit="farmland"):
+        for farmland in tqdm(farmlands, desc="Adding farmlands", unit="farmland"):
             try:
-                fitted_field = self.fit_object_into_bounds(
-                    polygon_points=farmland_data,
+                fitted_farmland = self.fit_object_into_bounds(
+                    polygon_points=farmland,
                     margin=self.map.grle_settings.farmland_margin,
                     angle=self.rotation,
                 )
@@ -228,23 +223,11 @@ class GRLE(Component):
                 )
                 continue
 
-            self.logger.debug("Fitted field %s contains %s points.", farmland_id, len(fitted_field))
-
-            field_np = np.array(fitted_field, np.int32)
-            field_np = field_np.reshape((-1, 1, 2))
-
-            self.logger.debug(
-                "Created a numpy array and reshaped it. Number of points: %s", len(field_np)
-            )
-
-            # Infolayer image is 1/2 of the size of the map image, that's why we need to divide
-            # the coordinates by 2.
-            field_np = field_np // 2
-            self.logger.debug("Divided the coordinates by 2.")
+            farmland_np = self.polygon_points_to_np(fitted_farmland, divide=2)
 
             try:
-                cv2.fillPoly(image, [field_np], farmland_id)  # type: ignore
-            except Exception as e:  # pylint: disable=W0718
+                cv2.fillPoly(image, [farmland_np], (float(farmland_id),))
+            except Exception as e:
                 self.logger.debug(
                     "Farmland %s could not be added to the InfoLayer PNG file with error: %s",
                     farmland_id,
@@ -252,37 +235,24 @@ class GRLE(Component):
                 )
                 continue
 
-            # Add the field to the farmlands XML.
-            farmland = ET.SubElement(farmlands_xml, "farmland")  # type: ignore
-            farmland.set("id", str(farmland_id))
-            farmland.set("priceScale", "1")
-            farmland.set("npcName", "FORESTER")
+            data = {
+                "id": str(farmland_id),
+                "priceScale": "1",
+                "npcName": "FORESTER",
+            }
+            self.create_subelement(farmlands_node, "farmland", data)
 
             farmland_id += 1
 
-        tree.write(farmlands_xml_path)
-
-        self.logger.debug("Farmlands added to the farmlands XML file: %s.", farmlands_xml_path)
+        self.save_tree(tree)
 
         cv2.imwrite(info_layer_farmlands_path, image)
-        self.logger.debug(
-            "Farmlands added to the InfoLayer PNG file: %s.", info_layer_farmlands_path
-        )
 
-        self.preview_paths["farmlands"] = info_layer_farmlands_path  # type: ignore
+        self.preview_paths["farmlands"] = info_layer_farmlands_path
 
-    # pylint: disable=R0915
     def _add_plants(self) -> None:
         """Adds plants to the InfoLayer PNG file."""
-        # 1. Get the path to the densityMap_fruits.png.
-        # 2. Get the path to the base layer (grass).
-        # 3. Detect non-zero areas in the base layer (it's where the plants will be placed).
-        texture_component: Texture | None = self.map.get_component("Texture")  # type: ignore
-        if not texture_component:
-            self.logger.warning("Texture component not found in the map.")
-            return
-
-        grass_layer = texture_component.get_layer_by_usage("grass")
+        grass_layer = self.map.get_texture_layer(by_usage="grass")
         if not grass_layer:
             self.logger.warning("Grass layer not found in the texture component.")
             return
@@ -291,7 +261,7 @@ class GRLE(Component):
         grass_image_path = grass_layer.get_preview_or_path(weights_directory)
         self.logger.debug("Grass image path: %s.", grass_image_path)
 
-        forest_layer = texture_component.get_layer_by_usage("forest")
+        forest_layer = self.map.get_texture_layer(by_usage="forest")
         forest_image = None
         if forest_layer:
             forest_image_path = forest_layer.get_preview_or_path(weights_directory)
@@ -304,9 +274,7 @@ class GRLE(Component):
             self.logger.warning("Base image not found in %s.", grass_image_path)
             return
 
-        density_map_fruit_path = os.path.join(
-            self.game.weights_dir_path(self.map_directory), "densityMap_fruits.png"
-        )
+        density_map_fruit_path = self.game.get_density_map_fruits_path(self.map_directory)
 
         self.logger.debug("Density map for fruits path: %s.", density_map_fruit_path)
 
@@ -334,87 +302,13 @@ class GRLE(Component):
             # Add non zero values from the forest image to the grass image.
             grass_image[forest_image != 0] = 255
 
-        # B and G channels remain the same (zeros), while we change the R channel.
-        possible_R_values = [65, 97, 129, 161, 193, 225]  # pylint: disable=C0103
+        base_grass = self.map.grle_settings.base_grass
+        if isinstance(base_grass, tuple):
+            base_grass = base_grass[0]
 
-        base_layer_pixel_value = plant_to_pixel_value(
-            self.map.grle_settings.base_grass  # type:ignore
-        )
+        base_layer_pixel_value = plant_to_pixel_value(str(base_grass))
         if not base_layer_pixel_value:
             base_layer_pixel_value = 131
-
-        def create_island_of_plants(image: np.ndarray, count: int) -> np.ndarray:
-            """Create an island of plants in the image.
-
-            Arguments:
-                image (np.ndarray): The image where the island of plants will be created.
-                count (int): The number of islands of plants to create.
-
-            Returns:
-                np.ndarray: The image with the islands of plants.
-            """
-            for _ in tqdm(range(count), desc="Adding islands of plants", unit="island"):
-                # Randomly choose the value for the island.
-                plant_value = choice(possible_R_values)
-                # Randomly choose the size of the island.
-                island_size = randint(
-                    self.map.grle_settings.plants_island_minimum_size,  # type:ignore
-                    self.map.grle_settings.plants_island_maximum_size,  # type:ignore
-                )
-                # Randomly choose the position of the island.
-                x = randint(0, image.shape[1] - island_size)
-                y = randint(0, image.shape[0] - island_size)
-
-                try:
-                    polygon_points = get_rounded_polygon(
-                        num_vertices=self.map.grle_settings.plants_island_vertex_count,
-                        center=(x + island_size // 2, y + island_size // 2),
-                        radius=island_size // 2,
-                        rounding_radius=self.map.grle_settings.plants_island_rounding_radius,
-                    )
-                    if not polygon_points:
-                        continue
-
-                    nodes = np.array(polygon_points, np.int32)  # type: ignore
-                    cv2.fillPoly(image, [nodes], plant_value)  # type: ignore
-                except Exception:  # pylint: disable=W0703
-                    continue
-
-            return image
-
-        def get_rounded_polygon(
-            num_vertices: int, center: tuple[int, int], radius: int, rounding_radius: int
-        ) -> list[tuple[int, int]] | None:
-            """Get a randomly rounded polygon.
-
-            Arguments:
-                num_vertices (int): The number of vertices of the polygon.
-                center (tuple[int, int]): The center of the polygon.
-                radius (int): The radius of the polygon.
-                rounding_radius (int): The rounding radius of the polygon.
-
-            Returns:
-                list[tuple[int, int]] | None: The rounded polygon.
-            """
-            angle_offset = np.pi / num_vertices
-            angles = np.linspace(0, 2 * np.pi, num_vertices, endpoint=False) + angle_offset
-            random_angles = angles + np.random.uniform(
-                -ISLAND_DISTORTION, ISLAND_DISTORTION, num_vertices
-            )  # Add randomness to angles
-            random_radii = radius + np.random.uniform(
-                -radius * ISLAND_DISTORTION, radius * ISLAND_DISTORTION, num_vertices
-            )  # Add randomness to radii
-
-            points = [
-                (center[0] + np.cos(a) * r, center[1] + np.sin(a) * r)
-                for a, r in zip(random_angles, random_radii)
-            ]
-            polygon = Polygon(points)
-            buffered_polygon = polygon.buffer(rounding_radius, resolution=16)
-            rounded_polygon = list(buffered_polygon.exterior.coords)
-            if not rounded_polygon:
-                return None
-            return rounded_polygon
 
         grass_image_copy = grass_image.copy()
         if forest_image is not None:
@@ -427,7 +321,7 @@ class GRLE(Component):
         island_count = int(self.map_size * self.map.grle_settings.plants_island_percent // 100)
         self.logger.debug("Adding %s islands of plants to the base image.", island_count)
         if self.map.grle_settings.random_plants:
-            grass_image_copy = create_island_of_plants(grass_image_copy, island_count)
+            grass_image_copy = self.create_island_of_plants(grass_image_copy, island_count)
             self.logger.debug("Added %s islands of plants to the base image.", island_count)
 
         # Sligtly reduce the size of the grass_image, that we'll use as mask.
@@ -438,15 +332,7 @@ class GRLE(Component):
         grass_image_copy[grass_image == 0] = 0
         self.logger.debug("Removed the values where the base image has zeros.")
 
-        # Set zeros on all sides of the image
-        grass_image_copy[0, :] = 0  # Top side
-        grass_image_copy[-1, :] = 0  # Bottom side
-        grass_image_copy[:, 0] = 0  # Left side
-        grass_image_copy[:, -1] = 0  # Right side
-
-        # After painting it with base grass, we'll create multiple islands of different plants.
-        # On the final step, we'll remove all the values which in pixels
-        # where zerons in the original base image (so we don't paint grass where it should not be).
+        grass_image_copy = self.remove_edge_pixel_values(grass_image_copy)
 
         # Three channeled 8-bit image, where non-zero values are the
         # different types of plants (only in the R channel).
@@ -462,3 +348,99 @@ class GRLE(Component):
         density_map_fruits = cv2.cvtColor(density_map_fruits, cv2.COLOR_BGR2RGB)
         cv2.imwrite(density_map_fruit_path, density_map_fruits)
         self.logger.debug("Updated density map for fruits saved in %s.", density_map_fruit_path)
+
+    def create_island_of_plants(self, image: np.ndarray, count: int) -> np.ndarray:
+        """Create an island of plants in the image.
+
+        Arguments:
+            image (np.ndarray): The image where the island of plants will be created.
+            count (int): The number of islands of plants to create.
+
+        Returns:
+            np.ndarray: The image with the islands of plants.
+        """
+        # B and G channels remain the same (zeros), while we change the R channel.
+        possible_r_values = [65, 97, 129, 161, 193, 225]
+
+        for _ in tqdm(range(count), desc="Adding islands of plants", unit="island"):
+            # Randomly choose the value for the island.
+            plant_value = choice(possible_r_values)
+            # Randomly choose the size of the island.
+            island_size = randint(
+                self.map.grle_settings.plants_island_minimum_size,
+                self.map.grle_settings.plants_island_maximum_size,
+            )
+            # Randomly choose the position of the island.
+            x = randint(0, image.shape[1] - island_size)
+            y = randint(0, image.shape[0] - island_size)
+
+            try:
+                polygon_points = self.get_rounded_polygon(
+                    num_vertices=self.map.grle_settings.plants_island_vertex_count,
+                    center=(x + island_size // 2, y + island_size // 2),
+                    radius=island_size // 2,
+                    rounding_radius=self.map.grle_settings.plants_island_rounding_radius,
+                )
+                if not polygon_points:
+                    continue
+
+                nodes = np.array(polygon_points, np.int32)
+                cv2.fillPoly(image, [nodes], (float(plant_value),))
+            except Exception:
+                continue
+
+        return image
+
+    @staticmethod
+    def get_rounded_polygon(
+        num_vertices: int, center: tuple[int, int], radius: int, rounding_radius: int
+    ) -> list[tuple[int, int]] | None:
+        """Get a randomly rounded polygon.
+
+        Arguments:
+            num_vertices (int): The number of vertices of the polygon.
+            center (tuple[int, int]): The center of the polygon.
+            radius (int): The radius of the polygon.
+            rounding_radius (int): The rounding radius of the polygon.
+
+        Returns:
+            list[tuple[int, int]] | None: The rounded polygon.
+        """
+        island_distortion = 0.3
+
+        angle_offset = np.pi / num_vertices
+        angles = np.linspace(0, 2 * np.pi, num_vertices, endpoint=False) + angle_offset
+        random_angles = angles + np.random.uniform(
+            -island_distortion, island_distortion, num_vertices
+        )  # Add randomness to angles
+        random_radii = radius + np.random.uniform(
+            -radius * island_distortion, radius * island_distortion, num_vertices
+        )  # Add randomness to radii
+
+        points = [
+            (center[0] + np.cos(a) * r, center[1] + np.sin(a) * r)
+            for a, r in zip(random_angles, random_radii)
+        ]
+        polygon = Polygon(points)
+        buffered_polygon = polygon.buffer(rounding_radius, resolution=16)
+        rounded_polygon = list(buffered_polygon.exterior.coords)
+        if not rounded_polygon:
+            return None
+        return rounded_polygon
+
+    @staticmethod
+    def remove_edge_pixel_values(image_np: np.ndarray) -> np.ndarray:
+        """Remove the edge pixel values from the image.
+
+        Arguments:
+            image_np (np.ndarray): The image to remove the edge pixel values from.
+
+        Returns:
+            np.ndarray: The image with the edge pixel values removed.
+        """
+        # Set zeros on all sides of the image
+        image_np[0, :] = 0  # Top side
+        image_np[-1, :] = 0  # Bottom side
+        image_np[:, 0] = 0  # Left side
+        image_np[:, -1] = 0  # Right side
+        return image_np

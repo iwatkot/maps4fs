@@ -15,6 +15,9 @@ class Parameters:
     TEXTURES = "textures"
     FOREST = "forest"
     ROADS_POLYLINES = "roads_polylines"
+    FARMYARDS = "farmyards"
+
+    PREVIEW_MAXIMUM_SIZE = 2048
 
 
 class SharedSettings(BaseModel):
@@ -141,6 +144,8 @@ class GRLESettings(SettingsModel):
     farmland_margin: int = 0
     random_plants: bool = True
     add_farmyards: bool = False
+    base_price: int = 60000
+    price_scale: int = 100
     base_grass: tuple | str = ("smallDenseMix", "meadow")
     plants_island_minimum_size: int = 10
     plants_island_maximum_size: int = 200
@@ -172,6 +177,7 @@ class TextureSettings(SettingsModel):
     dissolve: bool = False
     fields_padding: int = 0
     skip_drains: bool = False
+    use_cache: bool = True
 
 
 class SplineSettings(SettingsModel):

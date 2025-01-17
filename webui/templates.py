@@ -171,7 +171,8 @@ class Settings:
     FARMLAND_MARGIN = (
         "Farmland margin value is used to add some margin around the farmland. "
         "It can be useful because without the margin, the farmland will end exact on the same "
-        "position as the field ends. This can cause some issues with gameplay."
+        "position as the field ends. This can cause some issues with gameplay.  \n"
+        "ℹ️ **Units:** meters."
     )
     RANDOM_PLANTS = (
         "If random plants are enabled the different species of plants will be generated. "
@@ -185,27 +186,42 @@ class Settings:
         "regions without fields."
     )
     BASE_GRASS = "Select the plant that will be used as a base grass."
-    # plants_island_minimum_size
     PLANTS_ISLAND_MINIMUM_SIZE = (
         "Plants island minimum size value is used to set the minimum size of the plants islands "
-        "when random size of the island will be selected, it will be the lowest possible size. "
+        "when random size of the island will be selected, it will be the lowest possible size.  \n"
+        "ℹ️ **Units:** meters."
     )
     PLANTS_ISLAND_MAXIMUM_SIZE = (
         "Plants island maximum size value is used to set the maximum size of the plants islands "
-        "when random size of the island will be selected, it will be the highest possible size. "
+        "when random size of the island will be selected, it will be the highest possible size.  \n"
+        "ℹ️ **Units:** meters."
     )
     PLANTS_ISLAND_VERTEX_COUNT = (
         "Plants island vertex count value is used to set the number of vertices of the plants. "
-        "The higher the value, the more complex shapes of the island will be. "
+        "The higher the value, the more complex shapes of the island will be.  \n"
+        "ℹ️ **Units:** number of vertices."
     )
     PLANTS_ISLAND_ROUNDING_RADIUS = (
         "Plants island rounding radius value is used to set the rounding radius of the plants. "
-        "The higher the value, the more rounded the vertices will be. "
+        "The higher the value, the more rounded the vertices will be.  \n"
+        "ℹ️ **Units:** meters."
     )
     PLANTS_ISLAND_PERCENT = (
         "Plants island percent value is used to set the relation between the map size and the "
         "number of islands of plants. For example, if set to 100% for map size of 2048, the number"
-        " of islands will be 2048."
+        " of islands will be 2048.  \n"
+        "ℹ️ **Units:** percents of the map size."
+    )
+    BASE_PRICE = (
+        "Base price value is used to set the base price of the farmland. It will be used to "
+        "calculate the final price of the farmland.  \n"
+        "ℹ️ **Units:** in-game currency (EUR or USD)."
+    )
+    PRICE_SCALE = (
+        "Price scale value is a percentage value that will be applied to the price of the "
+        "farmland based on the base price in farmlands.xml file. To make the farmland more "
+        "expensive, make this value higher than 100. To make it cheaper, make it lower than 100.  \n"
+        "ℹ️ **Units:** percents of the base price."
     )
 
     # I3D Settings
@@ -242,6 +258,13 @@ class Settings:
     SKIP_DRAINS = (
         "If skip drains is enabled, the drains and ditches will be ignored while generating "
         "the map."
+    )
+    USE_CACHE = (
+        "If use cache is enabled, the data from OSM will be cached, that means that if you "
+        "generated the map once and then made some changes in the OSM file, the generator will "
+        "use the cached data instead of downloading it again. It can save some time, but if you "
+        "want to get the most recent data, you should disable this option. This option has no "
+        "effect when you're using the custom OSM file."
     )
 
     # Splines Settings

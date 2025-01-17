@@ -569,6 +569,10 @@ You can also apply some advanced settings to the map generation process.<br>
 
 - Add Farmyards - if enabled, the tool will create farmlands from the regions that are marked as farmyards in the OSM data. Those farmlands will not have fields and also will not be drawn on textures. By default, it's turned off.
 
+- Base price - the base price of the farmland. It's used to calculate the price of the farmland in the game. In default in-game maps this value equals to 60000.
+
+- Price scale - is a value in percent which will be applied to all farmnlands. The price per Ha will be calculated as `base_price * price_scale / 100`. By default, it's set to 100%.
+
 - Base grass - you can select which plant will be used as a base grass on the map.
 
 - Plants island minimum size - when random plants are enabled, the generator will add islands of differents plants to the map and choose the random size of those island between the minimum and maximum values. This one is the minimum size of the island in meters.
@@ -594,6 +598,8 @@ You can also apply some advanced settings to the map generation process.<br>
 - Fields padding - this value (in meters) will be applied to each field, making it smaller. It's useful when the fields are too close to each other and you want to make them smaller. By default, it's set to 0.
 
 - Skip drains - if enabled, the tool will not generate the drains and ditches on the map. By default, it's set to False. Use this if you don't need the drains on the map.
+
+- Use cache - if enabled, the tool will use the cached OSM data for generating the map. It's useful when you're generating the same map multiple times and don't want to download the OSM data each time. But if you've made some changes to the OSM data, you should disable this option to get the updated data. By default, it's set to True. This option has no effect when you're using the custom OSM file.
 
 ### Splines Advanced settings
 
