@@ -128,7 +128,8 @@ class Settings:
         "Pay attention to the fact, that this value IS NOT IN METERS, instead it uses the pixel "
         "value from the DEM image. So, if you set low values, you will probably see no "
         "difference. Also, this value will be added to the plateau value, to avoid negative "
-        "height."
+        "height.  \n"
+        "ℹ️ **Units:** pixel value."
     )
 
     GENERATE_BACKGROUND = (
@@ -143,7 +144,8 @@ class Settings:
         "The background resize factor is used to resize the background terrain. The higher the value, "
         "the less detailed the background terrain will be. If set to 1, the background terrain "
         "will not be resized. Low values will result with a very long processing and "
-        "meshes of enormous size. Do not change it unless you know what you are doing."
+        "meshes of enormous size. Do not change it unless you know what you are doing.  \n"
+        "ℹ️ **Units:** integer value."
     )
     REMOVE_CENTER = (
         "If remove center is enabled, the region of playable map terrain will be removed "
@@ -158,12 +160,14 @@ class Settings:
     DECIMATION_PERCENT = (
         "Decimation percent value is used to set the decimation percent. The higher the value, "
         "the more decimated the model will be. Be careful with high values, because it may "
-        "completely break the model."
+        "completely break the model.  \n"
+        "ℹ️ **Units:** percents of the original image size."
     )
     DECIMATION_AGRESSION = (
         "Decimation aggression value is used to set the decimation aggression. The higher the "
         "the more faces will be removed. Note, that higher values will break the geometry of the "
-        "3D model and it won't match with the playable terrain. "
+        "3D model and it won't match with the playable terrain.  \n"
+        "ℹ️ **Units:** integer value."
     )
 
     # GRLE Settings
