@@ -185,7 +185,6 @@ class Settings:
         "regions without fields."
     )
     BASE_GRASS = "Select the plant that will be used as a base grass."
-    # plants_island_minimum_size
     PLANTS_ISLAND_MINIMUM_SIZE = (
         "Plants island minimum size value is used to set the minimum size of the plants islands "
         "when random size of the island will be selected, it will be the lowest possible size. "
@@ -206,6 +205,17 @@ class Settings:
         "Plants island percent value is used to set the relation between the map size and the "
         "number of islands of plants. For example, if set to 100% for map size of 2048, the number"
         " of islands will be 2048."
+    )
+    BASE_PRICE = (
+        "Base price value is used to set the base price of the farmland. It will be used to "
+        "calculate the final price of the farmland.  \n"
+        "ℹ️ **Units:** in-game currency (EUR or USD)."
+    )
+    PRICE_SCALE = (
+        "Price scale value is a percentage value that will be applied to the price of the "
+        "farmland based on the base price in farmlands.xml file. To make the farmland more "
+        "expensive, make this value higher than 100. To make it cheaper, make it lower than 100.  \n"
+        "ℹ️ **Units:** percents of the base price."
     )
 
     # I3D Settings
