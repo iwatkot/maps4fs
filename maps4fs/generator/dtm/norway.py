@@ -4,6 +4,7 @@ from maps4fs.generator.dtm.base.wcs import WCSProvider
 from maps4fs.generator.dtm.dtm import DTMProvider
 
 
+# pylint: disable=R0801
 class NorwayProvider(WCSProvider, DTMProvider):
     """Provider of Norway data."""
 
