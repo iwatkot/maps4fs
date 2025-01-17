@@ -1,7 +1,5 @@
 """Base class for all components that primarily used to work with images."""
 
-from copy import deepcopy
-
 import cv2
 import numpy as np
 

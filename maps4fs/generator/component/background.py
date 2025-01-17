@@ -57,8 +57,10 @@ class Background(MeshComponent, ImageComponent):
             self.validate_np_for_mesh(self.map.custom_background_path, self.map_size)
             shutil.copyfile(self.map.custom_background_path, self.output_path)
 
-        self.not_substracted_path = os.path.join(self.background_directory, "not_substracted.png")
-        self.not_resized_path = os.path.join(self.background_directory, "not_resized.png")
+        self.not_substracted_path: str = os.path.join(
+            self.background_directory, "not_substracted.png"
+        )
+        self.not_resized_path: str = os.path.join(self.background_directory, "not_resized.png")
 
         self.dem = DEM(
             self.game,
