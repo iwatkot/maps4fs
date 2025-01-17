@@ -489,12 +489,15 @@ class GeneratorUI:
                     st.success(f"Custom background uploaded: {uploaded_file.name}")
 
             if not self.public:
-                temp_size = config.get_temp_size()
-                if temp_size > 10:
-                    st.write(f"Temp directory size: {round(temp_size, 2)} MB")
-                    if st.button("Clean temp directory"):
-                        config.clean_temp()
-                        st.success("Temp directory cleaned.")
+                manage_cache = st.checkbox("Manage cache", value=False, key="manage_cache")
+                if manage_cache:
+                    temp_size = config.get_temp_size()
+                    st.write(Messages.CACHE_INFO)
+                    st.write(f"Cache size: {round(temp_size, 2)} MB")
+                    if temp_size > 10:
+                        if st.button("Clean cache"):
+                            config.clean_temp()
+                            st.success("Cache cleaned.")
 
         # Add an empty container for status messages.
         self.status_container = st.empty()

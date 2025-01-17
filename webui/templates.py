@@ -95,6 +95,12 @@ class Messages:
         "not work. Prepare the template carefully, any mistake can lead to errors or completely "
         "broken map. No support will be provided for custom templates."
     )
+    CACHE_INFO = (
+        "Cache contains the data from DTM Providers, map previews, satellite images, etc. "
+        "If you clean the cache, it will be removed but the generator will download the data "
+        "again so it may take longer to generate the map. Do not clean the cache unless you "
+        "have any issues with it."
+    )
 
 
 class Settings:

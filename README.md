@@ -627,6 +627,8 @@ The tool also supports the expert settings. Do not use them until you read the d
 
 - Upload custom map template - you can use your own map template for generation. Note, that is must have the same structure as built-in templates. It's recommended to use the built-in templates and edit them as you need, instead of creating the new ones from scratch.
 
+- Manage cache - allows you to clean the cache of the tool. It's useful when you're generating the map multiple times and the tool uses the cached data. By cleaning the cache you'll force the tool to download the fresh data. It's not recommended to clean the cache unless you have some issues with it.
+
 ## Resources
 
 In this section, you'll find a list of the resources that you need to create a map for the Farming Simulator.<br>
