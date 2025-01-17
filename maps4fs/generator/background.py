@@ -10,8 +10,6 @@ from copy import deepcopy
 
 import cv2
 import numpy as np
-import trimesh
-from tqdm import tqdm
 
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_mesh import MeshComponent
@@ -36,8 +34,7 @@ class Background(MeshComponent, ImageComponent):
 
     def preprocess(self) -> None:
         """Registers the DEMs for the background terrain."""
-        self.stl_preview_path: str | None = None
-        self.water_resources_path: str | None = None
+        self.stl_preview_path = os.path.join(self.previews_directory, "background_dem.stl")
 
         if self.rotation:
             self.logger.debug("Rotation is enabled: %s.", self.rotation)
@@ -52,6 +49,8 @@ class Background(MeshComponent, ImageComponent):
         self.water_directory = os.path.join(self.map_directory, "water")
         os.makedirs(self.background_directory, exist_ok=True)
         os.makedirs(self.water_directory, exist_ok=True)
+
+        self.water_resources_path = os.path.join(self.water_directory, "water_resources.png")
 
         self.output_path = os.path.join(self.background_directory, f"{Parameters.FULL}.png")
         if self.map.custom_background_path:
@@ -74,17 +73,6 @@ class Background(MeshComponent, ImageComponent):
         self.dem.preprocess()
         self.dem.set_output_resolution((self.rotated_size, self.rotated_size))
         self.dem.set_dem_path(self.output_path)
-
-    def is_preview(self, name: str) -> bool:
-        """Checks if the DEM is a preview.
-
-        Arguments:
-            name (str): The name of the DEM.
-
-        Returns:
-            bool: True if the DEM is a preview, False otherwise.
-        """
-        return name == Parameters.FULL
 
     def process(self) -> None:
         """Launches the component processing. Iterates over all tiles and processes them
@@ -255,104 +243,22 @@ class Background(MeshComponent, ImageComponent):
             "DEM data resized to shape: %s with factor: %s", dem_data.shape, resize_factor
         )
 
-        # Invert the height values.
-        dem_data = dem_data.max() - dem_data
-
-        rows, cols = dem_data.shape
-        x = np.linspace(0, cols - 1, cols)
-        y = np.linspace(0, rows - 1, rows)
-        x, y = np.meshgrid(x, y)
-        z = dem_data
-
-        ground = z.max()
-        self.logger.debug("Ground level: %s", ground)
-
-        self.logger.debug(
-            "Starting to generate a mesh for with shape: %s x %s. This may take a while.",
-            cols,
-            rows,
+        mesh = self.mesh_from_np(
+            dem_data,
+            include_zeros=include_zeros,
+            z_scaling_factor=self.get_z_scaling_factor(),
+            resize_factor=resize_factor,
+            apply_decimation=self.map.background_settings.apply_decimation,
+            decimation_percent=self.map.background_settings.decimation_percent,
+            decimation_agression=self.map.background_settings.decimation_agression,
         )
-
-        vertices = np.column_stack([x.ravel(), y.ravel(), z.ravel()])
-        faces = []
-
-        skipped = 0
-
-        for i in tqdm(range(rows - 1), desc="Generating mesh", unit="row"):
-            for j in range(cols - 1):
-                top_left = i * cols + j
-                top_right = top_left + 1
-                bottom_left = top_left + cols
-                bottom_right = bottom_left + 1
-
-                if (
-                    ground in [z[i, j], z[i, j + 1], z[i + 1, j], z[i + 1, j + 1]]
-                    and not include_zeros
-                ):
-                    skipped += 1
-                    continue
-
-                faces.append([top_left, bottom_left, bottom_right])
-                faces.append([top_left, bottom_right, top_right])
-
-        self.logger.debug("Skipped faces: %s", skipped)
-
-        faces_np = np.array(faces)
-        mesh = trimesh.Trimesh(vertices=vertices, faces=faces_np)
-
-        # Apply rotation: 180 degrees around Y-axis and Z-axis
-        rotation_matrix_y = trimesh.transformations.rotation_matrix(np.pi, [0, 1, 0])
-        rotation_matrix_z = trimesh.transformations.rotation_matrix(np.pi, [0, 0, 1])
-        mesh.apply_transform(rotation_matrix_y)
-        mesh.apply_transform(rotation_matrix_z)
-
-        # if not include_zeros:
-        z_scaling_factor = self.get_z_scaling_factor()
-        self.logger.debug("Z scaling factor: %s", z_scaling_factor)
-        mesh.apply_scale([1 / resize_factor, 1 / resize_factor, z_scaling_factor])
-
-        old_faces = len(mesh.faces)
-        self.logger.debug("Mesh generated with %s faces.", old_faces)
-
-        if self.map.background_settings.apply_decimation:
-            percent = self.map.background_settings.decimation_percent / 100
-            mesh = mesh.simplify_quadric_decimation(
-                percent=percent, aggression=self.map.background_settings.decimation_agression
-            )
-
-            new_faces = len(mesh.faces)
-            decimation_percent = (old_faces - new_faces) / old_faces * 100
-
-            self.logger.debug(
-                "Mesh simplified to %s faces. Decimation percent: %s", new_faces, decimation_percent
-            )
 
         mesh.export(save_path)
         self.logger.debug("Obj file saved: %s", save_path)
 
         if create_preview:
-            # Simplify the preview mesh to reduce the size of the file.
-            # mesh = mesh.simplify_quadric_decimation(face_count=len(mesh.faces) // 2**7)
-
-            # Apply scale to make the preview mesh smaller in the UI.
             mesh.apply_scale([0.5, 0.5, 0.5])
-            self.mesh_to_stl(mesh)
-
-    def mesh_to_stl(self, mesh: trimesh.Trimesh) -> None:
-        """Converts the mesh to an STL file and saves it in the previews directory.
-        Uses powerful simplification to reduce the size of the file since it will be used
-        only for the preview.
-
-        Arguments:
-            mesh (trimesh.Trimesh) -- The mesh to convert to an STL file.
-        """
-        mesh = mesh.simplify_quadric_decimation(face_count=len(mesh.faces) // 2**6)
-        preview_path = os.path.join(self.previews_directory, "background_dem.stl")
-        mesh.export(preview_path)
-
-        self.logger.debug("STL file saved: %s", preview_path)
-
-        self.stl_preview_path = preview_path
+            self.mesh_to_stl(mesh, save_path=self.stl_preview_path)
 
     def previews(self) -> list[str]:
         """Returns the path to the image previews paths and the path to the STL preview file.
@@ -383,7 +289,7 @@ class Background(MeshComponent, ImageComponent):
         cv2.imwrite(background_dem_preview_path, background_dem_preview_image)
         preview_paths.append(background_dem_preview_path)
 
-        if self.stl_preview_path:
+        if os.path.isfile(self.stl_preview_path):
             preview_paths.append(self.stl_preview_path)
 
         return preview_paths
@@ -510,14 +416,11 @@ class Background(MeshComponent, ImageComponent):
             background_layer = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
             background_image = cv2.add(background_image, background_layer)  # type: ignore
 
-        background_save_path = os.path.join(self.water_directory, "water_resources.png")
-        cv2.imwrite(background_save_path, background_image)
-        self.logger.debug("Background texture saved: %s", background_save_path)
-        self.water_resources_path = background_save_path
+        cv2.imwrite(self.water_resources_path, background_image)
 
     def subtraction(self) -> None:
         """Subtracts the water depth from the DEM data where the water resources are located."""
-        if not self.water_resources_path:
+        if not os.path.isfile(self.water_resources_path):
             self.logger.warning("Water resources texture not found.")
             return
 
