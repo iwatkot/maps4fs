@@ -7,9 +7,9 @@ from __future__ import annotations
 import os
 
 from maps4fs.generator.background import Background
+from maps4fs.generator.component.base.grle import GRLE
 from maps4fs.generator.component.config import Config
 from maps4fs.generator.component.i3d import I3d
-from maps4fs.generator.grle import GRLE
 from maps4fs.generator.satellite import Satellite
 from maps4fs.generator.texture import Texture
 

@@ -171,7 +171,8 @@ class Settings:
     FARMLAND_MARGIN = (
         "Farmland margin value is used to add some margin around the farmland. "
         "It can be useful because without the margin, the farmland will end exact on the same "
-        "position as the field ends. This can cause some issues with gameplay."
+        "position as the field ends. This can cause some issues with gameplay.  \n"
+        "ℹ️ **Units:** meters."
     )
     RANDOM_PLANTS = (
         "If random plants are enabled the different species of plants will be generated. "
@@ -187,24 +188,29 @@ class Settings:
     BASE_GRASS = "Select the plant that will be used as a base grass."
     PLANTS_ISLAND_MINIMUM_SIZE = (
         "Plants island minimum size value is used to set the minimum size of the plants islands "
-        "when random size of the island will be selected, it will be the lowest possible size. "
+        "when random size of the island will be selected, it will be the lowest possible size.  \n"
+        "ℹ️ **Units:** meters."
     )
     PLANTS_ISLAND_MAXIMUM_SIZE = (
         "Plants island maximum size value is used to set the maximum size of the plants islands "
-        "when random size of the island will be selected, it will be the highest possible size. "
+        "when random size of the island will be selected, it will be the highest possible size.  \n"
+        "ℹ️ **Units:** meters."
     )
     PLANTS_ISLAND_VERTEX_COUNT = (
         "Plants island vertex count value is used to set the number of vertices of the plants. "
-        "The higher the value, the more complex shapes of the island will be. "
+        "The higher the value, the more complex shapes of the island will be.  \n"
+        "ℹ️ **Units:** number of vertices."
     )
     PLANTS_ISLAND_ROUNDING_RADIUS = (
         "Plants island rounding radius value is used to set the rounding radius of the plants. "
-        "The higher the value, the more rounded the vertices will be. "
+        "The higher the value, the more rounded the vertices will be.  \n"
+        "ℹ️ **Units:** meters."
     )
     PLANTS_ISLAND_PERCENT = (
         "Plants island percent value is used to set the relation between the map size and the "
         "number of islands of plants. For example, if set to 100% for map size of 2048, the number"
-        " of islands will be 2048."
+        " of islands will be 2048.  \n"
+        "ℹ️ **Units:** percents of the map size."
     )
     BASE_PRICE = (
         "Base price value is used to set the base price of the farmland. It will be used to "

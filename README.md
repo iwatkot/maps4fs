@@ -569,6 +569,10 @@ You can also apply some advanced settings to the map generation process.<br>
 
 - Add Farmyards - if enabled, the tool will create farmlands from the regions that are marked as farmyards in the OSM data. Those farmlands will not have fields and also will not be drawn on textures. By default, it's turned off.
 
+- Base price - the base price of the farmland. It's used to calculate the price of the farmland in the game. In default in-game maps this value equals to 60000.
+
+- Price scale - is a value in percent which will be applied to all farmnlands. The price per Ha will be calculated as `base_price * price_scale / 100`. By default, it's set to 100%.
+
 - Base grass - you can select which plant will be used as a base grass on the map.
 
 - Plants island minimum size - when random plants are enabled, the generator will add islands of differents plants to the map and choose the random size of those island between the minimum and maximum values. This one is the minimum size of the island in meters.

@@ -12,9 +12,6 @@ from tqdm import tqdm
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_xml import XMLComponent
 from maps4fs.generator.settings import Parameters
-from maps4fs.generator.texture import PREVIEW_MAXIMUM_SIZE, Texture
-
-ISLAND_DISTORTION = 0.3
 
 
 def plant_to_pixel_value(plant_name: str) -> int | None:
@@ -48,8 +45,6 @@ class GRLE(ImageComponent, XMLComponent):
             info, warning. If not provided, default logging will be used.
     """
 
-    _grle_schema: dict[str, float | int | str] | None = None
-
     def preprocess(self) -> None:
         """Gets the path to the map I3D file from the game instance and saves it to the instance
         attribute. If the game does not support I3D files, the attribute is set to None."""
@@ -65,7 +60,7 @@ class GRLE(ImageComponent, XMLComponent):
             grle_schema_path = self.game.grle_schema
         except ValueError:
             self.logger.warning("GRLE schema processing is not implemented for this game.")
-            return
+            return None
 
         try:
             with open(grle_schema_path, "r", encoding="utf-8") as file:
@@ -124,8 +119,13 @@ class GRLE(ImageComponent, XMLComponent):
             save_path = os.path.join(self.previews_directory, f"{preview_name}.png")
             # Resize the preview image to the maximum size allowed for previews.
             image = cv2.imread(preview_path, cv2.IMREAD_GRAYSCALE)
-            if image.shape[0] > PREVIEW_MAXIMUM_SIZE or image.shape[1] > PREVIEW_MAXIMUM_SIZE:
-                image = cv2.resize(image, (PREVIEW_MAXIMUM_SIZE, PREVIEW_MAXIMUM_SIZE))
+            if (
+                image.shape[0] > Parameters.PREVIEW_MAXIMUM_SIZE
+                or image.shape[1] > Parameters.PREVIEW_MAXIMUM_SIZE
+            ):
+                image = cv2.resize(
+                    image, (Parameters.PREVIEW_MAXIMUM_SIZE, Parameters.PREVIEW_MAXIMUM_SIZE)
+                )
             image_normalized = np.empty_like(image)
             cv2.normalize(image, image_normalized, 0, 255, cv2.NORM_MINMAX)
             image_colored = cv2.applyColorMap(image_normalized, cv2.COLORMAP_JET)
@@ -152,12 +152,11 @@ class GRLE(ImageComponent, XMLComponent):
         Returns:
             np.ndarray | None: The farmlands preview image with fields overlayed on top of it.
         """
-        texture_component: Texture | None = self.map.get_component("Texture")
-        if not texture_component:
-            self.logger.warning("Texture component not found in the map.")
+        fields_layer = self.map.get_texture_layer(by_usage="field")
+        if not fields_layer:
+            self.logger.warning("Fields layer not found in the texture component.")
             return None
 
-        fields_layer = texture_component.get_layer_by_usage("field")
         fields_layer_path = fields_layer.get_preview_or_path(
             self.game.weights_dir_path(self.map_directory)
         )
@@ -227,7 +226,7 @@ class GRLE(ImageComponent, XMLComponent):
             farmland_np = self.polygon_points_to_np(fitted_farmland, divide=2)
 
             try:
-                cv2.fillPoly(image, [farmland_np], farmland_id)
+                cv2.fillPoly(image, [farmland_np], (float(farmland_id),))
             except Exception as e:
                 self.logger.debug(
                     "Farmland %s could not be added to the InfoLayer PNG file with error: %s",
@@ -303,7 +302,11 @@ class GRLE(ImageComponent, XMLComponent):
             # Add non zero values from the forest image to the grass image.
             grass_image[forest_image != 0] = 255
 
-        base_layer_pixel_value = plant_to_pixel_value(self.map.grle_settings.base_grass)
+        base_grass = self.map.grle_settings.base_grass
+        if isinstance(base_grass, tuple):
+            base_grass = base_grass[0]
+
+        base_layer_pixel_value = plant_to_pixel_value(str(base_grass))
         if not base_layer_pixel_value:
             base_layer_pixel_value = 131
 
@@ -357,11 +360,11 @@ class GRLE(ImageComponent, XMLComponent):
             np.ndarray: The image with the islands of plants.
         """
         # B and G channels remain the same (zeros), while we change the R channel.
-        possible_R_values = [65, 97, 129, 161, 193, 225]
+        possible_r_values = [65, 97, 129, 161, 193, 225]
 
         for _ in tqdm(range(count), desc="Adding islands of plants", unit="island"):
             # Randomly choose the value for the island.
-            plant_value = choice(possible_R_values)
+            plant_value = choice(possible_r_values)
             # Randomly choose the size of the island.
             island_size = randint(
                 self.map.grle_settings.plants_island_minimum_size,
@@ -382,7 +385,7 @@ class GRLE(ImageComponent, XMLComponent):
                     continue
 
                 nodes = np.array(polygon_points, np.int32)
-                cv2.fillPoly(image, [nodes], plant_value)
+                cv2.fillPoly(image, [nodes], (float(plant_value),))
             except Exception:
                 continue
 
@@ -403,13 +406,15 @@ class GRLE(ImageComponent, XMLComponent):
         Returns:
             list[tuple[int, int]] | None: The rounded polygon.
         """
+        island_distortion = 0.3
+
         angle_offset = np.pi / num_vertices
         angles = np.linspace(0, 2 * np.pi, num_vertices, endpoint=False) + angle_offset
         random_angles = angles + np.random.uniform(
-            -ISLAND_DISTORTION, ISLAND_DISTORTION, num_vertices
+            -island_distortion, island_distortion, num_vertices
         )  # Add randomness to angles
         random_radii = radius + np.random.uniform(
-            -radius * ISLAND_DISTORTION, radius * ISLAND_DISTORTION, num_vertices
+            -radius * island_distortion, radius * island_distortion, num_vertices
         )  # Add randomness to radii
 
         points = [

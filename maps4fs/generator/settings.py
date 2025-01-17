@@ -17,6 +17,8 @@ class Parameters:
     ROADS_POLYLINES = "roads_polylines"
     FARMYARDS = "farmyards"
 
+    PREVIEW_MAXIMUM_SIZE = 2048
+
 
 class SharedSettings(BaseModel):
     """Represents the shared settings for all components."""
