@@ -1,5 +1,6 @@
 """Base class for all components that primarily used to work with images."""
 
+import cv2
 import numpy as np
 
 from maps4fs.generator.component.base.component import Component
@@ -54,3 +55,35 @@ class ImageComponent(Component):
             image[x1:x2, y1:y2] = 0
 
         return image
+
+    @staticmethod
+    def subtract_by_mask(
+        image: np.ndarray,
+        image_mask: np.ndarray,
+        subtract_by: int,
+        mask_by: int = 255,
+        erode_kernel: int | None = 3,
+        erode_iter: int | None = 1,
+    ) -> np.ndarray:
+        """Subtracts a value from the image where the mask is equal to the mask by value.
+
+        Arguments:
+            image (np.ndarray): The image.
+            image_mask (np.ndarray): The mask.
+            subtract_by (int): The value to subtract by.
+            mask_by (int, optional): The value to mask by. Defaults to 255.
+            erode_kernel (int, optional): The kernel size for the erosion. Defaults to 3.
+            erode_iter (int, optional): The number of iterations for the erosion. Defaults to 1.
+
+        Returns:
+            np.ndarray: The image with the subtracted value.
+        """
+        mask = image_mask == mask_by
+        if erode_kernel and erode_iter:
+            mask = cv2.erode(
+                mask.astype(np.uint8),
+                np.ones((erode_kernel, erode_kernel), np.uint8),
+                iterations=erode_iter,
+            )
+
+        return image[mask] - subtract_by

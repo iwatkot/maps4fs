@@ -341,26 +341,11 @@ class Background(MeshComponent, ImageComponent):
 
         dem_data = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
 
-        self.logger.debug(
-            "DEM data before normalization. Shape: %s, dtype: %s. Min: %s, max: %s.",
-            dem_data.shape,
-            dem_data.dtype,
-            dem_data.min(),
-            dem_data.max(),
-        )
-
         # Create an empty array with the same shape and type as dem_data.
         dem_data_normalized = np.empty_like(dem_data)
 
         # Normalize the DEM data to the range [0, 255]
         cv2.normalize(dem_data, dem_data_normalized, 0, 255, cv2.NORM_MINMAX)
-        self.logger.debug(
-            "DEM data after normalization. Shape: %s, dtype: %s. Min: %s, max: %s.",
-            dem_data_normalized.shape,
-            dem_data_normalized.dtype,
-            dem_data_normalized.min(),
-            dem_data_normalized.max(),
-        )
         dem_data_colored = cv2.applyColorMap(dem_data_normalized, cv2.COLORMAP_JET)
 
         cv2.imwrite(colored_dem_path, dem_data_colored)
@@ -426,18 +411,11 @@ class Background(MeshComponent, ImageComponent):
 
         # Single channeled 8 bit image, where the water have values of 255, and the rest 0.
         water_resources_image = cv2.imread(self.water_resources_path, cv2.IMREAD_UNCHANGED)
-        mask = water_resources_image == 255
-
-        # Make mask a little bit smaller (1 pixel).
-        mask = cv2.erode(mask.astype(np.uint8), np.ones((3, 3), np.uint8), iterations=1).astype(
-            bool
-        )
-
         dem_image = cv2.imread(self.output_path, cv2.IMREAD_UNCHANGED)
 
-        # Create a mask where water_resources_image is 255 (or not 0)
-        # Subtract water_depth from dem_image where mask is True
-        dem_image[mask] = dem_image[mask] - self.map.dem_settings.water_depth
+        dem_image = self.subtract_by_mask(
+            dem_image, water_resources_image, self.map.dem_settings.water_depth
+        )
 
         # Save the modified dem_image back to the output path
         cv2.imwrite(self.output_path, dem_image)
@@ -445,7 +423,7 @@ class Background(MeshComponent, ImageComponent):
 
     def generate_water_resources_obj(self) -> None:
         """Generates 3D obj files based on water resources data."""
-        if not self.water_resources_path:
+        if not os.path.isfile(self.water_resources_path):
             self.logger.warning("Water resources texture not found.")
             return
 
