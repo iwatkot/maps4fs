@@ -488,6 +488,14 @@ class GeneratorUI:
                         f.write(uploaded_file.read())
                     st.success(f"Custom background uploaded: {uploaded_file.name}")
 
+            if not self.public:
+                temp_size = config.get_temp_size()
+                if temp_size > 10:
+                    st.write(f"Temp directory size: {round(temp_size, 2)} MB")
+                    if st.button("Clean temp directory"):
+                        config.clean_temp()
+                        st.success("Temp directory cleaned.")
+
         # Add an empty container for status messages.
         self.status_container = st.empty()
 
