@@ -25,3 +25,32 @@ class ImageComponent(Component):
         if divide:
             return array // divide
         return array
+
+    @staticmethod
+    def cut_out_np(
+        image: np.ndarray, half_size: int, set_zeros: bool = False, return_cutout: bool = False
+    ) -> np.ndarray:
+        """Cuts out a square from the center of the image.
+
+        Arguments:
+            image (np.ndarray): The image.
+            half_size (int): The half size of the square.
+            set_zeros (bool, optional): Whether to set the cutout to zeros. Defaults to False.
+            return_cutout (bool, optional): Whether to return the cutout. Defaults to False.
+
+        Returns:
+            np.ndarray: The image with the cutout or the cutout itself.
+        """
+        center = (image.shape[0] // 2, image.shape[1] // 2)
+        x1 = center[0] - half_size
+        x2 = center[0] + half_size
+        y1 = center[1] - half_size
+        y2 = center[1] + half_size
+
+        if return_cutout:
+            return image[x1:x2, y1:y2]
+
+        if set_zeros:
+            image[x1:x2, y1:y2] = 0
+
+        return image

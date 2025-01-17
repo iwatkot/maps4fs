@@ -19,6 +19,10 @@ class Parameters:
 
     PREVIEW_MAXIMUM_SIZE = 2048
 
+    BACKGROUND_DISTANCE = 2048
+    FULL = "FULL"
+    PREVIEW = "PREVIEW"
+
 
 class SharedSettings(BaseModel):
     """Represents the shared settings for all components."""

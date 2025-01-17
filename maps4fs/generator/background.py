@@ -10,21 +10,17 @@ from copy import deepcopy
 
 import cv2
 import numpy as np
-import trimesh  # type: ignore
+import trimesh
 from tqdm import tqdm
 
-from maps4fs.generator.component.base.component import Component
+from maps4fs.generator.component.base.component_image import ImageComponent
+from maps4fs.generator.component.base.component_mesh import MeshComponent
 from maps4fs.generator.dem import DEM
+from maps4fs.generator.settings import Parameters
 from maps4fs.generator.texture import Texture
 
-DEFAULT_DISTANCE = 2048
-FULL_NAME = "FULL"
-FULL_PREVIEW_NAME = "PREVIEW"
-ELEMENTS = [FULL_NAME, FULL_PREVIEW_NAME]
 
-
-# pylint: disable=R0902
-class Background(Component):
+class Background(MeshComponent, ImageComponent):
     """Component for creating 3D obj files based on DEM data around the map.
 
     Arguments:
@@ -38,7 +34,6 @@ class Background(Component):
             info, warning. If not provided, default logging will be used.
     """
 
-    # pylint: disable=R0801
     def preprocess(self) -> None:
         """Registers the DEMs for the background terrain."""
         self.stl_preview_path: str | None = None
@@ -50,7 +45,7 @@ class Background(Component):
         else:
             output_size_multiplier = 1
 
-        self.background_size = self.map_size + DEFAULT_DISTANCE * 2
+        self.background_size = self.map_size + Parameters.BACKGROUND_DISTANCE * 2
         self.rotated_size = int(self.background_size * output_size_multiplier)
 
         self.background_directory = os.path.join(self.map_directory, "background")
@@ -58,9 +53,9 @@ class Background(Component):
         os.makedirs(self.background_directory, exist_ok=True)
         os.makedirs(self.water_directory, exist_ok=True)
 
-        self.output_path = os.path.join(self.background_directory, f"{FULL_NAME}.png")
+        self.output_path = os.path.join(self.background_directory, f"{Parameters.FULL}.png")
         if self.map.custom_background_path:
-            self.check_custom_background(self.map.custom_background_path)
+            self.validate_np_for_mesh(self.map.custom_background_path, self.map_size)
             shutil.copyfile(self.map.custom_background_path, self.output_path)
 
         self.not_substracted_path = os.path.join(self.background_directory, "not_substracted.png")
@@ -80,28 +75,6 @@ class Background(Component):
         self.dem.set_output_resolution((self.rotated_size, self.rotated_size))
         self.dem.set_dem_path(self.output_path)
 
-    def check_custom_background(self, image_path: str) -> None:
-        """Checks if the custom background image meets the requirements.
-
-        Arguments:
-            image_path (str): The path to the custom background image.
-
-        Raises:
-            ValueError: If the custom background image does not meet the requirements.
-        """
-        image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-        if image.shape[0] != image.shape[1]:
-            raise ValueError("The custom background image must be a square.")
-
-        if image.shape[0] != self.map_size + DEFAULT_DISTANCE * 2:
-            raise ValueError("The custom background image must have the size of the map + 4096.")
-
-        if len(image.shape) != 2:
-            raise ValueError("The custom background image must be a grayscale image.")
-
-        if image.dtype != np.uint16:
-            raise ValueError("The custom background image must be a 16-bit grayscale image.")
-
     def is_preview(self, name: str) -> bool:
         """Checks if the DEM is a preview.
 
@@ -111,7 +84,7 @@ class Background(Component):
         Returns:
             bool: True if the DEM is a preview, False otherwise.
         """
-        return name == FULL_PREVIEW_NAME
+        return name == Parameters.FULL
 
     def process(self) -> None:
         """Launches the component processing. Iterates over all tiles and processes them
@@ -123,12 +96,12 @@ class Background(Component):
             self.dem.process()
 
         shutil.copyfile(self.dem.dem_path, self.not_substracted_path)
-        self.cutout(self.dem.dem_path, save_path=self.not_resized_path)
+        self.save_map_dem(self.dem.dem_path, save_path=self.not_resized_path)
 
         if self.map.dem_settings.water_depth:
             self.subtraction()
 
-        cutted_dem_path = self.cutout(self.dem.dem_path)
+        cutted_dem_path = self.save_map_dem(self.dem.dem_path)
         if self.game.additional_dem_name is not None:
             self.make_copy(cutted_dem_path, self.game.additional_dem_name)
 
@@ -184,9 +157,9 @@ class Background(Component):
 
     def qgis_sequence(self) -> None:
         """Generates QGIS scripts for creating bounding box layers and rasterizing them."""
-        qgis_layer = (f"Background_{FULL_NAME}", *self.dem.get_espg3857_bbox())
+        qgis_layer = (f"Background_{Parameters.FULL}", *self.dem.get_espg3857_bbox())
         qgis_layer_with_margin = (
-            f"Background_{FULL_NAME}_margin",
+            f"Background_{Parameters.FULL}_margin",
             *self.dem.get_espg3857_bbox(add_margin=True),
         )
         self.create_qgis_scripts([qgis_layer, qgis_layer_with_margin])
@@ -214,10 +187,9 @@ class Background(Component):
             create_preview=True,
             remove_center=self.map.background_settings.remove_center,
             include_zeros=False,
-        )  # type: ignore
+        )
 
-    # pylint: disable=too-many-locals
-    def cutout(self, dem_path: str, save_path: str | None = None) -> str:
+    def save_map_dem(self, dem_path: str, save_path: str | None = None) -> str:
         """Cuts out the center of the DEM (the actual map) and saves it as a separate file.
 
         Arguments:
@@ -228,14 +200,8 @@ class Background(Component):
             str -- The path to the cutout DEM file.
         """
         dem_data = cv2.imread(dem_path, cv2.IMREAD_UNCHANGED)
-
-        center = (dem_data.shape[0] // 2, dem_data.shape[1] // 2)
         half_size = self.map_size // 2
-        x1 = center[0] - half_size
-        x2 = center[0] + half_size
-        y1 = center[1] - half_size
-        y2 = center[1] + half_size
-        dem_data = dem_data[x1:x2, y1:y2]
+        dem_data = self.cut_out_np(dem_data, half_size, return_cutout=True)
 
         if save_path:
             cv2.imwrite(save_path, dem_data)
@@ -260,26 +226,6 @@ class Background(Component):
 
         return main_dem_path
 
-    def remove_center(self, dem_data: np.ndarray, resize_factor: float) -> np.ndarray:
-        """Removes the center part of the DEM data.
-
-        Arguments:
-            dem_data (np.ndarray) -- The DEM data as a numpy array.
-            resize_factor (float) -- The resize factor of the DEM data.
-
-        Returns:
-            np.ndarray -- The DEM data with the center part removed.
-        """
-        center = (dem_data.shape[0] // 2, dem_data.shape[1] // 2)
-        half_size = int(self.map_size // 2 * resize_factor)
-        x1 = center[0] - half_size
-        x2 = center[0] + half_size
-        y1 = center[1] - half_size
-        y2 = center[1] + half_size
-        dem_data[x1:x2, y1:y2] = 0
-        return dem_data
-
-    # pylint: disable=R0913, R0917, R0915
     def plane_from_np(
         self,
         dem_data: np.ndarray,
@@ -302,7 +248,8 @@ class Background(Component):
         resize_factor = 1 / self.map.background_settings.resize_factor
         dem_data = cv2.resize(dem_data, (0, 0), fx=resize_factor, fy=resize_factor)
         if remove_center:
-            dem_data = self.remove_center(dem_data, resize_factor)
+            half_size = int(self.map_size // 2 * resize_factor)
+            dem_data = self.cut_out_np(dem_data, half_size, set_zeros=True)
             self.logger.debug("Center removed from DEM data.")
         self.logger.debug(
             "DEM data resized to shape: %s with factor: %s", dem_data.shape, resize_factor
@@ -350,8 +297,8 @@ class Background(Component):
 
         self.logger.debug("Skipped faces: %s", skipped)
 
-        faces = np.array(faces)  # type: ignore
-        mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
+        faces_np = np.array(faces)
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces_np)
 
         # Apply rotation: 180 degrees around Y-axis and Z-axis
         rotation_matrix_y = trimesh.transformations.rotation_matrix(np.pi, [0, 1, 0])
@@ -405,7 +352,7 @@ class Background(Component):
 
         self.logger.debug("STL file saved: %s", preview_path)
 
-        self.stl_preview_path = preview_path  # pylint: disable=attribute-defined-outside-init
+        self.stl_preview_path = preview_path
 
     def previews(self) -> list[str]:
         """Returns the path to the image previews paths and the path to the STL preview file.
@@ -421,8 +368,13 @@ class Background(Component):
         background_dem_preview_image = cv2.resize(
             background_dem_preview_image, (0, 0), fx=1 / 4, fy=1 / 4
         )
-        background_dem_preview_image = cv2.normalize(  # type: ignore
-            background_dem_preview_image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U
+        background_dem_preview_image = cv2.normalize(
+            background_dem_preview_image,
+            dst=np.empty_like(background_dem_preview_image),
+            alpha=0,
+            beta=255,
+            norm_type=cv2.NORM_MINMAX,
+            dtype=cv2.CV_8U,
         )
         background_dem_preview_image = cv2.cvtColor(
             background_dem_preview_image, cv2.COLOR_GRAY2BGR
@@ -528,7 +480,7 @@ class Background(Component):
         if not background_layers:
             return
 
-        self.background_texture = Texture(  # pylint: disable=W0201
+        self.background_texture = Texture(
             self.game,
             self.map,
             self.coordinates,
@@ -555,13 +507,13 @@ class Background(Component):
         # Merge all images into one.
         background_image = np.zeros((self.background_size, self.background_size), dtype=np.uint8)
         for path in background_paths:
-            layer = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-            background_image = cv2.add(background_image, layer)  # type: ignore
+            background_layer = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+            background_image = cv2.add(background_image, background_layer)  # type: ignore
 
         background_save_path = os.path.join(self.water_directory, "water_resources.png")
         cv2.imwrite(background_save_path, background_image)
         self.logger.debug("Background texture saved: %s", background_save_path)
-        self.water_resources_path = background_save_path  # pylint: disable=W0201
+        self.water_resources_path = background_save_path
 
     def subtraction(self) -> None:
         """Subtracts the water depth from the DEM data where the water resources are located."""
