@@ -405,16 +405,17 @@ class Background(MeshComponent, ImageComponent):
 
     def subtraction(self) -> None:
         """Subtracts the water depth from the DEM data where the water resources are located."""
-        if not os.path.isfile(self.water_resources_path):
+        if not self.water_resources_path:
             self.logger.warning("Water resources texture not found.")
             return
 
-        # Single channeled 8 bit image, where the water have values of 255, and the rest 0.
         water_resources_image = cv2.imread(self.water_resources_path, cv2.IMREAD_UNCHANGED)
         dem_image = cv2.imread(self.output_path, cv2.IMREAD_UNCHANGED)
 
         dem_image = self.subtract_by_mask(
-            dem_image, water_resources_image, self.map.dem_settings.water_depth
+            dem_image,
+            water_resources_image,
+            self.map.dem_settings.water_depth,
         )
 
         # Save the modified dem_image back to the output path

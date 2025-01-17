@@ -1,5 +1,7 @@
 """Base class for all components that primarily used to work with images."""
 
+from copy import deepcopy
+
 import cv2
 import numpy as np
 
@@ -84,6 +86,7 @@ class ImageComponent(Component):
                 mask.astype(np.uint8),
                 np.ones((erode_kernel, erode_kernel), np.uint8),
                 iterations=erode_iter,
-            )
+            ).astype(bool)
 
-        return image[mask] - subtract_by
+        image[mask] = image[mask] - subtract_by
+        return image
