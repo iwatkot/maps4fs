@@ -1,4 +1,5 @@
 import os
+import shutil
 import threading
 from time import sleep
 
@@ -13,10 +14,6 @@ MAPS_DIRECTORY = os.path.join(WORKING_DIRECTORY, "maps")
 OSMPS_DIRECTORY = os.path.join(WORKING_DIRECTORY, "osmps")
 TEMP_DIRECTORY = os.path.join(WORKING_DIRECTORY, "temp")
 INPUT_DIRECTORY = os.path.join(TEMP_DIRECTORY, "input")
-os.makedirs(ARCHIVES_DIRECTORY, exist_ok=True)
-os.makedirs(MAPS_DIRECTORY, exist_ok=True)
-os.makedirs(OSMPS_DIRECTORY, exist_ok=True)
-os.makedirs(INPUT_DIRECTORY, exist_ok=True)
 
 FS25_TEXTURE_SCHEMA_PATH = os.path.join(DATA_DIRECTORY, "fs25-texture-schema.json")
 FS25_TREE_SCHEMA_PATH = os.path.join(DATA_DIRECTORY, "fs25-tree-schema.json")
@@ -137,3 +134,53 @@ def get_package_version(package_name: str, logger: mfs.Logger) -> str:
     cleared_response = response.replace(" ", "")
     logger.debug("Cleared response: %s", cleared_response)
     return response.replace(package_name, "").strip()
+
+
+def get_directory_size(directory: str) -> int:
+    """Calculate the total size of the specified directory.
+
+    Args:
+        directory (str): The path to the directory.
+
+    Returns:
+        int: The total size of the directory in bytes.
+    """
+    total_size = 0
+    for dirpath, dirnames, filenames in os.walk(directory):
+        for filename in filenames:
+            filepath = os.path.join(dirpath, filename)
+            if os.path.isfile(filepath):
+                total_size += os.path.getsize(filepath)
+    return total_size
+
+
+def get_temp_size() -> float:
+    """Get the size of the temp directory (in MB).
+
+    Returns:
+        str: The size of the temp directory.
+    """
+    temp_size_bytes = get_directory_size(TEMP_DIRECTORY)
+    return temp_size_bytes / (1024**2)
+
+
+def create_dirs() -> None:
+    """Create the directories if they do not exist."""
+    directories = [
+        ARCHIVES_DIRECTORY,
+        DATA_DIRECTORY,
+        MAPS_DIRECTORY,
+        OSMPS_DIRECTORY,
+        INPUT_DIRECTORY,
+    ]
+    for directory in directories:
+        os.makedirs(directory, exist_ok=True)
+
+
+def clean_temp() -> None:
+    """Clean the temp directory."""
+    shutil.rmtree(TEMP_DIRECTORY, ignore_errors=True)
+    create_dirs()
+
+
+create_dirs()
