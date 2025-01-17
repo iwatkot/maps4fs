@@ -297,8 +297,6 @@ class DTMProvider(ABC):
         with rasterio.open(tile) as src:
             crs = src.crs
         if crs != "EPSG:4326":
-            print("crs:", crs)
-            print("reprojecting to EPSG:4326")
             self.logger.debug(f"Reprojecting GeoTIFF from {crs} to EPSG:4326...")
             tile = self.reproject_geotiff(tile)
 
@@ -499,12 +497,10 @@ class DTMProvider(ABC):
         # Open all input GeoTIFF files as datasets
         self.logger.debug("Merging tiff files...")
         datasets = [rasterio.open(file) for file in input_files]
-        print("datasets:", datasets)
 
         # Merge datasets
         crs = datasets[0].crs
         mosaic, out_transform = merge(datasets, nodata=0)
-        print("mosaic:", mosaic)
 
         # Get metadata from the first file and update it for the output
         out_meta = datasets[0].meta.copy()
