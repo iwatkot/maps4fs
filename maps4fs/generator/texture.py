@@ -12,9 +12,10 @@ from typing import Any, Callable, Generator, Optional
 
 import cv2
 import numpy as np
-import osmnx as ox  # type: ignore
+import osmnx as ox
 import pandas as pd
 import shapely.geometry  # type: ignore
+from osmnx import settings as ox_settings
 from shapely.geometry.base import BaseGeometry  # type: ignore
 from tqdm import tqdm
 
@@ -764,6 +765,10 @@ class Texture(Component):
                 Numpy array of polygon points or list of point coordinates.
         """
         is_fieds = info_layer == "fields"
+
+        ox_settings.use_cache = self.map.texture_settings.use_cache
+        ox_settings.requests_timeout = 30
+
         try:
             if self.map.custom_osm is not None:
                 with warnings.catch_warnings():

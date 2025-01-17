@@ -259,6 +259,13 @@ class Settings:
         "If skip drains is enabled, the drains and ditches will be ignored while generating "
         "the map."
     )
+    USE_CACHE = (
+        "If use cache is enabled, the data from OSM will be cached, that means that if you "
+        "generated the map once and then made some changes in the OSM file, the generator will "
+        "use the cached data instead of downloading it again. It can save some time, but if you "
+        "want to get the most recent data, you should disable this option. This option has no "
+        "effect when you're using the custom OSM file."
+    )
 
     # Splines Settings
 

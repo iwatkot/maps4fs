@@ -177,6 +177,7 @@ class TextureSettings(SettingsModel):
     dissolve: bool = False
     fields_padding: int = 0
     skip_drains: bool = False
+    use_cache: bool = True
 
 
 class SplineSettings(SettingsModel):
