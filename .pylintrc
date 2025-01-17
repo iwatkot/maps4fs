@@ -22,3 +22,4 @@ disable=raw-checker-failed,
         redefined-builtin,
         too-many-instance-attributes,
         too-many-statements,
+        attribute-defined-outside-init

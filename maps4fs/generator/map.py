@@ -7,7 +7,7 @@ import os
 import shutil
 from typing import Any, Generator
 
-from maps4fs.generator.background import Background
+from maps4fs.generator.component.background import Background
 from maps4fs.generator.component.base.component import Component
 from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
 from maps4fs.generator.game import Game
