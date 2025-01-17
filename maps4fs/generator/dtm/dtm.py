@@ -16,8 +16,8 @@ from pydantic import BaseModel
 from rasterio.enums import Resampling
 from rasterio.merge import merge
 from rasterio.warp import calculate_default_transform, reproject
+import requests
 from tqdm import tqdm
-import grequests
 
 
 from maps4fs.logger import Logger
@@ -409,29 +409,34 @@ class DTMProvider(ABC):
                 file_path = self.unzip_img_from_tif(file_name, output_path)
             tif_files.append(file_path)
 
-        rs = (grequests.get(u) for u in urls if u not in existing_file_urls)
-
-        for response in tqdm(
-            grequests.imap(rs, size=4, exception_handler=self.logger.error),
+        for url in tqdm(
+            (u for u in urls if u not in existing_file_urls),
             desc="Downloading tiles",
             unit="tile",
             initial=len(tif_files),
-            total=len(urls),
         ):
-            self.logger.debug("Retrieving TIFF: %s", file_name)
+            try:
+                file_name = os.path.basename(url)
+                file_path = os.path.join(output_path, file_name)
+                self.logger.debug("Retrieving TIFF: %s", file_name)
 
-            file_name = os.path.basename(response.url)
-            file_path = os.path.join(output_path, file_name)
+                # Send a GET request to the file URL
+                response = requests.get(url, stream=True, timeout=60)
+                response.raise_for_status()  # Raise an error for HTTP status codes 4xx/5xx
 
-            # Write the content of the response to the file
-            with open(file_path, "wb") as file:
-                file.write(response.content)
+                # Write the content of the response to the file
+                with open(file_path, "wb") as file:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        file.write(chunk)
 
-            self.logger.debug("File downloaded successfully: %s", file_path)
+                self.logger.debug("File downloaded successfully: %s", file_path)
 
-            if file_name.endswith(".zip"):
-                file_path = self.unzip_img_from_tif(file_name, output_path)
-            tif_files.append(file_path)
+                if file_name.endswith(".zip"):
+                    file_path = self.unzip_img_from_tif(file_name, output_path)
+
+                tif_files.append(file_path)
+            except requests.exceptions.RequestException as e:
+                self.logger.error("Failed to download file: %s", e)
         return tif_files
 
     def unzip_img_from_tif(self, file_name: str, output_path: str) -> str:

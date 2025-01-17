@@ -14,4 +14,3 @@ maps4fs
 pygmdl
 owslib
 tqdm
-grequests
