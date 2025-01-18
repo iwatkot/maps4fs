@@ -153,13 +153,16 @@ class DEM(Component):
         # 3. Apply multiplier (-10 to 120.4 becomes -20 to 240.8)
         resampled_data = self.apply_multiplier(resampled_data)
 
-        # 4. Raise terrain, and optionally lower to plateau level+water depth (-20 to 240.8m becomes 20 to 280.8m)
+        # 4. Raise terrain, and optionally lower to plateau level+water depth
+        # e.g. -20 to 240.8m becomes 20 to 280.8m
         resampled_data = self.raise_or_lower(resampled_data)
 
-        # 5. Determine actual height scale value using ceiling (255 becomes 280.8+10 = 291 - use math.ceil)
+        # 5. Determine actual height scale value using ceiling
+        # e.g. 255 becomes 280.8+10 = 291
         height_scale_value = self.determine_height_scale(resampled_data)
 
-        # 6. Normalize DEM data to 16-bit unsigned integer range (0 to 65535) - multiply by 65535/291, clip and as uint16
+        # 6. Normalize DEM data to 16-bit unsigned integer range (0 to 65535)
+        # e.g. multiply by 65535/291, clip and return as uint16
         resampled_data = self.normalize_data(resampled_data, height_scale_value)
 
         cv2.imwrite(self._dem_path, resampled_data)
@@ -242,7 +245,7 @@ class DEM(Component):
 
         multiplied_data = data * self.multiplier
         self.logger.debug(
-            "DEM data was multiplied by %s." "Min: %s, max: %s.",
+            "DEM data was multiplied by %s. Min: %s, max: %s.",
             self.multiplier,
             multiplied_data.min(),
             multiplied_data.max(),
