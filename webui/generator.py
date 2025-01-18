@@ -64,21 +64,23 @@ class GeneratorUI:
         self.map_preview()
 
     @property
-    def lat_lon(self) -> tuple[float, float]:
+    def lat_lon(self) -> tuple[float, float] | tuple[None, None]:
         """Get the latitude and longitude of the center point of the map.
 
         Returns:
             tuple[float, float]: The latitude and longitude of the center point of the map.
         """
-        return tuple(map(float, self.lat_lon_input.split(",")))
+        try:
+            return tuple(map(float, self.lat_lon_input.split(",")))
+        except ValueError:
+            return None, None
 
     def map_preview(self) -> None:
         """Generate a preview of the map in the HTML container.
         This method is called when the latitude, longitude, or map size is changed.
         """
-        try:
-            lat, lon = self.lat_lon
-        except ValueError:
+        lat, lon = self.lat_lon
+        if not lat or not lon:
             return
 
         map_size = self.map_size_input
@@ -338,7 +340,12 @@ class GeneratorUI:
             self.map_size_input = custom_map_size_input
 
         # DTM Provider selection.
-        providers: dict[str, str] = mfs.DTMProvider.get_valid_provider_descriptions(self.lat_lon)
+        lat, lon = self.lat_lon
+        if not lat or not lon:
+            lat = DEFAULT_LAT
+            lon = DEFAULT_LON
+
+        providers: dict[str, str] = mfs.DTMProvider.get_valid_provider_descriptions((lat, lon))
         # Keys are provider codes, values are provider descriptions.
         # In selector we'll show descriptions, but we'll use codes in the background.
 
@@ -564,11 +571,9 @@ class GeneratorUI:
     def generate_map(self) -> None:
         """Generate the map."""
         game = mfs.Game.from_code(self.game_code, self.custom_template_path)
-
-        try:
-            lat, lon = self.lat_lon
-        except ValueError:
-            st.error("Invalid latitude and longitude!")
+        lat, lon = self.lat_lon
+        if not lat or not lon:
+            st.error("Invalid latitude and longitude were provided.")
             return
 
         # Prepare a tuple with the coordinates of the center point of the map.
