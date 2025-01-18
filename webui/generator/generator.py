@@ -53,7 +53,9 @@ class GeneratorUI:
             st.session_state.generated = False
 
         with self.right_column:
-            self.add_right_widgets()
+            self.html_preview_container = st.empty()
+            self.map_selector_container = st.container()
+            self.preview_container = st.container()
 
         with self.left_column:
             if config.is_on_community_server():
@@ -90,13 +92,6 @@ class GeneratorUI:
 
         with self.html_preview_container:
             components.html(open(html_file).read(), height=600)
-
-    def add_right_widgets(self) -> None:
-        """Add widgets to the right column."""
-        self.logger.debug("Adding widgets to the right column...")
-        self.html_preview_container = st.empty()
-        self.map_selector_container = st.container()
-        self.preview_container = st.container()
 
     def _show_version(self) -> None:
         """Show the current version of the package."""
