@@ -420,7 +420,7 @@ class Background(MeshComponent, ImageComponent):
             self.map.shared_settings.mesh_z_scaling_factor
             if self.map.shared_settings.mesh_z_scaling_factor is not None
             else 257
-        )  # default value for height_scale 255, it is defined as float | None but it is always int
+        )
 
         dem_image = self.subtract_by_mask(
             dem_image,
