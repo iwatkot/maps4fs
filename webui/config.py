@@ -7,6 +7,10 @@ import requests
 
 import maps4fs as mfs
 
+QUEUE_LIMIT = 3
+DEFAULT_LAT = 45.28571409289627
+DEFAULT_LON = 20.237433441210115
+
 WORKING_DIRECTORY = os.getcwd()
 ARCHIVES_DIRECTORY = os.path.join(WORKING_DIRECTORY, "archives")
 DATA_DIRECTORY = os.path.join(WORKING_DIRECTORY, "data")

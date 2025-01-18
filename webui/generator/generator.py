@@ -16,9 +16,6 @@ from templates import Messages, Settings
 
 import maps4fs as mfs
 
-QUEUE_LIMIT = 3
-DEFAULT_LAT = 45.28571409289627
-DEFAULT_LON = 20.237433441210115
 Image.MAX_IMAGE_PIXELS = None
 
 
@@ -303,7 +300,7 @@ class GeneratorUI:
         st.write("Enter latitude and longitude of the center point of the map:")
         self.lat_lon_input = st.text_input(
             "Latitude and Longitude",
-            f"{DEFAULT_LAT}, {DEFAULT_LON}",
+            f"{config.DEFAULT_LAT}, {config.DEFAULT_LON}",
             key="lat_lon",
             label_visibility="collapsed",
             on_change=self.map_preview,
@@ -391,7 +388,7 @@ class GeneratorUI:
 
         # Generate button.
         generate_button_disabled = False
-        if self.public and get_queue_length() >= QUEUE_LIMIT:
+        if self.public and get_queue_length() >= config.QUEUE_LIMIT:
             generate_button_disabled = True
             st.warning(Messages.OVERLOADED, icon="⚠️")
 
