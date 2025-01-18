@@ -21,6 +21,6 @@ disable=raw-checker-failed,
         too-many-locals,
         redefined-builtin,
         too-many-instance-attributes,
-        duplicate-code
+        duplicate-code,
         too-many-statements,
         attribute-defined-outside-init
