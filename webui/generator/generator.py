@@ -8,9 +8,10 @@ import osmp
 import streamlit as st
 import streamlit.components.v1 as components
 from generator.widgets.widget import Widget
+from generator.widgets.widgets_left import active_widgets as left_widgets
 from generator.widgets.widgets_side import active_widgets as side_widgets
 from PIL import Image
-from queuing import add_to_queue, get_queue_length, remove_from_queue, wait_in_queue
+from queuing import add_to_queue, remove_from_queue, wait_in_queue
 from streamlit_stl import stl_from_file
 from templates import Messages, Settings
 
@@ -273,142 +274,16 @@ class GeneratorUI:
         """Add widgets to the left column."""
         self.logger.debug("Adding widgets to the left column...")
 
-        st.title(Messages.TITLE)
-        self._show_version()
-
-        st.write(Messages.MAIN_PAGE_DESCRIPTION)
-        st.markdown("---")
-
-        # Game selection (FS22 or FS25).
-        st.write("Select the game for which you want to generate the map:")
-        self.game_code = st.selectbox(
-            "Game",
-            options=[
-                "FS25",
-                "FS22",
-            ],
-            key="game_code",
-            label_visibility="collapsed",
-        )
-
-        # Latitude and longitude input.
-        st.write("Enter latitude and longitude of the center point of the map:")
-        self.lat_lon_input = st.text_input(
-            "Latitude and Longitude",
-            f"{config.DEFAULT_LAT}, {config.DEFAULT_LON}",
-            key="lat_lon",
-            label_visibility="collapsed",
-            on_change=self.map_preview,
-        )
-
-        size_options = [2048, 4096, 8192, 16384, "Custom"]
-        if self.public:
-            size_options = size_options[:3]
-
-        # Map size selection.
-        st.write("Select size of the map:")
-        self.map_size_input = st.selectbox(
-            "Map Size (meters)",
-            options=size_options,
-            label_visibility="collapsed",
-            on_change=self.map_preview,
-        )
-
-        if self.map_size_input == "Custom":
-            self.logger.debug("Custom map size selected.")
-
-            st.write("Enter map size (meters):")
-            custom_map_size_input = st.number_input(
-                label="Height (meters)",
-                min_value=2,
-                value=2048,
-                key="map_height",
-                label_visibility="collapsed",
-                on_change=self.map_preview,
-            )
-
-            self.map_size_input = custom_map_size_input
-
-        # DTM Provider selection.
-        providers: dict[str, str] = mfs.DTMProvider.get_valid_provider_descriptions(self.lat_lon)
-        # Keys are provider codes, values are provider descriptions.
-        # In selector we'll show descriptions, but we'll use codes in the background.
-
-        st.write("Select the DTM provider:")
-        self.dtm_provider_code = st.selectbox(
-            "DTM Provider",
-            options=list(providers.keys()),
-            format_func=lambda code: providers[code],
-            key="dtm_provider",
-            label_visibility="collapsed",
-            disabled=self.public,
-            on_change=self.provider_info,
-        )
-        self.provider_settings = None
-        self.provider_info_container: st.delta_generator.DeltaGenerator = st.empty()
-        self.provider_info()
-
-        # Rotation input.
-        st.write("Enter the rotation of the map:")
-
-        self.rotation = st.slider(
-            "Rotation",
-            min_value=-180,
-            max_value=180,
-            value=0,
-            step=1,
-            key="rotation",
-            label_visibility="collapsed",
-            disabled=False,
-            on_change=self.map_preview,
-        )
-
         self.custom_background_path = None
         self.expert_mode = False
         self.raw_config = None
-
         self.custom_osm_path = None
         self.custom_template_path = None
 
-        self.get_settings()
+        self.register_widgets(left_widgets)
 
         with st.sidebar:
             self.register_widgets(side_widgets)
-
-        # Add an empty container for status messages.
-        self.status_container = st.empty()
-
-        # Add an empty container for buttons.
-        self.buttons_container = st.empty()
-
-        # Generate button.
-        generate_button_disabled = False
-        if self.public and get_queue_length() >= config.QUEUE_LIMIT:
-            generate_button_disabled = True
-            st.warning(Messages.OVERLOADED, icon="⚠️")
-
-        with self.buttons_container:
-            if not config.is_on_community_server():
-                if st.button("Generate", key="launch_btn", disabled=generate_button_disabled):
-                    self.generate_map()
-
-        # Download button.
-        if st.session_state.generated:
-            self.logger.debug("Generated was set to True in the session state.")
-            with open(self.download_path, "rb") as f:
-                with self.buttons_container:
-                    st.download_button(
-                        label="Download",
-                        data=f,
-                        file_name=f"{self.download_path.split('/')[-1]}",
-                        mime="application/zip",
-                        icon="📥",
-                    )
-
-            config.remove_with_delay_without_blocking(self.download_path, self.logger)
-
-            st.session_state.generated = False
-            self.logger.debug("Generated was set to False in the session state.")
 
     def register_widgets(self, widgets: list[Widget]) -> None:
         """Register widgets to the UI.
@@ -446,6 +321,7 @@ class GeneratorUI:
 
     def generate_map(self) -> None:
         """Generate the map."""
+        print(self)
         game = mfs.Game.from_code(self.game_code, self.custom_template_path)
 
         try:

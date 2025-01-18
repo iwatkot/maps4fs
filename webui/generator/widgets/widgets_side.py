@@ -63,6 +63,8 @@ class RawConfiguration(Widget):
 
 class CustomSchemas(Widget):
     def content(self):
+        print(self.ui)
+
         self.ui.custom_schemas = False
         self.ui.texture_schema_input = None
         self.ui.tree_schema_input = None

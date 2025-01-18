@@ -45,4 +45,5 @@ class WebUI:
             st.write(open(FAQ_MD, "r", encoding="utf-8").read())
 
 
-WebUI()
+if __name__ == "__main__":
+    WebUI()
