@@ -337,8 +337,13 @@ class GeneratorUI:
 
             self.map_size_input = custom_map_size_input
 
+        try:
+            lat, lon = self.lat_lon
+        except ValueError:
+            lat, lon = DEFAULT_LAT, DEFAULT_LON
+
         # DTM Provider selection.
-        providers: dict[str, str] = mfs.DTMProvider.get_valid_provider_descriptions(self.lat_lon)
+        providers: dict[str, str] = mfs.DTMProvider.get_valid_provider_descriptions((lat, lon))
         # Keys are provider codes, values are provider descriptions.
         # In selector we'll show descriptions, but we'll use codes in the background.
 
