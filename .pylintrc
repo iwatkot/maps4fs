@@ -20,4 +20,5 @@ disable=raw-checker-failed,
         raise-missing-from,
         too-many-locals,
         redefined-builtin,
-        too-many-instance-attributes
+        too-many-instance-attributes,
+        duplicate-code
