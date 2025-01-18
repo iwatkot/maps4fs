@@ -16,6 +16,7 @@
 # ➡️ python demo.py
 
 import os
+import shutil
 
 import maps4fs as mfs
 
@@ -35,6 +36,8 @@ rotation = 0
 
 # 4️⃣ Define the output directory.
 map_directory = "map_directory"
+if os.path.isdir(map_directory):
+    shutil.rmtree(map_directory)
 os.makedirs(map_directory, exist_ok=True)
 
 # 5️⃣ Optional: use a custom OSM file.
@@ -44,9 +47,9 @@ osm_file = "path/to/osm_file.osm"
 # it's recommended to change them according to your needs.
 dem_settings = mfs.DEMSettings(multiplier=1, blur_radius=15, plateau=3000, water_depth=2000)
 background_settings = mfs.BackgroundSettings(
-    # generate_background=True,
-    # generate_water=True,
-    resize_factor=2,
+    generate_background=True,
+    generate_water=True,
+    resize_factor=8,
     remove_center=True,
     apply_decimation=True,
     decimation_percent=50,
@@ -60,7 +63,7 @@ texture_settings = mfs.TextureSettings(
     skip_drains=True,
 )
 spline_settings = mfs.SplineSettings(spline_density=0)
-satellite_settings = mfs.SatelliteSettings(download_images=True, zoom_level=18)
+satellite_settings = mfs.SatelliteSettings(download_images=False, zoom_level=18)
 
 # 7️⃣ Optional: define custom tree and textures schemas.
 # Default schemas can be found in the `data` directory of the repository.

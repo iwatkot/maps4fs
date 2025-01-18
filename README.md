@@ -569,6 +569,10 @@ You can also apply some advanced settings to the map generation process.<br>
 
 - Add Farmyards - if enabled, the tool will create farmlands from the regions that are marked as farmyards in the OSM data. Those farmlands will not have fields and also will not be drawn on textures. By default, it's turned off.
 
+- Base price - the base price of the farmland. It's used to calculate the price of the farmland in the game. In default in-game maps this value equals to 60000.
+
+- Price scale - is a value in percent which will be applied to all farmnlands. The price per Ha will be calculated as `base_price * price_scale / 100`. By default, it's set to 100%.
+
 - Base grass - you can select which plant will be used as a base grass on the map.
 
 - Plants island minimum size - when random plants are enabled, the generator will add islands of differents plants to the map and choose the random size of those island between the minimum and maximum values. This one is the minimum size of the island in meters.
@@ -595,6 +599,8 @@ You can also apply some advanced settings to the map generation process.<br>
 
 - Skip drains - if enabled, the tool will not generate the drains and ditches on the map. By default, it's set to False. Use this if you don't need the drains on the map.
 
+- Use cache - if enabled, the tool will use the cached OSM data for generating the map. It's useful when you're generating the same map multiple times and don't want to download the OSM data each time. But if you've made some changes to the OSM data, you should disable this option to get the updated data. By default, it's set to True. This option has no effect when you're using the custom OSM file.
+
 ### Splines Advanced settings
 
 - Splines density - number of points, which will be added (interpolate) between each pair of existing points. The higher the value, the denser the spline will be. It can smooth the splines, but high values can in opposite make the splines look unnatural.
@@ -620,6 +626,8 @@ The tool also supports the expert settings. Do not use them until you read the d
 - Upload custom background image - if you have an image, which represents the map and background terrain you can use it for generation. Note, that the image should meet the following requirements: 1:1 aspect ratio, size = map size + 2048 \* 2, it should be uint16 (unsigned 16-bit integer) grayscale (single channel) image. The image should be in the PNG format. If any of the requirements are not met, the tool raises an error. If you're using rotation, the image should already be rotated.
 
 - Upload custom map template - you can use your own map template for generation. Note, that is must have the same structure as built-in templates. It's recommended to use the built-in templates and edit them as you need, instead of creating the new ones from scratch.
+
+- Manage cache - allows you to clean the cache of the tool. It's useful when you're generating the map multiple times and the tool uses the cached data. By cleaning the cache you'll force the tool to download the fresh data. It's not recommended to clean the cache unless you have some issues with it.
 
 ## Resources
 

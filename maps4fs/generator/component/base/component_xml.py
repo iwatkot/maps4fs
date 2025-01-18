@@ -93,3 +93,16 @@ class XMLComponent(Component):
         for key, value in data.items():
             element.set(key, value)
         return element
+
+    def create_subelement(
+        self, parent: ET.Element, element_name: str, data: dict[str, str]
+    ) -> None:
+        """Creates a subelement under the parent element with the provided data.
+
+        Arguments:
+            parent (ET.Element): The parent element.
+            element_name (str): The name of the subelement.
+            data (dict[str, str]): The data to set the subelement attributes to.
+        """
+        element = ET.SubElement(parent, element_name)
+        self.update_element(element, data)
