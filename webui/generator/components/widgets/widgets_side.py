@@ -44,3 +44,6 @@ class CustomOSM(Widget):
                 with open(self.ui.custom_osm_path, "wb") as f:
                     f.write(uploaded_file.read())
                 st.success(f"Custom OSM file uploaded: {uploaded_file.name}")
+
+
+all_widgets = [SideTitleWidget, EnableDebug, CustomOSM]

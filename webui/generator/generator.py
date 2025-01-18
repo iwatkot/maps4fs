@@ -7,7 +7,7 @@ import config
 import osmp
 import streamlit as st
 import streamlit.components.v1 as components
-from generator.components.widget_group_side import SideWidgetGroup
+from generator.components.widgets.widgets_side import all_widgets
 from PIL import Image
 from queuing import add_to_queue, get_queue_length, remove_from_queue, wait_in_queue
 from streamlit_stl import stl_from_file
@@ -420,7 +420,8 @@ class GeneratorUI:
     def add_sidebar_widgets(self) -> None:
         """Add widgets to the sidebar."""
 
-        SideWidgetGroup(self)
+        for widget in all_widgets:
+            widget(self)
 
         self.expert_mode = st.checkbox("Show raw configuration", key="expert_mode")
         if self.expert_mode:
