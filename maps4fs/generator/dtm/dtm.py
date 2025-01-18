@@ -12,12 +12,13 @@ from zipfile import ZipFile
 import numpy as np
 import osmnx as ox  # type: ignore
 import rasterio  # type: ignore
-import requests
 from pydantic import BaseModel
 from rasterio.enums import Resampling
 from rasterio.merge import merge
 from rasterio.warp import calculate_default_transform, reproject
+import requests
 from tqdm import tqdm
+
 
 from maps4fs.logger import Logger
 
@@ -395,28 +396,47 @@ class DTMProvider(ABC):
             list: List of paths to the downloaded GeoTIFF files.
         """
         tif_files: list[str] = []
-        for url in tqdm(urls, desc="Downloading tiles", unit="tile"):
-            file_name = os.path.basename(url)
-            self.logger.debug("Retrieving TIFF: %s", file_name)
-            file_path = os.path.join(output_path, file_name)
-            if not os.path.exists(file_path):
-                try:
-                    # Send a GET request to the file URL
-                    response = requests.get(url, stream=True, timeout=60)
-                    response.raise_for_status()  # Raise an error for HTTP status codes 4xx/5xx
 
-                    # Write the content of the response to the file
-                    with open(file_path, "wb") as file:
-                        for chunk in response.iter_content(chunk_size=8192):  # Download in chunks
-                            file.write(chunk)
-                    self.logger.debug("File downloaded successfully: %s", file_path)
-                except requests.exceptions.RequestException as e:
-                    self.logger.error("Failed to download file: %s", e)
-            else:
-                self.logger.debug("File already exists: %s", file_name)
+        existing_file_urls = [
+            f for f in urls if os.path.exists(os.path.join(output_path, os.path.basename(f)))
+        ]
+
+        for url in existing_file_urls:
+            self.logger.debug("File already exists: %s", os.path.basename(url))
+            file_name = os.path.basename(url)
+            file_path = os.path.join(output_path, file_name)
             if file_name.endswith(".zip"):
                 file_path = self.unzip_img_from_tif(file_name, output_path)
             tif_files.append(file_path)
+
+        for url in tqdm(
+            (u for u in urls if u not in existing_file_urls),
+            desc="Downloading tiles",
+            unit="tile",
+            initial=len(tif_files),
+        ):
+            try:
+                file_name = os.path.basename(url)
+                file_path = os.path.join(output_path, file_name)
+                self.logger.debug("Retrieving TIFF: %s", file_name)
+
+                # Send a GET request to the file URL
+                response = requests.get(url, stream=True, timeout=60)
+                response.raise_for_status()  # Raise an error for HTTP status codes 4xx/5xx
+
+                # Write the content of the response to the file
+                with open(file_path, "wb") as file:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        file.write(chunk)
+
+                self.logger.debug("File downloaded successfully: %s", file_path)
+
+                if file_name.endswith(".zip"):
+                    file_path = self.unzip_img_from_tif(file_name, output_path)
+
+                tif_files.append(file_path)
+            except requests.exceptions.RequestException as e:
+                self.logger.error("Failed to download file: %s", e)
         return tif_files
 
     def unzip_img_from_tif(self, file_name: str, output_path: str) -> str:
@@ -585,7 +605,7 @@ class DTMProvider(ABC):
                 "Applying power factor: %s to the DEM data.",
                 power_factor,
             )
-            data = np.power(data, power_factor).astype(np.uint16)
+            data = np.power(data, power_factor)
 
         normalized_data = np.round(data * scaling_factor).astype(np.uint16)
         self.logger.debug(

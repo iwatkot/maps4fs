@@ -60,14 +60,17 @@ class USGSProvider(DTMProvider):
         Returns:
             list: List of download URLs.
         """
+        assert self.url is not None
+
         urls = []
         try:
             # Make the GET request
             (north, south, east, west) = self.get_bbox()
-            response = requests.get(  # pylint: disable=W3101
-                self.url  # type: ignore
+            response = requests.get(
+                self.url
                 + f"&datasets={self.user_settings.dataset}"  # type: ignore
-                + f"&bbox={west},{north},{east},{south}"
+                + f"&bbox={west},{north},{east},{south}",
+                timeout=60,
             )
             self.logger.debug("Getting file locations from USGS...")
 

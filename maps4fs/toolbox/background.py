@@ -5,7 +5,7 @@ import numpy as np
 import trimesh  # type: ignore
 
 
-# pylint: disable=R0801, R0914
+# pylint: disable=R0914
 def plane_from_np(
     dem_data: np.ndarray,
     resize_factor: float,

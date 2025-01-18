@@ -122,7 +122,7 @@ Then, it determines which tiles are needed, downloads them all to a temporary fo
 Finally, it returns a list of file paths to the downloaded tiles.
 
 As you can see, it's pretty simple to implement a DTM provider. You can use any source of elevation data, as long as it's free and open.
-NOTE: DTM Providers which require API keys, paid subscriptions, or any other form of payment will not be considered for implementation in the generator.
+NOTE: If a DTM Provider requires an API key, paid subscription, or any other form of payment, you will be fully responsible for setting up your own access to the provider. The provider in the app will expose the settings needed to provide your authentication key or other required information.
 
 ### How DTM Provider can interact with the generator?
 
