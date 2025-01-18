@@ -484,8 +484,6 @@ class DTMProvider(ABC):
         """
         north, south, east, west = self.get_bbox()
         with rasterio.open(tile_path) as src:
-            print("Opened tile, shape: %s, dtype: %s.", src.shape, src.dtypes[0])
-
             self.logger.debug("Opened tile, shape: %s, dtype: %s.", src.shape, src.dtypes[0])
             window = rasterio.windows.from_bounds(west, south, east, north, src.transform)
             self.logger.debug(
