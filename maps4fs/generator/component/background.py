@@ -414,10 +414,18 @@ class Background(MeshComponent, ImageComponent):
         water_resources_image = cv2.imread(self.water_resources_path, cv2.IMREAD_UNCHANGED)
         dem_image = cv2.imread(self.output_path, cv2.IMREAD_UNCHANGED)
 
+        # fall back to default value for height_scale 255, it is defined as float | None
+        # but it is always set at this point
+        z_scaling_factor: float = (
+            self.map.shared_settings.mesh_z_scaling_factor
+            if self.map.shared_settings.mesh_z_scaling_factor is not None
+            else 257
+        )  # default value for height_scale 255, it is defined as float | None but it is always int
+
         dem_image = self.subtract_by_mask(
             dem_image,
             water_resources_image,
-            self.map.dem_settings.water_depth,
+            int(self.map.dem_settings.water_depth * z_scaling_factor),
         )
 
         # Save the modified dem_image back to the output path
