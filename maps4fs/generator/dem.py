@@ -205,7 +205,7 @@ class DEM(Component):
         )
 
         self.map.shared_settings.height_scale_value = adjusted_height_scale  # type: ignore
-        self.map.shared_settings.mesh_z_scaling_factor = 65535 / 255 * adjusted_height_scale
+        self.map.shared_settings.mesh_z_scaling_factor = 65535 / adjusted_height_scale
         self.map.shared_settings.height_scale_multiplier = adjusted_height_scale / 255
         self.map.shared_settings.change_height_scale = True  # type: ignore
 
