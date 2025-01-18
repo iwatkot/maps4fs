@@ -39,7 +39,7 @@ class WCSProvider(DTMProvider):
         return {
             "url": self._url,
             "version": self._wcs_version,
-            "timeout": 600,
+            "timeout": 120,
         }
 
     def __init__(self, *args, **kwargs):

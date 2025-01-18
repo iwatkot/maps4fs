@@ -38,7 +38,6 @@ class Background(Component):
             info, warning. If not provided, default logging will be used.
     """
 
-    # pylint: disable=R0801
     def preprocess(self) -> None:
         """Registers the DEMs for the background terrain."""
         self.stl_preview_path: str | None = None

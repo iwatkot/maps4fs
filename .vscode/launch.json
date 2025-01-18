@@ -12,7 +12,6 @@
         "panel": "new"
       },
       "env": {
-        "GEVENT_SUPPORT": "True",
         "PYTHONPATH": "${workspaceFolder}:${PYTHONPATH}",
         "LOG_LEVEL": "DEBUG"
       }

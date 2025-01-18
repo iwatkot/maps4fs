@@ -72,7 +72,6 @@ class ScotlandProvider(DTMProvider):
         self.shared_tiff_path = os.path.join(self._tile_directory, "shared")
         os.makedirs(self.shared_tiff_path, exist_ok=True)
 
-    # pylint: disable=R0801
     def get_download_urls(self) -> list[str]:
         """Get download URLs of the GeoTIFF files from the USGS API.
 
@@ -97,6 +96,7 @@ class ScotlandProvider(DTMProvider):
                     "limit": 100,
                     "spatialop": "intersects",
                 },
+                timeout=60,
             )
             self.logger.debug("Getting file locations from JNCC...")
 

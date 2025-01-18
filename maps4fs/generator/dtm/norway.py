@@ -4,7 +4,6 @@ from maps4fs.generator.dtm.base.wcs import WCSProvider
 from maps4fs.generator.dtm.dtm import DTMProvider
 
 
-# pylint: disable=R0801
 class NorwayProvider(WCSProvider, DTMProvider):
     """Provider of Norway data."""
 
@@ -24,7 +23,7 @@ class NorwayProvider(WCSProvider, DTMProvider):
         "You do not have to manually set a water depth to get realistic water depths in your map."
     )
 
-    _url = "https://wms.geonorge.no/skwms1/wcs.hoyde-dtm-nhm-topobathy-25833"  # pylint: disable=line-too-long
+    _url = "https://wms.geonorge.no/skwms1/wcs.hoyde-dtm-nhm-topobathy-25833"
     _wcs_version = "1.0.0"
     _source_crs = "EPSG:25833"
     _tile_size = 1000

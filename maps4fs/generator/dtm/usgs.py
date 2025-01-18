@@ -70,7 +70,7 @@ class USGSProvider(DTMProvider):
                 self.url
                 + f"&datasets={self.user_settings.dataset}"  # type: ignore
                 + f"&bbox={west},{north},{east},{south}",
-                timeout=120,
+                timeout=60,
             )
             self.logger.debug("Getting file locations from USGS...")
 

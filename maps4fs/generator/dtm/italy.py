@@ -20,7 +20,7 @@ class ItalyProvider(WCSProvider, DTMProvider):
     _is_base = False
     _extents = (47.15570815704503, 35.177652867276855, 19.720144130809693, 6.527697471770745)
 
-    _url = "http://tinitaly.pi.ingv.it/TINItaly_1_1/wcs"  # pylint: disable=line-too-long
+    _url = "http://tinitaly.pi.ingv.it/TINItaly_1_1/wcs"
     _wcs_version = "2.0.1"
     _source_crs = "EPSG:32632"
     _tile_size = 10000

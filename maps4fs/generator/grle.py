@@ -163,7 +163,7 @@ class GRLE(Component):
         # use fields_np as base layer and overlay farmlands_np on top of it with 50% alpha blending.
         return cv2.addWeighted(fields_np, 0.5, farmlands_np, 0.5, 0)
 
-    # pylint: disable=R0801, R0914, R0915
+    # pylint: disable=R0914, R0915
     def _add_farmlands(self) -> None:
         """Adds farmlands to the InfoLayer PNG file."""
 

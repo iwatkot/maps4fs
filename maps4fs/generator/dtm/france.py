@@ -6,7 +6,6 @@ from maps4fs.generator.dtm import utils
 from maps4fs.generator.dtm.dtm import DTMProvider
 
 
-# pylint: disable=R0801
 class FranceProvider(DTMProvider):
     """Provider of France data."""
 
