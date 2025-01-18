@@ -286,7 +286,7 @@ class DEM(Component):
         )
 
         blurred_data = cv2.GaussianBlur(
-            data, (self.blur_radius, self.blur_radius), sigmaX=10, sigmaY=10
+            data, (self.blur_radius, self.blur_radius), sigmaX=40, sigmaY=40
         )
         self.logger.debug(
             "DEM data was blurred. Shape: %s, dtype: %s. Min: %s, max: %s.",
