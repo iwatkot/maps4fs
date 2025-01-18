@@ -3,7 +3,7 @@ from datetime import datetime
 
 import config
 import streamlit as st
-from generator.components.widgets.widget import Widget
+from generator.widgets.widget import Widget
 from templates import Messages
 
 import maps4fs as mfs
@@ -46,4 +46,4 @@ class CustomOSM(Widget):
                 st.success(f"Custom OSM file uploaded: {uploaded_file.name}")
 
 
-all_widgets = [SideTitleWidget, EnableDebug, CustomOSM]
+side_widgets = [SideTitleWidget, EnableDebug, CustomOSM]
