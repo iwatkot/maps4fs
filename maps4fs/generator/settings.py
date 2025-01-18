@@ -102,18 +102,22 @@ class DEMSettings(SettingsModel):
     """Represents the advanced settings for DEM component.
 
     Attributes:
-        multiplier (int): multiplier for the heightmap, every pixel will be multiplied by this
-            value.
+        adjust_terrain_to_ground_level (bool): adjust terrain to ground level or not.
+        multiplier (int): multiplier for the heightmap.
         blur_radius (int): radius of the blur filter.
-        plateau (int): plateau height, will be added to each pixel.
-        water_depth (int): water depth, will be subtracted from each pixel where the water
-            is present.
+        minimum_height_scale (int): minimum height scale for the i3d.
+        plateau (int): plateau height.
+        ceiling (int): ceiling height.
+        water_depth (int): water depth.
     """
 
+    adjust_terrain_to_ground_level: bool = True
     multiplier: int = 1
-    blur_radius: int = 35
+    minimum_height_scale: int = 255
     plateau: int = 0
+    ceiling: int = 0
     water_depth: int = 0
+    blur_radius: int = 3
 
 
 class BackgroundSettings(SettingsModel):

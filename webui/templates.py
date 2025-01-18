@@ -104,39 +104,57 @@ class Messages:
 
 
 class Settings:
+    """
+    Settings class contains descriptions for configuration options
+    for various aspects of the map generation process.
+    """
+
     # DEM Settings
+
+    ADJUST_TERRAIN_TO_GROUND_LEVEL = (
+        "Enabling this setting will raise or lower the terrain "
+        "so that it's lowest point is at ground level (taking into account the "
+        "plateau and water depth values set below)."
+    )
     MULTIPLIER = (
         "DEM multiplier can be used to make the terrain more pronounced. "
         "By default the DEM file will be exact copy of the real terrain. "
         "If you want to make it more steep, you can increase this value. "
-        "The recommended value of the multiplier is 255 (for SRTM DTM provider), "
-        "which refers to the height scale "
-        "in Giants Editor. But it will not going to work with every place, you need to perform "
+        "The recommended value of the multiplier is 1.  \n"
+        "But this will not work with every place, you need to perform "
         "experiments, play both with the multiplier and the height scale in GE."
     )
     BLUR_RADIUS = (
         "DEM blur radius is used to blur the elevation map. Without blurring the terrain "
-        "may look too sharp and unrealistic. By default the blur radius is set to 21 "
-        "which corresponds to a 21x21 pixel kernel. You can increase this value to make "
-        "the terrain more smooth. Or make it smaller to make the terrain more sharp."
+        "may look too sharp and unrealistic. By default the blur radius is set to 3 "
+        "which corresponds to a 3x3 pixel kernel. You can increase this value to make "
+        "the terrain more smooth. Or make it smaller to make the terrain more sharp.  \n"
+        "Follow the recommendations of the DTM provider you selected for the best result."
     )
     PLATEAU = (
-        "DEM plateau value is used to make the whole map higher or lower. "
-        "This value will be added to each pixel of the DEM image, making it higher."
+        "DEM plateau value (in meters) is used to make the whole map higher or lower. "
+        "This value will be added to each pixel of the DEM image, making it higher. "
         "It can be useful if you're working on a plain area and need to add some "
         "negative height (to make rivers, for example)."
     )
-
-    # Background Settings
+    CEILING = (
+        "DEM ceiling value (in meters) is used to add padding in the DEM above the "
+        "highest elevation in your map area. It can be useful if you plan to manually "
+        "add some height to the map by sculpting the terrain in GE."
+    )
+    MINIMUM_HEIGHT_SCALE = (
+        "This value is used as the heightScale in your map i3d. It will automatically "
+        "be set higher if the elevation in your map (plus plateau, ceiling and water "
+        "depth) is higher than this value."
+    )
 
     WATER_DEPTH = (
-        "Water depth value will be subtracted from the DEM image, making the water deeper. "
-        "Pay attention to the fact, that this value IS NOT IN METERS, instead it uses the pixel "
-        "value from the DEM image. So, if you set low values, you will probably see no "
-        "difference. Also, this value will be added to the plateau value, to avoid negative "
-        "height.  \n"
-        "ℹ️ **Units:** pixel value."
+        "Water depth value (in meters) will be subtracted from the DEM image, making the water "
+        "deeper. The pixel value used for this is calculated based on the heightScale value "
+        "for your map."
     )
+
+    # Background Settings
 
     GENERATE_BACKGROUND = (
         "The background terrain obj files will be generated to edit them in Blender if turned on. "
@@ -292,7 +310,7 @@ class Settings:
     )
 
     SATELLITE_MARGIN = (
-        "Satellite margin value is used to add some margin around the satellite images. "
+        "Satellite margin value (in meters) is used to add some margin around the satellite images. "
         "It will result satellite images to be bigger than the map size, which can be useful "
         "for adjusting the images."
     )

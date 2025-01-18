@@ -29,9 +29,6 @@ if TYPE_CHECKING:
 class DTMProviderSettings(BaseModel):
     """Base class for DTM provider settings models."""
 
-    easy_mode: bool = True
-    power_factor: int = 0
-
 
 # pylint: disable=too-many-public-methods, too-many-instance-attributes
 class DTMProvider(ABC):
@@ -56,20 +53,7 @@ class DTMProvider(ABC):
 
     _instructions: str | None = None
 
-    _base_instructions = (
-        "ℹ️ Using **Easy mode** is recommended, as it automatically adjusts the values in the "
-        "image, so the terrain elevation in Giants Editor will match real world "
-        "elevation in meters.  \n"
-        "ℹ️ If the terrain height difference in the real world is bigger than 255 meters, "
-        "the [Height scale](https://github.com/iwatkot/maps4fs/blob/main/docs/dem.md#height-scale)"
-        " parameter in the **map.i3d** file will be automatically adjusted.  \n"
-        "⚡ If the **Easy mode** option is disabled, you will probably get completely flat "
-        "terrain, unless you adjust the DEM Multiplier Setting or the Height scale parameter in "
-        "the Giants Editor.  \n"
-        "💡 You can use the **Power factor** setting to make the difference between heights "
-        "bigger. Be extremely careful with this setting, and use only low values, otherwise your "
-        "terrain may be completely broken.  \n"
-    )
+    _base_instructions = None
 
     # pylint: disable=R0913, R0917
     def __init__(
@@ -304,63 +288,7 @@ class DTMProvider(ABC):
         # extract region of interest from the tile
         data = self.extract_roi(tile)
 
-        # process elevation data to be compatible with the game
-        data = self.process_elevation(data)
-
         return data
-
-    def process_elevation(self, data: np.ndarray) -> np.ndarray:
-        """Process elevation data.
-
-        Arguments:
-            data (np.ndarray): Elevation data.
-
-        Returns:
-            np.ndarray: Processed elevation data.
-        """
-        self.data_info = {}
-        self.add_numpy_params(data, "original")
-
-        data = self.ground_height_data(data)
-        self.add_numpy_params(data, "grounded")
-
-        original_deviation = int(self.data_info["original_deviation"])
-        in_game_maximum_height = 65535 // 255
-        if original_deviation > in_game_maximum_height:
-            suggested_height_scale_multiplier = (
-                original_deviation / in_game_maximum_height  # type: ignore
-            )
-            suggested_height_scale_value = int(255 * suggested_height_scale_multiplier)
-        else:
-            suggested_height_scale_multiplier = 1
-            suggested_height_scale_value = 255
-
-        self.data_info["suggested_height_scale_multiplier"] = suggested_height_scale_multiplier
-        self.data_info["suggested_height_scale_value"] = suggested_height_scale_value
-
-        self.map.shared_settings.height_scale_multiplier = (  # type: ignore
-            suggested_height_scale_multiplier
-        )
-        self.map.shared_settings.height_scale_value = suggested_height_scale_value  # type: ignore
-
-        if self.user_settings.easy_mode:  # type: ignore
-            try:
-                data = self.normalize_dem(data)
-                self.add_numpy_params(data, "normalized")
-
-                normalized_deviation = self.data_info["normalized_deviation"]
-                z_scaling_factor = normalized_deviation / original_deviation  # type: ignore
-                self.data_info["z_scaling_factor"] = z_scaling_factor
-
-                self.map.shared_settings.mesh_z_scaling_factor = z_scaling_factor  # type: ignore
-                self.map.shared_settings.change_height_scale = True  # type: ignore
-
-            except Exception as e:  # pylint: disable=W0718
-                self.logger.error(
-                    "Failed to normalize DEM data. Error: %s. Using original data.", e
-                )
-
-        return data.astype(np.uint16)
 
     def info_sequence(self) -> dict[str, int | str | float] | None:
         """Returns the information sequence for the component. Must be implemented in the child
@@ -414,6 +342,7 @@ class DTMProvider(ABC):
             desc="Downloading tiles",
             unit="tile",
             initial=len(tif_files),
+            total=len(urls),
         ):
             try:
                 file_name = os.path.basename(url)
@@ -555,6 +484,8 @@ class DTMProvider(ABC):
         """
         north, south, east, west = self.get_bbox()
         with rasterio.open(tile_path) as src:
+            print("Opened tile, shape: %s, dtype: %s.", src.shape, src.dtypes[0])
+
             self.logger.debug("Opened tile, shape: %s, dtype: %s.", src.shape, src.dtypes[0])
             window = rasterio.windows.from_bounds(west, south, east, north, src.transform)
             self.logger.debug(
@@ -569,85 +500,5 @@ class DTMProvider(ABC):
             raise ValueError("No data in the tile.")
 
         return data
-
-    def normalize_dem(self, data: np.ndarray) -> np.ndarray:
-        """Normalize DEM data to 16-bit unsigned integer using max height from settings.
-
-        Arguments:
-            data (np.ndarray): DEM data from SRTM file after cropping.
-
-        Returns:
-            np.ndarray: Normalized DEM data.
-        """
-        maximum_height = int(data.max())
-        minimum_height = int(data.min())
-        deviation = maximum_height - minimum_height
-        self.logger.debug(
-            "Maximum height: %s. Minimum height: %s. Deviation: %s.",
-            maximum_height,
-            minimum_height,
-            deviation,
-        )
-        self.logger.debug("Number of unique values in original DEM data: %s.", np.unique(data).size)
-
-        adjusted_maximum_height = maximum_height * 255
-        adjusted_maximum_height = min(adjusted_maximum_height, 65535)
-        scaling_factor = adjusted_maximum_height / maximum_height
-        self.logger.debug(
-            "Adjusted maximum height: %s. Scaling factor: %s.",
-            adjusted_maximum_height,
-            scaling_factor,
-        )
-
-        if self.user_settings.power_factor:  # type: ignore
-            power_factor = 1 + self.user_settings.power_factor / 10  # type: ignore
-            self.logger.debug(
-                "Applying power factor: %s to the DEM data.",
-                power_factor,
-            )
-            data = np.power(data, power_factor)
-
-        normalized_data = np.round(data * scaling_factor).astype(np.uint16)
-        self.logger.debug(
-            "Normalized data maximum height: %s. Minimum height: %s. Number of unique values: %s.",
-            normalized_data.max(),
-            normalized_data.min(),
-            np.unique(normalized_data).size,
-        )
-        return normalized_data
-
-    @staticmethod
-    def ground_height_data(data: np.ndarray, add_one: bool = True) -> np.ndarray:
-        """Shift the data to ground level (0 meter).
-        Optionally add one meter to the data to leave some room
-        for the water level and pit modifications.
-
-        Arguments:
-            data (np.ndarray): DEM data after cropping.
-            add_one (bool): Add one meter to the data
-
-        Returns:
-            np.ndarray: Unsigned DEM data.
-        """
-        data = data - data.min()
-        if add_one:
-            data = data + 1
-        return data
-
-    def add_numpy_params(
-        self,
-        data: np.ndarray,
-        prefix: str,
-    ) -> None:
-        """Add numpy array parameters to the data_info dictionary.
-
-        Arguments:
-            data (np.ndarray): Numpy array of the tile.
-            prefix (str): Prefix for the parameters.
-        """
-        self.data_info[f"{prefix}_minimum_height"] = int(data.min())  # type: ignore
-        self.data_info[f"{prefix}_maximum_height"] = int(data.max())  # type: ignore
-        self.data_info[f"{prefix}_deviation"] = int(data.max() - data.min())  # type: ignore
-        self.data_info[f"{prefix}_unique_values"] = int(np.unique(data).size)  # type: ignore
 
     # endregion

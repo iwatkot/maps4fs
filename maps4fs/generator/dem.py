@@ -1,6 +1,6 @@
 """This module contains DEM class for processing Digital Elevation Model data."""
 
-import os
+import math
 from typing import Any
 
 import cv2
@@ -31,10 +31,6 @@ class DEM(Component):
     def preprocess(self) -> None:
         self._dem_path = self.game.dem_file_path(self.map_directory)
         self.temp_dir = "temp"
-        self.hgt_dir = os.path.join(self.temp_dir, "hgt")
-        self.gz_dir = os.path.join(self.temp_dir, "gz")
-        os.makedirs(self.hgt_dir, exist_ok=True)
-        os.makedirs(self.gz_dir, exist_ok=True)
 
         self.logger.debug("Map size: %s x %s.", self.map_size, self.map_size)
         self.logger.debug(
@@ -116,24 +112,8 @@ class DEM(Component):
         )
         return dem_size, dem_size
 
-    def to_ground(self, data: np.ndarray) -> np.ndarray:
-        """Receives the signed 16-bit integer array and converts it to the ground level.
-        If the min value is negative, it will become zero value and the rest of the values
-        will be shifted accordingly.
-        """
-        # For examlem, min value was -50, it will become 0 and for all values we'll +50.
-
-        if data.min() < 0:
-            self.logger.debug("Array contains negative values, will be shifted to the ground.")
-            data = data + abs(data.min())
-
-        self.logger.debug(
-            "Array was shifted to the ground. Min: %s, max: %s.", data.min(), data.max()
-        )
-        return data
-
     def process(self) -> None:
-        """Reads SRTM file, crops it to map size, normalizes and blurs it,
+        """Reads DTM file, crops it to map size, normalizes and blurs it,
         saves to map directory."""
 
         dem_output_resolution = self.output_resolution
@@ -142,7 +122,7 @@ class DEM(Component):
         try:
             data = self.dtm_provider.get_numpy()
         except Exception as e:  # pylint: disable=W0718
-            self.logger.error("Failed to get DEM data from SRTM: %s.", e)
+            self.logger.error("Failed to get DEM data from DTM provider: %s.", e)
             self._save_empty_dem(dem_output_resolution)
             return
 
@@ -151,7 +131,7 @@ class DEM(Component):
             self._save_empty_dem(dem_output_resolution)
             return
 
-        if data.dtype not in ["int16", "uint16"]:
+        if data.dtype not in ["int16", "uint16", "float", "float32"]:
             self.logger.error("DTM provider returned incorrect data type: %s.", data.dtype)
             self._save_empty_dem(dem_output_resolution)
             return
@@ -164,93 +144,155 @@ class DEM(Component):
             data.max(),
         )
 
-        data = self.to_ground(data)
+        # 1. Resize DEM data to the output resolution.
+        resampled_data = self.resize_to_output(data)
 
-        resampled_data = cv2.resize(
-            data, dem_output_resolution, interpolation=cv2.INTER_LINEAR
-        ).astype("uint16")
+        # 2. Blur DEM data.
+        resampled_data = self.apply_blur(resampled_data)
 
-        size_of_resampled_data = asizeof.asizeof(resampled_data) / 1024 / 1024
-        self.logger.debug("Size of resampled data: %s MB.", size_of_resampled_data)
+        # 3. Apply multiplier (-10 to 120.4 becomes -20 to 240.8)
+        resampled_data = self.apply_multiplier(resampled_data)
 
-        self.logger.debug(
-            "Maximum value in resampled data: %s, minimum value: %s. Data type: %s.",
-            resampled_data.max(),
-            resampled_data.min(),
-            resampled_data.dtype,
-        )
+        # 4. Raise terrain, and optionally lower to plateau level+water depth (-20 to 240.8m becomes 20 to 280.8m)
+        resampled_data = self.raise_or_lower(resampled_data)
 
-        if self.multiplier != 1:
-            resampled_data = resampled_data * self.multiplier
+        # 5. Determine actual height scale value using ceiling (255 becomes 280.8+10 = 291 - use math.ceil)
+        height_scale_value = self.determine_height_scale(resampled_data)
 
-            self.logger.debug(
-                "DEM data was multiplied by %s. Min: %s, max: %s. Data type: %s.",
-                self.multiplier,
-                resampled_data.min(),
-                resampled_data.max(),
-                resampled_data.dtype,
-            )
-
-            size_of_resampled_data = asizeof.asizeof(resampled_data) / 1024 / 1024
-            self.logger.debug("Size of resampled data: %s MB.", size_of_resampled_data)
-
-            # Clip values to 16-bit unsigned integer range.
-            resampled_data = np.clip(resampled_data, 0, 65535)
-            resampled_data = resampled_data.astype("uint16")
-            self.logger.debug(
-                "DEM data was multiplied by %s and clipped to 16-bit unsigned integer range. "
-                "Min: %s, max: %s.",
-                self.multiplier,
-                resampled_data.min(),
-                resampled_data.max(),
-            )
-
-        self.logger.debug(
-            "DEM data was resampled. Shape: %s, dtype: %s. Min: %s, max: %s.",
-            resampled_data.shape,
-            resampled_data.dtype,
-            resampled_data.min(),
-            resampled_data.max(),
-        )
-
-        if self.blur_radius > 0:
-            resampled_data = cv2.GaussianBlur(
-                resampled_data, (self.blur_radius, self.blur_radius), sigmaX=40, sigmaY=40
-            )
-            self.logger.debug(
-                "Gaussion blur applied to DEM data with kernel size %s.",
-                self.blur_radius,
-            )
-
-        self.logger.debug(
-            "DEM data was blurred. Shape: %s, dtype: %s. Min: %s, max: %s.",
-            resampled_data.shape,
-            resampled_data.dtype,
-            resampled_data.min(),
-            resampled_data.max(),
-        )
-
-        if self.map.dem_settings.plateau:
-            # Plateau is a flat area with a constant height.
-            # So we just add this value to each pixel of the DEM.
-            # And also need to ensure that there will be no values with height greater than
-            # it's allowed in 16-bit unsigned integer.
-
-            resampled_data += self.map.dem_settings.plateau
-            resampled_data = np.clip(resampled_data, 0, 65535)
-
-            self.logger.debug(
-                "Plateau with height %s was added to DEM data. Min: %s, max: %s.",
-                self.map.dem_settings.plateau,
-                resampled_data.min(),
-                resampled_data.max(),
-            )
+        # 6. Normalize DEM data to 16-bit unsigned integer range (0 to 65535) - multiply by 65535/291, clip and as uint16
+        resampled_data = self.normalize_data(resampled_data, height_scale_value)
 
         cv2.imwrite(self._dem_path, resampled_data)
         self.logger.debug("DEM data was saved to %s.", self._dem_path)
 
         if self.rotation:
             self.rotate_dem()
+
+    def normalize_data(self, data: np.ndarray, height_scale_value: int) -> np.ndarray:
+        """Normalize DEM data to 16-bit unsigned integer range (0 to 65535).
+
+        Arguments:
+            data (np.ndarray): DEM data.
+            height_scale_value (int): Height scale value.
+
+        Returns:
+            np.ndarray: Normalized DEM data.
+        """
+        normalized_data = np.clip((data / height_scale_value) * 65535, 0, 65535).astype(np.uint16)
+        self.logger.debug(
+            "DEM data was normalized and clipped to 16-bit unsigned integer range. "
+            "Min: %s, max: %s.",
+            normalized_data.min(),
+            normalized_data.max(),
+        )
+        return normalized_data
+
+    def determine_height_scale(self, data: np.ndarray) -> int:
+        """Determine height scale value using ceiling.
+
+        Arguments:
+            data (np.ndarray): DEM data.
+
+        Returns:
+            int: Height scale value.
+        """
+        height_scale = self.map.dem_settings.minimum_height_scale
+        adjusted_height_scale = math.ceil(
+            max(height_scale, data.max() + self.map.dem_settings.ceiling)
+        )
+
+        self.map.shared_settings.height_scale_value = adjusted_height_scale  # type: ignore
+        self.map.shared_settings.mesh_z_scaling_factor = 65535 / 255 * adjusted_height_scale
+        self.map.shared_settings.height_scale_multiplier = adjusted_height_scale / 255
+        self.map.shared_settings.change_height_scale = True  # type: ignore
+
+        self.logger.debug("Height scale value is %s.", adjusted_height_scale)
+        return adjusted_height_scale
+
+    def raise_or_lower(self, data: np.ndarray) -> np.ndarray:
+        """Raise or lower terrain to the level of plateau+water depth."""
+
+        if not self.map.dem_settings.adjust_terrain_to_ground_level:
+            return data
+
+        desired_ground_level = self.map.dem_settings.plateau + self.map.dem_settings.water_depth
+        current_ground_level = data.min()
+
+        data = data + (desired_ground_level - current_ground_level)
+
+        self.logger.debug(
+            "Array was shifted to the ground level %s. Min: %s, max: %s.",
+            desired_ground_level,
+            data.min(),
+            data.max(),
+        )
+        return data
+
+    def apply_multiplier(self, data: np.ndarray) -> np.ndarray:
+        """Apply multiplier to DEM data.
+
+        Arguments:
+            data (np.ndarray): DEM data.
+
+        Returns:
+            np.ndarray: Multiplied DEM data.
+        """
+        if not self.multiplier != 1:
+            return data
+
+        multiplied_data = data * self.multiplier
+        self.logger.debug(
+            "DEM data was multiplied by %s." "Min: %s, max: %s.",
+            self.multiplier,
+            multiplied_data.min(),
+            multiplied_data.max(),
+        )
+        return multiplied_data
+
+    def resize_to_output(self, data: np.ndarray) -> np.ndarray:
+        """Resize DEM data to the output resolution.
+
+        Arguments:
+            data (np.ndarray): DEM data.
+
+        Returns:
+            np.ndarray: Resized DEM data.
+        """
+        resampled_data = cv2.resize(data, self.output_resolution, interpolation=cv2.INTER_LINEAR)
+
+        size_of_resampled_data = asizeof.asizeof(resampled_data) / 1024 / 1024
+        self.logger.debug("Size of resampled data: %s MB.", size_of_resampled_data)
+
+        return resampled_data
+
+    def apply_blur(self, data: np.ndarray) -> np.ndarray:
+        """Apply blur to DEM data.
+
+        Arguments:
+            data (np.ndarray): DEM data.
+
+        Returns:
+            np.ndarray: Blurred DEM data.
+        """
+        if self.blur_radius == 0:
+            return data
+
+        self.logger.debug(
+            "Applying Gaussion blur to DEM data with kernel size %s.",
+            self.blur_radius,
+        )
+
+        blurred_data = cv2.GaussianBlur(
+            data, (self.blur_radius, self.blur_radius), sigmaX=10, sigmaY=10
+        )
+        self.logger.debug(
+            "DEM data was blurred. Shape: %s, dtype: %s. Min: %s, max: %s.",
+            blurred_data.shape,
+            blurred_data.dtype,
+            blurred_data.min(),
+            blurred_data.max(),
+        )
+        return blurred_data
 
     def rotate_dem(self) -> None:
         """Rotate DEM image."""
