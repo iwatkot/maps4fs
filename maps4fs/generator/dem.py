@@ -147,23 +147,23 @@ class DEM(Component):
         # 1. Resize DEM data to the output resolution.
         resampled_data = self.resize_to_output(data)
 
-        # 2. Blur DEM data.
-        resampled_data = self.apply_blur(resampled_data)
-
-        # 3. Apply multiplier (-10 to 120.4 becomes -20 to 240.8)
+        # 2. Apply multiplier (-10 to 120.4 becomes -20 to 240.8)
         resampled_data = self.apply_multiplier(resampled_data)
 
-        # 4. Raise terrain, and optionally lower to plateau level+water depth
+        # 3. Raise terrain, and optionally lower to plateau level+water depth
         # e.g. -20 to 240.8m becomes 20 to 280.8m
         resampled_data = self.raise_or_lower(resampled_data)
 
-        # 5. Determine actual height scale value using ceiling
+        # 4. Determine actual height scale value using ceiling
         # e.g. 255 becomes 280.8+10 = 291
         height_scale_value = self.determine_height_scale(resampled_data)
 
-        # 6. Normalize DEM data to 16-bit unsigned integer range (0 to 65535)
+        # 5. Normalize DEM data to 16-bit unsigned integer range (0 to 65535)
         # e.g. multiply by 65535/291, clip and return as uint16
         resampled_data = self.normalize_data(resampled_data, height_scale_value)
+
+        # 6. Blur DEM data.
+        resampled_data = self.apply_blur(resampled_data)
 
         cv2.imwrite(self._dem_path, resampled_data)
         self.logger.debug("DEM data was saved to %s.", self._dem_path)
@@ -286,7 +286,7 @@ class DEM(Component):
         )
 
         blurred_data = cv2.GaussianBlur(
-            data, (self.blur_radius, self.blur_radius), sigmaX=40, sigmaY=40
+            data, (self.blur_radius, self.blur_radius), sigmaX=10, sigmaY=10
         )
         self.logger.debug(
             "DEM data was blurred. Shape: %s, dtype: %s. Min: %s, max: %s.",
