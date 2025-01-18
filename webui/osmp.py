@@ -25,6 +25,12 @@ def get_rotated_preview(lat: float, lon: float, distance: int, angle: int):
 
     m = folium.Map(zoom_control=False)
 
+    url = "https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga"
+    folium.TileLayer(
+        tiles=url, name="satellite", attr="Google", overlay=True, show=False, control=True
+    ).add_to(m)
+    folium.LayerControl().add_to(m)
+
     corners = []
     half_diagonal = distance * math.sqrt(2) / 2  # Half the diagonal length of the square
     for i in range(4):
