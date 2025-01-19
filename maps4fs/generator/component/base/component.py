@@ -73,12 +73,8 @@ class Component:
         self.preprocess()
 
     def preprocess(self) -> None:
-        """Prepares the component for processing. Must be implemented in the child class.
-
-        Raises:
-            NotImplementedError: If the method is not implemented in the child class.
-        """
-        raise NotImplementedError
+        """Prepares the component for processing. Must be implemented in the child class."""
+        return
 
     def process(self) -> None:
         """Launches the component processing. Must be implemented in the child class.
