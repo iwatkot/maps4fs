@@ -22,4 +22,3 @@ owslib
 tqdm
 types-tqdm
 scipy
-manifold3d

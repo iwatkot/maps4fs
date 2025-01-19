@@ -15,4 +15,3 @@ pygmdl
 owslib
 tqdm
 scipy
-manifold3d
