@@ -31,6 +31,8 @@ class SRTM30Provider(DTMProvider):
 
     _settings = SRTM30ProviderSettings
 
+    _instructions = "ℹ️ Recommended settings:  \nDEM Settings -> Blur Radius: **35**"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.hgt_directory = os.path.join(self._tile_directory, "hgt")
