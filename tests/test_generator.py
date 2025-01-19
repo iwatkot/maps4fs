@@ -179,7 +179,10 @@ def test_map_pack():
     dem_settings = DEMSettings(multiplier=2, blur_radius=15, plateau=1000, water_depth=500)
 
     background_settings = BackgroundSettings(
-        generate_background=True, generate_water=True, resize_factor=16
+        generate_background=True,
+        generate_water=True,
+        resize_factor=16,
+        remove_center=False,
     )
     satellite_settings = SatelliteSettings(download_images=True, satellite_margin=0, zoom_level=14)
 
