@@ -354,7 +354,7 @@ class GeneratorUI:
             format_func=lambda code: providers[code],
             key="dtm_provider",
             label_visibility="collapsed",
-            disabled=self.public,
+            # disabled=self.public,
             on_change=self.provider_info,
         )
         self.provider_settings = None
