@@ -235,24 +235,16 @@ class Background(MeshComponent, ImageComponent):
                 This setting is used for a Background Terrain, where the center part where the
                 playable area is will be cut out.
         """
-        resize_factor = 1 / self.map.background_settings.resize_factor
-        dem_data = cv2.resize(dem_data, (0, 0), fx=resize_factor, fy=resize_factor)
-        if remove_center:
-            half_size = int(self.map_size // 2 * resize_factor)
-            dem_data = self.cut_out_np(dem_data, half_size, set_zeros=True)
-            self.logger.debug("Center removed from DEM data.")
-        self.logger.debug(
-            "DEM data resized to shape: %s with factor: %s", dem_data.shape, resize_factor
-        )
-
         mesh = self.mesh_from_np(
             dem_data,
             include_zeros=include_zeros,
             z_scaling_factor=self.get_z_scaling_factor(),
-            resize_factor=resize_factor,
+            resize_factor=self.map.background_settings.resize_factor,
             apply_decimation=self.map.background_settings.apply_decimation,
             decimation_percent=self.map.background_settings.decimation_percent,
             decimation_agression=self.map.background_settings.decimation_agression,
+            remove_center=remove_center,
+            remove_size=self.map_size,
         )
 
         mesh.export(save_path)
@@ -440,6 +432,12 @@ class Background(MeshComponent, ImageComponent):
 
         # Single channeled 8 bit image, where the water have values of 255, and the rest 0.
         plane_water = cv2.imread(self.water_resources_path, cv2.IMREAD_UNCHANGED)
+
+        # Check if the image contains non-zero values.
+        if not np.any(plane_water):
+            self.logger.warning("Water resources image is empty, skipping water generation.")
+            return
+
         dilated_plane_water = cv2.dilate(
             plane_water.astype(np.uint8), np.ones((5, 5), np.uint8), iterations=5
         ).astype(np.uint8)

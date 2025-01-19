@@ -39,6 +39,14 @@ dtm_provider = DTMProvider.get_provider_by_code(dtm_provider_code)
 dtm_settings = SRTM30ProviderSettings()
 
 
+background_settings = BackgroundSettings(
+    generate_background=True,
+    generate_water=True,
+    resize_factor=16,
+    remove_center=False,
+)
+
+
 def get_random_size() -> tuple[int, int]:
     """Return random size.
 
@@ -85,10 +93,13 @@ def test_map():
             height, width = get_random_size()
             directory = map_directory(game_code)
 
+            print(f"Generating map for {game_code} at {coordinates} with size {height}x{width}...")
+
             map = Map(
                 game=game,
                 dtm_provider=dtm_provider,
                 dtm_provider_settings=dtm_settings,
+                background_settings=background_settings,
                 coordinates=coordinates,
                 size=height,
                 rotation=0,
@@ -151,6 +162,7 @@ def test_map_preview():
         game=game,
         dtm_provider=dtm_provider,
         dtm_provider_settings=dtm_settings,
+        background_settings=background_settings,
         coordinates=case,
         size=height,
         rotation=0,
@@ -178,9 +190,6 @@ def test_map_pack():
 
     dem_settings = DEMSettings(multiplier=2, blur_radius=15, plateau=1000, water_depth=500)
 
-    background_settings = BackgroundSettings(
-        generate_background=True, generate_water=True, resize_factor=16
-    )
     satellite_settings = SatelliteSettings(download_images=True, satellite_margin=0, zoom_level=14)
 
     directory = map_directory(game_code)
