@@ -93,6 +93,8 @@ def test_map():
             height, width = get_random_size()
             directory = map_directory(game_code)
 
+            print(f"Generating map for {game_code} at {coordinates} with size {height}x{width}...")
+
             map = Map(
                 game=game,
                 dtm_provider=dtm_provider,
@@ -215,3 +217,6 @@ def test_map_pack():
     except Exception as e:
         assert False, f"Archive could not be unpacked: {e}"
     assert os.path.isdir(unpacked_directory), f"Unpacked directory not found: {unpacked_directory}"
+
+
+test_map()

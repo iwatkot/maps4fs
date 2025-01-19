@@ -128,7 +128,11 @@ class MeshComponent(Component):
             pass
 
         mesh = MeshComponent.mesh_to_output_size(
-            mesh, resize_factor, z_scaling_factor, output_x_size
+            mesh,
+            resize_factor,
+            z_scaling_factor,
+            output_x_size,
+            skip_resize_to_expected_size=not include_zeros,
         )
 
         if remove_center:
@@ -187,7 +191,11 @@ class MeshComponent(Component):
 
     @staticmethod
     def mesh_to_output_size(
-        mesh: trimesh.Trimesh, resize_factor: int, z_scaling_factor: float, expected_size: int
+        mesh: trimesh.Trimesh,
+        resize_factor: int,
+        z_scaling_factor: float,
+        expected_size: int,
+        skip_resize_to_expected_size: bool = False,
     ) -> trimesh.Trimesh:
         """Resizes the given mesh to the expected size.
 
@@ -196,6 +204,7 @@ class MeshComponent(Component):
             resize_factor (int): The resizing factor.
             z_scaling_factor (float): The scaling factor for the Z-axis.
             expected_size (int): The expected size.
+            skip_resize_to_expected_size (bool): Whether to skip resizing to the expected size.
 
         Returns:
             trimesh.Trimesh: The resized mesh.
@@ -204,11 +213,12 @@ class MeshComponent(Component):
 
         mesh_copy.apply_scale([resize_factor / 1, resize_factor / 1, z_scaling_factor])
 
-        x_size, y_size, _ = mesh_copy.extents
-        x_resize_factor = expected_size / x_size
-        y_resize_factor = expected_size / y_size
+        if not skip_resize_to_expected_size:
+            x_size, y_size, _ = mesh_copy.extents
+            x_resize_factor = expected_size / x_size
+            y_resize_factor = expected_size / y_size
 
-        mesh_copy.apply_scale([x_resize_factor, y_resize_factor, 1])
+            mesh_copy.apply_scale([x_resize_factor, y_resize_factor, 1])
         return mesh_copy
 
     @staticmethod

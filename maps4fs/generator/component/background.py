@@ -424,6 +424,12 @@ class Background(MeshComponent, ImageComponent):
 
         # Single channeled 8 bit image, where the water have values of 255, and the rest 0.
         plane_water = cv2.imread(self.water_resources_path, cv2.IMREAD_UNCHANGED)
+
+        # Check if the image contains non-zero values.
+        if not np.any(plane_water):
+            self.logger.warning("Water resources image is empty, skipping water generation.")
+            return
+
         dilated_plane_water = cv2.dilate(
             plane_water.astype(np.uint8), np.ones((5, 5), np.uint8), iterations=5
         ).astype(np.uint8)
