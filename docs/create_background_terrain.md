@@ -76,6 +76,12 @@ The object should look more like a terrain now with the `Shade Smooth` applied.
 
 ### Cutting out the center of the map
 
+Now the generator can remove the center from the mesh automatically, you need to ensure that the option **Background Settings** -> **Remove center** is turned on.  
+So the approach above is not needed anymore, but it's still valid if you want to do it manually.
+
+<details>
+<summary>The manual approach</summary>
+
 Now we will need to cut out the center of the map from the mesh. There are two aprroaches to do it. Using the `Boolean` modified and using the `Knife Project` tool. The `Boolean` modifier is more straightforward, and usually it works much better, so it's highly recommended to use it, not the second one.  
 
 ℹ️ This tutorial was added after the main one, so it will contain different untexutred terrain, don't be scared of it!  
@@ -163,6 +169,7 @@ Pay attention to the fact this method can produce artifacts. Remember that it's 
 
 ![Artifacts](https://github.com/user-attachments/assets/e9df0436-54d7-474c-9cbe-76c950f31a53)
 
+</details>
 </details>
 
 ### Exporting the object

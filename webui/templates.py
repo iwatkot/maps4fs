@@ -155,9 +155,7 @@ class Settings:
     )
     REMOVE_CENTER = (
         "If remove center is enabled, the region of playable map terrain will be removed "
-        "from the background terrain 3D model. Note, that due to resizing, it's recommended "
-        "to use this feature only when **Resize factor** is set to 1, otherwise there will be "
-        "a gap between the background terrain and the playable map terrain."
+        "from the background terrain 3D model."
     )
     APPLY_DECIMATION = (
         "If apply decimation is enabled, the background terrain will be decimated to the "
