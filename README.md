@@ -656,13 +656,27 @@ The generator supports adding the own DTM providers, please refer to the [DTM Pr
 
 ### Supported DTM providers
 
-- [SRTM 30m](https://dwtkns.com/srtm30m/) - the 30 meters resolution DEM data from the SRTM mission for the whole world.
-- [USGS 1m](https://portal.opentopography.org/raster?opentopoID=OTNED.012021.4269.3) - the 1-meter resolution DEM data from the USGS for the USA. Developed by [ZenJakey](https://github.com/ZenJakey).
-- England 1m DTM. 1-meter resolution DEM data for England, UK. Developed by [kbrandwijk](https://github.com/kbrandwijk).
-- Hessen DGM1 - 1-meter resolution DEM data for Hessen, Germany. Developed by [kbrandwijk](https://github.com/kbrandwijk).
-- Niedersachsen DGM1 - 1-meter resolution DEM data for Lower Saxony, Germany. Developed by [kbrandwijk](https://github.com/kbrandwijk).
-- Bayern DGM1 - 1-meter resolution DEM data for Bavaria, Germany. Developed by [H4rdB4se](https://github.com/H4rdB4se).
-- Nordrhein-Westfalen DGM1 - 1-meter resolution DEM data for North Rhine-Westphalia, Germany. Developed by [kbrandwijk](https://github.com/kbrandwijk).
+![coverage map](https://github.com/user-attachments/assets/fc78e755-13e2-4187-b846-4de5cb407dbf)
+
+In addition to SRTM 30m, which provides global coverage, the map above highlights all countries and/or regions where higher resolution coverage is provided by one of the DTM providers.
+
+| Provider Name                   | Resolution   | Developer                                   |
+| ------------------------------- | ------------ | ------------------------------------------- |
+| 🌎 SRTM30                       | 30 meters    | [iwatkot](https://github.com/iwatkot)       |
+| 🇺🇸 USGS                         | 1-90 meters  | [ZenJakey](https://github.com/ZenJakey)     |
+| 🏴󠁧󠁢󠁥󠁮󠁧󠁿 England                      | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland                     | 0.25-1 meter | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇩🇪 Hessen, Germany              | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇩🇪 Niedersachsen, Germany       | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇩🇪 Bayern, Germany              | 1 meter      | [H4rdB4se](https://github.com/H4rdB4se)     |
+| 🇩🇪 Nordrhein-Westfalen, Germany | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇨🇦 Canada                       | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇧🇪 Flanders, Belgium            | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇫🇷 France                       | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇮🇹 Italy                        | 10 meter     | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇳🇴 Norway                       | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇪🇸 Spain                        | 5 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇫🇮 Finland                      | 2 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 
 ## Special thanks
 
