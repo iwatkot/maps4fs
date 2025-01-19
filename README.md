@@ -536,13 +536,17 @@ You can also apply some advanced settings to the map generation process.<br>
 
 ### DEM Advanced settings
 
-- Multiplier: the height of the map is multiplied by this value. So the DEM map is just a 16-bit grayscale image, which means that the maximum available value there is 65535, while the actual difference between the deepest and the highest point on Earth is about 20 km. Just note that this setting mostly does not matter, because you can always adjust it in the Giants Editor, learn more about the DEM file and the heightScale parameter in [docs](docs/dem.md). To match the in-game heights with SRTM Data provider, the recommended value is 255 (if easy mode is disabled), but depending on the place, you will need to play with both multiplier and the height scale in Giants Editor to find the best values.
+- Adjust terrain to ground level: Enabling this setting (default) will raise or lower the terrain so that it's lowest point is at ground level (taking into account the plateau and water depth settings).
 
-- Blur radius: the radius of the Gaussian blur filter applied to the DEM map. By default, it's set to 21. This filter just makes the DEM map smoother, so the height transitions will be more natural. You can set it to 1 to disable the filter, but it will result in a Minecraft-like map.
+- Multiplier: DEM multiplier can be used to make the terrain more pronounced. By default the DEM file will be exact copy of the real terrain. If you want to make it more steep, you can increase this value. The recommended value of the multiplier is 1.
 
-- Plateau: this value will be added to each pixel of the DEM image, making it "higher". It's useful when you want to add some negative heights on the map, that appear to be in a "low" place. By default, it's set to 0.
+- Minimum height scale: This value is used as the heightScale in your map i3d. It will automatically be set higher if the elevation in your map (plus plateau, ceiling and water depth) is higher than this value.
 
-- Water depth: this value will be subtracted from each pixel of the DEM image, where water resources are located. Pay attention that it's not in meters, instead it in the pixel value of DEM, which is 16 bit image with possible values from 0 to 65535. When this value is set, the same value will be added to the plateau setting to avoid negative heights.
+- Plateau: DEM plateau value (in meters) is used to make the whole map higher or lower. This value will be added to each pixel of the DEM image, making it higher. It can be useful if you're working on a plain area and need to add some negative height (to make rivers, for example).
+
+- Ceiling: DEM ceiling value (in meters) is used to add padding in the DEM above the highest elevation in your map area. It can be useful if you plan to manually add some height to the map by sculpting the terrain in GE.
+
+- Water depth: Water depth value (in meters) will be subtracted from the DEM image, making the water deeper. The pixel value used for this is calculated based on the heightScale value for your map.
 
 ### Background terrain Advanced settings
 
@@ -677,4 +681,3 @@ But also, I want to thank the people who helped me with the project in some way,
 - [kbrandwijk](https://github.com/kbrandwijk) - for providing [awesome tool](https://github.com/Paint-a-Farm/satmap_downloader) to download the satellite images from the Google Maps and giving a permission to modify it and create a Python Package.
 - [Maaslandmods](https://github.com/Maaslandmods) - for the awesome idea to edit the tree schema in UI, images and code snippets on how to do it.
 - [StrauntMaunt](https://gitlab.com/StrauntMaunt) - for developing procedural generation scripts, providing with the required updates for maps4fs and preparing the docs on how to use procedural generation.
-
