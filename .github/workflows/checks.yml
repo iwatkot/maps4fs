@@ -22,7 +22,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          apt-get update && apt-get install -y \
+          sudo apt-get update && apt-get install -y \
             libgl1-mesa-dev \
             libglib2.0-0 \ 
             wget \
