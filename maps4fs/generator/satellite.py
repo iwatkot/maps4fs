@@ -2,17 +2,39 @@
 for the map."""
 
 import os
+import shutil
+from typing import NamedTuple
 
-import cv2
-from pygmdl import save_image  # type: ignore
+from pygmdl import save_image
 
-from maps4fs.generator.component.base.component import Component
+from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.settings import Parameters
-from maps4fs.generator.texture import PREVIEW_MAXIMUM_SIZE
 
 
-# pylint: disable=W0223
-class Satellite(Component):
+class SatelliteImage(NamedTuple):
+    """Named tuple for the satellite image download task.
+
+    Attributes:
+        lat (float): The latitude of the center of the map.
+        lon (float): The longitude of the center of the map.
+        size (int): The size of the map in pixels.
+        output_path (str): The path where to save the image.
+        rotation (int): The rotation angle of the map.
+        zoom (int): The zoom level of the map.
+        copy_from (str | None): If saving should be skipped and the image should be copied from
+            another file.
+    """
+
+    lat: float
+    lon: float
+    size: int
+    output_path: str
+    rotation: int
+    zoom: int
+    copy_from: str | None = None
+
+
+class Satellite(ImageComponent):
     """Component for to download satellite images for the map.
 
     Arguments:
@@ -26,13 +48,9 @@ class Satellite(Component):
             info, warning. If not provided, default logging will be used.
     """
 
-    def preprocess(self) -> None:
-        """This component does not require any preprocessing."""
-        return
-
     def process(self) -> None:
         """Downloads the satellite images for the map."""
-        self.image_paths = []  # pylint: disable=W0201
+        self.image_paths = []
         if not self.map.satellite_settings.download_images:
             self.logger.debug("Satellite images download is disabled.")
             return
@@ -45,25 +63,62 @@ class Satellite(Component):
         background_path = os.path.join(self.satellite_directory, "satellite_background.png")
 
         sizes = [overview_size, background_size]
-        self.image_paths = [overwiew_path, background_path]  # pylint: disable=W0201
+        self.image_paths = [overwiew_path, background_path]
 
-        for size, path in zip(sizes, self.image_paths):
+        tasks = self.get_tasks(sizes, self.image_paths)
+
+        for task in tasks:
             try:
-                lat, lon = self.coordinates
-                zoom = self.map.satellite_settings.zoom_level
+                if task.copy_from and os.path.isfile(task.copy_from):
+                    shutil.copy(task.copy_from, task.output_path)
+                    continue
+
                 save_image(
-                    lat,
-                    lon,
-                    size,
-                    output_path=path,
-                    rotation=self.rotation,
-                    zoom=zoom,
+                    task.lat,
+                    task.lon,
+                    task.size,
+                    output_path=task.output_path,
+                    rotation=task.rotation,
+                    zoom=task.zoom,
                     from_center=True,
                     logger=self.logger,
                 )
-            except Exception as e:  # pylint: disable=W0718
+
+            except Exception as e:
                 self.logger.error(f"Failed to download satellite image: {e}")
                 continue
+
+    def get_tasks(self, sizes: list[int], save_paths: list[str]) -> list[SatelliteImage]:
+        """Prepares the tasks for downloading the satellite images.
+
+        Arguments:
+            sizes (list[int]): The sizes of the images to download.
+            save_paths (list[str]): The paths where to save the images.
+
+        Returns:
+            list[SatelliteImage]: The list of tasks for downloading the satellite images.
+        """
+        tasks: list[SatelliteImage] = []
+
+        for size, save_path in zip(sizes, save_paths):
+            # Check if in tasks there's already a task with the same size.
+            existing_task = next((t for t in tasks if t.size == size), None)
+            copy_from = existing_task.output_path if existing_task else None
+
+            lat, lon = self.coordinates
+            tasks.append(
+                SatelliteImage(
+                    lat=lat,
+                    lon=lon,
+                    size=size,
+                    output_path=save_path,
+                    rotation=self.rotation,
+                    zoom=self.map.satellite_settings.zoom_level,
+                    copy_from=copy_from,
+                )
+            )
+
+        return tasks
 
     def previews(self) -> list[str]:
         """Returns the paths to the preview images.
@@ -73,19 +128,8 @@ class Satellite(Component):
         """
         previews = []
         for image_path in self.image_paths:
-            if not os.path.isfile(image_path):
-                self.logger.warning(f"File {image_path} does not exist.")
-                continue
-            image = cv2.imread(image_path)
-            if image is None:
-                self.logger.warning(f"Failed to read image from {image_path}")
-                continue
-
-            if image.shape[0] > PREVIEW_MAXIMUM_SIZE or image.shape[1] > PREVIEW_MAXIMUM_SIZE:
-                image = cv2.resize(image, (PREVIEW_MAXIMUM_SIZE, PREVIEW_MAXIMUM_SIZE))
-
             preview_path = os.path.join(self.previews_directory, os.path.basename(image_path))
-            cv2.imwrite(preview_path, image)
+            self.resize_to_preview(image_path, preview_path)
             previews.append(preview_path)
 
         return previews

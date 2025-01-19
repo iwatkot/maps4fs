@@ -1,9 +1,12 @@
 """Base class for all components that primarily used to work with images."""
 
+import os
+
 import cv2
 import numpy as np
 
 from maps4fs.generator.component.base.component import Component
+from maps4fs.generator.settings import Parameters
 
 
 class ImageComponent(Component):
@@ -88,3 +91,28 @@ class ImageComponent(Component):
 
         image[mask] = image[mask] - subtract_by
         return image
+
+    @staticmethod
+    def resize_to_preview(image_path: str, save_path: str) -> None:
+        """Resizes an image to the preview size.
+
+        Arguments:
+            image_path (str): The path to the image.
+            save_path (str): The path to save the resized image.
+        """
+        if not os.path.isfile(image_path):
+            return
+
+        image = cv2.imread(image_path)
+        if image is None:
+            return
+
+        if (
+            image.shape[0] > Parameters.PREVIEW_MAXIMUM_SIZE
+            or image.shape[1] > Parameters.PREVIEW_MAXIMUM_SIZE
+        ):
+            image = cv2.resize(
+                image, (Parameters.PREVIEW_MAXIMUM_SIZE, Parameters.PREVIEW_MAXIMUM_SIZE)
+            )
+
+        cv2.imwrite(save_path, image)
