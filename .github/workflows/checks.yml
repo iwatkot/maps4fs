@@ -24,14 +24,14 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y \
             libgl1-mesa-dev \
-            libglib2.0-0 \ 
+            libglib2.0-0 \
             wget \
             tar \
             ca-certificates \
             xz-utils \
-            libxrender1 \ 
+            libxrender1 \
             libxi6 \
-            libxkbcommon0 \ 
+            libxkbcommon0 \
             libsm6 \
             libice6 \
             libx11-6 \
