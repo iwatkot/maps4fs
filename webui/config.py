@@ -1,4 +1,5 @@
 import os
+import platform
 import shutil
 import threading
 from time import sleep
@@ -21,7 +22,6 @@ if not os.path.exists(FS25_TEXTURE_SCHEMA_PATH):
     raise FileNotFoundError(f"File {FS25_TEXTURE_SCHEMA_PATH} not found.")
 if not os.path.exists(FS25_TREE_SCHEMA_PATH):
     raise FileNotFoundError(f"File {FS25_TREE_SCHEMA_PATH} not found.")
-
 
 STREAMLIT_COMMUNITY_KEY = "HOSTNAME"
 STREAMLIT_COMMUNITY_VALUE = "streamlit"
@@ -72,6 +72,10 @@ def is_public() -> bool:
         bool: True if the script is running on a public server, False otherwise.
     """
     return os.environ.get(PUBLIC_HOSTNAME_KEY) == PUBLIC_HOSTNAME_VALUE
+
+
+if is_public():
+    os.environ["TQDM_MININTERVAL"] = "10"
 
 
 def remove_with_delay_without_blocking(
@@ -129,7 +133,13 @@ def get_package_version(package_name: str, logger: mfs.Logger) -> str:
     Returns:
         str: The package version.
     """
-    response = os.popen(f"pip list | grep {package_name}").read()
+    current_os = platform.system().lower()
+    if current_os == "windows":
+        command = f"pip list 2>NUL | findstr {package_name}"
+    else:
+        command = f"pip list 2>/dev/null | grep {package_name}"
+
+    response = os.popen(command).read()
     logger.debug("Grepped response: %s", response)
     cleared_response = response.replace(" ", "")
     logger.debug("Cleared response: %s", cleared_response)
