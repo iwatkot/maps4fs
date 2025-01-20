@@ -101,7 +101,7 @@ class I3d(XMLComponent):
 
         self.get_and_update_element(root, sun_element_path, data)
 
-        displacement_layer_path = ".//Scene/TerrainTransformGroup/DisplacementLayer"
+        displacement_layer_path = ".//Scene/TerrainTransformGroup/Layers/DisplacementLayer"
         data = {"size": str(int(self.map_size * 8))}
         self.get_and_update_element(root, displacement_layer_path, data)
 
