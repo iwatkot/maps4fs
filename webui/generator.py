@@ -139,7 +139,7 @@ class GeneratorUI:
         if not self.public:
             return False
 
-        disabled_fields = ["resize_factor", "dissolve", "zoom_level"]
+        disabled_fields = ["resize_factor", "dissolve", "zoom_level", "download_images"]
         return raw_field_name in disabled_fields
 
     def limit_on_public(self, settings_json: dict) -> dict:
