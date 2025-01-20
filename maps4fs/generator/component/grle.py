@@ -156,14 +156,14 @@ class GRLE(ImageComponent, XMLComponent):
         """
         fields_layer = self.map.get_texture_layer(by_usage="field")
         if not fields_layer:
-            self.logger.warning("Fields layer not found in the texture component.")
+            self.logger.debug("Fields layer not found in the texture component.")
             return None
 
         fields_layer_path = fields_layer.get_preview_or_path(
             self.game.weights_dir_path(self.map_directory)
         )
         if not fields_layer_path or not os.path.isfile(fields_layer_path):
-            self.logger.warning("Fields layer not found in the texture component.")
+            self.logger.debug("Fields layer not found in the texture component.")
             return None
         fields_np = cv2.imread(fields_layer_path)
         # Resize fields_np to the same size as farmlands_np.
@@ -182,7 +182,7 @@ class GRLE(ImageComponent, XMLComponent):
 
         fields = self.get_infolayer_data(Parameters.TEXTURES, Parameters.FIELDS)
         if not fields:
-            self.logger.warning("Fields data not found in textures info layer.")
+            self.logger.debug("Fields data not found in textures info layer.")
             return
         farmlands.extend(fields)
 

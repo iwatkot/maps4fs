@@ -159,7 +159,7 @@ class Background(MeshComponent, ImageComponent):
         If at least one DEM file is missing, the generation will be stopped at all.
         """
         if not os.path.isfile(self.dem.dem_path):
-            self.logger.warning(
+            self.logger.error(
                 "DEM file not found, generation will be stopped: %s", self.dem.dem_path
             )
             return
@@ -436,7 +436,7 @@ class Background(MeshComponent, ImageComponent):
 
         # Check if the image contains non-zero values.
         if not np.any(plane_water):
-            self.logger.warning("Water resources image is empty, skipping water generation.")
+            self.logger.debug("Water resources image is empty, skipping water generation.")
             return
 
         dilated_plane_water = cv2.dilate(
