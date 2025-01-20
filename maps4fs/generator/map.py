@@ -78,8 +78,9 @@ class Map:
         self.map_directory = map_directory
 
         log_entry = ""
-        log_entry += f"Game was set to {game.code}. "
-        log_entry += f"DTM provider was set to {dtm_provider.name()}. "
+        log_entry += f"Map instance created for Game: {game.code}. "
+        log_entry += f"Coordinates: {coordinates}. Size: {size}. Rotation: {rotation}. "
+        log_entry += f"DTM provider is {dtm_provider.name()}. "
 
         self.custom_osm = custom_osm
         log_entry += f"Custom OSM file: {custom_osm}. "
@@ -170,7 +171,7 @@ class Map:
         Yields:
             Generator[str, None, None]: Component names.
         """
-        self.logger.info(
+        self.logger.debug(
             "Starting map generation. Game code: %s. Coordinates: %s, size: %s. Rotation: %s.",
             self.game.code,
             self.coordinates,
@@ -215,7 +216,7 @@ class Map:
                 )
                 raise e
 
-        self.logger.info(
+        self.logger.debug(
             "Map generation completed. Game code: %s. Coordinates: %s, size: %s. Rotation: %s.",
             self.game.code,
             self.coordinates,
