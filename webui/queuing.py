@@ -1,10 +1,22 @@
 import json
 import os
+import shutil
 import threading
 from time import sleep
 from typing import Generator
 
-from config import QUEUE_FILE, QUEUE_INTERVAL, QUEUE_TIMEOUT
+import schedule
+from config import (
+    ARCHIVES_DIRECTORY,
+    MAPS_DIRECTORY,
+    OSMPS_DIRECTORY,
+    QUEUE_FILE,
+    QUEUE_INTERVAL,
+    QUEUE_TIMEOUT,
+    TEMP_DIRECTORY,
+    create_dirs,
+    is_public,
+)
 
 from maps4fs import Logger
 
@@ -139,5 +151,31 @@ def start_termination(session: str) -> None:
     sleep(QUEUE_TIMEOUT)
     remove_from_queue(session)
 
+
+def auto_clean() -> None:
+    """Automatically clean the directories."""
+    if not is_public():
+        return
+    if get_queue_length() > 0:
+        return
+
+    to_clean = [ARCHIVES_DIRECTORY, MAPS_DIRECTORY, OSMPS_DIRECTORY, TEMP_DIRECTORY]
+    for directory in to_clean:
+        shutil.rmtree(directory, ignore_errors=True)
+
+    create_dirs()
+
+
+def run_scheduler():
+    while True:
+        schedule.run_pending()
+        sleep(1)
+
+
+if is_public():
+    schedule.every(240).minutes.do(auto_clean)
+    scheduler_thread = threading.Thread(target=run_scheduler)
+    scheduler_thread.daemon = True
+    scheduler_thread.start()
 
 get_queue(force=True)
