@@ -1,7 +1,7 @@
 """This module contains the base WCS provider."""
 
-from abc import abstractmethod
 import os
+from abc import abstractmethod
 
 from owslib.wcs import WebCoverageService
 from tqdm import tqdm
@@ -68,7 +68,7 @@ class WCSProvider(DTMProvider):
         params = self.get_wcs_instance_parameters()
         wcs = WebCoverageService(**params)
 
-        for tile in tqdm(tiles, desc="Downloading tiles", unit="tile"):
+        for tile in tqdm(tiles, desc="Downloading tiles", unit="tile", disable=self.map.is_public):
             file_name = "_".join(map(str, tile)) + ".tif"
             file_path = os.path.join(self.shared_tiff_path, file_name)
             if not os.path.exists(file_path):

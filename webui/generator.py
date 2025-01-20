@@ -653,6 +653,7 @@ class GeneratorUI:
             texture_custom_schema=texture_schema,
             tree_custom_schema=tree_schema,
             custom_background_path=self.custom_background_path,
+            is_public=self.public,
         )
 
         if self.public:

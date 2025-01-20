@@ -245,6 +245,7 @@ class Background(MeshComponent, ImageComponent):
             decimation_agression=self.map.background_settings.decimation_agression,
             remove_center=remove_center,
             remove_size=self.map_size,
+            disable_tqdm=self.map.is_public,
         )
 
         mesh.export(save_path)

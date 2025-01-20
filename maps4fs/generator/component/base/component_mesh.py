@@ -59,6 +59,7 @@ class MeshComponent(Component):
         decimation_agression: int,
         remove_center: bool,
         remove_size: int,
+        disable_tqdm: bool = False,
     ) -> trimesh.Trimesh:
         """Generates a mesh from the given numpy array.
 
@@ -72,6 +73,7 @@ class MeshComponent(Component):
             decimation_agression (int): The agression of the decimation.
             remove_center (bool): Whether to remove the center from the mesh.
             remove_size (int): The size of the center to remove.
+            disable_tqdm (bool): Whether to disable the tqdm progress bar.
 
         Returns:
             trimesh.Trimesh: The generated mesh.
@@ -94,7 +96,7 @@ class MeshComponent(Component):
 
         skipped = 0
 
-        for i in tqdm(range(rows - 1), desc="Generating mesh", unit="row"):
+        for i in tqdm(range(rows - 1), desc="Generating mesh", unit="row", disable=disable_tqdm):
             for j in range(cols - 1):
                 top_left = i * cols + j
                 top_right = top_left + 1
@@ -113,7 +115,7 @@ class MeshComponent(Component):
 
         faces_np = np.array(faces)
         mesh = trimesh.Trimesh(vertices=vertices, faces=faces_np)
-        mesh = MeshComponent.rotate_mesh(mesh)
+        mesh = MeshComponent.rotate_mesh(mesh, disable_tqdm=disable_tqdm)
 
         if apply_decimation:
             percent = decimation_percent / 100
@@ -123,7 +125,7 @@ class MeshComponent(Component):
 
         try:
             if not mesh.is_watertight:
-                mesh = MeshComponent.fix_mesh(mesh)
+                mesh = MeshComponent.fix_mesh(mesh, disable_tqdm=disable_tqdm)
         except Exception:
             pass
 
@@ -141,11 +143,12 @@ class MeshComponent(Component):
         return mesh
 
     @staticmethod
-    def rotate_mesh(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+    def rotate_mesh(mesh: trimesh.Trimesh, disable_tqdm: bool = False) -> trimesh.Trimesh:
         """Rotates the given mesh by 180 degrees around the Y-axis and Z-axis.
 
         Arguments:
             mesh (trimesh.Trimesh): The mesh to rotate.
+            disable_tqdm (bool): Whether to disable the tqdm progress bar.
 
         Returns:
             trimesh.Trimesh: The rotated mesh.
@@ -157,18 +160,21 @@ class MeshComponent(Component):
             trimesh.transformations.rotation_matrix(np.pi, [0, 0, 1]),
         ]
 
-        for rotation_matrix in tqdm(rotation_matrices, desc="Rotating mesh", unit="rotation"):
+        for rotation_matrix in tqdm(
+            rotation_matrices, desc="Rotating mesh", unit="rotation", disable=disable_tqdm
+        ):
             mesh_copy.apply_transform(rotation_matrix)
 
         return mesh_copy
 
     @staticmethod
-    def fix_mesh(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+    def fix_mesh(mesh: trimesh.Trimesh, disable_tqdm: bool = False) -> trimesh.Trimesh:
         """Fixes the given mesh by filling holes, fixing normals, fixing winding, fixing inversion,
         fixing broken faces, and stitching.
 
         Arguments:
             mesh (trimesh.Trimesh): The mesh to fix.
+            disable_tqdm (bool): Whether to disable the tqdm progress bar.
 
         Returns:
             trimesh.Trimesh: The fixed mesh.
@@ -184,7 +190,7 @@ class MeshComponent(Component):
             trimesh.repair.stitch,
         ]
 
-        for method in tqdm(fix_methods, desc="Fixing mesh", unit="method"):
+        for method in tqdm(fix_methods, desc="Fixing mesh", unit="method", disable=disable_tqdm):
             method(mesh_copy)  # type: ignore
 
         return mesh_copy
