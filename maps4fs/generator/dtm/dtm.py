@@ -12,13 +12,12 @@ from zipfile import ZipFile
 import numpy as np
 import osmnx as ox  # type: ignore
 import rasterio  # type: ignore
+import requests
 from pydantic import BaseModel
 from rasterio.enums import Resampling
 from rasterio.merge import merge
 from rasterio.warp import calculate_default_transform, reproject
-import requests
 from tqdm import tqdm
-
 
 from maps4fs.logger import Logger
 
@@ -78,6 +77,11 @@ class DTMProvider(ABC):
         self.map = map
 
         self._data_info: dict[str, int | str | float] | None = None
+
+    @classmethod
+    def name(cls) -> str | None:
+        """Name of the provider."""
+        return cls._name
 
     @property
     def data_info(self) -> dict[str, int | str | float] | None:

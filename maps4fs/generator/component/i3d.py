@@ -15,8 +15,6 @@ from tqdm import tqdm
 from maps4fs.generator.component.base.component_xml import XMLComponent
 from maps4fs.generator.settings import Parameters
 
-MAP_SIZE_LIMIT_FOR_DISPLACEMENT_LAYER = 4096
-DISPLACEMENT_LAYER_SIZE_FOR_BIG_MAPS = 32768
 NODE_ID_STARTING_VALUE = 2000
 SPLINES_NODE_ID_STARTING_VALUE = 5000
 TREE_NODE_ID_STARTING_VALUE = 10000
@@ -103,11 +101,9 @@ class I3d(XMLComponent):
 
         self.get_and_update_element(root, sun_element_path, data)
 
-        if self.map_size > MAP_SIZE_LIMIT_FOR_DISPLACEMENT_LAYER:
-            displacement_layer_path = ".//Scene/TerrainTransformGroup/DisplacementLayer"
-            data = {"size": str(DISPLACEMENT_LAYER_SIZE_FOR_BIG_MAPS)}
-
-            self.get_and_update_element(root, displacement_layer_path, data)
+        displacement_layer_path = ".//Scene/TerrainTransformGroup/Layers/DisplacementLayer"
+        data = {"size": str(int(self.map_size * 8))}
+        self.get_and_update_element(root, displacement_layer_path, data)
 
         self.save_tree(tree)
 
