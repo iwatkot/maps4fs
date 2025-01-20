@@ -656,29 +656,31 @@ The generator supports adding the own DTM providers, please refer to the [DTM Pr
 
 ### Supported DTM providers
 
-![coverage map](https://github.com/user-attachments/assets/138fa637-ce63-4dd9-bd11-bf92fe038a74)
+![coverage map](https://github.com/user-attachments/assets/e02a4b5e-c5a9-4e6f-826f-048081704ef9)
 
 In addition to SRTM 30m, which provides global coverage, the map above highlights all countries and/or regions where higher resolution coverage is provided by one of the DTM providers.
 
-| Provider Name                   | Resolution   | Developer                                   |
-| ------------------------------- | ------------ | ------------------------------------------- |
-| 🌎 SRTM30                       | 30 meters    | [iwatkot](https://github.com/iwatkot)       |
-| 🇺🇸 USGS                         | 1-90 meters  | [ZenJakey](https://github.com/ZenJakey)     |
-| 🏴󠁧󠁢󠁥󠁮󠁧󠁿 England                      | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland                     | 0.25-1 meter | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇩🇪 Hessen, Germany              | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇩🇪 Niedersachsen, Germany       | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇩🇪 Bayern, Germany              | 1 meter      | [H4rdB4se](https://github.com/H4rdB4se)     |
-| 🇩🇪 Nordrhein-Westfalen, Germany | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇨🇦 Canada                       | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇧🇪 Flanders, Belgium            | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇫🇷 France                       | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇮🇹 Italy                        | 10 meter     | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇳🇴 Norway                       | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇪🇸 Spain                        | 5 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇫🇮 Finland                      | 2 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇩🇰 Denmark                      | 0.4 meter    | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇨🇭 Switzerland                  | 0.5-2 meter  | [kbrandwijk](https://github.com/kbrandwijk) |
+| Provider Name                      | Resolution   | Developer                                   |
+| ---------------------------------- | ------------ | ------------------------------------------- |
+| 🌎 SRTM30                          | 30 meters    | [iwatkot](https://github.com/iwatkot)       |
+| 🇺🇸 USGS                            | 1-90 meters  | [ZenJakey](https://github.com/ZenJakey)     |
+| 🏴󠁧󠁢󠁥󠁮󠁧󠁿 England                         | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland                        | 0.25-1 meter | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇩🇪 Hessen, Germany                 | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇩🇪 Niedersachsen, Germany          | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇩🇪 Bayern, Germany                 | 1 meter      | [H4rdB4se](https://github.com/H4rdB4se)     |
+| 🇩🇪 Nordrhein-Westfalen, Germany    | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇩🇪 Mecklenburg-Vorpommern, Germany | 1-25 meter   | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇩🇪 Baden-Württemberg, Germany      | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇨🇦 Canada                          | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇧🇪 Flanders, Belgium               | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇫🇷 France                          | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇮🇹 Italy                           | 10 meter     | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇳🇴 Norway                          | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇪🇸 Spain                           | 5 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇫🇮 Finland                         | 2 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇩🇰 Denmark                         | 0.4 meter    | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇨🇭 Switzerland                     | 0.5-2 meter  | [kbrandwijk](https://github.com/kbrandwijk) |
 
 ## Special thanks
 
