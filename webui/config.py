@@ -1,4 +1,5 @@
 import os
+import platform
 import shutil
 import threading
 from time import sleep
@@ -129,7 +130,13 @@ def get_package_version(package_name: str, logger: mfs.Logger) -> str:
     Returns:
         str: The package version.
     """
-    response = os.popen(f"pip list | grep {package_name}").read()
+    current_os = platform.system().lower()
+    if current_os == "windows":
+        command = f"pip list 2>NUL | findstr {package_name}"
+    else:
+        command = f"pip list 2>/dev/null | grep {package_name}"
+
+    response = os.popen(command).read()
     logger.debug("Grepped response: %s", response)
     cleared_response = response.replace(" ", "")
     logger.debug("Cleared response: %s", cleared_response)
