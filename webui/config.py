@@ -23,7 +23,6 @@ if not os.path.exists(FS25_TEXTURE_SCHEMA_PATH):
 if not os.path.exists(FS25_TREE_SCHEMA_PATH):
     raise FileNotFoundError(f"File {FS25_TREE_SCHEMA_PATH} not found.")
 
-
 STREAMLIT_COMMUNITY_KEY = "HOSTNAME"
 STREAMLIT_COMMUNITY_VALUE = "streamlit"
 PUBLIC_HOSTNAME_KEY = "PUBLIC_HOSTNAME"
@@ -73,6 +72,10 @@ def is_public() -> bool:
         bool: True if the script is running on a public server, False otherwise.
     """
     return os.environ.get(PUBLIC_HOSTNAME_KEY) == PUBLIC_HOSTNAME_VALUE
+
+
+if is_public():
+    os.environ["TQDM_MININTERVAL"] = "10"
 
 
 def remove_with_delay_without_blocking(
