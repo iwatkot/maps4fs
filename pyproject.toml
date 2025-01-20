@@ -27,6 +27,10 @@ dependencies = [
     "tifffile",
     "pympler",
     "pydantic",
+    "pygmdl",
+    "owslib",
+    "tqdm",
+    "scipy",
 ]
 
 [project.urls]
