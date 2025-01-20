@@ -693,7 +693,14 @@ class GeneratorUI:
 
             generation_finished_at = perf_counter()
             generation_time = round(generation_finished_at - generation_started_at, 3)
-            self.logger.info("Map generated in %s seconds.", generation_time)
+            self.logger.info(
+                "Map for game %s, coordinates %s, size %s, rotation %s generated in %s seconds.",
+                self.game_code,
+                coordinates,
+                self.map_size_input,
+                self.rotation,
+                generation_time,
+            )
             self.status_container.success(f"Map generated in {generation_time} seconds.", icon="✅")
         except Exception as e:
             self.logger.error("An error occurred while generating the map: %s", repr(e))
