@@ -74,10 +74,6 @@ def is_public() -> bool:
     return os.environ.get(PUBLIC_HOSTNAME_KEY) == PUBLIC_HOSTNAME_VALUE
 
 
-if is_public():
-    os.environ["TQDM_MININTERVAL"] = "10"
-
-
 def remove_with_delay_without_blocking(
     file_path: str,
     logger: mfs.Logger,

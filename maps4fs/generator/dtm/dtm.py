@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING, Type
 from zipfile import ZipFile
 
 import numpy as np
-import osmnx as ox  # type: ignore
-import rasterio  # type: ignore
+import osmnx as ox
+import rasterio
 import requests
 from pydantic import BaseModel
 from rasterio.enums import Resampling
@@ -29,7 +29,6 @@ class DTMProviderSettings(BaseModel):
     """Base class for DTM provider settings models."""
 
 
-# pylint: disable=too-many-public-methods, too-many-instance-attributes
 class DTMProvider(ABC):
     """Base class for DTM providers."""
 
@@ -54,7 +53,6 @@ class DTMProvider(ABC):
 
     _base_instructions = None
 
-    # pylint: disable=R0913, R0917
     def __init__(
         self,
         coordinates: tuple[float, float],
@@ -62,7 +60,7 @@ class DTMProvider(ABC):
         size: int,
         directory: str,
         logger: Logger,
-        map: Map | None = None,  # pylint: disable=W0622
+        map: Map,
     ):
         self._coordinates = coordinates
         self._user_settings = user_settings
@@ -347,6 +345,7 @@ class DTMProvider(ABC):
             unit="tile",
             initial=len(tif_files),
             total=len(urls),
+            disable=self.map.is_public,
         ):
             try:
                 file_name = os.path.basename(url)
