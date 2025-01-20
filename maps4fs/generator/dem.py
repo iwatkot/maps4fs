@@ -317,7 +317,6 @@ class DEM(Component):
         """Saves empty DEM file filled with zeros."""
         dem_data = np.zeros(dem_output_resolution, dtype="uint16")
         cv2.imwrite(self._dem_path, dem_data)
-        self.logger.warning("DEM data filled with zeros and saved to %s.", self._dem_path)
 
     def info_sequence(self) -> dict[Any, Any] | None:  # type: ignore
         """Returns the information sequence for the component. Must be implemented in the child

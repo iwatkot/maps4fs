@@ -838,9 +838,9 @@ class Texture(Component):
                 )
 
                 if not isinstance(padded_polygon, shapely.geometry.polygon.Polygon):
-                    self.logger.warning("The padding value is too high, field will not padded.")
+                    self.logger.debug("The padding value is too high, field will not padded.")
                 elif not list(padded_polygon.exterior.coords):
-                    self.logger.warning("The padding value is too high, field will not padded.")
+                    self.logger.debug("The padding value is too high, field will not padded.")
                 else:
                     polygon = padded_polygon
 
