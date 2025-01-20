@@ -17,6 +17,7 @@ from maps4fs.generator.dtm.france import FranceProvider
 from maps4fs.generator.dtm.norway import NorwayProvider
 from maps4fs.generator.dtm.denmark import DenmarkProvider
 from maps4fs.generator.dtm.switzerland import SwitzerlandProvider
+from maps4fs.generator.dtm.mv import MecklenburgVorpommernProvider
 from maps4fs.generator.game import Game
 from maps4fs.generator.map import Map
 from maps4fs.generator.settings import (
