@@ -29,7 +29,10 @@ class SwitzerlandProvider(DTMProvider):
 
     _extents = (47.8308275417, 45.7769477403, 10.4427014502, 6.02260949059)
 
-    _url = "https://ogd.swisstopo.admin.ch/services/swiseld/services/assets/ch.swisstopo.swissalti3d/search"
+    _url = (
+        "https://ogd.swisstopo.admin.ch/services/swiseld/"
+        "services/assets/ch.swisstopo.swissalti3d/search"
+    )
 
     def download_tiles(self):
         download_urls = self.get_download_urls()
