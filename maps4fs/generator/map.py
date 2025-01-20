@@ -77,10 +77,12 @@ class Map:
         self.coordinates = coordinates
         self.map_directory = map_directory
 
-        self.logger.info("Game was set to %s", game.code)
+        log_entry = ""
+        log_entry += f"Game was set to {game.code}. "
+        log_entry += f"DTM provider was set to {dtm_provider.name()}. "
 
         self.custom_osm = custom_osm
-        self.logger.info("Custom OSM file: %s", custom_osm)
+        log_entry += f"Custom OSM file: {custom_osm}. "
 
         # Make a copy of a custom osm file to the map directory, so it will be
         # included in the output archive.
@@ -90,30 +92,26 @@ class Map:
             self.logger.debug("Custom OSM file copied to %s", copy_path)
 
         self.dem_settings = dem_settings
-        self.logger.info("DEM settings: %s", dem_settings)
+        log_entry += f"DEM settings: {dem_settings}. "
         if self.dem_settings.water_depth > 0:
             # Make sure that the plateau value is >= water_depth
             self.dem_settings.plateau = max(
                 self.dem_settings.plateau, self.dem_settings.water_depth
             )
-            self.logger.info(
-                "Plateau value was set to %s to be >= water_depth value %s",
-                self.dem_settings.plateau,
-                self.dem_settings.water_depth,
-            )
 
         self.background_settings = background_settings
-        self.logger.info("Background settings: %s", background_settings)
+        log_entry += f"Background settings: {background_settings}. "
         self.grle_settings = grle_settings
-        self.logger.info("GRLE settings: %s", grle_settings)
+        log_entry += f"GRLE settings: {grle_settings}. "
         self.i3d_settings = i3d_settings
-        self.logger.info("I3D settings: %s", i3d_settings)
+        log_entry += f"I3D settings: {i3d_settings}. "
         self.texture_settings = texture_settings
-        self.logger.info("Texture settings: %s", texture_settings)
+        log_entry += f"Texture settings: {texture_settings}. "
         self.spline_settings = spline_settings
-        self.logger.info("Spline settings: %s", spline_settings)
+        log_entry += f"Spline settings: {spline_settings}. "
         self.satellite_settings = satellite_settings
 
+        self.logger.info(log_entry)
         os.makedirs(self.map_directory, exist_ok=True)
         self.logger.debug("Map directory created: %s", self.map_directory)
 
@@ -148,7 +146,6 @@ class Map:
 
         self.tree_custom_schema = kwargs.get("tree_custom_schema", None)
         if self.tree_custom_schema:
-            self.logger.info("Custom tree schema contains %s trees", len(self.tree_custom_schema))
             save_path = os.path.join(self.map_directory, "tree_custom_schema.json")
             with open(save_path, "w", encoding="utf-8") as file:
                 json.dump(self.tree_custom_schema, file, indent=4)

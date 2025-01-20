@@ -92,7 +92,7 @@ def remove_with_delay_without_blocking(
         sleep(delay)
         try:
             os.remove(file_path)
-            logger.info("File %s removed.", file_path)
+            logger.debug("File %s removed.", file_path)
         except FileNotFoundError:
             logger.debug("File %s not found.", file_path)
 

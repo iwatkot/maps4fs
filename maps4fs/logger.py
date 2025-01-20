@@ -16,7 +16,7 @@ class Logger(logging.Logger):
 
     def __init__(
         self,
-        level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "ERROR",
+        level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO",
         to_stdout: bool = True,
         to_file: bool = True,
     ):
