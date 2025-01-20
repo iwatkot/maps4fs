@@ -11,7 +11,7 @@ from maps4fs.generator.component.config import Config
 from maps4fs.generator.component.grle import GRLE
 from maps4fs.generator.component.i3d import I3d
 from maps4fs.generator.component.satellite import Satellite
-from maps4fs.generator.texture import Texture
+from maps4fs.generator.component.texture import Texture
 
 working_directory = os.getcwd()
 
