@@ -58,7 +58,7 @@ def add_to_queue(session: str) -> None:
     queue = get_queue()
     queue.append(session)
     save_queue(queue)
-    logger.info("Session %s added to the queue.", session)
+    logger.debug("Session %s added to the queue.", session)
 
 
 def get_first_item() -> str | None:
@@ -98,7 +98,7 @@ def remove_from_queue(session: str) -> None:
     if session in queue:
         queue.remove(session)
         save_queue(queue)
-        logger.info("Session %s removed from the queue.", session)
+        logger.debug("Session %s removed from the queue.", session)
     else:
         logger.debug("Session %s not found in the queue.", session)
 
