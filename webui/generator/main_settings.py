@@ -3,8 +3,8 @@ from time import sleep
 import config
 import osmp
 import streamlit as st
-import streamlit.components.v1 as components
 from generator.base_component import BaseComponent
+from streamlit_folium import folium_static
 from templates import Messages
 
 import maps4fs as mfs
@@ -113,10 +113,10 @@ class MainSettings(BaseComponent):
             return
 
         map_size = self.map_size_input
-        html_file = osmp.get_rotated_preview(lat, lon, map_size, angle=-self.rotation)
+        map = osmp.get_rotated_preview(lat, lon, map_size, angle=-self.rotation)
 
         with self.html_preview_container:
-            components.html(open(html_file).read(), height=600)
+            folium_static(map, height=600, width=600)
 
     def provider_info(self) -> None:
         provider_code = self.dtm_provider_code
