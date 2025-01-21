@@ -2,7 +2,7 @@ import os
 
 import streamlit as st
 from config import DOCS_DIRECTORY, FAQ_MD, get_mds
-from generator import GeneratorUI
+from generator.generator import GeneratorUI
 from templates import Messages
 from toolbox import ToolboxUI
 
