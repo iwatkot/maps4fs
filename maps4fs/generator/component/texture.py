@@ -15,6 +15,7 @@ import osmnx as ox
 import pandas as pd
 import shapely.geometry  # type: ignore
 from osmnx import settings as ox_settings
+from shapely import Polygon
 from shapely.geometry.base import BaseGeometry  # type: ignore
 from tqdm import tqdm
 
@@ -24,7 +25,6 @@ from maps4fs.generator.component.layer import Layer
 PREVIEW_MAXIMUM_SIZE = 2048
 
 
-# pylint: disable=R0902, R0904
 class Texture(Component):
     """Class which generates textures for the map using OSM data.
 
@@ -40,21 +40,12 @@ class Texture(Component):
         """Preprocesses the data before the generation."""
         self.read_layers(self.get_schema())
 
-        # base_layer = self.get_base_layer()
-        # if base_layer:
-        #     self.logger.debug("Base layer found: %s.", base_layer.name)
-
         self._weights_dir = self.game.weights_dir_path(self.map_directory)
-        self.logger.debug("Weights directory: %s.", self._weights_dir)
         self.procedural_dir = os.path.join(self._weights_dir, "masks")
         os.makedirs(self.procedural_dir, exist_ok=True)
-        self.logger.debug("Procedural directory: %s.", self.procedural_dir)
 
         self.info_save_path = os.path.join(self.map_directory, "generation_info.json")
-        self.logger.debug("Generation info save path: %s.", self.info_save_path)
-
         self.info_layer_path = os.path.join(self.info_layers_directory, "textures.json")
-        self.logger.debug("Info layer path: %s.", self.info_layer_path)
 
     def read_layers(self, layers_schema: list[dict[str, Any]]) -> None:
         """Reads layers from the schema.
@@ -65,7 +56,7 @@ class Texture(Component):
         try:
             self.layers = [Layer.from_json(layer) for layer in layers_schema]
             self.logger.debug("Loaded %s layers.", len(self.layers))
-        except Exception as e:  # pylint: disable=W0703
+        except Exception as e:
             raise ValueError(f"Error loading texture layers: {e}") from e
 
     def get_schema(self) -> dict[str, Any]:
@@ -136,9 +127,7 @@ class Texture(Component):
         self.draw()
         self.rotate_textures()
         self.add_borders()
-        if self.map.texture_settings.dissolve and self.game.code != "FS22":
-            # FS22 has textures splitted into 4 sublayers, which leads to a very
-            # long processing time when dissolving them.
+        if self.map.texture_settings.dissolve and self.game.dissolve:
             self.dissolve()
         self.copy_procedural()
 
@@ -214,7 +203,6 @@ class Texture(Component):
                 # If there are more than one texture, merge them.
                 merged_texture = np.zeros((self.map_size, self.map_size), dtype=np.uint8)
                 for texture_path in texture_paths:
-                    # pylint: disable=E1101
                     texture = cv2.imread(texture_path, cv2.IMREAD_UNCHANGED)
                     merged_texture[texture == 255] = 255
                 cv2.imwrite(procedural_save_path, merged_texture)
@@ -254,12 +242,9 @@ class Texture(Component):
                         "Skipping rotation of layer %s because it has no tags.", layer.name
                     )
 
-    # pylint: disable=W0201
     def _read_parameters(self) -> None:
         """Reads map parameters from OSM data, such as:
         - minimum and maximum coordinates
-        - map dimensions in meters
-        - map coefficients (meters per pixel)
         """
         bbox = ox.utils_geo.bbox_from_point(self.coordinates, dist=self.map_rotated_size / 2)
         self.minimum_x, self.minimum_y, self.maximum_x, self.maximum_y = bbox
@@ -344,7 +329,6 @@ class Texture(Component):
             ),
         )
 
-    # pylint: disable = R0912
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
         layers = self.layers_by_priority()
@@ -396,7 +380,7 @@ class Texture(Component):
                 if not layer.invisible:
                     try:
                         cv2.fillPoly(layer_image, [polygon], color=255)  # type: ignore
-                    except Exception as e:  # pylint: disable=W0718
+                    except Exception as e:
                         self.logger.warning("Error drawing polygon: %s.", repr(e))
                         continue
 
@@ -521,7 +505,6 @@ class Texture(Component):
         """
         return [(int(x), int(y)) for x, y in np_array.reshape(-1, 2)]
 
-    # pylint: disable=W0613
     def _to_np(self, geometry: shapely.geometry.polygon.Polygon, *args) -> np.ndarray:
         """Converts Polygon geometry to numpy array of polygon points.
 
@@ -534,24 +517,21 @@ class Texture(Component):
             np.ndarray: Numpy array of polygon points.
         """
         coords = list(geometry.exterior.coords)
-        pts = np.array(
-            [self.latlon_to_pixel(coord[1], coord[0]) for coord in coords],
-            np.int32,
-        )
+        pts = np.array(coords, np.int32)
         pts = pts.reshape((-1, 1, 2))
         return pts
 
     def _to_polygon(
         self, obj: pd.core.series.Series, width: int | None
     ) -> shapely.geometry.polygon.Polygon:
-        """Converts OSM object to numpy array of polygon points.
+        """Converts OSM object to numpy array of polygon points and converts coordinates to pixels.
 
         Arguments:
             obj (pd.core.series.Series): OSM object.
             width (int | None): Width of the polygon in meters.
 
         Returns:
-            shapely.geometry.polygon.Polygon: Polygon geometry.
+            shapely.geometry.polygon.Polygon: Polygon geometry with pixel coordinates.
         """
         geometry = obj["geometry"]
         geometry_type = geometry.geom_type
@@ -561,7 +541,45 @@ class Texture(Component):
             return None
         return converter(geometry, width)
 
-    def _sequence(
+    def meters_to_degrees(self, meters: int) -> float:
+        """Converts meters to degrees.
+
+        Arguments:
+            meters (int): Meters.
+
+        Returns:
+            float: Degrees.
+        """
+        return meters / 111320
+
+    def polygon_to_pixel_coordinates(self, polygon: Polygon) -> Polygon:
+        """Converts polygon coordinates from lat lon to pixel coordinates.
+
+        Arguments:
+            polygon (shapely.geometry.polygon.Polygon): Polygon geometry.
+
+        Returns:
+            shapely.geometry.polygon.Polygon: Polygon geometry.
+        """
+        coords_pixel = [
+            self.latlon_to_pixel(lat, lon) for lon, lat in list(polygon.exterior.coords)
+        ]
+        return Polygon(coords_pixel)
+
+    def _to_pixel(
+        self, geometry: shapely.geometry.polygon.Polygon, *args, **kwargs
+    ) -> shapely.geometry.polygon.Polygon:
+        """Returns the same geometry.
+
+        Arguments:
+            geometry (shapely.geometry.polygon.Polygon): Polygon geometry.
+
+        Returns:
+            shapely.geometry.polygon.Polygon: Polygon geometry.
+        """
+        return self.polygon_to_pixel_coordinates(geometry)
+
+    def _sequence_to_pixel(
         self,
         geometry: shapely.geometry.linestring.LineString | shapely.geometry.point.Point,
         width: int | None,
@@ -577,31 +595,7 @@ class Texture(Component):
             shapely.geometry.polygon.Polygon: Polygon geometry.
         """
         polygon = geometry.buffer(self.meters_to_degrees(width) if width else 0)
-        return polygon
-
-    def meters_to_degrees(self, meters: int) -> float:
-        """Converts meters to degrees.
-
-        Arguments:
-            meters (int): Meters.
-
-        Returns:
-            float: Degrees.
-        """
-        return meters / 111320
-
-    def _skip(
-        self, geometry: shapely.geometry.polygon.Polygon, *args, **kwargs
-    ) -> shapely.geometry.polygon.Polygon:
-        """Returns the same geometry.
-
-        Arguments:
-            geometry (shapely.geometry.polygon.Polygon): Polygon geometry.
-
-        Returns:
-            shapely.geometry.polygon.Polygon: Polygon geometry.
-        """
-        return geometry
+        return self.polygon_to_pixel_coordinates(polygon)
 
     def _converters(
         self, geom_type: str
@@ -614,7 +608,11 @@ class Texture(Component):
         Returns:
             Callable[[shapely.geometry, int | None], np.ndarray]: Converter function.
         """
-        converters = {"Polygon": self._skip, "LineString": self._sequence, "Point": self._sequence}
+        converters = {
+            "Polygon": self._to_pixel,
+            "LineString": self._sequence_to_pixel,
+            "Point": self._sequence_to_pixel,
+        }
         return converters.get(geom_type)  # type: ignore
 
     def objects_generator(
@@ -648,7 +646,7 @@ class Texture(Component):
                     objects = ox.features_from_xml(self.map.custom_osm, tags=tags)
             else:
                 objects = ox.features_from_bbox(bbox=self.new_bbox, tags=tags)
-        except Exception as e:  # pylint: disable=W0718
+        except Exception as e:
             self.logger.debug("Error fetching objects for tags: %s. Error: %s.", tags, e)
             return
         self.logger.debug("Fetched %s elements for tags: %s.", len(objects), tags)
@@ -690,7 +688,7 @@ class Texture(Component):
         for _, obj in objects.iterrows():
             try:
                 polygon = self._to_polygon(obj, width)
-            except Exception as e:  # pylint: disable=W0703
+            except Exception as e:
                 self.logger.warning("Error converting object to polygon: %s.", e)
                 continue
             if polygon is None:
