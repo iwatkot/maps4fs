@@ -47,7 +47,7 @@ class DTMProvider(ABC):
     _settings: Type[DTMProviderSettings] | None = DTMProviderSettings
 
     """Bounding box of the provider in the format (north, south, east, west)."""
-    _extents: tuple[float, float, float, float] | None = None
+    _extents: list[tuple[float, float, float, float]] | None = None
 
     _instructions: str | None = None
 
@@ -248,9 +248,12 @@ class DTMProvider(ABC):
         """
         lat, lon = lat_lon
         extents = cls._extents
-        return extents is None or (
-            extents[0] >= lat >= extents[1] and extents[2] >= lon >= extents[3]
-        )
+        if extents is None:
+            return True
+        for extent in extents:
+            if extent[0] >= lat >= extent[1] and extent[2] >= lon >= extent[3]:
+                return True
+        return False
 
     @abstractmethod
     def download_tiles(self) -> list[str]:

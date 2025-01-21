@@ -24,7 +24,7 @@ class FinlandProvider(WCSProvider, DTMProvider):
     _author = "[kbrandwijk](https://github.com/kbrandwijk)"
     _is_community = True
     _is_base = False
-    _extents = (70.09, 59.45, 31.59, 19.08)
+    _extents = [(70.09, 59.45, 31.59, 19.08)]
 
     _url = "https://avoin-karttakuva.maanmittauslaitos.fi/ortokuvat-ja-korkeusmallit/wcs/v2"
     _wcs_version = "2.0.1"
@@ -38,6 +38,9 @@ class FinlandProvider(WCSProvider, DTMProvider):
     )
 
     def get_wcs_instance_parameters(self):
+        if not self.user_settings.api_key:
+            raise ValueError("API Key is required for this provider.")
+
         settings = super().get_wcs_instance_parameters()
         settings["auth"] = Authentication(
             username=self.user_settings.api_key, password=self.user_settings.api_key

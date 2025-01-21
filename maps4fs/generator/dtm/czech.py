@@ -16,7 +16,9 @@ class CzechProvider(WCSProvider, DTMProvider):
     _is_community = True
     _instructions = None
     _is_base = False
-    _extents = (51.0576876059846754, 48.4917065572081754, 18.9775933665038821, 12.0428143585602161)
+    _extents = [
+        (51.0576876059846754, 48.4917065572081754, 18.9775933665038821, 12.0428143585602161)
+    ]
 
     _url = "https://ags.cuzk.cz/arcgis2/services/INSPIRE_Nadmorska_vyska/ImageServer/WCSServer"  # pylint: disable=line-too-long
     _wcs_version = "1.0.0"
