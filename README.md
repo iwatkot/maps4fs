@@ -656,13 +656,14 @@ The generator supports adding the own DTM providers, please refer to the [DTM Pr
 
 ### Supported DTM providers
 
-![coverage map](https://github.com/user-attachments/assets/e02a4b5e-c5a9-4e6f-826f-048081704ef9)
+![coverage map](https://github.com/user-attachments/assets/e96461fd-e063-4cae-9f59-11bf6efee195)
 
 In addition to SRTM 30m, which provides global coverage, the map above highlights all countries and/or regions where higher resolution coverage is provided by one of the DTM providers.
 
 | Provider Name                      | Resolution   | Developer                                   |
 | ---------------------------------- | ------------ | ------------------------------------------- |
 | 🌎 SRTM30                          | 30 meters    | [iwatkot](https://github.com/iwatkot)       |
+| 🌎 ArcticDEM                       | 2 meters     | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇺🇸 USGS                            | 1-90 meters  | [ZenJakey](https://github.com/ZenJakey)     |
 | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 England                         | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland                        | 0.25-1 meter | [kbrandwijk](https://github.com/kbrandwijk) |
