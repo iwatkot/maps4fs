@@ -656,7 +656,7 @@ The generator supports adding the own DTM providers, please refer to the [DTM Pr
 
 ### Supported DTM providers
 
-![coverage map](https://github.com/user-attachments/assets/d32147a7-1998-463a-86dc-d448d7c244b4)
+![coverage map](https://github.com/user-attachments/assets/be5c5ce1-7318-4352-97eb-efba7ec587cd)
 
 In addition to SRTM 30m, which provides global coverage, the map above highlights all countries and/or regions where higher resolution coverage is provided by one of the DTM providers.
 
@@ -674,6 +674,7 @@ In addition to SRTM 30m, which provides global coverage, the map above highlight
 | 🇩🇪 Nordrhein-Westfalen, Germany    | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇩🇪 Mecklenburg-Vorpommern, Germany | 1-25 meter   | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇩🇪 Baden-Württemberg, Germany      | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇩🇪 Sachsen-Anhalt, Germany         | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇨🇦 Canada                          | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇧🇪 Flanders, Belgium               | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇫🇷 France                          | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
