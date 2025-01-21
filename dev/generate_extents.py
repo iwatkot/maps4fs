@@ -7,7 +7,7 @@ import geopandas
 
 # prepare state and country files for uniform reading
 states = geopandas.read_file("ne_10m_admin_1_states_provinces.zip")
-countries = geopandas.read_file("ne_10m_admin_0_countries.zip")
+countries = geopandas.read_file("ne_50m_admin_0_countries.zip")
 countries.rename(columns={"NAME": "name"}, inplace=True)
 
 combined = pandas.concat([states, countries])
