@@ -15,7 +15,7 @@ import osmnx as ox
 import pandas as pd
 from osmnx import settings as ox_settings
 from shapely import LineString, Point, Polygon
-from shapely.geometry.base import BaseGeometry  # type: ignore
+from shapely.geometry.base import BaseGeometry
 from tqdm import tqdm
 
 from maps4fs.generator.component.base.component import Component
@@ -58,12 +58,13 @@ class Texture(Component):
         except Exception as e:
             raise ValueError(f"Error loading texture layers: {e}") from e
 
-    def get_schema(self) -> dict[str, Any]:
+    def get_schema(self) -> list[dict[str, Any]]:
         """Returns schema with layers for textures.
 
         Raises:
             FileNotFoundError: If the schema file is not found.
             ValueError: If there is an error loading the schema.
+            ValueError: If the schema is not a list of dictionaries.
 
         Returns:
             dict[str, Any]: Schema with layers for textures.
@@ -83,6 +84,9 @@ class Texture(Component):
                     layers_schema = json.load(f)
             except json.JSONDecodeError as e:
                 raise ValueError(f"Error loading texture layers schema: {e}") from e
+
+        if not isinstance(layers_schema, list):
+            raise ValueError("Texture layers schema must be a list of dictionaries.")
 
         return layers_schema
 
@@ -337,7 +341,7 @@ class Texture(Component):
 
         # Dictionary to store info layer data.
         # Key is a layer.info_layer, value is a list of polygon points as tuples (x, y).
-        info_layer_data = defaultdict(list)
+        info_layer_data: dict[str, list[list[int]]] = defaultdict(list)
 
         for layer in tqdm(
             layers, desc="Drawing textures", unit="layer", disable=self.map.is_public
@@ -384,7 +388,7 @@ class Texture(Component):
             self.draw_base_layer(cumulative_image)
 
     def _draw_layer(
-        self, layer: Layer, info_layer_data: dict[list[list[int]]], layer_image: np.ndarray
+        self, layer: Layer, info_layer_data: dict[str, list[list[int]]], layer_image: np.ndarray
     ) -> None:
         """Draws polygons from OSM data on the layer image and updates the info layer data.
 
@@ -393,9 +397,7 @@ class Texture(Component):
             info_layer_data (dict[list[list[int]]]): Dictionary to store info layer data.
             layer_image (np.ndarray): Layer image.
         """
-        for polygon in self.objects_generator(  # type: ignore
-            layer.tags, layer.width, layer.info_layer
-        ):
+        for polygon in self.objects_generator(layer.tags, layer.width, layer.info_layer):
             if not len(polygon) > 2:
                 self.logger.debug("Skipping polygon with less than 3 points.")
                 continue
@@ -410,7 +412,7 @@ class Texture(Component):
                     self.logger.warning("Error drawing polygon: %s.", repr(e))
                     continue
 
-    def _add_roads(self, layer: Layer, info_layer_data: dict[list[list[int]]]) -> None:
+    def _add_roads(self, layer: Layer, info_layer_data: dict[str, list[list[int]]]) -> None:
         """Adds roads to the info layer data.
 
         Arguments:
@@ -643,7 +645,7 @@ class Texture(Component):
 
     def objects_generator(
         self,
-        tags: dict[str, str | list[str] | bool],
+        tags: dict[str, str | list[str] | bool] | None,
         width: int | None,
         info_layer: str | None = None,
         yield_linestrings: bool = False,
@@ -660,6 +662,8 @@ class Texture(Component):
             Generator[np.ndarray, None, None] | Generator[list[tuple[int, int]], None, None]:
                 Numpy array of polygon points or list of point coordinates.
         """
+        if tags is None:
+            return
         is_fieds = info_layer == "fields"
 
         ox_settings.use_cache = self.map.texture_settings.use_cache

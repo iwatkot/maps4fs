@@ -40,6 +40,7 @@ class Game:
     _tree_schema: str | None = None
     _i3d_processing: bool = True
     _plants_processing: bool = True
+    _dissolve: bool = True
 
     # Order matters! Some components depend on others.
     components = [Texture, Background, GRLE, I3d, Config, Satellite]
@@ -225,8 +226,15 @@ class Game:
         i3d_base_directory = os.path.dirname(self.i3d_file_path(map_directory))
         return os.path.join(i3d_base_directory, "splines.i3d")
 
+    @property
+    def dissolve(self) -> bool:
+        """Returns whether the dissolve should be applied.
 
-# pylint: disable=W0223
+        Returns:
+            bool: True if the dissolve should be applied, False otherwise."""
+        return self._dissolve
+
+
 class FS22(Game):
     """Class used to define the game version FS22."""
 
@@ -235,6 +243,7 @@ class FS22(Game):
     _texture_schema = os.path.join(working_directory, "data", "fs22-texture-schema.json")
     _i3d_processing = False
     _plants_processing = False
+    _dissolve = False
 
     def dem_file_path(self, map_directory: str) -> str:
         """Returns the path to the DEM file.
