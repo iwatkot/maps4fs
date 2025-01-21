@@ -15,9 +15,6 @@ from templates import Messages
 
 import maps4fs as mfs
 
-QUEUE_LIMIT = 3
-DEFAULT_LAT = 45.28571409289627
-DEFAULT_LON = 20.237433441210115
 Image.MAX_IMAGE_PIXELS = None
 
 
@@ -124,7 +121,7 @@ class GeneratorUI:
 
         # Generate button.
         generate_button_disabled = False
-        if self.public and get_queue_length() >= QUEUE_LIMIT:
+        if self.public and get_queue_length() >= config.QUEUE_LIMIT:
             generate_button_disabled = True
             st.warning(Messages.OVERLOADED, icon="⚠️")
 
@@ -195,7 +192,29 @@ class GeneratorUI:
         limited_settings["SatelliteSettings"]["download_images"] = False
         return limited_settings
 
+    def get_json_settings(self) -> dict[str, mfs.SettingsModel]:
+        if not self.expert_settings.expert_mode:
+            json_settings = self.advanced_settings.settings
+        else:
+            try:
+                json_settings = json.loads(self.expert_settings.raw_config)
+            except json.JSONDecodeError as e:
+                st.error(f"Invalid raw configuration was provided: {repr(e)}")
+                return
+
+        # Limit settings on the public server.
+        json_settings = self.limit_on_public(json_settings)
+
+        # Parse settings from the JSON.
+        all_settings = mfs.SettingsModel.all_settings_from_json(json_settings)
+        return all_settings
+
     def read_generation_settings(self) -> tuple[mfs.Map, str]:
+        """Read the generation settings and create a Map object.
+
+        Returns:
+            tuple[Map, str]: The Map object and the session name.
+        """
         game = mfs.Game.from_code(
             self.main_settings.game_code, self.expert_settings.custom_template_path
         )
@@ -215,21 +234,6 @@ class GeneratorUI:
 
         map_directory = os.path.join(config.MAPS_DIRECTORY, session_name)
         os.makedirs(map_directory, exist_ok=True)
-
-        if not self.expert_settings.expert_mode:
-            json_settings = self.advanced_settings.settings
-        else:
-            try:
-                json_settings = json.loads(self.expert_settings.raw_config)
-            except json.JSONDecodeError as e:
-                st.error(f"Invalid raw configuration was provided: {repr(e)}")
-                return
-
-        # Limit settings on the public server.
-        json_settings = self.limit_on_public(json_settings)
-
-        # Parse settings from the JSON.
-        all_settings = mfs.SettingsModel.all_settings_from_json(json_settings)
 
         texture_schema = None
         tree_schema = None
@@ -275,13 +279,7 @@ class GeneratorUI:
             map_directory,
             logger=self.logger,
             custom_osm=osm_path,
-            dem_settings=all_settings["DEMSettings"],
-            background_settings=all_settings["BackgroundSettings"],
-            grle_settings=all_settings["GRLESettings"],
-            i3d_settings=all_settings["I3DSettings"],
-            texture_settings=all_settings["TextureSettings"],
-            spline_settings=all_settings["SplineSettings"],
-            satellite_settings=all_settings["SatelliteSettings"],
+            **self.get_json_settings(),
             texture_custom_schema=texture_schema,
             tree_custom_schema=tree_schema,
             custom_background_path=self.expert_settings.custom_background_path,

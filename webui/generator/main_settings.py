@@ -1,5 +1,6 @@
 from time import sleep
 
+import config
 import osmp
 import streamlit as st
 import streamlit.components.v1 as components
@@ -7,9 +8,6 @@ from generator.base_component import BaseComponent
 from templates import Messages
 
 import maps4fs as mfs
-
-DEFAULT_LAT = 50
-DEFAULT_LON = 40
 
 
 class MainSettings(BaseComponent):
@@ -31,7 +29,7 @@ class MainSettings(BaseComponent):
         st.write("Enter latitude and longitude of the center point of the map:")
         self.lat_lon_input = st.text_input(
             "Latitude and Longitude",
-            f"{DEFAULT_LAT}, {DEFAULT_LON}",
+            f"{config.DEFAULT_LAT}, {config.DEFAULT_LON}",
             key="lat_lon",
             label_visibility="collapsed",
             on_change=self.map_preview,
@@ -64,7 +62,7 @@ class MainSettings(BaseComponent):
         try:
             lat, lon = self.lat_lon
         except ValueError:
-            lat, lon = DEFAULT_LAT, DEFAULT_LON
+            lat, lon = config.DEFAULT_LAT, config.DEFAULT_LON
 
         providers: dict[str, str] = mfs.DTMProvider.get_valid_provider_descriptions((lat, lon))
 
