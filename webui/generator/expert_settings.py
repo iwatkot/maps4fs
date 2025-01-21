@@ -14,6 +14,7 @@ class ExpertSettings(BaseComponent):
     def __init__(self, public: bool, **kwargs):
         super().__init__(public, **kwargs)
         self.game_code = kwargs["game_code"]
+        self.settings = kwargs["settings"]
 
         self.custom_background_path = None
         self.expert_mode = False

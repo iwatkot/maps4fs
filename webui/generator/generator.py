@@ -105,7 +105,11 @@ class GeneratorUI:
         )
 
         self.advanced_settings = AdvancedSettings(self.public)
-        self.expert_settings = ExpertSettings(self.public, game_code=self.main_settings.game_code)
+        self.expert_settings = ExpertSettings(
+            self.public,
+            game_code=self.main_settings.game_code,
+            settings=self.advanced_settings.settings,
+        )
 
         # Add an empty container for status messages.
         self.status_container = st.empty()
