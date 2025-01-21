@@ -4,11 +4,10 @@ from datetime import datetime
 from time import perf_counter
 
 import config
-
-# import osmp
 import streamlit as st
-
-# import streamlit.components.v1 as components
+from generator.advanced_settings import AdvancedSettings
+from generator.expert_settings import ExpertSettings
+from generator.main_settings import MainSettings
 from PIL import Image
 from queuing import add_to_queue, get_queue_length, remove_from_queue, wait_in_queue
 from streamlit_stl import stl_from_file
@@ -110,10 +109,6 @@ class GeneratorUI:
         st.write(Messages.MAIN_PAGE_DESCRIPTION)
         st.markdown("---")
 
-        from generator.advanced_settings import AdvancedSettings
-        from generator.expert_settings import ExpertSettings
-        from generator.main_settings import MainSettings
-
         self.main_settings = MainSettings(
             self.public, html_preview_container=self.html_preview_container
         )
@@ -197,10 +192,10 @@ class GeneratorUI:
         limited_settings["BackgroundSettings"]["resize_factor"] = 8
         limited_settings["TextureSettings"]["dissolve"] = False
         limited_settings["SatelliteSettings"]["zoom_level"] = 14
+        limited_settings["SatelliteSettings"]["download_images"] = False
         return limited_settings
 
-    def generate_map(self) -> None:
-        """Generate the map."""
+    def read_generation_settings(self) -> tuple[mfs.Map, str]:
         game = mfs.Game.from_code(
             self.main_settings.game_code, self.expert_settings.custom_template_path
         )
@@ -293,6 +288,13 @@ class GeneratorUI:
             is_public=self.public,
         )
 
+        return mp, session_name
+
+    def generate_map(self) -> None:
+        """Generate the map."""
+
+        mp, session_name = self.read_generation_settings()
+
         if self.public:
             add_to_queue(session_name)
             for position in wait_in_queue(session_name):
@@ -302,7 +304,7 @@ class GeneratorUI:
         self.status_container.info("Map generation started...", icon="🔄")
 
         try:
-            step = int(100 / (len(game.components) + 2))
+            step = int(100 / (len(mp.game.components) + 2))
             completed = 0
             progress_bar = st.progress(0)
 
@@ -316,7 +318,7 @@ class GeneratorUI:
 
             # Create a preview image.
             self.show_preview(mp)
-            # self.map_preview()
+            self.main_settings.map_preview()
 
             completed += step
             progress_bar.progress(completed, "🗃️ Packing the map...")
@@ -333,7 +335,7 @@ class GeneratorUI:
             self.logger.info(
                 "Map for game %s, coordinates %s, size %s, rotation %s generated in %s seconds.",
                 self.main_settings.game_code,
-                coordinates,
+                mp.coordinates,
                 self.main_settings.map_size_input,
                 self.main_settings.rotation,
                 generation_time,
