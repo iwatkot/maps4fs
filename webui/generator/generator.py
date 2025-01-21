@@ -185,6 +185,11 @@ class GeneratorUI:
         return limited_settings
 
     def get_json_settings(self) -> dict[str, mfs.SettingsModel]:
+        """Retrieve the settings from the JSON.
+
+        Returns:
+            dict[str, SettingsModel]: The settings.
+        """
         if not self.expert_settings.expert_mode:
             json_settings = self.advanced_settings.settings
         else:
