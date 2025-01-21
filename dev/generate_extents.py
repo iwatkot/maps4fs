@@ -1,4 +1,5 @@
-""" Generate a shapefile with the extents of the regions for all providers. """
+""" Generate a shapefile with the extents of the regions for all providers.
+Source of this data: https://www.naturalearthdata.com/downloads/10m-cultural-vectors/"""
 
 import pandas
 import shapely
