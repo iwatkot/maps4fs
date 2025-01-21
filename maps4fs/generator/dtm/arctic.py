@@ -49,7 +49,6 @@ class ArcticProvider(DTMProvider):
         try:
             # Make the GET request
             north, south, east, west = self.get_bbox()
-            print(north, south, east, west)
             response = requests.get(  # pylint: disable=W3101
                 self.url,  # type: ignore
                 params={
