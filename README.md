@@ -663,7 +663,7 @@ In addition to SRTM 30m, which provides global coverage, the map above highlight
 | Provider Name                      | Resolution   | Developer                                   |
 | ---------------------------------- | ------------ | ------------------------------------------- |
 | 🌎 SRTM30                          | 30 meters    | [iwatkot](https://github.com/iwatkot)       |
-| 🇺🇸 USGS                            | 1-90 meters  | [ZenJakey](https://github.com/ZenJakey)     |
+| 🇺🇸 USGS                            | 1-90 meters  | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 England                         | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland                        | 0.25-1 meter | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇩🇪 Hessen, Germany                 | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
