@@ -122,36 +122,42 @@ class Settings:
         "If you want to make it more steep, you can increase this value. "
         "The recommended value of the multiplier is 1.  \n"
         "But this will not work with every place, you need to perform "
-        "experiments, play both with the multiplier and the height scale in GE."
+        "experiments, play both with the multiplier and the height scale in GE.  \n"
+        "ℹ️ **Units:** integer value."
     )
     BLUR_RADIUS = (
         "DEM blur radius is used to blur the elevation map. Without blurring the terrain "
         "may look too sharp and unrealistic. By default the blur radius is set to 3 "
         "which corresponds to a 3x3 pixel kernel. You can increase this value to make "
         "the terrain more smooth. Or make it smaller to make the terrain more sharp.  \n"
-        "Follow the recommendations of the DTM provider you selected for the best result."
+        "Follow the recommendations of the DTM provider you selected for the best result.  \n"
+        "ℹ️ **Units:** integer value."
     )
     PLATEAU = (
-        "DEM plateau value (in meters) is used to make the whole map higher or lower. "
+        "DEM plateau value is used to make the whole map higher or lower. "
         "This value will be added to each pixel of the DEM image, making it higher. "
         "It can be useful if you're working on a plain area and need to add some "
-        "negative height (to make rivers, for example)."
+        "negative height (to make rivers, for example).  \n"
+        "ℹ️ **Units:** meters from the ground level."
     )
     CEILING = (
-        "DEM ceiling value (in meters) is used to add padding in the DEM above the "
+        "DEM ceiling value is used to add padding in the DEM above the "
         "highest elevation in your map area. It can be useful if you plan to manually "
-        "add some height to the map by sculpting the terrain in GE."
+        "add some height to the map by sculpting the terrain in GE.  \n"
+        "ℹ️ **Units:** meters from the top of the highest elevation."
     )
     MINIMUM_HEIGHT_SCALE = (
         "This value is used as the heightScale in your map i3d. It will automatically "
         "be set higher if the elevation in your map (plus plateau, ceiling and water "
-        "depth) is higher than this value."
+        "depth) is higher than this value.  \n"
+        "ℹ️ **Units:** integer value."
     )
 
     WATER_DEPTH = (
-        "Water depth value (in meters) will be subtracted from the DEM image, making the water "
+        "Water depth value will be subtracted from the DEM image, making the water "
         "deeper. The pixel value used for this is calculated based on the heightScale value "
-        "for your map."
+        "for your map.  \n"
+        "ℹ️ **Units:** meters."
     )
 
     # Background Settings
@@ -278,7 +284,8 @@ class Settings:
 
     FIELDS_PADDING = (
         "Field padding value is used to add some padding around the fields. "
-        "It will make the fields smaller, can be useful if they are too close to each other."
+        "It will make the fields smaller, can be useful if they are too close to each other.  \n"
+        "ℹ️ **Units:** meters."
     )
 
     SKIP_DRAINS = (
@@ -298,7 +305,8 @@ class Settings:
     SPLINE_DENSITY = (
         "Spline density value represents the number of additional points, which will be added between "
         "each pair of existing points of the spline. The higher value will make the spline "
-        "more smooth. Be careful with high values, because it may make your spline too complex."
+        "more smooth. Be careful with high values, because it may make your spline too complex.  \n"
+        "ℹ️ **Units:** number of additional points between each pair of existing points."
     )
 
     # Satellite Settings
@@ -310,12 +318,14 @@ class Settings:
     SATELLITE_MARGIN = (
         "Satellite margin value (in meters) is used to add some margin around the satellite images. "
         "It will result satellite images to be bigger than the map size, which can be useful "
-        "for adjusting the images."
+        "for adjusting the images.  \n"
+        "ℹ️ **Units:** meters."
     )
 
     ZOOM_LEVEL = (
         "Satellite zoom level is used to set the zoom level of the satellite images. "
         "The higher the value, the more detailed the images will be. "
         "Be careful with high values, because it may result in very large images and super long "
-        "download time."
+        "download time.  \n"
+        "ℹ️ **Units:** integer value, maximum recommended value is 18."
     )
