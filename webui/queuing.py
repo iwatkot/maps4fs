@@ -9,7 +9,6 @@ import schedule
 from config import (
     ARCHIVES_DIRECTORY,
     MAPS_DIRECTORY,
-    OSMPS_DIRECTORY,
     QUEUE_FILE,
     QUEUE_INTERVAL,
     QUEUE_TIMEOUT,
@@ -159,7 +158,7 @@ def auto_clean() -> None:
     if get_queue_length() > 0:
         return
 
-    to_clean = [ARCHIVES_DIRECTORY, MAPS_DIRECTORY, OSMPS_DIRECTORY, TEMP_DIRECTORY]
+    to_clean = [ARCHIVES_DIRECTORY, MAPS_DIRECTORY, TEMP_DIRECTORY]
     for directory in to_clean:
         shutil.rmtree(directory, ignore_errors=True)
 
