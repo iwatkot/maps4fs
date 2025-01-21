@@ -538,17 +538,6 @@ class Texture(Component):
             return None
         return converter(geometry, width)
 
-    def meters_to_degrees(self, meters: int) -> float:
-        """Converts meters to degrees.
-
-        Arguments:
-            meters (int): Meters.
-
-        Returns:
-            float: Degrees.
-        """
-        return meters / 111320
-
     def polygon_to_pixel_coordinates(self, polygon: Polygon) -> Polygon:
         """Converts polygon coordinates from lat lon to pixel coordinates.
 
@@ -562,6 +551,30 @@ class Texture(Component):
             self.latlon_to_pixel(lat, lon) for lon, lat in list(polygon.exterior.coords)
         ]
         return Polygon(coords_pixel)
+
+    def linestring_to_pixel_coordinates(self, linestring: LineString) -> LineString:
+        """Converts LineString coordinates from lat lon to pixel coordinates.
+
+        Arguments:
+            linestring (LineString): LineString geometry.
+
+        Returns:
+            LineString: LineString geometry.
+        """
+        coords_pixel = [self.latlon_to_pixel(lat, lon) for lon, lat in list(linestring.coords)]
+        return LineString(coords_pixel)
+
+    def point_to_pixel_coordinates(self, point: Point) -> Point:
+        """Converts Point coordinates from lat lon to pixel coordinates.
+
+        Arguments:
+            point (Point): Point geometry.
+
+        Returns:
+            Point: Point geometry.
+        """
+        x, y = self.latlon_to_pixel(point.y, point.x)
+        return Point(x, y)
 
     def _to_pixel(self, geometry: Polygon, *args, **kwargs) -> Polygon:
         """Returns the same geometry with pixel coordinates.
@@ -585,11 +598,20 @@ class Texture(Component):
             geometry (LineString | Point): LineString or Point geometry.
             width (int | None): Width of the polygon in meters.
 
+        Raises:
+            ValueError: If the geometry type is not supported
+
         Returns:
             Polygon: Polygon geometry.
         """
-        polygon = geometry.buffer(self.meters_to_degrees(width) if width else 0)
-        return self.polygon_to_pixel_coordinates(polygon)
+        if isinstance(geometry, LineString):
+            geometry = self.linestring_to_pixel_coordinates(geometry)
+        elif isinstance(geometry, Point):
+            geometry = self.point_to_pixel_coordinates(geometry)
+        else:
+            raise ValueError(f"Geometry type {type(geometry)} not supported.")
+
+        return geometry.buffer(width if width else 0)
 
     def _converters(
         self, geom_type: str
@@ -689,13 +711,11 @@ class Texture(Component):
                 continue
 
             if is_fieds and self.map.texture_settings.fields_padding > 0:
-                padded_polygon = polygon.buffer(
-                    -self.meters_to_degrees(self.map.texture_settings.fields_padding)
-                )
+                padded_polygon = polygon.buffer(-self.map.texture_settings.fields_padding)
 
-                if not isinstance(padded_polygon, Polygon):
-                    self.logger.debug("The padding value is too high, field will not padded.")
-                elif not list(padded_polygon.exterior.coords):
+                if not isinstance(padded_polygon, Polygon) or not list(
+                    padded_polygon.exterior.coords
+                ):
                     self.logger.debug("The padding value is too high, field will not padded.")
                 else:
                     polygon = padded_polygon
