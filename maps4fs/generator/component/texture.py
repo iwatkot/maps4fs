@@ -13,9 +13,8 @@ import cv2
 import numpy as np
 import osmnx as ox
 import pandas as pd
-import shapely.geometry  # type: ignore
 from osmnx import settings as ox_settings
-from shapely import Polygon
+from shapely import LineString, Point, Polygon
 from shapely.geometry.base import BaseGeometry  # type: ignore
 from tqdm import tqdm
 
@@ -505,11 +504,11 @@ class Texture(Component):
         """
         return [(int(x), int(y)) for x, y in np_array.reshape(-1, 2)]
 
-    def _to_np(self, geometry: shapely.geometry.polygon.Polygon, *args) -> np.ndarray:
+    def _to_np(self, geometry: Polygon, *args) -> np.ndarray:
         """Converts Polygon geometry to numpy array of polygon points.
 
         Arguments:
-            geometry (shapely.geometry.polygon.Polygon): Polygon geometry.
+            geometry (Polygon): Polygon geometry.
             *Arguments: Additional arguments:
                 - width (int | None): Width of the polygon in meters.
 
@@ -521,9 +520,7 @@ class Texture(Component):
         pts = pts.reshape((-1, 1, 2))
         return pts
 
-    def _to_polygon(
-        self, obj: pd.core.series.Series, width: int | None
-    ) -> shapely.geometry.polygon.Polygon:
+    def _to_polygon(self, obj: pd.core.series.Series, width: int | None) -> Polygon:
         """Converts OSM object to numpy array of polygon points and converts coordinates to pixels.
 
         Arguments:
@@ -531,7 +528,7 @@ class Texture(Component):
             width (int | None): Width of the polygon in meters.
 
         Returns:
-            shapely.geometry.polygon.Polygon: Polygon geometry with pixel coordinates.
+            Polygon: Polygon geometry with pixel coordinates.
         """
         geometry = obj["geometry"]
         geometry_type = geometry.geom_type
@@ -556,43 +553,40 @@ class Texture(Component):
         """Converts polygon coordinates from lat lon to pixel coordinates.
 
         Arguments:
-            polygon (shapely.geometry.polygon.Polygon): Polygon geometry.
+            polygon (Polygon): Polygon geometry.
 
         Returns:
-            shapely.geometry.polygon.Polygon: Polygon geometry.
+            Polygon: Polygon geometry.
         """
         coords_pixel = [
             self.latlon_to_pixel(lat, lon) for lon, lat in list(polygon.exterior.coords)
         ]
         return Polygon(coords_pixel)
 
-    def _to_pixel(
-        self, geometry: shapely.geometry.polygon.Polygon, *args, **kwargs
-    ) -> shapely.geometry.polygon.Polygon:
-        """Returns the same geometry.
+    def _to_pixel(self, geometry: Polygon, *args, **kwargs) -> Polygon:
+        """Returns the same geometry with pixel coordinates.
 
         Arguments:
-            geometry (shapely.geometry.polygon.Polygon): Polygon geometry.
+            geometry (Polygon): Polygon geometry.
 
         Returns:
-            shapely.geometry.polygon.Polygon: Polygon geometry.
+            Polygon: Polygon geometry with pixel coordinates.
         """
         return self.polygon_to_pixel_coordinates(geometry)
 
     def _sequence_to_pixel(
         self,
-        geometry: shapely.geometry.linestring.LineString | shapely.geometry.point.Point,
+        geometry: LineString | Point,
         width: int | None,
-    ) -> shapely.geometry.polygon.Polygon:
+    ) -> Polygon:
         """Converts LineString or Point geometry to numpy array of polygon points.
 
         Arguments:
-            geometry (shapely.geometry.linestring.LineString | shapely.geometry.point.Point):
-                LineString or Point geometry.
+            geometry (LineString | Point): LineString or Point geometry.
             width (int | None): Width of the polygon in meters.
 
         Returns:
-            shapely.geometry.polygon.Polygon: Polygon geometry.
+            Polygon: Polygon geometry.
         """
         polygon = geometry.buffer(self.meters_to_degrees(width) if width else 0)
         return self.polygon_to_pixel_coordinates(polygon)
@@ -668,7 +662,7 @@ class Texture(Component):
         """
         for _, obj in objects.iterrows():
             geometry = obj["geometry"]
-            if isinstance(geometry, shapely.geometry.linestring.LineString):
+            if isinstance(geometry, LineString):
                 points = [self.latlon_to_pixel(x, y) for y, x in geometry.coords]
                 yield points
 
@@ -699,7 +693,7 @@ class Texture(Component):
                     -self.meters_to_degrees(self.map.texture_settings.fields_padding)
                 )
 
-                if not isinstance(padded_polygon, shapely.geometry.polygon.Polygon):
+                if not isinstance(padded_polygon, Polygon):
                     self.logger.debug("The padding value is too high, field will not padded.")
                 elif not list(padded_polygon.exterior.coords):
                     self.logger.debug("The padding value is too high, field will not padded.")
