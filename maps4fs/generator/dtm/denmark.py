@@ -36,6 +36,9 @@ class DenmarkProvider(WCSProvider, DTMProvider):
     _tile_size = 1000
 
     def get_wcs_parameters(self, tile):
+        if not self.user_settings.token:
+            raise ValueError("A token is required for this provider.")
+
         return {
             "identifier": "dhm_terraen",
             "bbox": (tile[1], tile[0], tile[3], tile[2]),

@@ -123,8 +123,7 @@ class DEM(Component):
             data = self.dtm_provider.get_numpy()
         except Exception as e:  # pylint: disable=W0718
             self.logger.error("Failed to get DEM data from DTM provider: %s.", e)
-            self._save_empty_dem(dem_output_resolution)
-            return
+            raise e
 
         if len(data.shape) != 2:
             self.logger.error("DTM provider returned incorrect data: more than 1 channel.")

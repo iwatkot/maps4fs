@@ -38,6 +38,9 @@ class FinlandProvider(WCSProvider, DTMProvider):
     )
 
     def get_wcs_instance_parameters(self):
+        if not self.user_settings.api_key:
+            raise ValueError("API Key is required for this provider.")
+
         settings = super().get_wcs_instance_parameters()
         settings["auth"] = Authentication(
             username=self.user_settings.api_key, password=self.user_settings.api_key

@@ -705,7 +705,7 @@ class GeneratorUI:
         except Exception as e:
             self.logger.error("An error occurred while generating the map: %s", repr(e))
             self.status_container.error(
-                f"An error occurred while generating the map: {repr(e)}.", icon="❌"
+                f"An error occurred while generating the map: {str(e)}.", icon="❌"
             )
         finally:
             if self.public:
