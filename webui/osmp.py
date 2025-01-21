@@ -1,13 +1,11 @@
 import math
-import os
 import random
 
-import config
 import folium
 import osmnx as ox
 
 
-def get_rotated_preview(lat: float, lon: float, distance: int, angle: int):
+def get_rotated_preview(lat: float, lon: float, distance: int, angle: int) -> folium.Map:
     """Return the path to the HTML file where the OpenStreetMap data is saved.
 
     Arguments:
@@ -17,12 +15,8 @@ def get_rotated_preview(lat: float, lon: float, distance: int, angle: int):
         angle (int): Angle of rotation in degrees.
 
     Returns:
-        str: Path to the HTML file.
+        folium.Map: Folium map object.
     """
-    save_path = get_rotated_save_path(lat, lon, distance, angle)
-    if os.path.isfile(save_path):
-        return save_path
-
     m = folium.Map(zoom_control=False)
 
     url = "https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga"
@@ -56,15 +50,18 @@ def get_rotated_preview(lat: float, lon: float, distance: int, angle: int):
     center = get_center(bbox)
     folium.CircleMarker(center, radius=1, color=color, fill=True).add_to(m)
 
-    m.save(save_path)
-    return save_path
+    return m
 
 
-def get_preview(bboxes: list[tuple[float, float, float, float]]) -> str:
-    save_path = get_save_path(bboxes)
-    if os.path.isfile(save_path):
-        return save_path
+def get_preview(bboxes: list[tuple[float, float, float, float]]) -> folium.Map:
+    """Returns the folium map object with the bounding boxes.
 
+    Arguments:
+        bboxes (list[tuple[float, float, float, float]]): List of bounding boxes.
+
+    Returns:
+        folium.Map: Folium map object.
+    """
     m = folium.Map(zoom_control=False)
 
     for bbox in bboxes:
@@ -86,8 +83,7 @@ def get_preview(bboxes: list[tuple[float, float, float, float]]) -> str:
     # Fit bounds to the last bbox in the list.
     m.fit_bounds([[south, west], [north, east]])
 
-    m.save(save_path)
-    return save_path
+    return m
 
 
 def get_random_color() -> str:
@@ -105,53 +101,3 @@ def get_bbox(center: tuple[float, float], size_meters: int) -> tuple[float, floa
         (center_lat, center_lon), size_meters / 2, project_utm=False
     )
     return north, south, east, west
-
-
-def get_save_path(bboxes: list[tuple[float, float, float, float]]) -> str:
-    """Return the path to the HTML file where the OpenStreetMap data is saved.
-
-    Arguments:
-        lat (float): Latitude of the central point.
-        lon (float): Longitude of the central point.
-        size_meters (int): Width of the bounding box in meters.
-        postfix (str): Optional postfix to add to the filename.
-
-    Returns:
-        str: Path to the HTML file.
-    """
-    file_names = [format_coordinates(bbox) for bbox in bboxes]
-    filename = "_".join(file_names) + ".html"
-    return os.path.join(
-        config.OSMPS_DIRECTORY,
-        filename,
-    )
-
-
-def get_rotated_save_path(lat: float, lon: float, size_meters: int, angle: int) -> str:
-    """Return the path to the HTML file where the OpenStreetMap data is saved.
-
-    Arguments:
-        lat (float): Latitude of the central point.
-        lon (float): Longitude of the central point.
-        size_meters (int): Width of the bounding box in meters.
-        angle (int): Angle of rotation in degrees.
-
-    Returns:
-        str: Path to the HTML file.
-    """
-    return os.path.join(
-        config.OSMPS_DIRECTORY,
-        f"{lat}_{lon}_{size_meters}_{angle}.html",
-    )
-
-
-def format_coordinates(bbox: tuple[float, float, float, float]) -> str:
-    """Return a string representation of the coordinates.
-
-    Arguments:
-        bbox (tuple[float, float, float, float]): The bounding box coordinates.
-
-    Returns:
-        str: String representation of the coordinates.
-    """
-    return "_".join(map(str, bbox))
