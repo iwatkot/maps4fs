@@ -23,7 +23,7 @@ class BavariaProvider(DTMProvider):
     _author = "[H4rdB4se](https://github.com/H4rdB4se)"
     _is_community = True
     _instructions = None
-    _extents = (50.56, 47.25, 13.91, 8.95)
+    _extents = [(50.56, 47.25, 13.91, 8.95)]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -65,6 +65,12 @@ class BavariaProvider(DTMProvider):
         file_path = os.path.join(self.meta4_path, self.get_meta_file_name(north, south, east, west))
         if not os.path.exists(file_path):
             try:
+                print(
+                    (
+                        f"SRID=4326;POLYGON(({west} {south},{east} {south},"
+                        f"{east} {north},{west} {north},{west} {south}))"
+                    )
+                )
                 # Make the GET request
                 response = requests.post(
                     "https://geoservices.bayern.de/services/poly2metalink/metalink/dgm1",
