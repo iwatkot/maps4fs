@@ -331,10 +331,7 @@ class Texture(Component):
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
         layers = self.layers_by_priority()
-
-        self.logger.debug(
-            "Sorted layers by priority: %s.", [(layer.name, layer.priority) for layer in layers]
-        )
+        layers = [layer for layer in layers if layer.tags is not None]
 
         cumulative_image = None
 
@@ -347,9 +344,6 @@ class Texture(Component):
         ):
             if self.map.texture_settings.skip_drains and layer.usage == "drain":
                 self.logger.debug("Skipping layer %s because of the usage.", layer.name)
-                continue
-            if not layer.tags:
-                self.logger.debug("Layer %s has no tags, there's nothing to draw.", layer.name)
                 continue
             if layer.priority == 0:
                 self.logger.debug(
@@ -365,34 +359,10 @@ class Texture(Component):
                 cumulative_image = layer_image
 
             mask = cv2.bitwise_not(cumulative_image)
-
-            for polygon in self.objects_generator(  # type: ignore
-                layer.tags, layer.width, layer.info_layer
-            ):
-                if not len(polygon) > 2:
-                    self.logger.debug("Skipping polygon with less than 3 points.")
-                    continue
-                if layer.info_layer:
-                    info_layer_data[layer.info_layer].append(
-                        self.np_to_polygon_points(polygon)  # type: ignore
-                    )
-                if not layer.invisible:
-                    try:
-                        cv2.fillPoly(layer_image, [polygon], color=255)  # type: ignore
-                    except Exception as e:
-                        self.logger.warning("Error drawing polygon: %s.", repr(e))
-                        continue
-
-            if layer.info_layer == "roads":
-                for linestring in self.objects_generator(
-                    layer.tags, layer.width, layer.info_layer, yield_linestrings=True
-                ):
-                    info_layer_data[f"{layer.info_layer}_polylines"].append(
-                        linestring  # type: ignore
-                    )
+            self._draw_layer(layer, info_layer_data, layer_image)
+            self._add_roads(layer, info_layer_data)
 
             output_image = cv2.bitwise_and(layer_image, mask)
-
             cumulative_image = cv2.bitwise_or(cumulative_image, output_image)
 
             cv2.imwrite(layer_path, output_image)
@@ -412,6 +382,46 @@ class Texture(Component):
 
         if cumulative_image is not None:
             self.draw_base_layer(cumulative_image)
+
+    def _draw_layer(
+        self, layer: Layer, info_layer_data: dict[list[list[int]]], layer_image: np.ndarray
+    ) -> None:
+        """Draws polygons from OSM data on the layer image and updates the info layer data.
+
+        Arguments:
+            layer (Layer): Layer with textures and tags.
+            info_layer_data (dict[list[list[int]]]): Dictionary to store info layer data.
+            layer_image (np.ndarray): Layer image.
+        """
+        for polygon in self.objects_generator(  # type: ignore
+            layer.tags, layer.width, layer.info_layer
+        ):
+            if not len(polygon) > 2:
+                self.logger.debug("Skipping polygon with less than 3 points.")
+                continue
+            if layer.info_layer:
+                info_layer_data[layer.info_layer].append(
+                    self.np_to_polygon_points(polygon)  # type: ignore
+                )
+            if not layer.invisible:
+                try:
+                    cv2.fillPoly(layer_image, [polygon], color=255)  # type: ignore
+                except Exception as e:
+                    self.logger.warning("Error drawing polygon: %s.", repr(e))
+                    continue
+
+    def _add_roads(self, layer: Layer, info_layer_data: dict[list[list[int]]]) -> None:
+        """Adds roads to the info layer data.
+
+        Arguments:
+            layer (Layer): Layer with textures and tags.
+            info_layer_data (dict[list[list[int]]]): Dictionary to store info layer data.
+        """
+        if layer.info_layer == "roads":
+            for linestring in self.objects_generator(
+                layer.tags, layer.width, layer.info_layer, yield_linestrings=True
+            ):
+                info_layer_data[f"{layer.info_layer}_polylines"].append(linestring)  # type: ignore
 
     def dissolve(self) -> None:
         """Dissolves textures of the layers with tags into sublayers for them to look more

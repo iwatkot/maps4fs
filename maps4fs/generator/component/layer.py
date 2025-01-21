@@ -1,3 +1,5 @@
+"""This module contains the class representing a layer with textures and tags."""
+
 from __future__ import annotations
 
 import os
