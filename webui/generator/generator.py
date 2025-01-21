@@ -41,10 +41,8 @@ class GeneratorUI:
 
     def __init__(self):
         self.download_path = None
-        self.logger = mfs.Logger(level="INFO", to_file=False)
 
         self.public = config.is_public()
-        self.logger.debug("The application launched on a public server: %s", self.public)
 
         self.left_column, self.right_column = st.columns(2, gap="large")
 
@@ -63,19 +61,17 @@ class GeneratorUI:
 
     def add_right_widgets(self) -> None:
         """Add widgets to the right column."""
-        self.logger.debug("Adding widgets to the right column...")
         self.html_preview_container = st.empty()
         self.map_selector_container = st.container()
         self.preview_container = st.container()
 
     def _show_version(self) -> None:
         """Show the current version of the package."""
-        versions = config.get_versions(self.logger)
+        versions = config.get_versions()
         try:
             if versions:
                 latest_version, current_version = versions
                 if not current_version:
-                    self.logger.debug("Can't get the current version of the package.")
                     return
                 st.write(f"`{current_version}`")
                 if self.public:
@@ -93,13 +89,11 @@ class GeneratorUI:
                         f"iwatkot/maps4fs:{latest_version}   \n"
                         "```"
                     )
-        except Exception as e:
-            self.logger.error("An error occurred while checking the package version: %s", e)
+        except Exception:
+            pass
 
     def add_left_widgets(self) -> None:
         """Add widgets to the left column."""
-        self.logger.debug("Adding widgets to the left column...")
-
         st.title(Messages.TITLE)
         self._show_version()
 
@@ -132,7 +126,6 @@ class GeneratorUI:
 
         # Download button.
         if st.session_state.generated:
-            self.logger.debug("Generated was set to True in the session state.")
             with open(self.download_path, "rb") as f:
                 with self.buttons_container:
                     st.download_button(
@@ -143,10 +136,9 @@ class GeneratorUI:
                         icon="📥",
                     )
 
-            config.remove_with_delay_without_blocking(self.download_path, self.logger)
+            config.remove_with_delay_without_blocking(self.download_path)
 
             st.session_state.generated = False
-            self.logger.debug("Generated was set to False in the session state.")
 
     def get_sesion_name(self, coordinates: tuple[float, float]) -> str:
         """Return a session name for the map, using the coordinates and the current timestamp.
@@ -277,7 +269,7 @@ class GeneratorUI:
             self.main_settings.map_size_input,
             self.main_settings.rotation,
             map_directory,
-            logger=self.logger,
+            logger=self.expert_settings.logger,
             custom_osm=osm_path,
             **self.get_json_settings(),
             texture_custom_schema=texture_schema,
@@ -330,7 +322,7 @@ class GeneratorUI:
 
             generation_finished_at = perf_counter()
             generation_time = round(generation_finished_at - generation_started_at, 3)
-            self.logger.info(
+            self.expert_settings.logger.info(
                 "Map for game %s, coordinates %s, size %s, rotation %s generated in %s seconds.",
                 self.main_settings.game_code,
                 mp.coordinates,
@@ -340,7 +332,9 @@ class GeneratorUI:
             )
             self.status_container.success(f"Map generated in {generation_time} seconds.", icon="✅")
         except Exception as e:
-            self.logger.error("An error occurred while generating the map: %s", repr(e))
+            self.expert_settings.logger.error(
+                "An error occurred while generating the map: %s", repr(e)
+            )
             self.status_container.error(
                 f"An error occurred while generating the map: {repr(e)}.", icon="❌"
             )

@@ -6,8 +6,6 @@ from time import sleep
 
 import requests
 
-import maps4fs as mfs
-
 WORKING_DIRECTORY = os.getcwd()
 ARCHIVES_DIRECTORY = os.path.join(WORKING_DIRECTORY, "archives")
 DATA_DIRECTORY = os.path.join(WORKING_DIRECTORY, "data")
@@ -80,7 +78,6 @@ def is_public() -> bool:
 
 def remove_with_delay_without_blocking(
     file_path: str,
-    logger: mfs.Logger,
     delay: int = REMOVE_DELAY,
 ) -> None:
     """Remove a file with a delay without blocking the main thread.
@@ -92,19 +89,16 @@ def remove_with_delay_without_blocking(
     """
 
     def remove_file() -> None:
-        logger.debug("Removing file from %s in %s seconds.", file_path, delay)
         sleep(delay)
         try:
             os.remove(file_path)
-            logger.debug("File %s removed.", file_path)
         except FileNotFoundError:
-            logger.debug("File %s not found.", file_path)
+            pass
 
-    logger.debug("Starting a new thread to remove the file %s.", file_path)
     threading.Thread(target=remove_file).start()
 
 
-def get_versions(logger: mfs.Logger) -> tuple[str, str] | None:
+def get_versions() -> tuple[str, str] | None:
     """Get the latest version and the current version of the package.
 
     Returns:
@@ -116,18 +110,15 @@ def get_versions(logger: mfs.Logger) -> tuple[str, str] | None:
         response.raise_for_status()
 
         latest_version = response.json()["info"]["version"]
-        logger.debug("Latest version on PyPI: %s. Length: %s", latest_version, len(latest_version))
 
-        current_version = get_package_version("maps4fs", logger)
-        logger.debug("Current version: %s. Length: %s", current_version, len(current_version))
+        current_version = get_package_version("maps4fs")
 
         return latest_version, current_version
-    except Exception as e:
-        logger.error("An error occurred while checking the package version: %s", e)
+    except Exception:
         return
 
 
-def get_package_version(package_name: str, logger: mfs.Logger) -> str:
+def get_package_version(package_name: str) -> str:
     """Get the package version.
 
     Returns:
@@ -140,9 +131,6 @@ def get_package_version(package_name: str, logger: mfs.Logger) -> str:
         command = f"pip list 2>/dev/null | grep {package_name}"
 
     response = os.popen(command).read()
-    logger.debug("Grepped response: %s", response)
-    cleared_response = response.replace(" ", "")
-    logger.debug("Cleared response: %s", cleared_response)
     return response.replace(package_name, "").strip()
 
 
