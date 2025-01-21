@@ -134,7 +134,7 @@ class MeshComponent(Component):
             resize_factor,
             z_scaling_factor,
             output_x_size,
-            skip_resize_to_expected_size=include_zeros,
+            skip_resize_to_expected_size=not include_zeros,
         )
 
         if remove_center:
