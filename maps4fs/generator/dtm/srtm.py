@@ -15,8 +15,6 @@ from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
 class SRTM30ProviderSettings(DTMProviderSettings):
     """Settings for SRTM 30m provider."""
 
-    test: int = 10
-
 
 class SRTM30Provider(DTMProvider):
     """Provider of Shuttle Radar Topography Mission (SRTM) 30m data."""
@@ -26,6 +24,8 @@ class SRTM30Provider(DTMProvider):
     _region = "Global"
     _icon = "🌎"
     _resolution = 30.0
+
+    _extents_identifier = "SRTM"
 
     _url = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
 
