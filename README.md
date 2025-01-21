@@ -656,13 +656,15 @@ The generator supports adding the own DTM providers, please refer to the [DTM Pr
 
 ### Supported DTM providers
 
-![coverage map](https://github.com/user-attachments/assets/e02a4b5e-c5a9-4e6f-826f-048081704ef9)
+![coverage map](https://github.com/user-attachments/assets/be5c5ce1-7318-4352-97eb-efba7ec587cd)
 
 In addition to SRTM 30m, which provides global coverage, the map above highlights all countries and/or regions where higher resolution coverage is provided by one of the DTM providers.
 
 | Provider Name                      | Resolution   | Developer                                   |
 | ---------------------------------- | ------------ | ------------------------------------------- |
 | 🌎 SRTM30                          | 30 meters    | [iwatkot](https://github.com/iwatkot)       |
+| 🌎 ArcticDEM                       | 2 meters     | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🌎 REMA Antarctica                 | 2 meters     | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇺🇸 USGS                            | 1-90 meters  | [ZenJakey](https://github.com/ZenJakey)     |
 | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 England                         | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland                        | 0.25-1 meter | [kbrandwijk](https://github.com/kbrandwijk) |
@@ -672,6 +674,7 @@ In addition to SRTM 30m, which provides global coverage, the map above highlight
 | 🇩🇪 Nordrhein-Westfalen, Germany    | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇩🇪 Mecklenburg-Vorpommern, Germany | 1-25 meter   | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇩🇪 Baden-Württemberg, Germany      | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇩🇪 Sachsen-Anhalt, Germany         | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇨🇦 Canada                          | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇧🇪 Flanders, Belgium               | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇫🇷 France                          | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
@@ -681,6 +684,7 @@ In addition to SRTM 30m, which provides global coverage, the map above highlight
 | 🇫🇮 Finland                         | 2 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇩🇰 Denmark                         | 0.4 meter    | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇨🇭 Switzerland                     | 0.5-2 meter  | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇨🇿 Czech Republic                  | 5 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 
 ## Special thanks
 
