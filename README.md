@@ -664,6 +664,7 @@ In addition to SRTM 30m, which provides global coverage, the map above highlight
 | ---------------------------------- | ------------ | ------------------------------------------- |
 | 🌎 SRTM30                          | 30 meters    | [iwatkot](https://github.com/iwatkot)       |
 | 🌎 ArcticDEM                       | 2 meters     | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🌎 REMA Antarctica                 | 2 meters     | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇺🇸 USGS                            | 1-90 meters  | [ZenJakey](https://github.com/ZenJakey)     |
 | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 England                         | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland                        | 0.25-1 meter | [kbrandwijk](https://github.com/kbrandwijk) |

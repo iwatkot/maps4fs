@@ -1,4 +1,4 @@
-"""This module contains provider of Arctic data."""
+"""This module contains provider of Antarctic data."""
 
 import os
 
@@ -7,26 +7,26 @@ import requests
 from maps4fs.generator.dtm.dtm import DTMProvider
 
 
-class ArcticProvider(DTMProvider):
-    """Provider of Arctic data."""
+class REMAProvider(DTMProvider):
+    """Provider of Antarctic data."""
 
-    _code = "arctic"
-    _name = "ArcticDEM"
+    _code = "rema"
+    _name = "REMA Antarctica"
     _region = "Global"
     _icon = "🌍"
     _resolution = 2
     _author = "[kbrandwijk](https://github.com/kbrandwijk)"
     _is_community = True
 
-    _extents = (83.98823036056658, 50.7492704708152, 179.99698443265999, -180)
+    _extents = (-53.5443873459092, -53.5443873459092, 179.99698443265999, -180)
 
     _instructions = (
-        "This provider source includes 2 meter DEM data for the entire Arctic region above 50 "
-        "degrees North. The tiles are very big, around 1 GB each, so downloading and processing "
+        "This provider source includes 2 meter DEM data for the entire Antarctic region below 53 "
+        "degrees South. The tiles are very big, around 1 GB each, so downloading and processing "
         "them can take a long time."
     )
 
-    _url = "https://stac.pgc.umn.edu/api/v1/collections/arcticdem-mosaics-v4.1-2m/items"
+    _url = "https://stac.pgc.umn.edu/api/v1/collections/rema-mosaics-v2.0-2m/items"
 
     def download_tiles(self):
         download_urls = self.get_download_urls()
@@ -58,7 +58,7 @@ class ArcticProvider(DTMProvider):
                 },
                 timeout=60,
             )
-            self.logger.debug("Getting file locations from ArcticDEM OGC API...")
+            self.logger.debug("Getting file locations from REMA OGC API...")
 
             # Check if the request was successful (HTTP status code 200)
             if response.status_code == 200:
