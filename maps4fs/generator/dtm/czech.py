@@ -26,7 +26,6 @@ class CzechProvider(WCSProvider, DTMProvider):
     _tile_size = 0.05
 
     def get_wcs_parameters(self, tile):
-        print("tile", tile)
         return {
             "identifier": "MD_LAS",
             "crs": "EPSG:4326",
