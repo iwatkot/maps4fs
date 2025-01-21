@@ -18,13 +18,13 @@ from shapely import LineString, Point, Polygon
 from shapely.geometry.base import BaseGeometry
 from tqdm import tqdm
 
-from maps4fs.generator.component.base.component import Component
+from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.layer import Layer
 
 PREVIEW_MAXIMUM_SIZE = 2048
 
 
-class Texture(Component):
+class Texture(ImageComponent):
     """Class which generates textures for the map using OSM data.
 
     Attributes:
@@ -71,7 +71,7 @@ class Texture(Component):
         """
         custom_schema = self.kwargs.get("texture_custom_schema")
         if custom_schema:
-            layers_schema = custom_schema  # type: ignore
+            layers_schema = custom_schema
             self.logger.debug("Custom schema loaded with %s layers.", len(layers_schema))
         else:
             if not os.path.isfile(self.game.texture_schema):
@@ -153,31 +153,16 @@ class Texture(Component):
             # And set it to 0 in the current layer image.
             layer_image = cv2.imread(layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED)
             border = layer.border
-            if border == 0:
+            if not border:
                 continue
 
-            top = layer_image[:border, :]  # type: ignore
-            right = layer_image[:, -border:]  # type: ignore
-            bottom = layer_image[-border:, :]  # type: ignore
-            left = layer_image[:, :border]  # type: ignore
-
-            if base_layer_image is not None:
-                base_layer_image[:border, :][top != 0] = 255  # type: ignore
-                base_layer_image[:, -border:][right != 0] = 255  # type: ignore
-                base_layer_image[-border:, :][bottom != 0] = 255  # type: ignore
-                base_layer_image[:, :border][left != 0] = 255  # type: ignore
-
-            layer_image[:border, :] = 0  # type: ignore
-            layer_image[:, -border:] = 0  # type: ignore
-            layer_image[-border:, :] = 0  # type: ignore
-            layer_image[:, :border] = 0  # type: ignore
+            self.transfer_border(layer_image, base_layer_image, border)
 
             cv2.imwrite(layer.path(self._weights_dir), layer_image)
             self.logger.debug("Borders added to layer %s.", layer.name)
 
         if base_layer_image is not None:
             cv2.imwrite(base_layer.path(self._weights_dir), base_layer_image)  # type: ignore
-            self.logger.debug("Borders added to base layer %s.", base_layer.name)  # type: ignore
 
     def copy_procedural(self) -> None:
         """Copies some of the textures to use them as mask for procedural generation.

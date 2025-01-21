@@ -116,3 +116,25 @@ class ImageComponent(Component):
             )
 
         cv2.imwrite(save_path, image)
+
+    @staticmethod
+    def transfer_border(src_image: np.ndarray, dst_image: np.ndarray | None, border: int) -> None:
+        """Transfers the border of the source image to the destination image.
+
+        Arguments:
+            src_image (np.ndarray): The source image.
+            dst_image (np.ndarray, optional): The destination image.
+            border (int): The border size.
+        """
+        borders = [
+            (slice(None, border), slice(None)),
+            (slice(None), slice(-border, None)),
+            (slice(-border, None), slice(None)),
+            (slice(None), slice(None, border)),
+        ]
+
+        for row_slice, col_slice in borders:
+            border_slice = (row_slice, col_slice)
+            if dst_image is not None:
+                dst_image[border_slice][src_image[border_slice] != 0] = 255
+            src_image[border_slice] = 0
