@@ -45,7 +45,7 @@ osm_file = "path/to/osm_file.osm"
 
 # 6️⃣ Optional: advanced settings. You can use the default settings, but
 # it's recommended to change them according to your needs.
-dem_settings = mfs.DEMSettings(multiplier=1, blur_radius=15, plateau=3000, water_depth=2000)
+dem_settings = mfs.DEMSettings(multiplier=1, blur_radius=15, plateau=15, water_depth=10)
 background_settings = mfs.BackgroundSettings(
     generate_background=True,
     generate_water=True,

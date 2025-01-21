@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import shutil
 import warnings
 from collections import defaultdict
@@ -14,18 +13,18 @@ import cv2
 import numpy as np
 import osmnx as ox
 import pandas as pd
-import shapely.geometry  # type: ignore
 from osmnx import settings as ox_settings
-from shapely.geometry.base import BaseGeometry  # type: ignore
+from shapely import LineString, Point, Polygon
+from shapely.geometry.base import BaseGeometry
 from tqdm import tqdm
 
-from maps4fs.generator.component.base.component import Component
+from maps4fs.generator.component.base.component_image import ImageComponent
+from maps4fs.generator.component.layer import Layer
 
 PREVIEW_MAXIMUM_SIZE = 2048
 
 
-# pylint: disable=R0902, R0904
-class Texture(Component):
+class Texture(ImageComponent):
     """Class which generates textures for the map using OSM data.
 
     Attributes:
@@ -36,167 +35,43 @@ class Texture(Component):
         color (tuple[int, int, int]): Color of the layer in BGR format.
     """
 
-    # pylint: disable=R0903
-    class Layer:
-        """Class which represents a layer with textures and tags.
-        It's using to obtain data from OSM using tags and make changes into corresponding textures.
-
-        Arguments:
-            name (str): Name of the layer.
-            tags (dict[str, str | list[str]]): Dictionary of tags to search for.
-            width (int | None): Width of the polygon in meters (only for LineString).
-            color (tuple[int, int, int]): Color of the layer in BGR format.
-            exclude_weight (bool): Flag to exclude weight from the texture.
-            priority (int | None): Priority of the layer.
-            info_layer (str | None): Name of the corresnponding info layer.
-            usage (str | None): Usage of the layer.
-            background (bool): Flag to determine if the layer is a background.
-            invisible (bool): Flag to determine if the layer is invisible.
-
-        Attributes:
-            name (str): Name of the layer.
-            tags (dict[str, str | list[str]]): Dictionary of tags to search for.
-            width (int | None): Width of the polygon in meters (only for LineString).
-        """
-
-        # pylint: disable=R0913
-        def __init__(  # pylint: disable=R0917
-            self,
-            name: str,
-            count: int,
-            tags: dict[str, str | list[str] | bool] | None = None,
-            width: int | None = None,
-            color: tuple[int, int, int] | list[int] | None = None,
-            exclude_weight: bool = False,
-            priority: int | None = None,
-            info_layer: str | None = None,
-            usage: str | None = None,
-            background: bool = False,
-            invisible: bool = False,
-            procedural: list[str] | None = None,
-            border: int | None = None,
-        ):
-            self.name = name
-            self.count = count
-            self.tags = tags
-            self.width = width
-            self.color = color if color else (255, 255, 255)
-            self.exclude_weight = exclude_weight
-            self.priority = priority
-            self.info_layer = info_layer
-            self.usage = usage
-            self.background = background
-            self.invisible = invisible
-            self.procedural = procedural
-            self.border = border
-
-        def to_json(self) -> dict[str, str | list[str] | bool]:  # type: ignore
-            """Returns dictionary with layer data.
-
-            Returns:
-                dict: Dictionary with layer data."""
-            data = {
-                "name": self.name,
-                "count": self.count,
-                "tags": self.tags,
-                "width": self.width,
-                "color": list(self.color),
-                "exclude_weight": self.exclude_weight,
-                "priority": self.priority,
-                "info_layer": self.info_layer,
-                "usage": self.usage,
-                "background": self.background,
-                "invisible": self.invisible,
-                "procedural": self.procedural,
-                "border": self.border,
-            }
-
-            data = {k: v for k, v in data.items() if v is not None}
-            return data  # type: ignore
-
-        @classmethod
-        def from_json(cls, data: dict[str, str | list[str] | bool]) -> Texture.Layer:
-            """Creates a new instance of the class from dictionary.
-
-            Arguments:
-                data (dict[str, str | list[str] | bool]): Dictionary with layer data.
-
-            Returns:
-                Layer: New instance of the class.
-            """
-            return cls(**data)  # type: ignore
-
-        def path(self, weights_directory: str) -> str:
-            """Returns path to the first texture of the layer.
-
-            Arguments:
-                weights_directory (str): Path to the directory with weights.
-
-            Returns:
-                str: Path to the texture.
-            """
-            idx = "01" if self.count > 0 else ""
-            weight_postfix = "_weight" if not self.exclude_weight else ""
-            return os.path.join(weights_directory, f"{self.name}{idx}{weight_postfix}.png")
-
-        def path_preview(self, weights_directory: str) -> str:
-            """Returns path to the preview of the first texture of the layer.
-
-            Arguments:
-                weights_directory (str): Path to the directory with weights.
-
-            Returns:
-                str: Path to the preview.
-            """
-            return self.path(weights_directory).replace(".png", "_preview.png")
-
-        def get_preview_or_path(self, weights_directory: str) -> str:
-            """Returns path to the preview of the first texture of the layer if it exists,
-            otherwise returns path to the texture.
-
-            Arguments:
-                weights_directory (str): Path to the directory with weights.
-
-            Returns:
-                str: Path to the preview or texture.
-            """
-            preview_path = self.path_preview(weights_directory)
-            return preview_path if os.path.isfile(preview_path) else self.path(weights_directory)
-
-        def paths(self, weights_directory: str) -> list[str]:
-            """Returns a list of paths to the textures of the layer.
-            NOTE: Works only after the textures are generated, since it just lists the directory.
-
-            Arguments:
-                weights_directory (str): Path to the directory with weights.
-
-            Returns:
-                list[str]: List of paths to the textures.
-            """
-            weight_files = os.listdir(weights_directory)
-
-            # Inconsistent names are the name of textures that are not following the pattern
-            # of texture_name{idx}_weight.png.
-            inconsistent_names = ["forestRockRoot", "waterPuddle"]
-
-            if self.name in inconsistent_names:
-                return [
-                    os.path.join(weights_directory, weight_file)
-                    for weight_file in weight_files
-                    if weight_file.startswith(self.name)
-                ]
-
-            return [
-                os.path.join(weights_directory, weight_file)
-                for weight_file in weight_files
-                if re.match(rf"{self.name}\d{{2}}_weight.png", weight_file)
-            ]
-
     def preprocess(self) -> None:
         """Preprocesses the data before the generation."""
+        self.read_layers(self.get_schema())
+
+        self._weights_dir = self.game.weights_dir_path(self.map_directory)
+        self.procedural_dir = os.path.join(self._weights_dir, "masks")
+        os.makedirs(self.procedural_dir, exist_ok=True)
+
+        self.info_save_path = os.path.join(self.map_directory, "generation_info.json")
+        self.info_layer_path = os.path.join(self.info_layers_directory, "textures.json")
+
+    def read_layers(self, layers_schema: list[dict[str, Any]]) -> None:
+        """Reads layers from the schema.
+
+        Arguments:
+            layers_schema (list[dict[str, Any]]): Schema with layers for textures.
+        """
+        try:
+            self.layers = [Layer.from_json(layer) for layer in layers_schema]
+            self.logger.debug("Loaded %s layers.", len(self.layers))
+        except Exception as e:
+            raise ValueError(f"Error loading texture layers: {e}") from e
+
+    def get_schema(self) -> list[dict[str, Any]]:
+        """Returns schema with layers for textures.
+
+        Raises:
+            FileNotFoundError: If the schema file is not found.
+            ValueError: If there is an error loading the schema.
+            ValueError: If the schema is not a list of dictionaries.
+
+        Returns:
+            dict[str, Any]: Schema with layers for textures.
+        """
         custom_schema = self.kwargs.get("texture_custom_schema")
         if custom_schema:
-            layers_schema = custom_schema  # type: ignore
+            layers_schema = custom_schema
             self.logger.debug("Custom schema loaded with %s layers.", len(layers_schema))
         else:
             if not os.path.isfile(self.game.texture_schema):
@@ -210,27 +85,10 @@ class Texture(Component):
             except json.JSONDecodeError as e:
                 raise ValueError(f"Error loading texture layers schema: {e}") from e
 
-        try:
-            self.layers = [self.Layer.from_json(layer) for layer in layers_schema]  # type: ignore
-            self.logger.debug("Loaded %s layers.", len(self.layers))
-        except Exception as e:  # pylint: disable=W0703
-            raise ValueError(f"Error loading texture layers: {e}") from e
+        if not isinstance(layers_schema, list):
+            raise ValueError("Texture layers schema must be a list of dictionaries.")
 
-        base_layer = self.get_base_layer()
-        if base_layer:
-            self.logger.debug("Base layer found: %s.", base_layer.name)
-
-        self._weights_dir = self.game.weights_dir_path(self.map_directory)
-        self.logger.debug("Weights directory: %s.", self._weights_dir)
-        self.procedural_dir = os.path.join(self._weights_dir, "masks")
-        os.makedirs(self.procedural_dir, exist_ok=True)
-        self.logger.debug("Procedural directory: %s.", self.procedural_dir)
-
-        self.info_save_path = os.path.join(self.map_directory, "generation_info.json")
-        self.logger.debug("Generation info save path: %s.", self.info_save_path)
-
-        self.info_layer_path = os.path.join(self.info_layers_directory, "textures.json")
-        self.logger.debug("Info layer path: %s.", self.info_layer_path)
+        return layers_schema
 
     def get_base_layer(self) -> Layer | None:
         """Returns base layer.
@@ -272,9 +130,7 @@ class Texture(Component):
         self.draw()
         self.rotate_textures()
         self.add_borders()
-        if self.map.texture_settings.dissolve and self.game.code != "FS22":
-            # FS22 has textures splitted into 4 sublayers, which leads to a very
-            # long processing time when dissolving them.
+        if self.map.texture_settings.dissolve and self.game.dissolve:
             self.dissolve()
         self.copy_procedural()
 
@@ -297,31 +153,16 @@ class Texture(Component):
             # And set it to 0 in the current layer image.
             layer_image = cv2.imread(layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED)
             border = layer.border
-            if border == 0:
+            if not border:
                 continue
 
-            top = layer_image[:border, :]  # type: ignore
-            right = layer_image[:, -border:]  # type: ignore
-            bottom = layer_image[-border:, :]  # type: ignore
-            left = layer_image[:, :border]  # type: ignore
-
-            if base_layer_image is not None:
-                base_layer_image[:border, :][top != 0] = 255  # type: ignore
-                base_layer_image[:, -border:][right != 0] = 255  # type: ignore
-                base_layer_image[-border:, :][bottom != 0] = 255  # type: ignore
-                base_layer_image[:, :border][left != 0] = 255  # type: ignore
-
-            layer_image[:border, :] = 0  # type: ignore
-            layer_image[:, -border:] = 0  # type: ignore
-            layer_image[-border:, :] = 0  # type: ignore
-            layer_image[:, :border] = 0  # type: ignore
+            self.transfer_border(layer_image, base_layer_image, border)
 
             cv2.imwrite(layer.path(self._weights_dir), layer_image)
             self.logger.debug("Borders added to layer %s.", layer.name)
 
         if base_layer_image is not None:
             cv2.imwrite(base_layer.path(self._weights_dir), base_layer_image)  # type: ignore
-            self.logger.debug("Borders added to base layer %s.", base_layer.name)  # type: ignore
 
     def copy_procedural(self) -> None:
         """Copies some of the textures to use them as mask for procedural generation.
@@ -350,7 +191,6 @@ class Texture(Component):
                 # If there are more than one texture, merge them.
                 merged_texture = np.zeros((self.map_size, self.map_size), dtype=np.uint8)
                 for texture_path in texture_paths:
-                    # pylint: disable=E1101
                     texture = cv2.imread(texture_path, cv2.IMREAD_UNCHANGED)
                     merged_texture[texture == 255] = 255
                 cv2.imwrite(procedural_save_path, merged_texture)
@@ -390,12 +230,9 @@ class Texture(Component):
                         "Skipping rotation of layer %s because it has no tags.", layer.name
                     )
 
-    # pylint: disable=W0201
     def _read_parameters(self) -> None:
         """Reads map parameters from OSM data, such as:
         - minimum and maximum coordinates
-        - map dimensions in meters
-        - map coefficients (meters per pixel)
         """
         bbox = ox.utils_geo.bbox_from_point(self.coordinates, dist=self.map_rotated_size / 2)
         self.minimum_x, self.minimum_y, self.maximum_x, self.maximum_y = bbox
@@ -480,29 +317,22 @@ class Texture(Component):
             ),
         )
 
-    # pylint: disable = R0912
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
         layers = self.layers_by_priority()
-
-        self.logger.debug(
-            "Sorted layers by priority: %s.", [(layer.name, layer.priority) for layer in layers]
-        )
+        layers = [layer for layer in layers if layer.tags is not None]
 
         cumulative_image = None
 
         # Dictionary to store info layer data.
         # Key is a layer.info_layer, value is a list of polygon points as tuples (x, y).
-        info_layer_data = defaultdict(list)
+        info_layer_data: dict[str, list[list[int]]] = defaultdict(list)
 
         for layer in tqdm(
             layers, desc="Drawing textures", unit="layer", disable=self.map.is_public
         ):
             if self.map.texture_settings.skip_drains and layer.usage == "drain":
                 self.logger.debug("Skipping layer %s because of the usage.", layer.name)
-                continue
-            if not layer.tags:
-                self.logger.debug("Layer %s has no tags, there's nothing to draw.", layer.name)
                 continue
             if layer.priority == 0:
                 self.logger.debug(
@@ -518,34 +348,10 @@ class Texture(Component):
                 cumulative_image = layer_image
 
             mask = cv2.bitwise_not(cumulative_image)
-
-            for polygon in self.objects_generator(  # type: ignore
-                layer.tags, layer.width, layer.info_layer
-            ):
-                if not len(polygon) > 2:
-                    self.logger.debug("Skipping polygon with less than 3 points.")
-                    continue
-                if layer.info_layer:
-                    info_layer_data[layer.info_layer].append(
-                        self.np_to_polygon_points(polygon)  # type: ignore
-                    )
-                if not layer.invisible:
-                    try:
-                        cv2.fillPoly(layer_image, [polygon], color=255)  # type: ignore
-                    except Exception as e:  # pylint: disable=W0718
-                        self.logger.warning("Error drawing polygon: %s.", repr(e))
-                        continue
-
-            if layer.info_layer == "roads":
-                for linestring in self.objects_generator(
-                    layer.tags, layer.width, layer.info_layer, yield_linestrings=True
-                ):
-                    info_layer_data[f"{layer.info_layer}_polylines"].append(
-                        linestring  # type: ignore
-                    )
+            self._draw_layer(layer, info_layer_data, layer_image)
+            self._add_roads(layer, info_layer_data)
 
             output_image = cv2.bitwise_and(layer_image, mask)
-
             cumulative_image = cv2.bitwise_or(cumulative_image, output_image)
 
             cv2.imwrite(layer_path, output_image)
@@ -565,6 +371,44 @@ class Texture(Component):
 
         if cumulative_image is not None:
             self.draw_base_layer(cumulative_image)
+
+    def _draw_layer(
+        self, layer: Layer, info_layer_data: dict[str, list[list[int]]], layer_image: np.ndarray
+    ) -> None:
+        """Draws polygons from OSM data on the layer image and updates the info layer data.
+
+        Arguments:
+            layer (Layer): Layer with textures and tags.
+            info_layer_data (dict[list[list[int]]]): Dictionary to store info layer data.
+            layer_image (np.ndarray): Layer image.
+        """
+        for polygon in self.objects_generator(layer.tags, layer.width, layer.info_layer):
+            if not len(polygon) > 2:
+                self.logger.debug("Skipping polygon with less than 3 points.")
+                continue
+            if layer.info_layer:
+                info_layer_data[layer.info_layer].append(
+                    self.np_to_polygon_points(polygon)  # type: ignore
+                )
+            if not layer.invisible:
+                try:
+                    cv2.fillPoly(layer_image, [polygon], color=255)  # type: ignore
+                except Exception as e:
+                    self.logger.warning("Error drawing polygon: %s.", repr(e))
+                    continue
+
+    def _add_roads(self, layer: Layer, info_layer_data: dict[str, list[list[int]]]) -> None:
+        """Adds roads to the info layer data.
+
+        Arguments:
+            layer (Layer): Layer with textures and tags.
+            info_layer_data (dict[list[list[int]]]): Dictionary to store info layer data.
+        """
+        if layer.info_layer == "roads":
+            for linestring in self.objects_generator(
+                layer.tags, layer.width, layer.info_layer, yield_linestrings=True
+            ):
+                info_layer_data[f"{layer.info_layer}_polylines"].append(linestring)  # type: ignore
 
     def dissolve(self) -> None:
         """Dissolves textures of the layers with tags into sublayers for them to look more
@@ -657,12 +501,11 @@ class Texture(Component):
         """
         return [(int(x), int(y)) for x, y in np_array.reshape(-1, 2)]
 
-    # pylint: disable=W0613
-    def _to_np(self, geometry: shapely.geometry.polygon.Polygon, *args) -> np.ndarray:
+    def _to_np(self, geometry: Polygon, *args) -> np.ndarray:
         """Converts Polygon geometry to numpy array of polygon points.
 
         Arguments:
-            geometry (shapely.geometry.polygon.Polygon): Polygon geometry.
+            geometry (Polygon): Polygon geometry.
             *Arguments: Additional arguments:
                 - width (int | None): Width of the polygon in meters.
 
@@ -670,24 +513,19 @@ class Texture(Component):
             np.ndarray: Numpy array of polygon points.
         """
         coords = list(geometry.exterior.coords)
-        pts = np.array(
-            [self.latlon_to_pixel(coord[1], coord[0]) for coord in coords],
-            np.int32,
-        )
+        pts = np.array(coords, np.int32)
         pts = pts.reshape((-1, 1, 2))
         return pts
 
-    def _to_polygon(
-        self, obj: pd.core.series.Series, width: int | None
-    ) -> shapely.geometry.polygon.Polygon:
-        """Converts OSM object to numpy array of polygon points.
+    def _to_polygon(self, obj: pd.core.series.Series, width: int | None) -> Polygon:
+        """Converts OSM object to numpy array of polygon points and converts coordinates to pixels.
 
         Arguments:
             obj (pd.core.series.Series): OSM object.
             width (int | None): Width of the polygon in meters.
 
         Returns:
-            shapely.geometry.polygon.Polygon: Polygon geometry.
+            Polygon: Polygon geometry with pixel coordinates.
         """
         geometry = obj["geometry"]
         geometry_type = geometry.geom_type
@@ -697,47 +535,80 @@ class Texture(Component):
             return None
         return converter(geometry, width)
 
-    def _sequence(
+    def polygon_to_pixel_coordinates(self, polygon: Polygon) -> Polygon:
+        """Converts polygon coordinates from lat lon to pixel coordinates.
+
+        Arguments:
+            polygon (Polygon): Polygon geometry.
+
+        Returns:
+            Polygon: Polygon geometry.
+        """
+        coords_pixel = [
+            self.latlon_to_pixel(lat, lon) for lon, lat in list(polygon.exterior.coords)
+        ]
+        return Polygon(coords_pixel)
+
+    def linestring_to_pixel_coordinates(self, linestring: LineString) -> LineString:
+        """Converts LineString coordinates from lat lon to pixel coordinates.
+
+        Arguments:
+            linestring (LineString): LineString geometry.
+
+        Returns:
+            LineString: LineString geometry.
+        """
+        coords_pixel = [self.latlon_to_pixel(lat, lon) for lon, lat in list(linestring.coords)]
+        return LineString(coords_pixel)
+
+    def point_to_pixel_coordinates(self, point: Point) -> Point:
+        """Converts Point coordinates from lat lon to pixel coordinates.
+
+        Arguments:
+            point (Point): Point geometry.
+
+        Returns:
+            Point: Point geometry.
+        """
+        x, y = self.latlon_to_pixel(point.y, point.x)
+        return Point(x, y)
+
+    def _to_pixel(self, geometry: Polygon, *args, **kwargs) -> Polygon:
+        """Returns the same geometry with pixel coordinates.
+
+        Arguments:
+            geometry (Polygon): Polygon geometry.
+
+        Returns:
+            Polygon: Polygon geometry with pixel coordinates.
+        """
+        return self.polygon_to_pixel_coordinates(geometry)
+
+    def _sequence_to_pixel(
         self,
-        geometry: shapely.geometry.linestring.LineString | shapely.geometry.point.Point,
+        geometry: LineString | Point,
         width: int | None,
-    ) -> shapely.geometry.polygon.Polygon:
+    ) -> Polygon:
         """Converts LineString or Point geometry to numpy array of polygon points.
 
         Arguments:
-            geometry (shapely.geometry.linestring.LineString | shapely.geometry.point.Point):
-                LineString or Point geometry.
+            geometry (LineString | Point): LineString or Point geometry.
             width (int | None): Width of the polygon in meters.
 
-        Returns:
-            shapely.geometry.polygon.Polygon: Polygon geometry.
-        """
-        polygon = geometry.buffer(self.meters_to_degrees(width) if width else 0)
-        return polygon
-
-    def meters_to_degrees(self, meters: int) -> float:
-        """Converts meters to degrees.
-
-        Arguments:
-            meters (int): Meters.
+        Raises:
+            ValueError: If the geometry type is not supported
 
         Returns:
-            float: Degrees.
+            Polygon: Polygon geometry.
         """
-        return meters / 111320
+        if isinstance(geometry, LineString):
+            geometry = self.linestring_to_pixel_coordinates(geometry)
+        elif isinstance(geometry, Point):
+            geometry = self.point_to_pixel_coordinates(geometry)
+        else:
+            raise ValueError(f"Geometry type {type(geometry)} not supported.")
 
-    def _skip(
-        self, geometry: shapely.geometry.polygon.Polygon, *args, **kwargs
-    ) -> shapely.geometry.polygon.Polygon:
-        """Returns the same geometry.
-
-        Arguments:
-            geometry (shapely.geometry.polygon.Polygon): Polygon geometry.
-
-        Returns:
-            shapely.geometry.polygon.Polygon: Polygon geometry.
-        """
-        return geometry
+        return geometry.buffer(width if width else 0)
 
     def _converters(
         self, geom_type: str
@@ -750,12 +621,16 @@ class Texture(Component):
         Returns:
             Callable[[shapely.geometry, int | None], np.ndarray]: Converter function.
         """
-        converters = {"Polygon": self._skip, "LineString": self._sequence, "Point": self._sequence}
+        converters = {
+            "Polygon": self._to_pixel,
+            "LineString": self._sequence_to_pixel,
+            "Point": self._sequence_to_pixel,
+        }
         return converters.get(geom_type)  # type: ignore
 
     def objects_generator(
         self,
-        tags: dict[str, str | list[str] | bool],
+        tags: dict[str, str | list[str] | bool] | None,
         width: int | None,
         info_layer: str | None = None,
         yield_linestrings: bool = False,
@@ -772,6 +647,8 @@ class Texture(Component):
             Generator[np.ndarray, None, None] | Generator[list[tuple[int, int]], None, None]:
                 Numpy array of polygon points or list of point coordinates.
         """
+        if tags is None:
+            return
         is_fieds = info_layer == "fields"
 
         ox_settings.use_cache = self.map.texture_settings.use_cache
@@ -784,7 +661,7 @@ class Texture(Component):
                     objects = ox.features_from_xml(self.map.custom_osm, tags=tags)
             else:
                 objects = ox.features_from_bbox(bbox=self.new_bbox, tags=tags)
-        except Exception as e:  # pylint: disable=W0718
+        except Exception as e:
             self.logger.debug("Error fetching objects for tags: %s. Error: %s.", tags, e)
             return
         self.logger.debug("Fetched %s elements for tags: %s.", len(objects), tags)
@@ -806,7 +683,7 @@ class Texture(Component):
         """
         for _, obj in objects.iterrows():
             geometry = obj["geometry"]
-            if isinstance(geometry, shapely.geometry.linestring.LineString):
+            if isinstance(geometry, LineString):
                 points = [self.latlon_to_pixel(x, y) for y, x in geometry.coords]
                 yield points
 
@@ -826,20 +703,18 @@ class Texture(Component):
         for _, obj in objects.iterrows():
             try:
                 polygon = self._to_polygon(obj, width)
-            except Exception as e:  # pylint: disable=W0703
+            except Exception as e:
                 self.logger.warning("Error converting object to polygon: %s.", e)
                 continue
             if polygon is None:
                 continue
 
             if is_fieds and self.map.texture_settings.fields_padding > 0:
-                padded_polygon = polygon.buffer(
-                    -self.meters_to_degrees(self.map.texture_settings.fields_padding)
-                )
+                padded_polygon = polygon.buffer(-self.map.texture_settings.fields_padding)
 
-                if not isinstance(padded_polygon, shapely.geometry.polygon.Polygon):
-                    self.logger.debug("The padding value is too high, field will not padded.")
-                elif not list(padded_polygon.exterior.coords):
+                if not isinstance(padded_polygon, Polygon) or not list(
+                    padded_polygon.exterior.coords
+                ):
                     self.logger.debug("The padding value is too high, field will not padded.")
                 else:
                     polygon = padded_polygon

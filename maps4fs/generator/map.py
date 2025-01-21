@@ -9,6 +9,8 @@ from typing import Any, Generator
 
 from maps4fs.generator.component.background import Background
 from maps4fs.generator.component.base.component import Component
+from maps4fs.generator.component.layer import Layer
+from maps4fs.generator.component.texture import Texture
 from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
 from maps4fs.generator.game import Game
 from maps4fs.generator.settings import (
@@ -21,7 +23,6 @@ from maps4fs.generator.settings import (
     SplineSettings,
     TextureSettings,
 )
-from maps4fs.generator.texture import Texture
 from maps4fs.logger import Logger
 
 
@@ -260,14 +261,14 @@ class Map:
             return None
         return component
 
-    def get_texture_layer(self, by_usage: str | None = None) -> Texture.Layer | None:
+    def get_texture_layer(self, by_usage: str | None = None) -> Layer | None:
         """Get texture layer by usage.
 
         Arguments:
             by_usage (str, optional): Texture usage.
 
         Returns:
-            Texture.Layer | None: Texture layer instance or None if not found.
+            Layer | None: Texture layer instance or None if not found.
         """
         texture_component = self.get_texture_component()
         if not texture_component:

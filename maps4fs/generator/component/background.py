@@ -13,9 +13,9 @@ import numpy as np
 
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_mesh import MeshComponent
+from maps4fs.generator.component.texture import Texture
 from maps4fs.generator.dem import DEM
 from maps4fs.generator.settings import Parameters
-from maps4fs.generator.texture import Texture
 
 
 class Background(MeshComponent, ImageComponent):
