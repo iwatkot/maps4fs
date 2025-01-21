@@ -10,7 +10,6 @@ WORKING_DIRECTORY = os.getcwd()
 ARCHIVES_DIRECTORY = os.path.join(WORKING_DIRECTORY, "archives")
 DATA_DIRECTORY = os.path.join(WORKING_DIRECTORY, "data")
 MAPS_DIRECTORY = os.path.join(WORKING_DIRECTORY, "maps")
-OSMPS_DIRECTORY = os.path.join(WORKING_DIRECTORY, "osmps")
 TEMP_DIRECTORY = os.path.join(WORKING_DIRECTORY, "temp")
 INPUT_DIRECTORY = os.path.join(TEMP_DIRECTORY, "input")
 
@@ -168,7 +167,6 @@ def create_dirs() -> None:
         ARCHIVES_DIRECTORY,
         DATA_DIRECTORY,
         MAPS_DIRECTORY,
-        OSMPS_DIRECTORY,
         INPUT_DIRECTORY,
     ]
     for directory in directories:
