@@ -87,7 +87,14 @@ class SettingsModel(BaseModel):
 
     @staticmethod
     def camel_to_snake(camel_string: str) -> str:
-        # Use regex to split the string and keep the separator
+        """Convert a camel case string to snake case.
+
+        Arguments:
+            camel_string (str): Camel case string.
+
+        Returns:
+            str: Snake case string.
+        """
         splitted = re.split(r"(Settings)", camel_string)
         print(splitted)  # For debugging
         joined = "_".join(part.lower() for part in splitted if part)
