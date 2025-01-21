@@ -15,6 +15,8 @@ from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
 class SRTM30ProviderSettings(DTMProviderSettings):
     """Settings for SRTM 30m provider."""
 
+    test: int = 10
+
 
 class SRTM30Provider(DTMProvider):
     """Provider of Shuttle Radar Topography Mission (SRTM) 30m data."""

@@ -1,11 +1,11 @@
 import os
 
 import streamlit as st
-import streamlit.components.v1 as components
 from config import INPUT_DIRECTORY, is_on_community_server, is_public
 from osmp import get_bbox, get_center, get_preview
-from tools.tool import Tool
+from streamlit_folium import folium_static
 from templates import Messages
+from tools.tool import Tool
 
 from maps4fs.toolbox.dem import extract_roi, get_geo_tiff_bbox, read_geo_tiff
 
@@ -122,10 +122,10 @@ class GeoTIFFWindowingTool(Tool):
         roi_bbox = get_bbox(roi_center, roi_size)
         bboxes = [roi_bbox, self.full_bbox]
 
-        html_file = get_preview(bboxes)
+        map = get_preview(bboxes)
 
         with self.html_preview_container:
-            components.html(open(html_file).read(), height=600)
+            folium_static(map, height=600, width=600)
 
     @property
     def lat_lon(self) -> tuple[float, float]:
