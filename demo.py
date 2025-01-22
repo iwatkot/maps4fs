@@ -25,8 +25,7 @@ game_code = "fs25"
 game = mfs.Game.from_code(game_code)
 
 # 2️⃣ Choose the DTM Provider and define it's settings.
-dtm_provider = mfs.SRTM30Provider
-dtm_provider_settings = mfs.SRTM30ProviderSettings()
+dtm_provider = mfs.dtm.SRTM30Provider
 
 # 3️⃣ Define the coordinates of the central point of the map, size and rotation.
 lat, lon = 45.28, 20.23
@@ -45,8 +44,8 @@ osm_file = "path/to/osm_file.osm"
 
 # 6️⃣ Optional: advanced settings. You can use the default settings, but
 # it's recommended to change them according to your needs.
-dem_settings = mfs.DEMSettings(multiplier=1, blur_radius=15, plateau=15, water_depth=10)
-background_settings = mfs.BackgroundSettings(
+dem_settings = mfs.settings.DEMSettings(multiplier=1, blur_radius=15, plateau=15, water_depth=10)
+background_settings = mfs.settings.BackgroundSettings(
     generate_background=True,
     generate_water=True,
     resize_factor=8,
@@ -55,15 +54,17 @@ background_settings = mfs.BackgroundSettings(
     decimation_percent=50,
     decimation_agression=4,
 )
-grle_settings = mfs.GRLESettings(farmland_margin=10, random_plants=True, add_farmyards=True)
-i3d_settings = mfs.I3DSettings(forest_density=8)
-texture_settings = mfs.TextureSettings(
+grle_settings = mfs.settings.GRLESettings(
+    farmland_margin=10, random_plants=True, add_farmyards=True
+)
+i3d_settings = mfs.settings.I3DSettings(forest_density=8)
+texture_settings = mfs.settings.TextureSettings(
     dissolve=False,
     fields_padding=10,
     skip_drains=True,
 )
-spline_settings = mfs.SplineSettings(spline_density=0)
-satellite_settings = mfs.SatelliteSettings(download_images=False, zoom_level=18)
+spline_settings = mfs.settings.SplineSettings(spline_density=0)
+satellite_settings = mfs.settings.SatelliteSettings(download_images=False, zoom_level=18)
 
 # 7️⃣ Optional: define custom tree and textures schemas.
 # Default schemas can be found in the `data` directory of the repository.
@@ -78,7 +79,7 @@ tree_custom_schema = [
 mp = mfs.Map(
     game,
     dtm_provider,
-    dtm_provider_settings,
+    None,
     coordinates,
     size,
     rotation,
