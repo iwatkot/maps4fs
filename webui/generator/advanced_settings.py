@@ -11,7 +11,7 @@ class AdvancedSettings(BaseComponent):
         self.get_settings()
 
     def get_settings(self):
-        map_settings = mfs.SettingsModel.all_settings()
+        map_settings = mfs.settings.SettingsModel.all_settings()
         settings = {}
         for model in map_settings:
             raw_category_name = model.__class__.__name__

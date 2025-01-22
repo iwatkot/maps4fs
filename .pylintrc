@@ -24,4 +24,5 @@ disable=raw-checker-failed,
         duplicate-code,
         too-many-statements,
         attribute-defined-outside-init,
-        unused-argument
+        unused-argument,
+        consider-using-from-import

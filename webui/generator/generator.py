@@ -188,7 +188,7 @@ class GeneratorUI:
         limited_settings["SatelliteSettings"]["download_images"] = False
         return limited_settings
 
-    def get_json_settings(self) -> dict[str, mfs.SettingsModel]:
+    def get_json_settings(self) -> dict[str, mfs.settings.SettingsModel]:
         """Retrieve the settings from the JSON.
 
         Returns:
@@ -207,7 +207,7 @@ class GeneratorUI:
         json_settings = self.limit_on_public(json_settings)
 
         # Parse settings from the JSON.
-        all_settings = mfs.SettingsModel.all_settings_from_json(json_settings)
+        all_settings = mfs.settings.SettingsModel.all_settings_from_json(json_settings)
         return all_settings
 
     def read_generation_settings(self) -> tuple[mfs.Map, str]:
