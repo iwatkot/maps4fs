@@ -2,8 +2,6 @@
 
 from typing import List
 import requests
-import os
-import tempfile
 import numpy as np
 from maps4fs.generator.dtm.dtm import DTMProvider
 
@@ -20,10 +18,7 @@ class LithuaniaProvider(DTMProvider):
     _is_base = False
     _extents = (56.4501789128452, 53.8901567283941, 26.8198345671209, 20.9312456789123)
     _max_tile_size = 4096
-
-    def get_tile_path(self, filename: str) -> str:
-        temp_dir = tempfile.mkdtemp()
-        return os.path.join(temp_dir, filename)
+    _url = "https://utility.arcgis.com/usrsvcs/servers/fef66dec83c14b0295180ecafa662aa0/rest/services/DTM_LT2020/ImageServer/exportImage"
 
     def download_tiles(self) -> List[str]:
         north, south, east, west = self.get_bbox()
@@ -34,7 +29,7 @@ class LithuaniaProvider(DTMProvider):
         
         lat_splits = np.linspace(south, north, grid_size + 1)
         lon_splits = np.linspace(west, east, grid_size + 1)
-        tiles = []
+        download_urls = []
 
         for i in range(grid_size):
             for j in range(grid_size):
@@ -51,21 +46,14 @@ class LithuaniaProvider(DTMProvider):
                     'size': f"{tile_size},{tile_size}"
                 }
 
-                url = "https://utility.arcgis.com/usrsvcs/servers/fef66dec83c14b0295180ecafa662aa0/rest/services/DTM_LT2020/ImageServer/exportImage"
-                
-                response = requests.get(url, params=params, verify=False)
+                response = requests.get(self.url, params=params, verify=False, timeout=60)
                 data = response.json()
                 image_url = data.get('href')
                 
                 if not image_url:
-                    print(f"DEBUG: Failed response: {response.text}")
+                    self.logger.error(f"Failed response: {response.text}")
                     raise RuntimeError(f"No image URL in response for tile {i},{j}")
 
-                image_response = requests.get(image_url, verify=False)
-                temp_path = self.get_tile_path(f"lt_dem_{i}_{j}.tif")
-                
-                with open(temp_path, 'wb') as f:
-                    f.write(image_response.content)
-                tiles.append(temp_path)
+                download_urls.append(image_url)
 
-        return tiles
+        return self.download_tif_files(download_urls, self._tile_directory)
