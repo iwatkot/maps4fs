@@ -244,7 +244,7 @@ class DTMProvider(ABC):
             DTMProvider: Provider class or None if not found.
         """
         for provider in cls.__subclasses__():
-            if provider.code == code:
+            if provider.code() == code:
                 return provider
         return None
 
@@ -258,8 +258,10 @@ class DTMProvider(ABC):
         """
         providers: dict[str, str] = {}
         for provider in cls.__subclasses__():
-            if not provider.is_base and provider.inside_bounding_box(lat_lon):  # type: ignore
-                providers[provider.code] = provider.description()
+            if not provider.is_base() and provider.inside_bounding_box(lat_lon):
+                code = provider.code()
+                if code is not None:
+                    providers[code] = provider.description()
         return providers
 
     @classmethod
