@@ -214,6 +214,3 @@ def test_map_pack():
     except Exception as e:
         assert False, f"Archive could not be unpacked: {e}"
     assert os.path.isdir(unpacked_directory), f"Unpacked directory not found: {unpacked_directory}"
-
-
-test_map()
