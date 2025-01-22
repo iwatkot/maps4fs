@@ -49,6 +49,7 @@ class DTMProvider(ABC):
     _is_base: bool = False
     _settings: Type[DTMProviderSettings] | None = DTMProviderSettings
 
+    _extents: list[tuple[float, float, float, float]] | None = None
     """Name of the entry in the shapes dataset that corresponds to the provider."""
     _extents_identifier: str | None = None
 
@@ -261,12 +262,19 @@ class DTMProvider(ABC):
         box = shapely.geometry.box(*bbox)
 
         provider_extents = extents[extents["name"] == cls._extents_identifier]
-        if provider_extents is None:
+
+        if provider_extents.empty:
+            if cls._extents is not None:
+                for extent in cls._extents:
+                    north, south, east, west = extent
+                    geom = shapely.geometry.box(west, south, east, north)
+                    if geom.contains_properly(box):
+                        return True
+                return False
             return True
 
         geom = provider_extents["geometry"]
         is_inside = geom.contains_properly(box).any()
-
         return is_inside
 
     @abstractmethod
