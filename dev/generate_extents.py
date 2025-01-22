@@ -1,16 +1,26 @@
-""" Generate a shapefile with the extents of the regions for all providers.
-Source of this data: https://www.naturalearthdata.com/downloads/"""
+""" Generate a shapefile with the extents of the regions for all providers."""
 
 import pandas
 import shapely
 import geopandas
 
 # prepare state and country files for uniform reading
-states = geopandas.read_file("ne_10m_admin_1_states_provinces.zip")
-countries = geopandas.read_file("ne_50m_admin_0_countries.zip")
+states = geopandas.read_file(
+    (
+        "https://github.com/nvkelso/natural-earth-vector/raw/refs/heads/"
+        "master/10m_cultural/ne_10m_admin_1_states_provinces.shp"
+    )
+)
+countries = geopandas.read_file(
+    (
+        "https://github.com/nvkelso/natural-earth-vector/raw/refs/heads/master/"
+        "50m_cultural/ne_50m_admin_0_countries.shp"
+    )
+)
 countries.rename(columns={"NAME": "name"}, inplace=True)
 
 combined = pandas.concat([states, countries])
+print("combined", combined["geometry"].head())
 
 # handling by name (for most of them)
 names = [
