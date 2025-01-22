@@ -22,7 +22,7 @@ class DenmarkProvider(WCSProvider, DTMProvider):
     _is_community = True
     _is_base = False
     _settings = DenmarkProviderSettings
-    _extents = (57.7690657013977, 54.4354651516217, 15.5979112056959, 8.00830949937517)
+    _extents = [(57.7690657013977, 54.4354651516217, 15.5979112056959, 8.00830949937517)]
 
     _instructions = (
         "ℹ️ This provider requires an access token. See [here](https://confluence"
@@ -36,6 +36,9 @@ class DenmarkProvider(WCSProvider, DTMProvider):
     _tile_size = 1000
 
     def get_wcs_parameters(self, tile):
+        if not self.user_settings.token:
+            raise ValueError("A token is required for this provider.")
+
         return {
             "identifier": "dhm_terraen",
             "bbox": (tile[1], tile[0], tile[3], tile[2]),

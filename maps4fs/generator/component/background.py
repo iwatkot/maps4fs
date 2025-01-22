@@ -176,7 +176,6 @@ class Background(MeshComponent, ImageComponent):
             save_path,
             create_preview=True,
             remove_center=self.map.background_settings.remove_center,
-            include_zeros=False,
         )
 
     def save_map_dem(self, dem_path: str, save_path: str | None = None) -> str:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict
@@ -80,9 +81,23 @@ class SettingsModel(BaseModel):
                     if isinstance(value, (list, tuple)):
                         subclass_data[key] = value[0]
 
-            settings[subclass.__name__] = subclass(**subclass_data)
+            settings[cls.camel_to_snake(subclass.__name__)] = subclass(**subclass_data)
 
         return settings
+
+    @staticmethod
+    def camel_to_snake(camel_string: str) -> str:
+        """Convert a camel case string to snake case.
+
+        Arguments:
+            camel_string (str): Camel case string.
+
+        Returns:
+            str: Snake case string.
+        """
+        splitted = re.split(r"(Settings)", camel_string)
+        joined = "_".join(part.lower() for part in splitted if part)
+        return joined
 
     @classmethod
     def all_settings(cls) -> list[SettingsModel]:
