@@ -26,7 +26,7 @@ game = mfs.Game.from_code(game_code)
 
 # 2️⃣ Choose the DTM Provider and define it's settings.
 dtm_provider = mfs.SRTM30Provider
-dtm_provider_settings = mfs.SRTM30ProviderSettings(easy_mode=True, power_factor=0)
+dtm_provider_settings = mfs.SRTM30ProviderSettings()
 
 # 3️⃣ Define the coordinates of the central point of the map, size and rotation.
 lat, lon = 45.28, 20.23
