@@ -7,10 +7,7 @@ import os
 import shutil
 from typing import Any, Generator
 
-from maps4fs.generator.component.background import Background
-from maps4fs.generator.component.base.component import Component
-from maps4fs.generator.component.layer import Layer
-from maps4fs.generator.component.texture import Texture
+from maps4fs.generator.component import Background, Component, Layer, Texture
 from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
 from maps4fs.generator.game import Game
 from maps4fs.generator.settings import (
@@ -26,7 +23,6 @@ from maps4fs.generator.settings import (
 from maps4fs.logger import Logger
 
 
-# pylint: disable=R0913, R0902, R0914
 class Map:
     """Class used to generate map using all components.
 
@@ -38,11 +34,11 @@ class Map:
         logger (Any): Logger instance
     """
 
-    def __init__(  # pylint: disable=R0917, R0915
+    def __init__(
         self,
         game: Game,
         dtm_provider: DTMProvider,
-        dtm_provider_settings: DTMProviderSettings,
+        dtm_provider_settings: DTMProviderSettings | None,
         coordinates: tuple[float, float],
         size: int,
         rotation: int,
@@ -199,7 +195,7 @@ class Map:
 
             try:
                 component.process()
-            except Exception as e:  # pylint: disable=W0718
+            except Exception as e:
                 self.logger.error(
                     "Error processing component %s: %s",
                     component.__class__.__name__,
@@ -209,7 +205,7 @@ class Map:
 
             try:
                 component.commit_generation_info()
-            except Exception as e:  # pylint: disable=W0718
+            except Exception as e:
                 self.logger.error(
                     "Error committing generation info for component %s: %s",
                     component.__class__.__name__,
@@ -287,7 +283,7 @@ class Map:
         for component in self.components:
             try:
                 previews.extend(component.previews())
-            except Exception as e:  # pylint: disable=W0718
+            except Exception as e:
                 self.logger.error(
                     "Error getting previews for component %s: %s",
                     component.__class__.__name__,
@@ -311,6 +307,6 @@ class Map:
             try:
                 shutil.rmtree(self.map_directory)
                 self.logger.debug("Map directory removed: %s", self.map_directory)
-            except Exception as e:  # pylint: disable=W0718
+            except Exception as e:
                 self.logger.debug("Error removing map directory %s: %s", self.map_directory, e)
         return archive_path

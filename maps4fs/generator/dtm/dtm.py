@@ -82,15 +82,28 @@ class DTMProvider(ABC):
 
     @classmethod
     def name(cls) -> str | None:
-        """Name of the provider."""
+        """Name of the provider.
+
+        Returns:
+            str: Provider name.
+        """
         return cls._name
+
+    @classmethod
+    def code(cls) -> str | None:
+        """Code of the provider.
+
+        Returns:
+            str: Provider code.
+        """
+        return cls._code
 
     @property
     def data_info(self) -> dict[str, int | str | float] | None:
         """Information about the DTM data.
 
         Returns:
-            dict: Information about the DTM data.
+            dict[str, int | str | float] | None: Information about the DTM data.
         """
         return self._data_info
 
@@ -99,7 +112,7 @@ class DTMProvider(ABC):
         """Set information about the DTM data.
 
         Arguments:
-            value (dict): Information about the DTM data.
+            value (dict[str, int | str | float] | None): Information about the DTM data.
         """
         self._data_info = value
 
@@ -108,7 +121,7 @@ class DTMProvider(ABC):
         """Coordinates of the center point of the DTM data.
 
         Returns:
-            tuple: Latitude and longitude of the center point.
+            tuple[float, float]: Coordinates of the center point of the DTM data.
         """
         return self._coordinates
 
@@ -123,11 +136,22 @@ class DTMProvider(ABC):
 
     @property
     def url(self) -> str | None:
-        """URL of the provider."""
+        """URL of the provider.
+
+        Returns:
+            str: URL of the provider or None if not defined.
+        """
         return self._url
 
     def formatted_url(self, **kwargs) -> str:
-        """Formatted URL of the provider."""
+        """Formatted URL of the provider.
+
+        Arguments:
+            **kwargs: Keyword arguments to format the URL.
+
+        Returns:
+            str: Formatted URL of the provider.
+        """
         if not self.url:
             raise ValueError("URL must be defined.")
         return self.url.format(**kwargs)
@@ -224,7 +248,7 @@ class DTMProvider(ABC):
             DTMProvider: Provider class or None if not found.
         """
         for provider in cls.__subclasses__():
-            if provider._code == code:  # pylint: disable=W0212
+            if provider.code() == code:
                 return provider
         return None
 

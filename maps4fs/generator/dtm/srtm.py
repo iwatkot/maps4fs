@@ -9,11 +9,7 @@ import shutil
 
 import requests
 
-from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
-
-
-class SRTM30ProviderSettings(DTMProviderSettings):
-    """Settings for SRTM 30m provider."""
+from maps4fs.generator.dtm.dtm import DTMProvider
 
 
 class SRTM30Provider(DTMProvider):
@@ -30,8 +26,6 @@ class SRTM30Provider(DTMProvider):
     _url = "https://elevation-tiles-prod.s3.amazonaws.com/skadi/{latitude_band}/{tile_name}.hgt.gz"
 
     _author = "[iwatkot](https://github.com/iwatkot)"
-
-    _settings = SRTM30ProviderSettings
 
     _instructions = "ℹ️ Recommended settings:  \nDEM Settings -> Blur Radius: **35**"
 

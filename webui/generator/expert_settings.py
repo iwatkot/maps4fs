@@ -15,6 +15,7 @@ class ExpertSettings(BaseComponent):
         super().__init__(public, **kwargs)
         self.game_code = kwargs["game_code"]
         self.settings = kwargs["settings"]
+        self.logger = mfs.Logger(level="INFO", to_file=False)
 
         self.custom_background_path = None
         self.expert_mode = False

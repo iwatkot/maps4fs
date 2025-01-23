@@ -96,7 +96,6 @@ class SettingsModel(BaseModel):
             str: Snake case string.
         """
         splitted = re.split(r"(Settings)", camel_string)
-        print(splitted)  # For debugging
         joined = "_".join(part.lower() for part in splitted if part)
         return joined
 
