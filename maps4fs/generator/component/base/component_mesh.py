@@ -1,5 +1,7 @@
 """Base class for all components that primarily used to work with meshes."""
 
+import os
+
 import cv2
 import numpy as np
 import trimesh
@@ -17,24 +19,31 @@ class MeshComponent(Component):
         """Checks if the given image is a valid for mesh generation.
 
         Arguments:
-            image_path (str): The path to the custom background image.
+            image_path (str): The path to the background image.
             map_size (int): The size of the map.
 
         Raises:
-            ValueError: If the custom background image does not meet the requirements.
+            FileNotFoundError: If the background image is not found.
+            ValueError: If the background image does not meet the requirements.
         """
+        if not os.path.isfile(image_path):
+            raise FileNotFoundError(f"Can't find the background DEM image at {image_path}.")
+
         image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+        if image is None:
+            raise ValueError(f"Can't read the background DEM image at {image_path}.")
+
         if image.shape[0] != image.shape[1]:
-            raise ValueError("The custom background image must be a square.")
+            raise ValueError("The background image must be a square.")
 
         if image.shape[0] != map_size + Parameters.BACKGROUND_DISTANCE * 2:
-            raise ValueError("The custom background image must have the size of the map + 4096.")
+            raise ValueError("The background image must have the size of the map + 4096.")
 
         if len(image.shape) != 2:
-            raise ValueError("The custom background image must be a grayscale image.")
+            raise ValueError("The background image must be a grayscale image.")
 
         if image.dtype != np.uint16:
-            raise ValueError("The custom background image must be a 16-bit grayscale image.")
+            raise ValueError("The background image must be a 16-bit grayscale image.")
 
     @staticmethod
     def mesh_to_stl(mesh: trimesh.Trimesh, save_path: str) -> None:
