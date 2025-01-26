@@ -84,6 +84,7 @@ class Background(MeshComponent, ImageComponent):
 
         if not self.map.custom_background_path:
             self.dem.process()
+            self.validate_np_for_mesh(self.dem.dem_path, self.map_size)
 
         shutil.copyfile(self.dem.dem_path, self.not_substracted_path)
         self.save_map_dem(self.dem.dem_path, save_path=self.not_resized_path)
