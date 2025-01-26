@@ -26,6 +26,7 @@ from maps4fs.generator.dtm.arctic import ArcticProvider
 from maps4fs.generator.dtm.rema import REMAProvider
 from maps4fs.generator.dtm.czech import CzechProvider
 from maps4fs.generator.dtm.sachsenanhalt import SachsenAnhaltProvider
+from maps4fs.generator.dtm.lithuania import LithuaniaProvider
 from maps4fs.generator.game import Game
 from maps4fs.generator.map import Map
 from maps4fs.logger import Logger
