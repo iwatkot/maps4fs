@@ -233,8 +233,7 @@ import maps4fs as mfs
 game_code = "fs25"
 game = mfs.Game.from_code(game_code)
 
-dtm_provider = mfs.SRTM30Provider
-dtm_provider_settings = mfs.SRTM30ProviderSettings(easy_mode=True, power_factor=0)
+dtm_provider = mfs.dtm.SRTM30Provider
 
 lat, lon = 45.28, 20.23
 coordinates = (lat, lon)
@@ -247,7 +246,7 @@ os.makedirs(map_directory, exist_ok=True)
 mp = mfs.Map(
     game,
     dtm_provider,
-    dtm_provider_settings,
+    None,
     coordinates,
     size,
     rotation,

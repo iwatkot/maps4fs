@@ -1,4 +1,7 @@
 # pylint: disable=missing-module-docstring
+import maps4fs.generator.component as component
+import maps4fs.generator.dtm as dtm
+import maps4fs.generator.settings as settings
 from maps4fs.generator.dtm.dtm import DTMProvider
 from maps4fs.generator.dtm.srtm import SRTM30Provider, SRTM30ProviderSettings
 from maps4fs.generator.dtm.usgs_wcs import USGSWCSProvider
@@ -23,17 +26,6 @@ from maps4fs.generator.dtm.arctic import ArcticProvider
 from maps4fs.generator.dtm.rema import REMAProvider
 from maps4fs.generator.dtm.czech import CzechProvider
 from maps4fs.generator.dtm.sachsenanhalt import SachsenAnhaltProvider
-from maps4fs.generator.dtm.lithuania import LithuaniaProvider
 from maps4fs.generator.game import Game
 from maps4fs.generator.map import Map
-from maps4fs.generator.settings import (
-    BackgroundSettings,
-    DEMSettings,
-    GRLESettings,
-    I3DSettings,
-    SatelliteSettings,
-    SettingsModel,
-    SplineSettings,
-    TextureSettings,
-)
 from maps4fs.logger import Logger
