@@ -684,6 +684,8 @@ In addition to SRTM 30m, which provides global coverage, the map above highlight
 | 🇩🇰 Denmark                         | 0.4 meter    | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇨🇭 Switzerland                     | 0.5-2 meter  | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇨🇿 Czech Republic                  | 5 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇱🇹 Lithuania                       | 1 meter      | [Tox3](https://github.com/Tox3) |
+
 
 ## Special thanks
 
