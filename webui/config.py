@@ -72,8 +72,7 @@ def is_public() -> bool:
     Returns:
         bool: True if the script is running on a public server, False otherwise.
     """
-    # return os.environ.get(PUBLIC_HOSTNAME_KEY) == PUBLIC_HOSTNAME_VALUE
-    return True
+    return os.environ.get(PUBLIC_HOSTNAME_KEY) == PUBLIC_HOSTNAME_VALUE
 
 
 def remove_with_delay_without_blocking(
