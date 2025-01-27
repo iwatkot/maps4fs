@@ -15,5 +15,4 @@ pygmdl
 owslib
 tqdm
 scipy
-schedule
 streamlit-folium
