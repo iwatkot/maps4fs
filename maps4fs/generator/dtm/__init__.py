@@ -11,6 +11,7 @@ from maps4fs.generator.dtm.flanders import FlandersProvider
 from maps4fs.generator.dtm.france import FranceProvider
 from maps4fs.generator.dtm.hessen import HessenProvider
 from maps4fs.generator.dtm.italy import ItalyProvider
+from maps4fs.generator.dtm.lithuania import LithuaniaProvider
 from maps4fs.generator.dtm.mv import MecklenburgVorpommernProvider
 from maps4fs.generator.dtm.niedersachsen import NiedersachsenProvider
 from maps4fs.generator.dtm.norway import NorwayProvider
