@@ -1,0 +1,36 @@
+name: Build and push Docker image [FULL]
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Wait until PyPI release is available
+      uses: actions/github-script@v3
+      with:
+        script: |
+          const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+          await wait(300000); // Wait for 5 minutes
+
+    - name: Login to DockerHub
+      uses: docker/login-action@v2 
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: |
+          iwatkot/maps4fs:latest
+          iwatkot/maps4fs:${{ github.ref_name }}
+        file: ./Dockerfile
