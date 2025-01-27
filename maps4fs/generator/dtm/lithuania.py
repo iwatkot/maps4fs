@@ -19,12 +19,14 @@ class LithuaniaProvider(DTMProvider):
     _author = "[Tox3](https://github.com/Tox3)"
     _is_community = True
     _is_base = False
-    _extents = (
-        56.4501789128452,  # type: ignore
-        53.8901567283941,
-        26.8198345671209,
-        20.9312456789123,
-    )
+    _extents = [
+        (
+            56.4501789128452,
+            53.8901567283941,
+            26.8198345671209,
+            20.9312456789123,
+        )
+    ]
     _max_tile_size = 4096
     _url = (
         "https://utility.arcgis.com/usrsvcs/servers/fef66dec83c14b0295180ecafa662aa0/"
