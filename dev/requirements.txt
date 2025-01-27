@@ -22,5 +22,4 @@ owslib
 tqdm
 types-tqdm
 scipy
-schedule
 streamlit-folium
