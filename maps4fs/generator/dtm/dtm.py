@@ -249,9 +249,15 @@ class DTMProvider(ABC):
         return None
 
     @classmethod
-    def get_valid_provider_descriptions(cls, lat_lon: tuple[float, float]) -> dict[str, str]:
+    def get_valid_provider_descriptions(
+        cls, lat_lon: tuple[float, float], default_code: str = "srtm30"
+    ) -> dict[str, str]:
         """Get descriptions of all providers, where keys are provider codes and
         values are provider descriptions.
+
+        Arguments:
+            lat_lon (tuple): Latitude and longitude of the center point.
+            default_code (str): Default provider code.
 
         Returns:
             dict: Provider descriptions.
@@ -262,6 +268,10 @@ class DTMProvider(ABC):
                 code = provider.code()
                 if code is not None:
                     providers[code] = provider.description()
+
+        # Sort the dictionary, to make sure that the default provider is the first one.
+        providers = dict(sorted(providers.items(), key=lambda item: item[0] != default_code))
+
         return providers
 
     @classmethod
