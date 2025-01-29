@@ -127,13 +127,11 @@ class DEM(Component):
 
         if len(data.shape) != 2:
             self.logger.error("DTM provider returned incorrect data: more than 1 channel.")
-            self._save_empty_dem(dem_output_resolution)
-            return
+            raise ValueError("DTM provider returned incorrect data: more than 1 channel.")
 
         if data.dtype not in ["int16", "uint16", "float", "float32"]:
             self.logger.error("DTM provider returned incorrect data type: %s.", data.dtype)
-            self._save_empty_dem(dem_output_resolution)
-            return
+            raise ValueError(f"DTM provider returned incorrect data type: {data.dtype}.")
 
         self.logger.debug(
             "DEM data was retrieved from DTM provider. Shape: %s, dtype: %s. Min: %s, max: %s.",
@@ -142,6 +140,11 @@ class DEM(Component):
             data.min(),
             data.max(),
         )
+
+        # Check if the data contains any non zero values, otherwise raise an error.
+        if not np.any(data):
+            self.logger.error("DTM provider returned empty data.")
+            raise ValueError("DTM provider returned empty data.")
 
         # 1. Resize DEM data to the output resolution.
         resampled_data = self.resize_to_output(data)
@@ -311,11 +314,6 @@ class DEM(Component):
             output_height=output_height,
             output_width=output_width,
         )
-
-    def _save_empty_dem(self, dem_output_resolution: tuple[int, int]) -> None:
-        """Saves empty DEM file filled with zeros."""
-        dem_data = np.zeros(dem_output_resolution, dtype="uint16")
-        cv2.imwrite(self._dem_path, dem_data)
 
     def info_sequence(self) -> dict[Any, Any] | None:  # type: ignore
         """Returns the information sequence for the component. Must be implemented in the child
