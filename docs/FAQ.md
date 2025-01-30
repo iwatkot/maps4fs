@@ -122,5 +122,72 @@ Pay attention that you may have or have not the **OneDrive** folder in the path 
 
 Open the log file and check it for errors and pay attention to the latest lines. If you can't understand what's wrong, ask for help in our Discord server.
 
+### The game can't see the map mod, what should I do?
+
+Ensure, that:
+
+1. The archive with the map is named correctly.  
+For example:
+
+```text
+FS25_Titelski_breg.zip ⬅️ This is a correct name.
+FS25_mod name _ kgjdfg.zip ⬅️ This is an incorrect name.
+```
+
+2. The archive has a correct stucture inside of it.
+For example, this is correct structure:
+
+```text
+📦FS25_Titelski_breg.zip
+ ┣ 📂map
+ ┃ ┣ 📂config
+ ┃ ┃ ┣ 📄aiSystem.xml
+ ┃ ┃ ┣ 📄... ⬅️ Other XML files there.
+ ┃ ┃ ┗ 📄weed.xml
+ ┃ ┣ 📂data
+ ┃ ┃ ┣ 📄asphalt01_weight.png
+ ┃ ┃ ┣ 📄... ⬅️ Other weights, infolayers and DEM files there.
+ ┃ ┃ ┗ 📄unprocessedHeightMap.png
+ ┃ ┣ 📄map.i3d
+ ┃ ┣ 📄map.i3d.shapes
+ ┃ ┣ 📄map.i3d.terrain.lod.type.cache
+ ┃ ┣ 📄map.i3d.terrain.nmap.cache
+ ┃ ┣ 📄map.i3d.terrain.occluders.cache
+ ┃ ┣ 📄map.xml
+ ┃ ┣ 📄overview.dds
+ ┃ ┗ 📄splines.i3d
+ ┣ 📄icon.dds
+ ┣ 📄modDesc.xml
+ ┗ 📄preview.dds
+```
+
+And this is incorrect structure:
+
+```text
+📦FS25_Titelski_breg
+ ┗ 📂extra_folder
+ ┃ ┣ 📂map
+ ┃ ┃ ┣ 📂config
+ ┃ ┃ ┃ ┣ 📜aiSystem.xml
+ ┃ ┃ ┃ ┣ 📜⬅️ Other XML files there.
+ ┃ ┃ ┃ ┗ 📜weed.xml
+ ┃ ┃ ┣ 📂data
+ ┃ ┃ ┃ ┣ 📜asphalt01_weight.png
+ ┃ ┃ ┃ ┣ 📜 ⬅️ Other weights, infolayers and DEM files there.
+ ┃ ┃ ┃ ┗ 📜unprocessedHeightMap.png
+ ┃ ┃ ┣ 📜map.i3d
+ ┃ ┃ ┣ 📜map.i3d.shapes
+ ┃ ┃ ┣ 📜map.i3d.terrain.lod.type.cache
+ ┃ ┃ ┣ 📜map.i3d.terrain.nmap.cache
+ ┃ ┃ ┣ 📜map.i3d.terrain.occluders.cache
+ ┃ ┃ ┣ 📜map.xml
+ ┃ ┃ ┣ 📜overview.dds
+ ┃ ┃ ┗ 📜splines.i3d
+ ┃ ┣ 📜icon.dds
+ ┃ ┣ 📜modDesc.xml
+ ┃ ┗ 📜preview.dds
+```
+
+In the incorrect example above, pay attention that the files were placed in the **extra_folder** instead of the root of the archive.
 
 If you think that some question should be added here, please, contact me in [Discord](https://discord.gg/Sj5QKKyE42) or open an issue on GitHub. Thank you! 
