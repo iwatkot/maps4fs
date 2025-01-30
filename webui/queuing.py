@@ -1,7 +1,7 @@
 import json
 import os
 import threading
-from time import sleep
+from time import sleep, time
 from typing import Generator
 
 from config import QUEUE_FILE, QUEUE_INTERVAL, QUEUE_TIMEOUT
@@ -11,7 +11,7 @@ from maps4fs import Logger
 logger = Logger(level="INFO", to_file=False)
 
 
-def get_queue(force: bool = False) -> list[str]:
+def get_queue(force: bool = False) -> dict[int, str]:
     """Get the queue from the queue file.
     If the queue file does not exist, create a new one with an empty queue.
 
@@ -19,12 +19,12 @@ def get_queue(force: bool = False) -> list[str]:
         force (bool): Whether to force the creation of a new queue file.
 
     Returns:
-        list[str]: The queue.
+        dict[int, str]: The queue, where the key is an epoch time and the value is a session.
     """
     if not os.path.isfile(QUEUE_FILE) or force:
         logger.debug("Queue will be reset.")
-        save_queue([])
-        return []
+        save_queue({})
+        return {}
     with open(QUEUE_FILE, "r") as f:
         return json.load(f)
 
@@ -38,11 +38,11 @@ def get_queue_length() -> int:
     return len(get_queue())
 
 
-def save_queue(queue: list[str]) -> None:
+def save_queue(queue: dict[int, str]) -> None:
     """Save the queue to the queue file.
 
     Arguments:
-        queue (list[str]): The queue to save to the queue file.
+        queue (dict[int, str]): The queue to save.
     """
     with open(QUEUE_FILE, "w") as f:
         json.dump(queue, f)
@@ -56,21 +56,48 @@ def add_to_queue(session: str) -> None:
         session (str): The session to add to the queue.
     """
     queue = get_queue()
-    queue.append(session)
+
+    epoch = int(time())
+
+    queue[epoch] = session
     save_queue(queue)
     logger.debug("Session %s added to the queue.", session)
 
 
 def get_first_item() -> str | None:
-    """Get the first item from the queue.
+    """Get the session of the first item in the queue.
 
     Returns:
-        str: The first item from the queue.
+        str: The session of the first item in the queue.
     """
     queue = get_queue()
     if not queue:
         return None
-    return queue[0]
+
+    return queue[min(queue.keys())]
+
+
+def remove_from_queue(session: str) -> None:
+    """Remove a session from the queue.
+
+    Arguments:
+        session (str): The session to remove from the queue.
+    """
+    queue = get_queue()
+    if session in queue.values():
+        queue = {epoch: s for epoch, s in queue.items() if s != session}
+        save_queue(queue)
+        logger.debug("Session %s removed from the queue.", session)
+    else:
+        logger.debug("Session %s not found in the queue.", session)
+
+
+def remove_old_sessions() -> None:
+    """Remove old sessions from the queue."""
+    queue = get_queue()
+    for epoch, session in queue.items():
+        if int(epoch) + QUEUE_TIMEOUT * 2 < int(time()):
+            remove_from_queue(session)
 
 
 def get_position(session: str) -> int | None:
@@ -82,25 +109,11 @@ def get_position(session: str) -> int | None:
     Returns:
         int: The position of the session in the queue.
     """
+    remove_old_sessions()
     queue = get_queue()
-    if session not in queue:
+    if session not in queue.values():
         return None
-    return queue.index(session)
-
-
-def remove_from_queue(session: str) -> None:
-    """Remove a session from the queue.
-
-    Arguments:
-        session (str): The session to remove from the queue.
-    """
-    queue = get_queue()
-    if session in queue:
-        queue.remove(session)
-        save_queue(queue)
-        logger.debug("Session %s removed from the queue.", session)
-    else:
-        logger.debug("Session %s not found in the queue.", session)
+    return list(queue.values()).index(session)
 
 
 def wait_in_queue(session: str) -> Generator[int, None, None]:
