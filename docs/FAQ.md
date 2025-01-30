@@ -71,5 +71,56 @@ After generation, the trees (or any other object) may be floating above the terr
 
 3. Click **Scripts** -> **Shared scripts** -> **Map** -> **Terrain** -> **Place objects on terrain**.
 
+### Giants Editor crashes when I try to open the map, what should I do?
+
+First of all, if it happens not on the loading, check out the **Console** tab if it contains any errors. If it does, try to fix them.
+
+If it crahes on the loading and you can't use **Console** because of that, find the log file here:
+
+```text
+C:/Users/<username>/AppData/Local/GIANTS Editor 64bit 10.0.3/editor_log.txt
+```
+
+Pay attention that the folder name can be different, depending on the version of the Giants Editor.
+
+Open the log file and check it for errors and pay attention to the latest lines. If you can't understand what's wrong, ask for help in our Discord server.
+
+### Game is crashing or hangs when I try to load the map, what should I do?
+
+#### Debug mode
+
+First of all, enable the debug mode in the game. To do it, open the **game.xml** file in the following path:
+
+```text
+C:/Users/<username>/OneDrive/Documents/My Games/FarmingSimulator2025/game.xml
+```
+
+Pay attention that you may have or have not the **OneDrive** folder in the path depending on your system settings.
+
+In this file, scroll down to the end and find the line:
+
+```xml
+<development>
+    <controls>false</controls>
+    <openDevConsole onWarnings="false" onErrors="false"/>
+</development>
+```
+
+You need to change the **false** to **true** in the <controls> tag.
+
+Now in the game you can use the **~** key to open the console. Check if there any errors or warnings in the console. If you can't understand what's wrong, ask for help in our Discord server.
+
+#### Game log
+
+If the game is crashing and you can't see the console, you can find the log file here:
+
+```text
+C:/Users/<username>/OneDrive/Documents/My Games/FarmingSimulator2025/log.txt
+```
+
+Pay attention that you may have or have not the **OneDrive** folder in the path depending on your system settings.
+
+Open the log file and check it for errors and pay attention to the latest lines. If you can't understand what's wrong, ask for help in our Discord server.
+
 
 If you think that some question should be added here, please, contact me in [Discord](https://discord.gg/Sj5QKKyE42) or open an issue on GitHub. Thank you! 
