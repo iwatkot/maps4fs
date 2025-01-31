@@ -80,7 +80,7 @@ COPY favicon.png /usr/local/lib/python3.11/site-packages/streamlit/static/favico
 # Generate map tempates for Farming Simulator from real places in a couple
 # of clicks. Get the realistic terrain, roads, rivers, fields, and more.
 # Completely free and open-source.
-RUN sed -i 's|<body><noscript>.*</noscript></body>|<body><noscript>Generate map templates for Farming Simulator from real places in a couple of clicks. Get the realistic terrain, roads, rivers, fields, and more. Completely free and open-source.</noscript></body>|' /usr/local/lib/python3.11/site-packages/streamlit/static/index.html
+RUN sed -i 's|<noscript>.*</noscript>|<noscript>Generate map templates for Farming Simulator from real places in a couple of clicks. Get the realistic terrain, roads, rivers, fields, and more. Completely free and open-source.</noscript>|' /usr/local/lib/python3.11/site-packages/streamlit/static/index.html
 
 EXPOSE 8501
 
