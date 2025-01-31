@@ -43,3 +43,13 @@ Note, that depending on the settings of generation (the map size, resize factors
 ### I keep getting Unauthorized error when trying to execute docker run command, what should I do?
 
 The maps4fs Docker image is public and doesn't require any authentication. If you're getting the Unauthorized error, it's probably because of the broken Docker credentials. To fix it, simply log out from your Docker account in the Docker Desktop app (the button on the right top corner), then try to run the command again.
+
+### I have an error in the Docker (local) version of the app, how to know what's wrong?
+
+If you are using local (Docker) version of the app, open terminal and execute:
+
+```bash
+docker logs maps4fs
+```
+
+And see the output. It will contain the error message, which will help you to understand what's wrong. If you can't understand the error message, ask for help in our Discord server.
