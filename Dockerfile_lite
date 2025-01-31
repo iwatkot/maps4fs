@@ -18,6 +18,9 @@ RUN pip install -r requirements.txt
 # Ensure the latest version of maps4fs is installed.
 RUN pip install --upgrade maps4fs
 
+COPY favicon.png /usr/local/lib/python3.11/site-packages/streamlit/static/favicon.png
+COPY index.html /usr/local/lib/python3.11/site-packages/streamlit/static/index.html
+
 EXPOSE 8501
 
 ENV PYTHONPATH .:${PYTHONPATH}
