@@ -10,7 +10,17 @@ Complete step by step tutorial can be found [here](https://docs.docker.com/deskt
 
 ### I can't launch Docker, it says something about WSL, what should I do?
 
-By default, Docker Desktop for Windows uses the WSL 2 backend. And it's probably is not installed on your system. While you can install it and use the WSL backend, you can also switch to the Hyper-V backend, which is easier to set up. Note, that Hyper-V should be enabled on your system (check the previous question).
+By default, Docker Desktop for Windows uses the WSL 2 backend. And it's probably is not installed on your system. So, there two ways to fix it: install the WSL 2 backend, or switch to the Hyper-V backend.
+
+#### Install WSL 2 backend
+
+Check out the [official documentation](https://docs.docker.com/desktop/setup/install/windows-install/#system-requirements) of Docker, it contains all the needed links and instructions. Here's also a [tutorial](https://learn.microsoft.com/en-us/windows/wsl/install) from Microsoft.
+
+#### Switch to Hyper-V backend
+
+You can also switch to the Hyper-V backend, which is easier to set up. Note, that Hyper-V should be enabled on your system (check the previous question).
+
+➡️ Note, that Hyper-V is not available on Home editions of Windows, in that case you should use the WSL 2 backend.
 
 To do it, go to the Docker Desktop, open the **Settings**, then **General**, and switch to the Hyper-V backend. Then restart the Docker Desktop.
 
@@ -29,3 +39,7 @@ To do it, go to the Docker Desktop, open the **Settings**, then **Resources**, a
 Note, that depending on the settings of generation (the map size, resize factors and so on), the app may work with images of enormous sizes, which require a lot of memory. For example, when you downloading the satellite images for a 4 km map, the resulting image is 20K x 20K pixels, which is 400 megapixels. And it requires a lot of memory to process it. And also, when generating mesh for backgrpound terrain, the app uses a lot of memory too. If your machine can't handle it, con sider lowering the generation settings.
 
 ![Increase memory limit](https://github.com/user-attachments/assets/c0101e93-0377-4515-aece-210522aa0aa5)
+
+### I keep getting Unauthorized error when trying to execute docker run command, what should I do?
+
+The maps4fs Docker image is public and doesn't require any authentication. If you're getting the Unauthorized error, it's probably because of the broken Docker credentials. To fix it, simply log out from your Docker account in the Docker Desktop app (the button on the right top corner), then try to run the command again.
