@@ -26,7 +26,13 @@ def get_queue(force: bool = False) -> dict[int, str]:
         save_queue({})
         return {}
     with open(QUEUE_FILE, "r") as f:
-        return json.load(f)
+        queue = json.load(f)
+
+    for epoch, session in queue.items():
+        if int(epoch) + QUEUE_TIMEOUT * 2 < int(time()):
+            remove_from_queue(session)
+
+    return queue
 
 
 def get_queue_length() -> int:
@@ -92,14 +98,6 @@ def remove_from_queue(session: str) -> None:
         logger.debug("Session %s not found in the queue.", session)
 
 
-def remove_old_sessions() -> None:
-    """Remove old sessions from the queue."""
-    queue = get_queue()
-    for epoch, session in queue.items():
-        if int(epoch) + QUEUE_TIMEOUT * 2 < int(time()):
-            remove_from_queue(session)
-
-
 def get_position(session: str) -> int | None:
     """Get the position of a session in the queue.
 
@@ -109,7 +107,6 @@ def get_position(session: str) -> int | None:
     Returns:
         int: The position of the session in the queue.
     """
-    remove_old_sessions()
     queue = get_queue()
     if session not in queue.values():
         return None
