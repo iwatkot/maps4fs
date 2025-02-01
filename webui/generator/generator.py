@@ -296,7 +296,6 @@ class GeneratorUI:
         mp, session_name = self.read_generation_settings()
 
         if self.public:
-            # TODO:
             if is_over_limit(*mp.coordinates):
                 self.status_container.error(
                     "You have reached the limit of generations. Please, try again in two hours.",
