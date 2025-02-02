@@ -68,7 +68,6 @@ class MeshComponent(Component):
         decimation_agression: int,
         remove_center: bool,
         remove_size: int,
-        disable_tqdm: bool = False,
     ) -> trimesh.Trimesh:
         """Generates a mesh from the given numpy array.
 
@@ -82,7 +81,6 @@ class MeshComponent(Component):
             decimation_agression (int): The agression of the decimation.
             remove_center (bool): Whether to remove the center from the mesh.
             remove_size (int): The size of the center to remove.
-            disable_tqdm (bool): Whether to disable the tqdm progress bar.
 
         Returns:
             trimesh.Trimesh: The generated mesh.
@@ -105,7 +103,7 @@ class MeshComponent(Component):
 
         skipped = 0
 
-        for i in tqdm(range(rows - 1), desc="Generating mesh", unit="row", disable=disable_tqdm):
+        for i in tqdm(range(rows - 1), desc="Generating mesh", unit="row"):
             for j in range(cols - 1):
                 top_left = i * cols + j
                 top_right = top_left + 1
@@ -124,7 +122,7 @@ class MeshComponent(Component):
 
         faces_np = np.array(faces)
         mesh = trimesh.Trimesh(vertices=vertices, faces=faces_np)
-        mesh = MeshComponent.rotate_mesh(mesh, disable_tqdm=disable_tqdm)
+        mesh = MeshComponent.rotate_mesh(mesh)
 
         if apply_decimation:
             percent = decimation_percent / 100
@@ -134,7 +132,7 @@ class MeshComponent(Component):
 
         try:
             if not mesh.is_watertight:
-                mesh = MeshComponent.fix_mesh(mesh, disable_tqdm=disable_tqdm)
+                mesh = MeshComponent.fix_mesh(mesh)
         except Exception:
             pass
 

@@ -82,7 +82,6 @@ class Satellite(ImageComponent):
                     zoom=task.zoom,
                     from_center=True,
                     logger=self.logger,
-                    show_progress=not self.map.is_public,
                 )
 
             except Exception as e:

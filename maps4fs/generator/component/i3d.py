@@ -249,7 +249,7 @@ class I3d(XMLComponent):
         node_id = NODE_ID_STARTING_VALUE
         field_id = 1
 
-        for field in tqdm(fields, desc="Adding fields", unit="field", disable=self.map.is_public):
+        for field in tqdm(fields, desc="Adding fields", unit="field"):
             try:
                 fitted_field = self.fit_object_into_bounds(
                     polygon_points=field, angle=self.rotation, border=border

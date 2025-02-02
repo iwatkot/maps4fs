@@ -154,8 +154,6 @@ class Map:
             save_path = os.path.join(self.map_directory, "custom_background.png")
             shutil.copyfile(self.custom_background_path, save_path)
 
-        self.is_public = kwargs.get("is_public", False)
-
         try:
             shutil.unpack_archive(game.template_path, self.map_directory)
             self.logger.debug("Map template unpacked to %s", self.map_directory)

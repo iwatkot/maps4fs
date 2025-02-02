@@ -59,7 +59,7 @@ class WMSProvider(DTMProvider):
             # auth=Authentication(verify=False),
             timeout=600,
         )
-        for tile in tqdm(tiles, desc="Downloading tiles", unit="tile", disable=self.map.is_public):
+        for tile in tqdm(tiles, desc="Downloading tiles", unit="tile"):
             file_name = "_".join(map(str, tile)) + ".tif"
             file_path = os.path.join(self.shared_tiff_path, file_name)
             if not os.path.exists(file_path):
