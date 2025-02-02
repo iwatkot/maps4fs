@@ -30,7 +30,7 @@ def get_queue(force: bool = False) -> dict[int, str]:
 
     for epoch, session in queue.items():
         if int(epoch) + QUEUE_TIMEOUT * 2 < int(time()):
-            remove_from_queue(session)
+            remove_from_queue(session, queue)
 
     return queue
 
@@ -83,13 +83,13 @@ def get_first_item() -> str | None:
     return queue[min(queue.keys())]
 
 
-def remove_from_queue(session: str) -> None:
+def remove_from_queue(session: str, queue: dict[int, str] = None) -> None:
     """Remove a session from the queue.
 
     Arguments:
         session (str): The session to remove from the queue.
     """
-    queue = get_queue()
+    queue = queue or get_queue()
     if session in queue.values():
         queue = {epoch: s for epoch, s in queue.items() if s != session}
         save_queue(queue)

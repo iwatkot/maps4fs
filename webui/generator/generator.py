@@ -8,7 +8,6 @@ import streamlit as st
 from generator.advanced_settings import AdvancedSettings
 from generator.expert_settings import ExpertSettings
 from generator.main_settings import MainSettings
-from history import add_entry, is_over_limit
 from PIL import Image
 from queuing import add_to_queue, get_queue_length, remove_from_queue, wait_in_queue
 from streamlit_stl import stl_from_file
@@ -285,7 +284,6 @@ class GeneratorUI:
             texture_custom_schema=texture_schema,
             tree_custom_schema=tree_schema,
             custom_background_path=self.expert_settings.custom_background_path,
-            is_public=self.public,
         )
 
         return mp, session_name
@@ -296,15 +294,6 @@ class GeneratorUI:
         mp, session_name = self.read_generation_settings()
 
         if self.public:
-            if is_over_limit(*mp.coordinates):
-                self.status_container.error(
-                    "You have reached the limit of generations. Please, try again in two hours.",
-                    icon="❌",
-                )
-                return
-
-            add_entry(*mp.coordinates)
-
             add_to_queue(session_name)
             for position in wait_in_queue(session_name):
                 self.status_container.info(

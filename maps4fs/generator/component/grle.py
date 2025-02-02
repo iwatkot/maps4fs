@@ -79,9 +79,7 @@ class GRLE(ImageComponent, XMLComponent):
             self.logger.debug("GRLE schema is not obtained, skipping the processing.")
             return
 
-        for info_layer in tqdm(
-            grle_schema, desc="Preparing GRLE files", unit="layer", disable=self.map.is_public
-        ):
+        for info_layer in tqdm(grle_schema, desc="Preparing GRLE files", unit="layer"):
             if isinstance(info_layer, dict):
                 file_path = os.path.join(
                     self.game.weights_dir_path(self.map_directory), info_layer["name"]
@@ -210,9 +208,7 @@ class GRLE(ImageComponent, XMLComponent):
 
         farmland_id = 1
 
-        for farmland in tqdm(
-            farmlands, desc="Adding farmlands", unit="farmland", disable=self.map.is_public
-        ):
+        for farmland in tqdm(farmlands, desc="Adding farmlands", unit="farmland"):
             try:
                 fitted_farmland = self.fit_object_into_bounds(
                     polygon_points=farmland,
@@ -366,9 +362,7 @@ class GRLE(ImageComponent, XMLComponent):
         # B and G channels remain the same (zeros), while we change the R channel.
         possible_r_values = [65, 97, 129, 161, 193, 225]
 
-        for _ in tqdm(
-            range(count), desc="Adding islands of plants", unit="island", disable=self.map.is_public
-        ):
+        for _ in tqdm(range(count), desc="Adding islands of plants", unit="island"):
             # Randomly choose the value for the island.
             plant_value = choice(possible_r_values)
             # Randomly choose the size of the island.

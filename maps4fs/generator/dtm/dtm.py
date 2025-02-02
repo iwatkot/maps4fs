@@ -383,7 +383,6 @@ class DTMProvider(ABC):
             unit="tile",
             initial=len(tif_files),
             total=len(urls),
-            disable=self.map.is_public,
         ):
             try:
                 file_name = os.path.basename(url)

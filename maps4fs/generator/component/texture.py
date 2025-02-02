@@ -210,9 +210,7 @@ class Texture(ImageComponent):
         """Rotates textures of the layers which have tags."""
         if self.rotation:
             # Iterate over the layers which have tags and rotate them.
-            for layer in tqdm(
-                self.layers, desc="Rotating textures", unit="layer", disable=self.map.is_public
-            ):
+            for layer in tqdm(self.layers, desc="Rotating textures", unit="layer"):
                 if layer.tags:
                     self.logger.debug("Rotating layer %s.", layer.name)
                     layer_paths = layer.paths(self._weights_dir)
@@ -254,9 +252,7 @@ class Texture(ImageComponent):
     def _prepare_weights(self):
         self.logger.debug("Starting preparing weights from %s layers.", len(self.layers))
 
-        for layer in tqdm(
-            self.layers, desc="Preparing weights", unit="layer", disable=self.map.is_public
-        ):
+        for layer in tqdm(self.layers, desc="Preparing weights", unit="layer"):
             self._generate_weights(layer)
         self.logger.debug("Prepared weights for %s layers.", len(self.layers))
 
@@ -328,9 +324,7 @@ class Texture(ImageComponent):
         # Key is a layer.info_layer, value is a list of polygon points as tuples (x, y).
         info_layer_data: dict[str, list[list[int]]] = defaultdict(list)
 
-        for layer in tqdm(
-            layers, desc="Drawing textures", unit="layer", disable=self.map.is_public
-        ):
+        for layer in tqdm(layers, desc="Drawing textures", unit="layer"):
             if self.map.texture_settings.skip_drains and layer.usage == "drain":
                 self.logger.debug("Skipping layer %s because of the usage.", layer.name)
                 continue
@@ -417,9 +411,7 @@ class Texture(ImageComponent):
         contains any non-zero values (255), splits those non-values between different weight
         files of the corresponding layer and saves the changes to the files.
         """
-        for layer in tqdm(
-            self.layers, desc="Dissolving textures", unit="layer", disable=self.map.is_public
-        ):
+        for layer in tqdm(self.layers, desc="Dissolving textures", unit="layer"):
             if not layer.tags:
                 self.logger.debug("Layer %s has no tags, there's nothing to dissolve.", layer.name)
                 continue
