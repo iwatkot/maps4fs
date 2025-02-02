@@ -150,12 +150,11 @@ class MeshComponent(Component):
         return mesh
 
     @staticmethod
-    def rotate_mesh(mesh: trimesh.Trimesh, disable_tqdm: bool = False) -> trimesh.Trimesh:
+    def rotate_mesh(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
         """Rotates the given mesh by 180 degrees around the Y-axis and Z-axis.
 
         Arguments:
             mesh (trimesh.Trimesh): The mesh to rotate.
-            disable_tqdm (bool): Whether to disable the tqdm progress bar.
 
         Returns:
             trimesh.Trimesh: The rotated mesh.
@@ -168,20 +167,21 @@ class MeshComponent(Component):
         ]
 
         for rotation_matrix in tqdm(
-            rotation_matrices, desc="Rotating mesh", unit="rotation", disable=disable_tqdm
+            rotation_matrices,
+            desc="Rotating mesh",
+            unit="rotation",
         ):
             mesh_copy.apply_transform(rotation_matrix)
 
         return mesh_copy
 
     @staticmethod
-    def fix_mesh(mesh: trimesh.Trimesh, disable_tqdm: bool = False) -> trimesh.Trimesh:
+    def fix_mesh(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
         """Fixes the given mesh by filling holes, fixing normals, fixing winding, fixing inversion,
         fixing broken faces, and stitching.
 
         Arguments:
             mesh (trimesh.Trimesh): The mesh to fix.
-            disable_tqdm (bool): Whether to disable the tqdm progress bar.
 
         Returns:
             trimesh.Trimesh: The fixed mesh.
@@ -197,7 +197,7 @@ class MeshComponent(Component):
             trimesh.repair.stitch,
         ]
 
-        for method in tqdm(fix_methods, desc="Fixing mesh", unit="method", disable=disable_tqdm):
+        for method in tqdm(fix_methods, desc="Fixing mesh", unit="method"):
             method(mesh_copy)  # type: ignore
 
         return mesh_copy
