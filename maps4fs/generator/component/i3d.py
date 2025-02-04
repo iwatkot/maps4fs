@@ -150,10 +150,6 @@ class I3d(XMLComponent):
 
         node_id = SPLINES_NODE_ID_STARTING_VALUE
         for road_id, road_info in enumerate(roads_polylines, start=1):
-            # Add to scene node
-            # <Shape name="spline01_CSV" translation="0 0 0" nodeId="11" shapeId="11"/>
-
-            road_info: dict[str, str | list[tuple[int, int]]]
             points = road_info.get("points")
             tags = road_info.get("tags")
 
