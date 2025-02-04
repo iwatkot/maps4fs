@@ -308,6 +308,10 @@ class Settings:
         "more smooth. Be careful with high values, because it may make your spline too complex.  \n"
         "ℹ️ **Units:** number of additional points between each pair of existing points."
     )
+    ADD_REVERSED_SPLINES = (
+        "If add reversed splines is enabled, the splines will be generated in both directions. "
+        "Otherwise, only one direction will be generated (as in the OSM data)."
+    )
 
     # Satellite Settings
 

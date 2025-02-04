@@ -615,6 +615,7 @@ You can also apply some advanced settings to the map generation process.<br>
 ### Splines Advanced settings
 
 - Splines density - number of points, which will be added (interpolate) between each pair of existing points. The higher the value, the denser the spline will be. It can smooth the splines, but high values can in opposite make the splines look unnatural.
+- Add reversed splines - if enabled, the tool will add the reversed copies of the splines. It can be useful if you want to have the splines on both directions. By default, it's set to False.
 
 ### Satellite Advanced settings
 
