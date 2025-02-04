@@ -212,6 +212,7 @@ class SplineSettings(SettingsModel):
     """
 
     spline_density: int = 2
+    add_reversed_splines: bool = False
 
 
 class SatelliteSettings(SettingsModel):

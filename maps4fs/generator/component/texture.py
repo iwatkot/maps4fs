@@ -402,7 +402,11 @@ class Texture(ImageComponent):
             for linestring in self.objects_generator(
                 layer.tags, layer.width, layer.info_layer, yield_linestrings=True
             ):
-                info_layer_data[f"{layer.info_layer}_polylines"].append(linestring)  # type: ignore
+                linestring_entry = {
+                    "points": linestring,
+                    "tags": str(layer.tags),
+                }
+                info_layer_data[f"{layer.info_layer}_polylines"].append(linestring_entry)  # type: ignore
 
     def dissolve(self) -> None:
         """Dissolves textures of the layers with tags into sublayers for them to look more

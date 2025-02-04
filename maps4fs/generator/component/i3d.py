@@ -149,13 +149,13 @@ class I3d(XMLComponent):
             return
 
         node_id = SPLINES_NODE_ID_STARTING_VALUE
-        for road_id, road in enumerate(roads_polylines, start=1):
-            # Add to scene node
-            # <Shape name="spline01_CSV" translation="0 0 0" nodeId="11" shapeId="11"/>
+        for road_id, road_info in enumerate(roads_polylines, start=1):
+            points = road_info.get("points")
+            tags = road_info.get("tags")
 
             try:
                 fitted_road = self.fit_object_into_bounds(
-                    linestring_points=road, angle=self.rotation
+                    linestring_points=points, angle=self.rotation
                 )
             except ValueError as e:
                 self.logger.debug(
@@ -168,52 +168,58 @@ class I3d(XMLComponent):
             fitted_road = self.interpolate_points(
                 fitted_road, num_points=self.map.spline_settings.spline_density
             )
+            fitted_roads = [(fitted_road, "original")]
 
-            spline_name = f"spline{road_id}"
+            if self.map.spline_settings.add_reversed_splines:
+                reversed_fitted_road = fitted_road[::-1]
+                fitted_roads.append((reversed_fitted_road, "reversed"))
 
-            data = {
-                "name": spline_name,
-                "translation": "0 0 0",
-                "nodeId": str(node_id),
-                "shapeId": str(node_id),
-            }
+            for fitted_road, direction in fitted_roads:
+                spline_name = f"spline_{road_id}_{direction}_{tags}"
 
-            scene_node.append(self.create_element("Shape", data))
+                data = {
+                    "name": spline_name,
+                    "translation": "0 0 0",
+                    "nodeId": str(node_id),
+                    "shapeId": str(node_id),
+                }
 
-            road_ccs = [self.top_left_coordinates_to_center(point) for point in fitted_road]
+                scene_node.append(self.create_element("Shape", data))
 
-            data = {
-                "name": spline_name,
-                "shapeId": str(node_id),
-                "degree": "3",
-                "form": "open",
-            }
-            nurbs_curve_node = self.create_element("NurbsCurve", data)
+                road_ccs = [self.top_left_coordinates_to_center(point) for point in fitted_road]
 
-            for point_ccs, point in zip(road_ccs, fitted_road):
-                cx, cy = point_ccs
-                x, y = point
+                data = {
+                    "name": spline_name,
+                    "shapeId": str(node_id),
+                    "degree": "3",
+                    "form": "open",
+                }
+                nurbs_curve_node = self.create_element("NurbsCurve", data)
 
-                x = max(0, min(int(x), dem_x_size - 1))
-                y = max(0, min(int(y), dem_y_size - 1))
+                for point_ccs, point in zip(road_ccs, fitted_road):
+                    cx, cy = point_ccs
+                    x, y = point
 
-                z = not_resized_dem[y, x]
-                z *= self.get_z_scaling_factor()
+                    x = max(0, min(int(x), dem_x_size - 1))
+                    y = max(0, min(int(y), dem_y_size - 1))
 
-                nurbs_curve_node.append(self.create_element("cv", {"c": f"{cx}, {z}, {cy}"}))
+                    z = not_resized_dem[y, x]
+                    z *= self.get_z_scaling_factor()
 
-            shapes_node.append(nurbs_curve_node)
+                    nurbs_curve_node.append(self.create_element("cv", {"c": f"{cx}, {z}, {cy}"}))
 
-            user_attribute_node = self.get_user_attribute_node(
-                node_id,
-                attributes=[
-                    ("maxSpeedScale", "integer", "1"),
-                    ("speedLimit", "integer", "100"),
-                ],
-            )
+                shapes_node.append(nurbs_curve_node)
 
-            user_attributes_node.append(user_attribute_node)
-            node_id += 1
+                user_attribute_node = self.get_user_attribute_node(
+                    node_id,
+                    attributes=[
+                        ("maxSpeedScale", "integer", "1"),
+                        ("speedLimit", "integer", "100"),
+                    ],
+                )
+
+                user_attributes_node.append(user_attribute_node)
+                node_id += 1
 
         tree.write(splines_i3d_path)  # type: ignore
         self.logger.debug("Splines I3D file saved to: %s.", splines_i3d_path)
