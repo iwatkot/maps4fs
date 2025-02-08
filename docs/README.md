@@ -1,5 +1,7 @@
 ## How to use maps4fs?
 
+📹 WIP: Check out the complete playlist of video turorials on [YouTube](https://www.youtube.com/watch?v=hPbJZ0HoiDE&list=PLug0g7UYHX8D1Jik6NkJjQhdxqS-NOtB9). 🆕<br>
+
 Hey, welcome to the maps4fs documentation! Here you will find all the information you need to use maps4fs.  
 Recommended reading order:
 

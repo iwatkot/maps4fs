@@ -1,5 +1,9 @@
 ## How to create a custom OSM file
 
+📹 Check out the video version of this tutorial.
+
+<a href="https://www.youtube.com/watch?v=duTXvkIiECY" target="_blank"><img src="https://github.com/user-attachments/assets/8e130247-57f2-4d0a-9a9a-a13fa847c0d8"/></a>
+
 If you don't want to bother yourself editing the public version of the OSM data, deal with the community and so on, you can easily create your own OSM file and do there whatever you want. Here is a step-by-step guide on how to do it.
 
 1. Download the JOSM editor from the [official website](https://josm.openstreetmap.de/) or directly from the [Windows Store](https://apps.microsoft.com/detail/xpfcg1gv0wwgzx) with one click.
