@@ -55,6 +55,11 @@ class GeneratorUI:
         with self.left_column:
             if config.is_on_community_server():
                 st.error(Messages.MOVED, icon="🚜")
+
+            if config.is_on_community_server() or self.public:
+                with st.expander("🚨 READ THIS! SCAM ALERT! 🚨", expanded=True):
+                    st.error(Messages.PUBLIC_WARNING)
+
             self.add_left_widgets()
 
         self.main_settings.map_preview()
