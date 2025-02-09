@@ -46,8 +46,8 @@ osm_file = "path/to/osm_file.osm"
 # it's recommended to change them according to your needs.
 dem_settings = mfs.settings.DEMSettings(multiplier=1, blur_radius=15, plateau=15, water_depth=10)
 background_settings = mfs.settings.BackgroundSettings(
-    generate_background=True,
-    generate_water=True,
+    # generate_background=True,
+    # generate_water=True,
     resize_factor=8,
     remove_center=True,
     apply_decimation=True,

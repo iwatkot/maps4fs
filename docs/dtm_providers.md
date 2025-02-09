@@ -185,34 +185,6 @@ if some_condition:
     self.map.shared_settings.change_height_scale = True
 ```
 
-### Info sequence
-
-If you want your provider to add some information to the `generation_info.json` file, you can use the `data_info` property of the `DTMProvider` class.
-
-Note, that the `data_info` must me a correct JSON-serializable dictionary.
-
-### Example of usage:
-
-```python
-def add_numpy_params(
-    self,
-    data: np.ndarray,
-    prefix: str,
-) -> None:
-    """Add numpy array parameters to the data_info dictionary.
-
-    Arguments:
-        data (np.ndarray): Numpy array of the tile.
-        prefix (str): Prefix for the parameters.
-    """
-    self.data_info[f"{prefix}_minimum_height"] = int(data.min())  # type: ignore
-    self.data_info[f"{prefix}_maximum_height"] = int(data.max())  # type: ignore
-    self.data_info[f"{prefix}_deviation"] = int(data.max() - data.min())  # type: ignore
-    self.data_info[f"{prefix}_unique_values"] = int(np.unique(data).size)  # type: ignore
-```
-
-The method in the example adds some basic information about the DEM image to the `data_info` dictionary. You can add any information you want.
-
 ### I implemented a DTM provider, what's next?
 
 If you've implemented a DTM provider, you just need to create a pull request to the repository with the generator. After the review, your provider will be added to the generator and will be available for everyone to use.

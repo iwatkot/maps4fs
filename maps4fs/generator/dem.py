@@ -63,6 +63,8 @@ class DEM(Component):
             map=self.map,
         )
 
+        self.info: dict[str, Any] = {}
+
     @property
     def dem_path(self) -> str:
         """Returns path to the DEM file.
@@ -112,6 +114,27 @@ class DEM(Component):
         )
         return dem_size, dem_size
 
+    def update_info(self, state: str, data: np.ndarray) -> None:
+        """Update info dictionary with additional information about DEM data.
+
+        Arguments:
+            data (np.ndarray): DEM data.
+        """
+
+        try:
+            entry = {
+                "min": float(data.min()),
+                "max": float(data.max()),
+                "std": data.std(),
+                "deviation": float(data.max() - data.min()),
+                "mean": data.mean(),
+                "dtype": str(data.dtype),
+                "shape": str(data.shape),
+            }
+            self.info[state] = entry
+        except Exception as e:
+            self.logger.warning("Failed to update DEM info: %s.", e)
+
     def process(self) -> None:
         """Reads DTM file, crops it to map size, normalizes and blurs it,
         saves to map directory."""
@@ -141,6 +164,8 @@ class DEM(Component):
             data.max(),
         )
 
+        self.update_info("original", data)
+
         # Check if the data contains any non zero values, otherwise raise an error.
         if not np.any(data):
             self.logger.error("DTM provider returned empty data.")
@@ -151,10 +176,12 @@ class DEM(Component):
 
         # 2. Apply multiplier (-10 to 120.4 becomes -20 to 240.8)
         resampled_data = self.apply_multiplier(resampled_data)
+        self.update_info("multiplied", resampled_data)
 
         # 3. Raise terrain, and optionally lower to plateau level+water depth
         # e.g. -20 to 240.8m becomes 20 to 280.8m
         resampled_data = self.raise_or_lower(resampled_data)
+        self.update_info("raised_lowered", resampled_data)
 
         # 4. Determine actual height scale value using ceiling
         # e.g. 255 becomes 280.8+10 = 291
@@ -163,6 +190,7 @@ class DEM(Component):
         # 5. Normalize DEM data to 16-bit unsigned integer range (0 to 65535)
         # e.g. multiply by 65535/291, clip and return as uint16
         resampled_data = self.normalize_data(resampled_data, height_scale_value)
+        self.update_info("normalized", resampled_data)
 
         # 6. Blur DEM data.
         resampled_data = self.apply_blur(resampled_data)
@@ -205,10 +233,13 @@ class DEM(Component):
         adjusted_height_scale = math.ceil(
             max(height_scale, data.max() + self.map.dem_settings.ceiling)
         )
+        self.info["adjusted_height_scale"] = adjusted_height_scale
 
         self.map.shared_settings.height_scale_value = adjusted_height_scale  # type: ignore
         self.map.shared_settings.mesh_z_scaling_factor = 65535 / adjusted_height_scale
+        self.info["mesh_z_scaling_factor"] = 65535 / adjusted_height_scale
         self.map.shared_settings.height_scale_multiplier = adjusted_height_scale / 255
+        self.info["height_scale_multiplier"] = adjusted_height_scale / 255
         self.map.shared_settings.change_height_scale = True  # type: ignore
 
         self.logger.debug("Height scale value is %s.", adjusted_height_scale)
@@ -316,14 +347,9 @@ class DEM(Component):
         )
 
     def info_sequence(self) -> dict[Any, Any] | None:  # type: ignore
-        """Returns the information sequence for the component. Must be implemented in the child
-        class. If the component does not have an information sequence, an empty dictionary must be
-        returned.
+        """Returns the information sequence for the component.
 
         Returns:
             dict[Any, Any]: The information sequence for the component.
         """
-        provider_info_sequence = self.dtm_provider.info_sequence()
-        if provider_info_sequence is None:
-            return {}
-        return provider_info_sequence
+        return self.info
