@@ -1,8 +1,9 @@
 ## Frequently Asked Questions
 
-📹 Learn where the map data come from in this video.
+📹 Learn where the map data come from in this video.  
 
-<a href="https://www.youtube.com/watch?v=hPbJZ0HoiDE" target="_blank"><img src="https://github.com/user-attachments/assets/4e3e1e1a-7882-4673-87c4-f913775d178e"/></a>
+[![YouTube tutorial](https://github.com/user-attachments/assets/4e3e1e1a-7882-4673-87c4-f913775d178e)](https://www.youtube.com/watch?v=hPbJZ0HoiDE)
+
 
 In this section, you will find anwers to the most frequently asked questions about the project. Please, before asking a question, or opening an issue, check if the answer is already here. Thank you!
 
