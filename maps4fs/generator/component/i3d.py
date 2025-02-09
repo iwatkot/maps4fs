@@ -85,6 +85,7 @@ class I3d(XMLComponent):
         data = {"heightScale": str(value)}
 
         self.get_and_update_element(root, path, data)
+        self.save_tree(tree)
 
     def _update_parameters(self) -> None:
         """Updates the map I3D file with the  sun bounding box and displacement layer size."""
