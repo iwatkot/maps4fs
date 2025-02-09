@@ -33,7 +33,6 @@ class SRTM30Provider(DTMProvider):
         self.gz_directory = os.path.join(self._tile_directory, "gz")
         os.makedirs(self.hgt_directory, exist_ok=True)
         os.makedirs(self.gz_directory, exist_ok=True)
-        self.data_info: dict[str, int | str | float] | None = None  # type: ignore
 
     def download_tiles(self):
         """Download SRTM tiles."""

@@ -176,7 +176,10 @@ class Component:
         self.logger.debug("Updated generation info, now contains %s fields", len(data))
 
         with open(self.generation_info_path, "w", encoding="utf-8") as file:
-            json.dump(updated_generation_info, file, indent=4)
+            try:
+                json.dump(updated_generation_info, file, indent=4)
+            except Exception as e:
+                self.logger.warning("Could not save updated generation info: %s", e)
 
         self.logger.debug("Saved updated generation info to %s", self.generation_info_path)
 

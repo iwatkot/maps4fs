@@ -74,8 +74,6 @@ class DTMProvider(ABC):
         self.logger = logger
         self.map = map
 
-        self._data_info: dict[str, int | str | float] | None = None
-
     @classmethod
     def name(cls) -> str | None:
         """Name of the provider.
@@ -93,24 +91,6 @@ class DTMProvider(ABC):
             str: Provider code.
         """
         return cls._code
-
-    @property
-    def data_info(self) -> dict[str, int | str | float] | None:
-        """Information about the DTM data.
-
-        Returns:
-            dict[str, int | str | float] | None: Information about the DTM data.
-        """
-        return self._data_info
-
-    @data_info.setter
-    def data_info(self, value: dict[str, int | str | float] | None) -> None:
-        """Set information about the DTM data.
-
-        Arguments:
-            value (dict[str, int | str | float] | None): Information about the DTM data.
-        """
-        self._data_info = value
 
     @property
     def coordinates(self) -> tuple[float, float]:
@@ -329,16 +309,6 @@ class DTMProvider(ABC):
         data = self.extract_roi(tile)
 
         return data
-
-    def info_sequence(self) -> dict[str, int | str | float] | None:
-        """Returns the information sequence for the component. Must be implemented in the child
-        class. If the component does not have an information sequence, an empty dictionary must be
-        returned.
-
-        Returns:
-            dict[str, int | str | float] | None: Information sequence for the component.
-        """
-        return self.data_info
 
     # region helpers
     def get_bbox(self) -> tuple[float, float, float, float]:
