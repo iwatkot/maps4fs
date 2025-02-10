@@ -125,9 +125,7 @@ class DEM(Component):
             entry = {
                 "min": float(data.min()),
                 "max": float(data.max()),
-                "std": data.std(),
                 "deviation": float(data.max() - data.min()),
-                "mean": data.mean(),
                 "dtype": str(data.dtype),
                 "shape": str(data.shape),
             }
@@ -233,14 +231,22 @@ class DEM(Component):
         adjusted_height_scale = math.ceil(
             max(height_scale, data.max() + self.map.dem_settings.ceiling)
         )
-        self.info["adjusted_height_scale"] = adjusted_height_scale
 
         self.map.shared_settings.height_scale_value = adjusted_height_scale  # type: ignore
         self.map.shared_settings.mesh_z_scaling_factor = 65535 / adjusted_height_scale
-        self.info["mesh_z_scaling_factor"] = 65535 / adjusted_height_scale
         self.map.shared_settings.height_scale_multiplier = adjusted_height_scale / 255
-        self.info["height_scale_multiplier"] = adjusted_height_scale / 255
         self.map.shared_settings.change_height_scale = True  # type: ignore
+
+        try:
+            entry = {
+                "height_scale_from_settings": height_scale,
+                "adjusted_height_scale": adjusted_height_scale,
+                "mesh_z_scaling_factor": self.map.shared_settings.mesh_z_scaling_factor,
+                "height_scale_multiplier": self.map.shared_settings.height_scale_multiplier,
+            }
+            self.info["height_scale"] = entry
+        except Exception as e:
+            self.logger.warning("Failed to update DEM info: %s.", e)
 
         self.logger.debug("Height scale value is %s.", adjusted_height_scale)
         return adjusted_height_scale

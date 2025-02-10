@@ -16,3 +16,4 @@ owslib
 tqdm
 scipy
 streamlit-folium
+schedule
