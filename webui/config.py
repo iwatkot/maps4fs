@@ -5,6 +5,7 @@ import threading
 from time import sleep
 
 import requests
+import schedule
 
 WORKING_DIRECTORY = os.getcwd()
 ARCHIVES_DIRECTORY = os.path.join(WORKING_DIRECTORY, "archives")
@@ -182,6 +183,20 @@ def clean_temp() -> None:
     """Clean the temp directory."""
     shutil.rmtree(TEMP_DIRECTORY, ignore_errors=True)
     create_dirs()
+    print("Temp directory cleaned.")
 
+
+def run_scheduler():
+    """Run the scheduler."""
+    while True:
+        schedule.run_pending()
+        sleep(1)
+
+
+if is_public():
+    schedule.every(30).seconds.do(clean_temp)
+    scheduler_thread = threading.Thread(target=run_scheduler)
+    scheduler_thread.daemon = True
+    scheduler_thread.start()
 
 create_dirs()
