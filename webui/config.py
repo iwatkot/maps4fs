@@ -12,6 +12,7 @@ DATA_DIRECTORY = os.path.join(WORKING_DIRECTORY, "data")
 MAPS_DIRECTORY = os.path.join(WORKING_DIRECTORY, "maps")
 TEMP_DIRECTORY = os.path.join(WORKING_DIRECTORY, "temp")
 INPUT_DIRECTORY = os.path.join(TEMP_DIRECTORY, "input")
+TILES_DIRECTORY = os.path.join(TEMP_DIRECTORY, "tiles")
 
 FS25_TEXTURE_SCHEMA_PATH = os.path.join(DATA_DIRECTORY, "fs25-texture-schema.json")
 FS25_TREE_SCHEMA_PATH = os.path.join(DATA_DIRECTORY, "fs25-tree-schema.json")
@@ -171,6 +172,7 @@ def create_dirs() -> None:
         DATA_DIRECTORY,
         MAPS_DIRECTORY,
         INPUT_DIRECTORY,
+        TILES_DIRECTORY,
     ]
     for directory in directories:
         os.makedirs(directory, exist_ok=True)
