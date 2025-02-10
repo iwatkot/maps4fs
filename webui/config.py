@@ -183,7 +183,6 @@ def clean_temp() -> None:
     """Clean the temp directory."""
     shutil.rmtree(TEMP_DIRECTORY, ignore_errors=True)
     create_dirs()
-    print("Temp directory cleaned.")
 
 
 def run_scheduler():
