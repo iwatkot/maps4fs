@@ -194,7 +194,7 @@ def run_scheduler():
 
 
 if is_public():
-    schedule.every(30).seconds.do(clean_temp)
+    schedule.every(6).hours.do(clean_temp)
     scheduler_thread = threading.Thread(target=run_scheduler)
     scheduler_thread.daemon = True
     scheduler_thread.start()
