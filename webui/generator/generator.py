@@ -225,7 +225,7 @@ class GeneratorUI:
             lat, lon = self.main_settings.lat_lon
         except ValueError:
             st.error("Invalid latitude and longitude!")
-            return
+            return None, None
 
         # Prepare a tuple with the coordinates of the center point of the map.
         coordinates = (lat, lon)
@@ -293,6 +293,10 @@ class GeneratorUI:
         """Generate the map."""
 
         mp, session_name = self.read_generation_settings()
+
+        if mp is None or session_name is None:
+            st.error("Incorrect settings were provided.")
+            return
 
         if self.public:
             add_to_queue(session_name)
