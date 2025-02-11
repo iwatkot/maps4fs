@@ -35,3 +35,4 @@ jobs:
         file: ./Dockerfile_lite
         build-args: |
           API_TOKEN=${{ secrets.API_TOKEN }}
+          STATS_HOST=${{ secrets.STATS_HOST }}
