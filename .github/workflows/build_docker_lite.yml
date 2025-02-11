@@ -33,3 +33,5 @@ jobs:
         tags: |
           iwatkot/maps4fs:${{ github.ref_name }}_lite
         file: ./Dockerfile_lite
+        build-args: |
+          API_TOKEN=${{ secrets.API_TOKEN }}

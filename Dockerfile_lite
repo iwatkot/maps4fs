@@ -1,5 +1,8 @@
 FROM python:3.11-slim-buster
 
+ARG API_TOKEN
+ENV API_TOKEN=${API_TOKEN}
+
 # Dependencies for opencv.
 RUN apt-get update && apt-get install -y \
     libgl1-mesa-dev \

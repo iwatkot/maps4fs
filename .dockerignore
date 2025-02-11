@@ -21,3 +21,4 @@ osmps/
 queue.json
 history.json
 map_directory/
+local.env
