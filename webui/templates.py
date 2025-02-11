@@ -13,22 +13,6 @@ class Messages:
         "(https://www.youtube.com/watch?v=hPbJZ0HoiDE&list=PLug0g7UYHX8D1Jik6NkJjQhdxqS-NOtB9). 🆕"
     )
 
-    PUBLIC_WARNING = (
-        "maps4fs is a completely free and open source tool, which DOES NOT REQUIRE DOWNLOADING "
-        "ANYTHING.  \n"
-        "If someone asks you to PAY FOR ANYTHING, OR DOWNLOAD ANY FILE, IT'S A SCAM!  \n"
-        "🚨 DO NOT DOWNLOAD ANY FILES FROM ANY WEBSITES, DO NOT PAY ANYONE FOR THE SOFTWARE!  \n"
-        "IF YOU SEE A WEBSITE, WHICH OFFERS TO DOWNLOAD THE APP, IT'S A SCAM!  \n"
-        "THE ONLY TRUSTED SOURCE OF THE INFORMATION IS THE [OFFICIAL REPOSITORY]"
-        "(https://github.com/iwatkot/maps4fs).  \n"
-        "🚨 THE ONLY TRUSTED PUBLIC VERSION OF THE APP IS ON THIS WEBSITE: https://maps4fs.xyz.  \n"
-        "🚨 DO NOT USE ANY OTHER WEBSITE WHICH OFFER YOU THE TOOL, IT'S A SCAM!  \n"
-        "🚨 THE LOCAL VERSION DOES NOT REQUIRE TO DOWNLOAD ANYTHING, YOU ONLY NEED TO EXECUTE"
-        "THE DOCKER COMMAND!  \n"
-        "If you find any website, that offers you the tool outside of the trusted links "
-        "please report it in the [Discord server](https://discord.gg/Sj5QKKyE42)."
-    )
-
     MOVED = "The app has moved to ➡️➡️➡️ [maps4fs.xyz](https://maps4fs.xyz)"
     MAIN_PAGE_COMMUNITY_WARNING = (
         "🚜 Hey, farmer!  \n"
