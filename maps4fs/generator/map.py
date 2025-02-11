@@ -20,6 +20,7 @@ from maps4fs.generator.settings import (
     SplineSettings,
     TextureSettings,
 )
+from maps4fs.generator.statistics import send_advanced_settings, send_main_settings
 from maps4fs.logger import Logger
 
 
@@ -74,6 +75,19 @@ class Map:
         self.coordinates = coordinates
         self.map_directory = map_directory
 
+        try:
+            main_settings = {
+                "game": game.code,
+                "coordinates": coordinates,
+                "size": size,
+                "rotation": rotation,
+                "dtm_provider": dtm_provider.name(),
+                "custom_osm": bool(custom_osm),
+            }
+            send_main_settings(main_settings)
+        except Exception as e:
+            self.logger.error("Error sending main settings: %s", e)
+
         log_entry = ""
         log_entry += f"Map instance created for Game: {game.code}. "
         log_entry += f"Coordinates: {coordinates}. Size: {size}. Rotation: {rotation}. "
@@ -127,6 +141,11 @@ class Map:
 
         for setting in settings:
             settings_json[setting.__class__.__name__] = setting.model_dump()
+
+        try:
+            send_advanced_settings(settings_json)
+        except Exception as e:
+            self.logger.error("Error sending advanced settings: %s", e)
 
         save_path = os.path.join(self.map_directory, "generation_settings.json")
 

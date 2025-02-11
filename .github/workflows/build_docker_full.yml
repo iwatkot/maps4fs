@@ -34,3 +34,5 @@ jobs:
           iwatkot/maps4fs:latest
           iwatkot/maps4fs:${{ github.ref_name }}
         file: ./Dockerfile
+        build-args: |
+          API_TOKEN=${{ secrets.API_TOKEN }}
