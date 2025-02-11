@@ -78,7 +78,8 @@ class Map:
         try:
             main_settings = {
                 "game": game.code,
-                "coordinates": coordinates,
+                "latitude": coordinates[0],
+                "longitude": coordinates[1],
                 "size": size,
                 "rotation": rotation,
                 "dtm_provider": dtm_provider.name(),
