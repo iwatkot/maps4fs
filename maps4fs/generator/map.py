@@ -7,6 +7,8 @@ import os
 import shutil
 from typing import Any, Generator
 
+from geopy.geocoders import Nominatim
+
 from maps4fs.generator.component import Background, Component, Layer, Texture
 from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
 from maps4fs.generator.game import Game
@@ -80,6 +82,7 @@ class Map:
                 "game": game.code,
                 "latitude": coordinates[0],
                 "longitude": coordinates[1],
+                "country": self.get_country_by_coordinates(),
                 "size": size,
                 "rotation": rotation,
                 "dtm_provider": dtm_provider.name(),
@@ -328,3 +331,19 @@ class Map:
             except Exception as e:
                 self.logger.debug("Error removing map directory %s: %s", self.map_directory, e)
         return archive_path
+
+    def get_country_by_coordinates(self) -> str:
+        """Get country name by coordinates.
+
+        Returns:
+            str: Country name.
+        """
+        try:
+            geolocator = Nominatim(user_agent="maps4fs")
+            location = geolocator.reverse(self.coordinates, language="en")
+            if location and "country" in location.raw["address"]:
+                return location.raw["address"]["country"]
+        except Exception as e:
+            self.logger.error("Error getting country name by coordinates: %s", e)
+            return "Unknown"
+        return "Unknown"
