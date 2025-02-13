@@ -18,10 +18,10 @@ except Exception:
 
 STATS_HOST = os.getenv("STATS_HOST")
 if not STATS_HOST:
-    logger.warning("STATS_HOST not set in environment")
+    logger.debug("STATS_HOST not set in environment")
 API_TOKEN = os.getenv("API_TOKEN")
 if not API_TOKEN:
-    logger.warning("API_TOKEN not set in environment")
+    logger.debug("API_TOKEN not set in environment")
 
 
 def send_settings(endpoint: str, data: dict[str, Any]) -> None:
