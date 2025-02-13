@@ -25,7 +25,9 @@ class SRTM30Provider(DTMProvider):
 
     _author = "[iwatkot](https://github.com/iwatkot)"
 
-    _instructions = "ℹ️ Recommended settings:  \nDEM Settings -> Blur Radius: **35**"
+    # _instructions = "ℹ️ Recommended settings:  \nDEM Settings -> Blur Radius: **35**"
+
+    _default_settings = {"DEMSettings": {"blur_radius": 35}}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

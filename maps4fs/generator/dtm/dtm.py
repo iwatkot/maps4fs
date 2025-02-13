@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import os
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Any, Type
 from zipfile import ZipFile
 
 import numpy as np
@@ -53,6 +53,14 @@ class DTMProvider(ABC):
 
     _base_instructions = None
 
+    # AdvancedSettings that should be changed by the DTM Provider if it's selected.
+    # * This feature has effect only in the WebUI of the app and ignored in Python package.
+    # The first level of the dictionary is a category name,
+    # for example: TextureSettings, DEMSettings, etc.
+    # The second level is a name of particular setting in the category.
+    # Example: {"DEMSettings": {"blur_radius": 35}}
+    _default_settings: dict[str, dict[str, Any]] = {}
+
     def __init__(
         self,
         coordinates: tuple[float, float],
@@ -73,6 +81,15 @@ class DTMProvider(ABC):
 
         self.logger = logger
         self.map = map
+
+    @classmethod
+    def default_settings(cls) -> dict[str, dict[str, Any]]:
+        """Default settings of the provider.
+
+        Returns:
+            dict: Default settings of the provider.
+        """
+        return cls._default_settings
 
     @classmethod
     def name(cls) -> str | None:
