@@ -105,7 +105,9 @@ class GeneratorUI:
             self.public, html_preview_container=self.html_preview_container
         )
 
-        self.advanced_settings = AdvancedSettings(self.public)
+        self.advanced_settings = AdvancedSettings(
+            self.public, dtm_provider_code=self.main_settings.dtm_provider_code
+        )
         self.expert_settings = ExpertSettings(
             self.public,
             game_code=self.main_settings.game_code,

@@ -18,10 +18,10 @@ except Exception:
 
 STATS_HOST = os.getenv("STATS_HOST")
 if not STATS_HOST:
-    print("STATS_HOST not set in environment")
+    logger.warning("STATS_HOST not set in environment")
 API_TOKEN = os.getenv("API_TOKEN")
 if not API_TOKEN:
-    print("API_TOKEN not set in environment")
+    logger.warning("API_TOKEN not set in environment")
 
 
 def send_settings(endpoint: str, data: dict[str, Any]) -> None:
@@ -31,6 +31,10 @@ def send_settings(endpoint: str, data: dict[str, Any]) -> None:
         endpoint (str): The endpoint to send the settings to.
         data (dict[str, Any]): The settings to send.
     """
+    if not STATS_HOST or not API_TOKEN:
+        logger.info("STATS_HOST or API_TOKEN not set in environment, can't send settings.")
+        return
+
     headers = {"Authorization": f"Bearer {API_TOKEN}", "Content-Type": "application/json"}
     response = requests.post(endpoint, headers=headers, json=data, timeout=10)
     if response.status_code != 200:
