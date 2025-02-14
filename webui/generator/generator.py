@@ -99,6 +99,9 @@ class GeneratorUI:
         self._show_version()
 
         st.write(Messages.MAIN_PAGE_DESCRIPTION)
+        if self.public:
+            with st.expander("How to launch the tool locally", icon="ℹ️"):
+                st.markdown(Messages.LOCAL_VERSION)
         st.markdown("---")
 
         self.main_settings = MainSettings(

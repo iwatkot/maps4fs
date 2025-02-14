@@ -8,9 +8,20 @@ class Messages:
         "maps, or just chat.  \n"
         "🤗 If you like the project, consider supporting it on [Buy Me a Coffee](https://www.buymeacoffee.com/iwatkot) or "
         "[Patreon](https://www.patreon.com/iwatkot).  \n"
+        "🐙 Visit the [GitHub repository](https://github.com/iwatkot/maps4fs) for more information.  \n"
         "📹 A complete step-by-step video tutorial is on [YouTube](https://www.youtube.com/watch?v=Nl_aqXJ5nAk&)!  \n"
         "📹 WIP: Check out the complete playlist of video turorials on [YouTube]"
         "(https://www.youtube.com/watch?v=hPbJZ0HoiDE&list=PLug0g7UYHX8D1Jik6NkJjQhdxqS-NOtB9). 🆕"
+    )
+
+    LOCAL_VERSION = (
+        "Right now you're using a public version of the app, which has some limitations.  \n"
+        "You can also run the app locally, it will work faster, has no limitations, and "
+        "have some additional features.  \n"
+        "If you have Docker installed it's just one command:  \n"
+        "```bash  \ndocker run -p 8501:8501 iwatkot/maps4fs  \n```  \n"
+        "Detailed instuctions are available in the [README](https://github.com/iwatkot/maps4fs"
+        "?tab=readme-ov-file#option-2-docker-version)."
     )
 
     FS22_NOTES = (
