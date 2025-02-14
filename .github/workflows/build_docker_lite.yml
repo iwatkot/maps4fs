@@ -1,4 +1,4 @@
-name: Build and push Docker image [LITE]
+name: Build and push Docker image (lite)
 
 on:
   release:
