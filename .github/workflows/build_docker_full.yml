@@ -1,4 +1,4 @@
-name: Build and push Docker image [FULL]
+name: Build and deploy Docker image (full)
 
 on:
   release:
@@ -37,3 +37,23 @@ jobs:
         build-args: |
           API_TOKEN=${{ secrets.API_TOKEN }}
           STATS_HOST=${{ secrets.STATS_HOST }}
+
+  deploy:
+
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Wait until Docker image is available
+        uses: actions/github-script@v3
+        with:
+          script: |
+            const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+            await wait(180000); // Wait for 3 minutes
+
+      - name: Make POST request to redeploy
+        run: |
+          curl -X POST "${{ secrets.REDEPLOY_ENDPOINT }}" \
+            -H "Authorization: Bearer ${{ secrets.PRIVATE_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"container_key": "generator"}'
