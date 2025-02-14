@@ -13,6 +13,11 @@ class Messages:
         "(https://www.youtube.com/watch?v=hPbJZ0HoiDE&list=PLug0g7UYHX8D1Jik6NkJjQhdxqS-NOtB9). 🆕"
     )
 
+    FS22_NOTES = (
+        "Support for the Farming Simulator 22 is discontinued.  \nSome of the features are not "
+        "available for this game."
+    )
+
     MOVED = "The app has moved to ➡️➡️➡️ [maps4fs.xyz](https://maps4fs.xyz)"
     MAIN_PAGE_COMMUNITY_WARNING = (
         "🚜 Hey, farmer!  \n"

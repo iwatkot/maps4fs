@@ -26,6 +26,9 @@ class MainSettings(BaseComponent):
             label_visibility="collapsed",
         )
 
+        if self.game_code == "FS22":
+            st.warning(Messages.FS22_NOTES, icon="💡")
+
         st.write("Enter latitude and longitude of the center point of the map:")
         self.lat_lon_input = st.text_input(
             "Latitude and Longitude",
