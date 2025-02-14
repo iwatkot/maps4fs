@@ -14,7 +14,7 @@ Let's roll!
 
 ### 1. 📍 Get the coordinates of the center of your map
 It should be easy to do with [Google Maps](https://www.google.com/maps) or [OpenStreetMap](https://www.openstreetmap.org). The coordinates are latitude and longitude values, for example, `51.5074, -0.1278` for London.  
-ℹ️ This point will be the center of your map, not the top, not the bottom, but the center.
+ℹ️ This point will be the center of your map, not the top, not the bottom, but the center.  
 *️⃣ Note, that the coordinates should not include any additional and should be decimal, not degrees-minutes-seconds. For example, these coordinates are wrong: `45°16'02.3"N 19°47'32.9"E`, but these are correct: `45.2673, 19.7925`.
 
 
