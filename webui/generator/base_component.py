@@ -27,28 +27,30 @@ class BaseComponent:
             int | bool: The widget for the field.
         """
         key = f"{prefix}_{raw_field_name}"
-        if disabled:
-            st.warning(Messages.SETTING_DISABLED_ON_PUBLIC.format(setting=field_name))
-        if type(value) is str:
-            return st.text_input(label=field_name, value=value, key=key, disabled=disabled)
-        if type(value) is int:
-            return st.number_input(
-                label=field_name, value=value, min_value=0, key=key, disabled=disabled
-            )
-        elif type(value) is bool:
-            return st.checkbox(label=field_name, value=value, key=key, disabled=disabled)
-        elif type(value) is tuple:
-            return st.selectbox(label=field_name, key=key, options=value)
-        elif type(value) is dict:
-            return st.selectbox(
-                label=field_name,
-                options=value,
-                format_func=value.get,
-                key=key,
-                disabled=disabled,
-            )
-        else:
-            raise ValueError(f"Unsupported type of the value: {type(value)}")
+
+        with st.container():
+            if disabled:
+                st.warning(Messages.SETTING_DISABLED_ON_PUBLIC.format(setting=field_name))
+            if type(value) is str:
+                return st.text_input(label=field_name, value=value, key=key, disabled=disabled)
+            if type(value) is int:
+                return st.number_input(
+                    label=field_name, value=value, min_value=0, key=key, disabled=disabled
+                )
+            elif type(value) is bool:
+                return st.checkbox(label=field_name, value=value, key=key, disabled=disabled)
+            elif type(value) is tuple:
+                return st.selectbox(label=field_name, key=key, options=value)
+            elif type(value) is dict:
+                return st.selectbox(
+                    label=field_name,
+                    options=value,
+                    format_func=value.get,
+                    key=key,
+                    disabled=disabled,
+                )
+            else:
+                raise ValueError(f"Unsupported type of the value: {type(value)}")
 
     def snake_to_human(self, snake_str: str) -> str:
         """Convert a snake_case string to a human readable string.
