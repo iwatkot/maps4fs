@@ -466,6 +466,9 @@ class I3d(XMLComponent):
         node_id += 1
 
         not_resized_dem = self.get_not_resized_dem()
+        if not_resized_dem is None:
+            self.logger.warning("Not resized DEM not found.")
+            return
 
         forest_image = cv2.imread(forest_image_path, cv2.IMREAD_UNCHANGED)
         for x, y in self.non_empty_pixels(forest_image, step=self.map.i3d_settings.forest_density):
@@ -474,6 +477,8 @@ class I3d(XMLComponent):
                 self.map.i3d_settings.forest_density,
                 self.map.i3d_settings.trees_relative_shift,
             )
+
+            shifted_x, shifted_y = int(shifted_x), int(shifted_y)
 
             z = self.get_z_coordinate_from_dem(not_resized_dem, shifted_x, shifted_y)
 
@@ -549,11 +554,11 @@ class I3d(XMLComponent):
         background_component = self.map.get_background_component()
         if not background_component:
             self.logger.warning("Background component not found.")
-            return
+            return None
 
         if not background_component.not_resized_path:
             self.logger.warning("Not resized DEM path not found.")
-            return
+            return None
 
         not_resized_dem = cv2.imread(background_component.not_resized_path, cv2.IMREAD_UNCHANGED)
 
@@ -572,8 +577,8 @@ class I3d(XMLComponent):
         """
         dem_x_size, dem_y_size = not_resized_dem.shape
 
-        x = max(0, min(int(x), dem_x_size - 1))
-        y = max(0, min(int(y), dem_y_size - 1))
+        x = int(max(0, min(x, dem_x_size - 1)))
+        y = int(max(0, min(y, dem_y_size - 1)))
 
         z = not_resized_dem[y, x]
         z *= self.get_z_scaling_factor()
