@@ -87,8 +87,9 @@ class Map:
                 "rotation": rotation,
                 "dtm_provider": dtm_provider.name(),
                 "custom_osm": bool(custom_osm),
-                "is_public": self.is_session_public(),
+                "is_public": kwargs.get("is_public", False),
             }
+            print(main_settings)
             send_main_settings(main_settings)
         except Exception as e:
             self.logger.error("Error sending main settings: %s", e)
@@ -348,18 +349,3 @@ class Map:
             self.logger.error("Error getting country name by coordinates: %s", e)
             return "Unknown"
         return "Unknown"
-
-    def is_session_public(self) -> bool | str:
-        """Check if the session is public.
-
-        Returns:
-            bool: True if the session is public, False otherwise.
-                If an error occurs, returns "Unknown".
-        """
-        try:
-            from webui.config import is_public
-
-            return is_public()
-        except Exception as e:
-            self.logger.error("Error checking if the session is public: %s", e)
-            return "Unknown"

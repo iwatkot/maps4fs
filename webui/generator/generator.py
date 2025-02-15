@@ -290,6 +290,7 @@ class GeneratorUI:
             texture_custom_schema=texture_schema,
             tree_custom_schema=tree_schema,
             custom_background_path=self.expert_settings.custom_background_path,
+            is_public=self.public,
         )
 
         return mp, session_name
