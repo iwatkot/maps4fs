@@ -402,6 +402,9 @@ class Background(MeshComponent, ImageComponent):
         if not self.water_resources_path:
             self.logger.warning("Water resources texture not found.")
             return
+        if not os.path.isfile(self.water_resources_path):
+            self.logger.warning("Water resources texture was not generated, skipping subtraction.")
+            return
 
         water_resources_image = cv2.imread(self.water_resources_path, cv2.IMREAD_UNCHANGED)
         dem_image = cv2.imread(self.output_path, cv2.IMREAD_UNCHANGED)
