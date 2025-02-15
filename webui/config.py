@@ -125,7 +125,7 @@ def get_versions() -> tuple[str, str] | None:
 
         return latest_version, current_version
     except Exception:
-        return
+        return None
 
 
 def get_package_version(package_name: str) -> str:

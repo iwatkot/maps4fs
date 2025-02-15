@@ -26,4 +26,5 @@ disable=raw-checker-failed,
         attribute-defined-outside-init,
         unused-argument,
         consider-using-from-import,
-        line-too-long
+        line-too-long,
+        import-outside-toplevel
