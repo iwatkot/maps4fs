@@ -1,3 +1,8 @@
+from typing import NamedTuple
+
+from config import video_tutorials_json
+
+
 class Messages:
     TITLE = "maps4FS"
     MAIN_PAGE_DESCRIPTION = (
@@ -353,3 +358,16 @@ class Settings:
         "download time.  \n"
         "ℹ️ **Units:** integer value, maximum recommended value is 18."
     )
+
+
+class VideoTutorial(NamedTuple):
+    """Represents a video tutorial object."""
+
+    episode: int
+    title: str
+    description: str
+    link: str
+    image: str
+
+
+video_tutorials: list[VideoTutorial] = [VideoTutorial(**video) for video in video_tutorials_json]
