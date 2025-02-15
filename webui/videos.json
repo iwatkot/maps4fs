@@ -1,0 +1,16 @@
+[
+  {
+    "episode": 0,
+    "title": "Where the data come from?",
+    "description": "Where the object data (roads, rivers, buildings, fields, etc.) and the terrain data come from.",
+    "link": "https://www.youtube.com/watch?v=hPbJZ0HoiDE",
+    "image": "https://github.com/user-attachments/assets/ae489726-2301-445c-b193-290faf5b5b29"
+  },
+  {
+    "episode": 1,
+    "title": "How to edit OSM data and how to use custom OSM files?",
+    "description": "How to edit data on the public version of OpenStreetMap and how to use custom OSM files.",
+    "link": "https://www.youtube.com/watch?v=duTXvkIiECY",
+    "image": "https://github.com/user-attachments/assets/6d0d0f8b-ff68-4d2e-8e3f-924e1c6afeb8"
+  }
+]

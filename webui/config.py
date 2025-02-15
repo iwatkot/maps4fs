@@ -1,3 +1,4 @@
+import json
 import os
 import platform
 import shutil
@@ -14,6 +15,11 @@ MAPS_DIRECTORY = os.path.join(WORKING_DIRECTORY, "maps")
 TEMP_DIRECTORY = os.path.join(WORKING_DIRECTORY, "temp")
 INPUT_DIRECTORY = os.path.join(TEMP_DIRECTORY, "input")
 TILES_DIRECTORY = os.path.join(TEMP_DIRECTORY, "tiles")
+
+VIDEO_TUTORIALS_PATH = os.path.join(WORKING_DIRECTORY, "webui", "videos.json")
+
+with open(VIDEO_TUTORIALS_PATH, "r", encoding="utf-8") as f:
+    video_tutorials_json = json.load(f)
 
 FS25_TEXTURE_SCHEMA_PATH = os.path.join(DATA_DIRECTORY, "fs25-texture-schema.json")
 FS25_TREE_SCHEMA_PATH = os.path.join(DATA_DIRECTORY, "fs25-tree-schema.json")
@@ -119,7 +125,7 @@ def get_versions() -> tuple[str, str] | None:
 
         return latest_version, current_version
     except Exception:
-        return
+        return None
 
 
 def get_package_version(package_name: str) -> str:

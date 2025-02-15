@@ -4,24 +4,31 @@ import streamlit as st
 import streamlit.components.v1 as components
 from config import DOCS_DIRECTORY, FAQ_MD, get_mds
 from generator.generator import GeneratorUI
-from templates import Messages
+from templates import Messages, video_tutorials
 from toolbox import ToolboxUI
 
 
 class WebUI:
     def __init__(self):
         st.set_page_config(page_title="maps4FS", page_icon="🚜", layout="wide")
-        generator_tab, statistics_tab, step_by_step_tab, toolbox_tab, knowledge_tab, faq_tab = (
-            st.tabs(
-                [
-                    "🗺️ Map Generator",
-                    "📊 Statistics",
-                    "🔢 Step by step",
-                    "🧰 Modder Toolbox",
-                    "📖 Knowledge base",
-                    "📝 FAQ",
-                ]
-            )
+        (
+            generator_tab,
+            statistics_tab,
+            step_by_step_tab,
+            video_tutorials_tab,
+            toolbox_tab,
+            knowledge_tab,
+            faq_tab,
+        ) = st.tabs(
+            [
+                "🗺️ Map Generator",
+                "📊 Statistics",
+                "🔢 Step by step",
+                "📹 Video Tutorials",
+                "🧰 Modder Toolbox",
+                "📖 Knowledge base",
+                "📝 FAQ",
+            ]
         )
 
         with generator_tab:
@@ -38,6 +45,18 @@ class WebUI:
         with step_by_step_tab:
             step_by_step_tab_path = os.path.join(DOCS_DIRECTORY, "step_by_step.md")
             st.write(open(step_by_step_tab_path, "r", encoding="utf-8").read())
+
+        with video_tutorials_tab:
+            COLUMNS_PER_ROW = 3
+            for i in range(0, len(video_tutorials), COLUMNS_PER_ROW):
+                row = st.columns(COLUMNS_PER_ROW)
+                for j, video_tutorial in enumerate(video_tutorials[i : i + COLUMNS_PER_ROW]):
+                    with row[j]:
+                        st.markdown(
+                            f"[![]({video_tutorial.image})]({video_tutorial.link})  \n"
+                            f"**Episode {video_tutorial.episode}:** {video_tutorial.title}  \n"
+                            f"*{video_tutorial.description}*"
+                        )
 
         with toolbox_tab:
             self.toolbox = ToolboxUI()
