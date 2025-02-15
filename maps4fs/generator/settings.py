@@ -175,6 +175,7 @@ class GRLESettings(SettingsModel):
     plants_island_vertex_count: int = 30
     plants_island_rounding_radius: int = 15
     plants_island_percent: int = 100
+    fill_empty_farmlands: bool = False
 
 
 class I3DSettings(SettingsModel):

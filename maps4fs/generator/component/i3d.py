@@ -18,7 +18,6 @@ from maps4fs.generator.settings import Parameters
 NODE_ID_STARTING_VALUE = 2000
 SPLINES_NODE_ID_STARTING_VALUE = 5000
 TREE_NODE_ID_STARTING_VALUE = 10000
-TREES_DEFAULT_Z_VALUE = 400
 
 FIELDS_ATTRIBUTES = [
     ("angle", "integer", "0"),
@@ -132,17 +131,10 @@ class I3d(XMLComponent):
             self.logger.warning("Shapes or Scene node not found in I3D file.")
             return
 
-        # Read the not resized DEM to obtain Z values for spline points.
-        background_component = self.map.get_background_component()
-        if not background_component:
-            self.logger.warning("Background component not found.")
-            return
-
-        not_resized_dem = cv2.imread(background_component.not_resized_path, cv2.IMREAD_UNCHANGED)
+        not_resized_dem = self.get_not_resized_dem()
         if not_resized_dem is None:
             self.logger.warning("Not resized DEM not found.")
             return
-        dem_x_size, dem_y_size = not_resized_dem.shape
 
         user_attributes_node = root.find(".//UserAttributes")
         if user_attributes_node is None:
@@ -201,11 +193,7 @@ class I3d(XMLComponent):
                     cx, cy = point_ccs
                     x, y = point
 
-                    x = max(0, min(int(x), dem_x_size - 1))
-                    y = max(0, min(int(y), dem_y_size - 1))
-
-                    z = not_resized_dem[y, x]
-                    z *= self.get_z_scaling_factor()
+                    z = self.get_z_coordinate_from_dem(not_resized_dem, x, y)
 
                     nurbs_curve_node.append(self.create_element("cv", {"c": f"{cx}, {z}, {cy}"}))
 
@@ -471,23 +459,33 @@ class I3d(XMLComponent):
             "TransformGroup",
             {
                 "name": "trees",
-                "translation": f"0 {TREES_DEFAULT_Z_VALUE} 0",
+                "translation": "0 0 0",
                 "nodeId": str(node_id),
             },
         )
         node_id += 1
 
+        not_resized_dem = self.get_not_resized_dem()
+        if not_resized_dem is None:
+            self.logger.warning("Not resized DEM not found.")
+            return
+
         forest_image = cv2.imread(forest_image_path, cv2.IMREAD_UNCHANGED)
         for x, y in self.non_empty_pixels(forest_image, step=self.map.i3d_settings.forest_density):
-            xcs, ycs = self.top_left_coordinates_to_center((x, y))
-            node_id += 1
-
-            rotation = randint(-180, 180)
-            shifted_xcs, shifted_ycs = self.randomize_coordinates(
-                (xcs, ycs),
+            shifted_x, shifted_y = self.randomize_coordinates(
+                (x, y),
                 self.map.i3d_settings.forest_density,
                 self.map.i3d_settings.trees_relative_shift,
             )
+
+            shifted_x, shifted_y = int(shifted_x), int(shifted_y)
+
+            z = self.get_z_coordinate_from_dem(not_resized_dem, shifted_x, shifted_y)
+
+            xcs, ycs = self.top_left_coordinates_to_center((shifted_x, shifted_y))
+            node_id += 1
+
+            rotation = randint(-180, 180)
 
             random_tree = choice(tree_schema)
             tree_name = random_tree["name"]
@@ -495,7 +493,7 @@ class I3d(XMLComponent):
 
             data = {
                 "name": tree_name,
-                "translation": f"{shifted_xcs} 0 {shifted_ycs}",
+                "translation": f"{xcs} {z} {ycs}",
                 "rotation": f"0 {rotation} 0",
                 "referenceId": str(tree_id),
                 "nodeId": str(node_id),
@@ -546,3 +544,43 @@ class I3d(XMLComponent):
             for x, value in enumerate(row[::step]):
                 if value > 0:
                     yield x * step, y * step
+
+    def get_not_resized_dem(self) -> np.ndarray | None:
+        """Reads the not resized DEM image from the background component.
+
+        Returns:
+            np.ndarray | None: The not resized DEM image or None if the image could not be read.
+        """
+        background_component = self.map.get_background_component()
+        if not background_component:
+            self.logger.warning("Background component not found.")
+            return None
+
+        if not background_component.not_resized_path:
+            self.logger.warning("Not resized DEM path not found.")
+            return None
+
+        not_resized_dem = cv2.imread(background_component.not_resized_path, cv2.IMREAD_UNCHANGED)
+
+        return not_resized_dem
+
+    def get_z_coordinate_from_dem(self, not_resized_dem: np.ndarray, x: int, y: int) -> float:
+        """Gets the Z coordinate from the DEM image for the given coordinates.
+
+        Arguments:
+            not_resized_dem (np.ndarray): The not resized DEM image.
+            x (int): The x coordinate.
+            y (int): The y coordinate.
+
+        Returns:
+            float: The Z coordinate.
+        """
+        dem_x_size, dem_y_size = not_resized_dem.shape
+
+        x = int(max(0, min(x, dem_x_size - 1)))
+        y = int(max(0, min(y, dem_y_size - 1)))
+
+        z = not_resized_dem[y, x]
+        z *= self.get_z_scaling_factor()
+
+        return z

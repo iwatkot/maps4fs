@@ -13,6 +13,8 @@ from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_xml import XMLComponent
 from maps4fs.generator.settings import Parameters
 
+FARMLAND_ID_LIMIT = 254
+
 
 def plant_to_pixel_value(plant_name: str) -> int | None:
     """Returns the pixel value representation of the plant.
@@ -225,6 +227,13 @@ class GRLE(ImageComponent, XMLComponent):
 
             farmland_np = self.polygon_points_to_np(fitted_farmland, divide=2)
 
+            if farmland_id > FARMLAND_ID_LIMIT:
+                self.logger.warning(
+                    "Farmland ID limit reached. Skipping the rest of the farmlands. "
+                    "Giants Editor supports maximum 254 farmlands."
+                )
+                break
+
             try:
                 cv2.fillPoly(image, [farmland_np], (float(farmland_id),))
             except Exception as e:
@@ -245,6 +254,10 @@ class GRLE(ImageComponent, XMLComponent):
             farmland_id += 1
 
         self.save_tree(tree)
+
+        # Replace all the zero values on the info layer image with 255.
+        if self.map.grle_settings.fill_empty_farmlands:
+            image[image == 0] = 255
 
         cv2.imwrite(info_layer_farmlands_path, image)
 

@@ -280,6 +280,10 @@ class Settings:
         "expensive, make this value higher than 100. To make it cheaper, make it lower than 100.  \n"
         "ℹ️ **Units:** percents of the base price."
     )
+    FILL_EMPTY_FARMLANDS = (
+        "If fill empty farmlands is enabled, the empty (zero value) pixels of the farmlands "
+        "info layer image will be filled with 255 value."
+    )
 
     # I3D Settings
 
