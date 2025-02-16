@@ -58,7 +58,7 @@ By default, the generator will add all the fields from the [OpenStreetMap](https
 ℹ️ Learn more about it in the [Fields](https://github.com/iwatkot/maps4fs/blob/main/docs/fields.md) document.
 
 ### 10. 📚 Add farmlands
-The generator will automatically add farmlands to the map. But if you need, you can add or adjust them manually in the Giants Editor.
+The generator will automatically add farmlands to the map. But if you need, you can add or adjust them manually in the Giants Editor.  
 ℹ️ Learn more about it in the [Farmlands](https://github.com/iwatkot/maps4fs/blob/main/docs/farmlands.md) document.  
   
 So, that's it! Now, you can actually start creating your own map. Mostly, you need to add buildings, roads, and other objects to make it look like a real map. And the painted textures will help you to place them correctly, just like in the real world.  
