@@ -184,6 +184,9 @@ Using it is easy and doesn't require any guides. Enjoy!
 ⚙️ Advanced settings: enabled.  
 🖼️ Texture dissolving: enabled.  
 Check out the [Docker FAQ](docs/FAQ_docker.md) if you have any questions.<br>
+
+📹 Check out the [video tutorial](https://www.youtube.com/watch?v=1AHGIxTxSBM) on how to install Docker and use the Docker version.  
+
 You can launch the project with minimalistic UI in your browser using Docker. Follow these steps:
 
 1. Install [Docker](https://docs.docker.com/get-docker/) for your OS.
