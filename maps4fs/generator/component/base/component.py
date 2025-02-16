@@ -551,7 +551,7 @@ class Component:
 
         return interpolated_polyline
 
-    def get_z_scaling_factor(self) -> float:
+    def get_z_scaling_factor(self, ignore_height_scale_multiplier: bool = False) -> float:
         """Calculates the scaling factor for the Z axis based on the map settings.
 
         Returns:
@@ -560,7 +560,7 @@ class Component:
 
         scaling_factor = 1 / self.map.dem_settings.multiplier
 
-        if self.map.shared_settings.height_scale_multiplier:
+        if self.map.shared_settings.height_scale_multiplier and not ignore_height_scale_multiplier:
             scaling_factor *= self.map.shared_settings.height_scale_multiplier
         if self.map.shared_settings.mesh_z_scaling_factor:
             scaling_factor *= 1 / self.map.shared_settings.mesh_z_scaling_factor
