@@ -12,5 +12,12 @@
     "description": "How to edit data on the public version of OpenStreetMap and how to use custom OSM files.",
     "link": "https://www.youtube.com/watch?v=duTXvkIiECY",
     "image": "https://github.com/user-attachments/assets/6d0d0f8b-ff68-4d2e-8e3f-924e1c6afeb8"
+  },
+  {
+    "episode": 2,
+    "title": "How to launch the tool locally?",
+    "description": "How to install Docker and launch the tool locally.",
+    "link": "https://youtu.be/1AHGIxTxSBM",
+    "image": "https://github.com/user-attachments/assets/ed798b45-61b6-4080-b669-fea87d663413"
   }
 ]

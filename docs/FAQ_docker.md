@@ -1,5 +1,10 @@
 ## Frequently Asked Questions about Docker
 
+📹 Learn how to install Docker and launch the tool locally in the video tutorial.  
+
+[![YouTube tutorial](https://github.com/user-attachments/assets/c86ee51f-d787-4ffe-9da9-6c8d938b05ac)](https://youtu.be/1AHGIxTxSBM)
+
+
 In this section, you will find anwers to the most frequently asked questions about usage of the Docker version of the app. Most of those questions are not related to the app, but to the Docker itself. Please, before asking a question, or opening an issue, check if the answer is already here. Thank you!
 
 
