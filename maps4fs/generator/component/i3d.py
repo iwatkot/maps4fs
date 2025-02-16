@@ -581,6 +581,6 @@ class I3d(XMLComponent):
         y = int(max(0, min(y, dem_y_size - 1)))
 
         z = not_resized_dem[y, x]
-        z *= self.get_z_scaling_factor()
+        z *= self.get_z_scaling_factor(ignore_height_scale_multiplier=True)
 
         return z

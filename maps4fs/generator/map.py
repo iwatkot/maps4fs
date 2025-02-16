@@ -89,7 +89,6 @@ class Map:
                 "custom_osm": bool(custom_osm),
                 "is_public": kwargs.get("is_public", False),
             }
-            print(main_settings)
             send_main_settings(main_settings)
         except Exception as e:
             self.logger.error("Error sending main settings: %s", e)
