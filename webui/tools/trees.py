@@ -2,7 +2,7 @@ import json
 from typing import NamedTuple
 
 import streamlit as st
-from config import FS25_TREE_SCHEMA_PATH
+from config import get_schema
 from tools.tool import Tool
 from tools.trees_data import TREE_URLS
 
@@ -24,8 +24,7 @@ class TreeSchemaEditorTool(Tool):
     icon = "🪵"
 
     def content(self):
-        with open(FS25_TREE_SCHEMA_PATH, "r", encoding="utf-8") as f:
-            self.tree_schema = json.load(f)
+        self.tree_schema = get_schema("fs25", "tree")
 
         tree_infos = []
         for tree in self.tree_schema:

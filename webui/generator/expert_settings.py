@@ -67,28 +67,25 @@ class ExpertSettings(BaseComponent):
             self.texture_schema_input = None
             self.tree_schema_input = None
 
-            if self.game_code == "FS25":
-                self.custom_schemas = st.checkbox("Show schemas", value=False, key="custom_schemas")
+            self.custom_schemas = st.checkbox("Show schemas", value=False, key="custom_schemas")
+            if self.custom_schemas:
+                with st.expander("Texture custom schema"):
+                    st.write(Messages.TEXTURE_SCHEMA_INFO)
 
-                if self.custom_schemas:
-                    with st.expander("Texture custom schema"):
-                        st.write(Messages.TEXTURE_SCHEMA_INFO)
+                    schema = config.get_schema(self.game_code, "texture")
 
-                        with open(config.FS25_TEXTURE_SCHEMA_PATH, "r", encoding="utf-8") as f:
-                            schema = json.load(f)
+                    self.texture_schema_input = st.text_area(
+                        "Texture Schema",
+                        value=json.dumps(schema, indent=2),
+                        height=600,
+                        label_visibility="collapsed",
+                    )
 
-                        self.texture_schema_input = st.text_area(
-                            "Texture Schema",
-                            value=json.dumps(schema, indent=2),
-                            height=600,
-                            label_visibility="collapsed",
-                        )
-
+                if self.game_code == "FS25":
                     with st.expander("Tree custom schema"):
                         st.write(Messages.TEXTURE_SCHEMA_INFO)
 
-                        with open(config.FS25_TREE_SCHEMA_PATH, "r", encoding="utf-8") as f:
-                            schema = json.load(f)
+                        schema = config.get_schema(self.game_code, "tree")
 
                         self.tree_schema_input = st.text_area(
                             "Tree Schema",

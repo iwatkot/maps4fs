@@ -2,7 +2,7 @@ import json
 from typing import Any, NamedTuple
 
 import streamlit as st
-from config import FS25_TEXTURE_SCHEMA_PATH
+from config import get_schema
 from tools.textures_data import TEXTURE_URLS
 from tools.tool import Tool
 
@@ -21,8 +21,7 @@ class TextureSchemaEditorTool(Tool):
     icon = "🎨"
 
     def content(self):
-        with open(FS25_TEXTURE_SCHEMA_PATH, "r", encoding="utf-8") as f:
-            self.texture_schema = json.load(f)
+        self.texture_schema = get_schema("fs25", "texture")
 
         texture_infos = []
         for texture in self.texture_schema:

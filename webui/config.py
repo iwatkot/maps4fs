@@ -4,6 +4,7 @@ import platform
 import shutil
 import threading
 from time import sleep
+from typing import Any, Literal
 
 import requests
 import schedule
@@ -20,13 +21,6 @@ VIDEO_TUTORIALS_PATH = os.path.join(WORKING_DIRECTORY, "webui", "videos.json")
 
 with open(VIDEO_TUTORIALS_PATH, "r", encoding="utf-8") as f:
     video_tutorials_json = json.load(f)
-
-FS25_TEXTURE_SCHEMA_PATH = os.path.join(DATA_DIRECTORY, "fs25-texture-schema.json")
-FS25_TREE_SCHEMA_PATH = os.path.join(DATA_DIRECTORY, "fs25-tree-schema.json")
-if not os.path.exists(FS25_TEXTURE_SCHEMA_PATH):
-    raise FileNotFoundError(f"File {FS25_TEXTURE_SCHEMA_PATH} not found.")
-if not os.path.exists(FS25_TREE_SCHEMA_PATH):
-    raise FileNotFoundError(f"File {FS25_TREE_SCHEMA_PATH} not found.")
 
 STREAMLIT_COMMUNITY_KEY = "HOSTNAME"
 STREAMLIT_COMMUNITY_VALUE = "streamlit"
@@ -55,6 +49,22 @@ QUEUE_TIMEOUT = 180  # 3 minutes
 QUEUE_INTERVAL = 10
 
 REMOVE_DELAY = 300  # 5 minutes
+
+
+def get_schema(game_code: str, schema_type: Literal["texture", "tree"]) -> list[dict[str, Any]]:
+    """Get the schema for the specified game and schema type.
+
+    Args:
+        game_code (str): The game code.
+        schema_type (Literal["texture", "tree"]): The schema type.
+
+    Returns:
+        list[dict[str, Any]]: The schema for the specified game and schema type.
+    """
+    schema_path = os.path.join(DATA_DIRECTORY, f"{game_code}-{schema_type}-schema.json")
+    with open(schema_path, "r", encoding="utf-8") as f:
+        schema = json.load(f)
+    return schema
 
 
 def get_mds() -> dict[str, str]:
