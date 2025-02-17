@@ -36,15 +36,15 @@ def post(endpoint: str, data: dict[str, Any]) -> dict[str, Any] | None:
     """
     if not STATS_HOST or not API_TOKEN:
         logger.info("STATS_HOST or API_TOKEN not set in environment, can't send settings.")
-        return
+        return None
 
     headers = {"Authorization": f"Bearer {API_TOKEN}", "Content-Type": "application/json"}
     response = requests.post(endpoint, headers=headers, json=data, timeout=10)
     if response.status_code != 200:
         logger.error("Failed to send settings: %s", response.text)
-    else:
-        logger.info("Settings sent successfully")
-        return response.json()
+        return None
+    logger.info("Settings sent successfully")
+    return response.json()
 
 
 def send_main_settings(data: dict[str, Any]) -> None:
@@ -79,4 +79,7 @@ def get_main_settings(fields: list[str], limit: int | None = None) -> list[dict[
     """
     endpoint = f"{STATS_HOST}/get_main_settings"
     data = {"fields": fields, "limit": limit}
-    return post(endpoint, data).get("settings")
+    result = post(endpoint, data)
+    if not result:
+        return None
+    return result.get("settings")
