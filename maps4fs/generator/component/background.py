@@ -114,7 +114,7 @@ class Background(MeshComponent, ImageComponent):
         buildings = self.get_infolayer_data(Parameters.TEXTURES, Parameters.BUILDINGS)
         if not buildings:
             self.logger.warning("Buildings data not found in textures info layer.")
-            return
+            return dem_image
 
         self.logger.debug("Found %s buildings in textures info layer.", len(buildings))
 
@@ -138,7 +138,7 @@ class Background(MeshComponent, ImageComponent):
             mask = np.zeros(dem_image.shape, dtype=np.uint8)
 
             try:
-                cv2.fillPoly(mask, [building_np], 255)
+                cv2.fillPoly(mask, [building_np], 255)  # type: ignore
             except Exception as e:
                 self.logger.debug("Could not create mask for building with error: %s", e)
                 continue
