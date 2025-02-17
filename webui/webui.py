@@ -4,8 +4,12 @@ import streamlit as st
 import streamlit.components.v1 as components
 from config import DOCS_DIRECTORY, FAQ_MD, get_mds
 from generator.generator import GeneratorUI
+from osmp import MapEntry, get_rotated_previews
+from streamlit_folium import folium_static
 from templates import Messages, video_tutorials
 from toolbox import ToolboxUI
+
+from maps4fs.generator.statistics import get_main_settings
 
 
 class WebUI:
@@ -16,6 +20,7 @@ class WebUI:
             statistics_tab,
             step_by_step_tab,
             video_tutorials_tab,
+            coverage_tab,
             toolbox_tab,
             knowledge_tab,
             faq_tab,
@@ -25,6 +30,7 @@ class WebUI:
                 "📊 Statistics",
                 "🔢 Step by step",
                 "📹 Video Tutorials",
+                "🌐 Coverage",
                 "🧰 Modder Toolbox",
                 "📖 Knowledge base",
                 "📝 FAQ",
@@ -57,6 +63,49 @@ class WebUI:
                             f"**Episode {video_tutorial.episode}:** {video_tutorial.title}  \n"
                             f"*{video_tutorial.description}*"
                         )
+
+        with coverage_tab:
+            st.write(Messages.COVERAGE_INFO)
+            add_bboxes = st.checkbox("Add bounding boxes", value=True)
+            add_markers = st.checkbox("Add markers", value=False)
+            limit = st.number_input("Limit of entries", value=0, min_value=0)
+
+            if st.button("Show coverage map"):
+                try:
+                    entries_json = get_main_settings(
+                        fields=["latitude", "longitude", "size", "rotation"], limit=limit
+                    )
+
+                    identifiers = []
+                    filtered_entries = []
+                    for entry in entries_json:
+                        lat, lon = entry.get("latitude"), entry.get("longitude")
+                        rotation = entry.get("rotation")
+                        size = entry.get("size")
+                        if lat and lon and rotation and size:
+                            identifier = (lat, lon, rotation, size)
+                            if identifier not in identifiers:
+                                identifiers.append(identifier)
+                                filtered_entries.append(entry)
+
+                    unique_factor = len(filtered_entries) / len(entries_json) * 100
+
+                    st.info(
+                        f"Retrievied {len(filtered_entries)} unique entries "
+                        f"from total {len(entries_json)}.  \nPercentage of "
+                        f"unique entries: {unique_factor:.2f}%."
+                    )
+
+                    entries = [MapEntry(**entry) for entry in entries_json]
+
+                    folium_map = get_rotated_previews(
+                        entries,
+                        add_markers=add_markers,
+                        add_bboxes=add_bboxes,
+                    )
+                    folium_static(folium_map, height=500, width=1000)
+                except Exception as e:
+                    st.error(f"An error occurred: {e}")
 
         with toolbox_tab:
             self.toolbox = ToolboxUI()

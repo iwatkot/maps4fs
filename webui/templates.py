@@ -34,6 +34,10 @@ class Messages:
         "available for this game."
     )
 
+    COVERAGE_INFO = (
+        "In this section you can generate a global preview of all the generated maps.  \n"
+    )
+
     MOVED = "The app has moved to ➡️➡️➡️ [maps4fs.xyz](https://maps4fs.xyz)"
     MAIN_PAGE_COMMUNITY_WARNING = (
         "🚜 Hey, farmer!  \n"
