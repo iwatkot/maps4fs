@@ -10,6 +10,7 @@ from copy import deepcopy
 
 import cv2
 import numpy as np
+from tqdm import tqdm
 
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_mesh import MeshComponent
@@ -100,6 +101,56 @@ class Background(MeshComponent, ImageComponent):
             self.generate_obj_files()
         if self.map.background_settings.generate_water:
             self.generate_water_resources_obj()
+
+    def create_foundations(self, dem_image: np.ndarray) -> np.ndarray:
+        """Creates foundations for buildings based on the DEM data.
+
+        Arguments:
+            dem_image (np.ndarray): The DEM data as a numpy array.
+
+        Returns:
+            np.ndarray: The DEM data with the foundations added.
+        """
+        buildings = self.get_infolayer_data(Parameters.TEXTURES, Parameters.BUILDINGS)
+        if not buildings:
+            self.logger.warning("Buildings data not found in textures info layer.")
+            return
+
+        self.logger.debug("Found %s buildings in textures info layer.", len(buildings))
+
+        for building in tqdm(buildings, desc="Creating foundations", unit="building"):
+            try:
+                fitted_building = self.fit_object_into_bounds(
+                    polygon_points=building, angle=self.rotation
+                )
+            except ValueError as e:
+                self.logger.debug(
+                    "Building could not be fitted into the map bounds with error: %s",
+                    e,
+                )
+                continue
+
+            # 1. Read the pixel values from the DEM image.
+            # 2. Calculate the average pixel value of the building area.
+            # 3. Set the pixel values in the DEM to the average pixel value.
+
+            building_np = self.polygon_points_to_np(fitted_building)
+            mask = np.zeros(dem_image.shape, dtype=np.uint8)
+
+            try:
+                cv2.fillPoly(mask, [building_np], 255)
+            except Exception as e:
+                self.logger.debug("Could not create mask for building with error: %s", e)
+                continue
+
+            mean_value = cv2.mean(dem_image, mask=mask)[0]
+            mean_value = np.round(mean_value).astype(dem_image.dtype)
+            self.logger.info("Mean value of the building area: %s", mean_value)
+
+            # Set the pixel values in the DEM to the average pixel value.
+            dem_image[mask == 255] = mean_value
+
+        return dem_image
 
     def make_copy(self, dem_path: str, dem_name: str) -> None:
         """Copies DEM data to additional DEM file.
@@ -197,6 +248,9 @@ class Background(MeshComponent, ImageComponent):
             cv2.imwrite(save_path, dem_data)
             self.logger.debug("Not resized DEM saved: %s", save_path)
             return save_path
+
+        if self.map.dem_settings.add_foundations:
+            dem_data = self.create_foundations(dem_data)
 
         output_size = self.map_size + 1
 
