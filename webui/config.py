@@ -62,6 +62,10 @@ def get_schema(game_code: str, schema_type: Literal["texture", "tree"]) -> list[
         list[dict[str, Any]]: The schema for the specified game and schema type.
     """
     schema_path = os.path.join(DATA_DIRECTORY, f"{game_code}-{schema_type}-schema.json")
+
+    if not os.path.isfile(schema_path):
+        raise FileNotFoundError(f"{schema_type} for {game_code} not found in {schema_path}.")
+
     with open(schema_path, "r", encoding="utf-8") as f:
         schema = json.load(f)
     return schema
