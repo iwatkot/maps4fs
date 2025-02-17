@@ -189,6 +189,10 @@ class Settings:
         "ℹ️ **Units:** meters."
     )
 
+    ADD_FOUNDATIONS = (
+        "If add foundations is enabled, the terrain under the buildings will be flattened."
+    )
+
     # Background Settings
 
     GENERATE_BACKGROUND = (

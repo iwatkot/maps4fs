@@ -13,6 +13,7 @@ class Parameters:
 
     FIELD = "field"
     FIELDS = "fields"
+    BUILDINGS = "buildings"
     TEXTURES = "textures"
     FOREST = "forest"
     ROADS_POLYLINES = "roads_polylines"
@@ -133,6 +134,7 @@ class DEMSettings(SettingsModel):
     ceiling: int = 0
     water_depth: int = 0
     blur_radius: int = 3
+    add_foundations: bool = False
 
 
 class BackgroundSettings(SettingsModel):

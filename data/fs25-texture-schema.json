@@ -36,6 +36,7 @@
     "tags": { "building": true },
     "width": 8,
     "color": [130, 130, 130],
+    "info_layer": "buildings",
     "procedural": ["PG_buildings"]
   },
   {

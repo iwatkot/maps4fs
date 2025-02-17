@@ -560,6 +560,8 @@ You can also apply some advanced settings to the map generation process.<br>
 
 - Water depth: Water depth value (in meters) will be subtracted from the DEM image, making the water deeper. The pixel value used for this is calculated based on the heightScale value for your map.
 
+- Add foundations: If enabled the terrain under the buildings will be flattened to the average height of the building.
+
 ### Background terrain Advanced settings
 
 - Generate background - if enabled, the obj files for the background terrain will be generated. You can turn it off if you already have those files or don't need them. By default, it's set to True.

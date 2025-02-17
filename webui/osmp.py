@@ -128,7 +128,7 @@ def get_rotated_preview(
     if add_center_marker:
         center = get_center(bbox)
         if not add_center_marker_as_pin:
-            folium.CircleMarker(center).add_to(m)
+            folium.CircleMarker(center, radius=1, color=color, fill=True).add_to(m)
         else:
             short_lat_lon = f"{round(lat, 4)}, {round(lon, 4)}"
             folium.Marker(
