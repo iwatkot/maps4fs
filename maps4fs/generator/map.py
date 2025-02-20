@@ -184,6 +184,18 @@ class Map:
         except Exception as e:
             raise RuntimeError(f"Can not unpack map template due to error: {e}") from e
 
+    @property
+    def texture_schema(self) -> list[dict[str, Any]] | None:
+        """Return texture schema (custom if provided, default otherwise).
+
+        Returns:
+            list[dict[str, Any]] | None: Texture schema.
+        """
+        if self.texture_custom_schema:
+            return self.texture_custom_schema
+        with open(self.game.texture_schema, "r", encoding="utf-8") as file:
+            return json.load(file)
+
     def generate(self) -> Generator[str, None, None]:
         """Launch map generation using all components. Yield component names during the process.
 

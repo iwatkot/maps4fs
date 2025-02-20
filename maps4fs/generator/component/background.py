@@ -3,7 +3,6 @@ around the map."""
 
 from __future__ import annotations
 
-import json
 import os
 import shutil
 from copy import deepcopy
@@ -401,12 +400,10 @@ class Background(MeshComponent, ImageComponent):
 
     def create_background_textures(self) -> None:
         """Creates background textures for the map."""
-        if not os.path.isfile(self.game.texture_schema):
-            self.logger.warning("Texture schema file not found: %s", self.game.texture_schema)
+        layers_schema = self.map.texture_schema
+        if not layers_schema:
+            self.logger.warning("No texture schema found.")
             return
-
-        with open(self.game.texture_schema, "r", encoding="utf-8") as f:
-            layers_schema = json.load(f)
 
         background_layers = []
         for layer in layers_schema:
