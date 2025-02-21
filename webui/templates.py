@@ -38,6 +38,8 @@ class Messages:
         "In this section you can generate a global preview of all the generated maps.  \n"
     )
 
+    PUBLIC_MAP_SIZE = "If you run the app locally, you can generate maps of any size."
+
     MOVED = "The app has moved to ➡️➡️➡️ [maps4fs.xyz](https://maps4fs.xyz)"
     MAIN_PAGE_COMMUNITY_WARNING = (
         "🚜 Hey, farmer!  \n"
