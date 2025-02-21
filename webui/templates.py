@@ -412,6 +412,19 @@ class Settings:
         "was not specified), the generator will not draw this texture at all, as well as will "
         "not add any trees."
     )
+    USE_PRECISE_TAGS_EXAMPLE = (
+        "By default the generator will use the `tags` from the texture schema.  \n"
+        "```json  \n"
+        '"tags": { "natural": ["wood", "tree_row"], "landuse": "forest" },  \n'
+        "```  \n"
+        "However, if this option is enabled, the generator will use the `precise_tags` instead.  \n"
+        "```json  \n"
+        '"precise_tags": { "leaf_type": "mixed" },  \n'
+        "```  \n"
+        "⚠️ **Note:** If an OSM object does not contain the precise tag (e.g. leaf_type), "
+        "the generator will not draw the texture. Use this feature only if you ensure that "
+        "the precise tags are present in the OSM data."
+    )
 
     # Splines Settings
 
