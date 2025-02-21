@@ -397,6 +397,9 @@ class Texture(ImageComponent):
                 )
                 tags = layer.precise_tags
 
+        if tags is None:
+            return
+
         for polygon in self.objects_generator(tags, layer.width, layer.info_layer):
             if not len(polygon) > 2:
                 self.logger.debug("Skipping polygon with less than 3 points.")
