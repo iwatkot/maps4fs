@@ -40,7 +40,7 @@ if os.path.isdir(map_directory):
 os.makedirs(map_directory, exist_ok=True)
 
 # 5️⃣ Optional: use a custom OSM file.
-osm_file = "C:/Coding/custom_osm.osm"
+osm_file = "path/to/osm_file.osm"
 
 # 6️⃣ Optional: advanced settings. You can use the default settings, but
 # it's recommended to change them according to your needs.
@@ -57,7 +57,7 @@ background_settings = mfs.settings.BackgroundSettings(
 grle_settings = mfs.settings.GRLESettings(
     farmland_margin=10, random_plants=True, add_farmyards=True
 )
-i3d_settings = mfs.settings.I3DSettings(forest_density=16)
+i3d_settings = mfs.settings.I3DSettings(forest_density=8)
 texture_settings = mfs.settings.TextureSettings(
     dissolve=False,
     fields_padding=10,
@@ -84,7 +84,7 @@ mp = mfs.Map(
     size,
     rotation,
     map_directory,
-    custom_osm=osm_file,
+    # custom_osm=osm_file,
     dem_settings=dem_settings,
     background_settings=background_settings,
     grle_settings=grle_settings,
