@@ -222,7 +222,7 @@ class Texture(ImageComponent):
         if self.rotation:
             # Iterate over the layers which have tags and rotate them.
             for layer in tqdm(self.layers, desc="Rotating textures", unit="layer"):
-                if layer.tags:
+                if layer.tags or layer.precise_tags:
                     self.logger.debug("Rotating layer %s.", layer.name)
                     layer_paths = layer.paths(self._weights_dir)
                     layer_paths += [layer.path_preview(self._weights_dir)]
@@ -274,7 +274,7 @@ class Texture(ImageComponent):
         Arguments:
             layer (Layer): Layer with textures and tags.
         """
-        if layer.tags is None:
+        if layer.tags is None and layer.precise_tags is None:
             size = (self.map_size, self.map_size)
         else:
             size = (self.map_rotated_size, self.map_rotated_size)
