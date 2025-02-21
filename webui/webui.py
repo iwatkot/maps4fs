@@ -1,5 +1,7 @@
 import os
+from datetime import datetime
 
+import requests
 import streamlit as st
 import streamlit.components.v1 as components
 from config import DOCS_DIRECTORY, FAQ_MD, get_mds
@@ -24,6 +26,7 @@ class WebUI:
             toolbox_tab,
             knowledge_tab,
             faq_tab,
+            changelog_tab,
         ) = st.tabs(
             [
                 "🗺️ Map Generator",
@@ -34,6 +37,7 @@ class WebUI:
                 "🧰 Modder Toolbox",
                 "📖 Knowledge base",
                 "📝 FAQ",
+                "📄 Changelog",
             ]
         )
 
@@ -44,7 +48,7 @@ class WebUI:
             components.iframe(
                 "https://stats.maps4fs.xyz/public/dashboard/"
                 "f8defe6a-09db-4db1-911f-b6b02075d4b2#refresh=60",
-                height=2500,
+                height=2000,
                 scrolling=False,
             )
 
@@ -123,6 +127,38 @@ class WebUI:
 
         with faq_tab:
             st.write(open(FAQ_MD, "r", encoding="utf-8").read())
+
+        with changelog_tab:
+            st.markdown("## Changelog")
+            st.markdown(
+                "This page provides information about the latest changes to the maps4fs project."
+            )
+            try:
+                url = "https://api.github.com/repos/iwatkot/maps4fs/releases"
+                response = requests.get(url)
+                if response.status_code == 200:
+                    releases = response.json()
+                    for release in releases:
+                        version = release.get("tag_name")
+                        release_name = release.get("name")
+                        published_at = release.get("published_at")
+                        date_time = datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%SZ")
+                        html_url = release.get("html_url")
+
+                        st.markdown(
+                            f"![{version}](https://img.shields.io/badge/version-{version}-blue)  \n"
+                            f"Date: **{date_time.strftime('%d.%m.%Y')}**  \n"
+                            f"**{release_name}**  \n"
+                            f"[More info]({html_url})"
+                        )
+
+                st.markdown("---")
+                st.markdown(
+                    "Older releases available on [GitHub]"
+                    "(https://github.com/iwatkot/maps4fs/releases)."
+                )
+            except Exception as e:
+                st.error(f"An error occurred while fetching the changelog: {e}")
 
 
 WebUI()
