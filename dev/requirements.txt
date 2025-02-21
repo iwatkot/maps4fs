@@ -25,3 +25,4 @@ scipy
 streamlit-folium
 schedule
 python-dotenv
+requests-cache
