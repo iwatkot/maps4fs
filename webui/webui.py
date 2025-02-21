@@ -151,6 +151,8 @@ class WebUI:
                             f"**{release_name}**  \n"
                             f"[More info]({html_url})"
                         )
+                else:
+                    st.error(f"An error occurred while fetching the changelog: {response.text}")
 
                 st.markdown("---")
                 st.markdown(
