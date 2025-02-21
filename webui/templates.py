@@ -269,7 +269,7 @@ class Settings:
         "If unchecked, only basic smallDenseMix will be applied."
     )
     RANDOM_PLANTS_EXAMPLE = (
-        "![](https://github.com/user-attachments/assets/0728b31a-c2a3-4cc5-ab25-09d8832f0e3a)"
+        "![](https://github.com/user-attachments/assets/e0dae979-21a8-4aa2-8281-ddcdcce3c582)"
     )
 
     ADD_FARMYARDS = (
