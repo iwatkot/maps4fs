@@ -167,11 +167,12 @@ class GRLESettings(SettingsModel):
     """
 
     farmland_margin: int = 0
-    random_plants: bool = True
     add_farmyards: bool = False
     base_price: int = 60000
     price_scale: int = 100
+    add_grass: bool = True
     base_grass: tuple | str = ("smallDenseMix", "meadow")
+    random_plants: bool = True
     plants_island_minimum_size: int = 10
     plants_island_maximum_size: int = 200
     plants_island_vertex_count: int = 30
@@ -187,6 +188,7 @@ class I3DSettings(SettingsModel):
         forest_density (int): density of the forest (distance between trees).
     """
 
+    add_trees: bool = True
     forest_density: int = 10
     trees_relative_shift: int = 20
 

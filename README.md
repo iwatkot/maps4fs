@@ -583,6 +583,8 @@ You can also apply some advanced settings to the map generation process.<br>
 
 - Farmlands margin - this value (in meters) will be applied to each farmland, making it bigger. You can use the value to adjust how much the farmland should be bigger than the actual field. By default, it's set to 3.
 
+- Add grass - if enabled, the tool will add grass to all the empty areas (without roads, fields, buildings, etc.). By default, it's set to True.
+
 - Random plants - when adding decorative foliage, enabling this option will add different species of plants to the map. If unchecked only basic grass (smallDenseMix) will be added. Defaults to True.
 
 - Add Farmyards - if enabled, the tool will create farmlands from the regions that are marked as farmyards in the OSM data. Those farmlands will not have fields and also will not be drawn on textures. By default, it's turned off.
@@ -606,6 +608,8 @@ You can also apply some advanced settings to the map generation process.<br>
 - Fill empty farmlands - if enabled, the empty (zero value) pixels of the farmlands image will be replaces with the value of 255.
 
 ### I3D Advanced settings
+
+- Add trees - if enabled, the tool will add trees to the map on the areas, that defined as forests in the OSM data. By default, it's set to True.
 
 - Forest density - the density of the forest in meters. The lower the value, the lower the distance between the trees, which makes the forest denser. Note, that low values will lead to enormous number of trees, which may cause the Giants Editor to crash or lead to performance issues. By default, it's set to 10.
 

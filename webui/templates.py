@@ -253,6 +253,11 @@ class Settings:
         "corresponding field. It can be useful if you want to add some farmland in the "
         "regions without fields."
     )
+    ADD_GRASS = (
+        "If add grass is enabled, all the empty areas (without fields, roads, etc.) will "
+        "be filled with grass."
+    )
+
     BASE_GRASS = "Select the plant that will be used as a base grass."
     PLANTS_ISLAND_MINIMUM_SIZE = (
         "Plants island minimum size value is used to set the minimum size of the plants islands "
@@ -297,6 +302,11 @@ class Settings:
     )
 
     # I3D Settings
+
+    ADD_TREES = (
+        "If add trees is enabled, the trees will be added on the areas that defined as forests "
+        "on the OSM data."
+    )
 
     FOREST_DENSITY = (
         "Forest density value represents the distance between trees in the forest. "
@@ -361,8 +371,9 @@ class Settings:
 
     SATELLITE_MARGIN = (
         "Satellite margin value (in meters) is used to add some margin around the satellite images. "
-        "It will result satellite images to be bigger than the map size, which can be useful "
-        "for adjusting the images.  \n"
+        "It's not recommended to change this value in most cases, because as a result, the "
+        "area of satellite images won't match the area of the map and it will lead to "
+        "challenges when trying to align the images with the map.  \n"
         "ℹ️ **Units:** meters."
     )
 
