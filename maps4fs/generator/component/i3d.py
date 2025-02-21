@@ -56,7 +56,9 @@ class I3d(XMLComponent):
 
         if self.game.i3d_processing:
             self._add_fields()
-            self._add_forests()
+
+            if self.map.i3d_settings.add_trees:
+                self._add_forests()
             self._add_splines()
 
     def update_height_scale(self, value: int | None = None) -> None:
