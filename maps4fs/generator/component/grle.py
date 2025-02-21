@@ -104,10 +104,8 @@ class GRLE(ImageComponent, XMLComponent):
                 self.logger.warning("Invalid InfoLayer schema: %s.", info_layer)
 
         self._add_farmlands()
-        if self.game.plants_processing:
+        if self.game.plants_processing and self.map.grle_settings.add_grass:
             self._add_plants()
-        else:
-            self.logger.warning("Adding plants it's not supported for the %s.", self.game.code)
 
     def previews(self) -> list[str]:
         """Returns a list of paths to the preview images (empty list).

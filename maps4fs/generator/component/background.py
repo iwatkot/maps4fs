@@ -144,7 +144,7 @@ class Background(MeshComponent, ImageComponent):
 
             mean_value = cv2.mean(dem_image, mask=mask)[0]
             mean_value = np.round(mean_value).astype(dem_image.dtype)
-            self.logger.info("Mean value of the building area: %s", mean_value)
+            self.logger.debug("Mean value of the building area: %s", mean_value)
 
             # Set the pixel values in the DEM to the average pixel value.
             dem_image[mask == 255] = mean_value

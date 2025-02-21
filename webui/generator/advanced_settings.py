@@ -22,17 +22,24 @@ class AdvancedSettings(BaseComponent):
 
             category = {}
             with st.expander(category_name, expanded=False):
-                for raw_field_name, field_value in model.__dict__.items():
+                for idx, (raw_field_name, field_value) in enumerate(model.__dict__.items()):
                     default_value = default_category_settings.get(raw_field_name)
                     if default_value is not None:
                         field_value = default_value
                     field_name = self.snake_to_human(raw_field_name)
                     disabled = self.is_disabled_on_public(raw_field_name)
-                    st.write(getattr(Settings, raw_field_name.upper()))
+
                     with st.empty():
                         widget = self._create_widget(
                             "main", field_name, raw_field_name, field_value, disabled
                         )
+                    st.write(getattr(Settings, raw_field_name.upper()))
+                    example = getattr(Settings, f"{raw_field_name.upper()}_EXAMPLE", None)
+                    if example:
+                        with st.popover("How it works"):
+                            st.markdown(example)
+                    if not idx == len(model.__dict__) - 1:
+                        st.markdown("---")
 
                     category[raw_field_name] = widget
 
@@ -52,5 +59,5 @@ class AdvancedSettings(BaseComponent):
         if not self.public:
             return False
 
-        disabled_fields = ["resize_factor", "dissolve", "zoom_level"]  # , "download_images"]
+        disabled_fields = ["resize_factor", "zoom_level"]  # , "download_images"]
         return raw_field_name in disabled_fields

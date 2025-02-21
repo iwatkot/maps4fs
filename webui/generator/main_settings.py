@@ -40,7 +40,7 @@ class MainSettings(BaseComponent):
 
         size_options = [2048, 4096, 8192, 16384, "Custom"]
         if self.public:
-            size_options = size_options[:3]
+            size_options = size_options[:2]
 
         st.write("Select size of the map:")
         self.map_size_input = st.selectbox(
@@ -49,6 +49,9 @@ class MainSettings(BaseComponent):
             label_visibility="collapsed",
             on_change=self.map_preview,
         )
+
+        if self.public:
+            st.warning(Messages.PUBLIC_MAP_SIZE, icon="💡")
 
         if self.map_size_input == "Custom":
             st.write("Enter map size (meters):")

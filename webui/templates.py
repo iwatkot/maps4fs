@@ -38,6 +38,8 @@ class Messages:
         "In this section you can generate a global preview of all the generated maps.  \n"
     )
 
+    PUBLIC_MAP_SIZE = "If you run the app locally, you can generate maps of any size."
+
     MOVED = "The app has moved to ➡️➡️➡️ [maps4fs.xyz](https://maps4fs.xyz)"
     MAIN_PAGE_COMMUNITY_WARNING = (
         "🚜 Hey, farmer!  \n"
@@ -162,6 +164,13 @@ class Settings:
         "Follow the recommendations of the DTM provider you selected for the best result.  \n"
         "ℹ️ **Units:** integer value."
     )
+    BLUR_RADIUS_EXAMPLE = (
+        "![](https://github.com/user-attachments/assets/78e18ceb-b5b1-4a9d-b51b-4834effdaf9b)  \n"
+        "⚠️ **Note:** This image represents the difference when using low quality DEM data "
+        "with resolution of 30 meters per pixel. If you're using high quality DEM data, "
+        "do not use high blur radius values, because it will destroy the details of the terrain."
+    )
+
     PLATEAU = (
         "DEM plateau value is used to make the whole map higher or lower. "
         "This value will be added to each pixel of the DEM image, making it higher. "
@@ -188,9 +197,18 @@ class Settings:
         "for your map.  \n"
         "ℹ️ **Units:** meters."
     )
+    WATER_DEPTH_EXAMPLE = (
+        "![](https://github.com/user-attachments/assets/22b99071-3169-4c02-9425-1e9fec0e27ec)  \n"
+        "⚠️ **Note:** This image represents the difference when using low quality DEM data "
+        "where there's no data about the water depth. If you're using high quality DEM data, "
+        "you don't need to use this setting, or it will break the terrain."
+    )
 
     ADD_FOUNDATIONS = (
         "If add foundations is enabled, the terrain under the buildings will be flattened."
+    )
+    ADD_FOUNDATIONS_EXAMPLE = (
+        "![](https://github.com/user-attachments/assets/51cd6005-6971-49e5-a649-4ea31abac95d)"
     )
 
     # Background Settings
@@ -214,6 +232,10 @@ class Settings:
         "If remove center is enabled, the region of playable map terrain will be removed "
         "from the background terrain 3D model."
     )
+    REMOVE_CENTER_EXAMPLE = (
+        "![](https://github.com/user-attachments/assets/912864b7-c790-47a9-a001-dd1936d21c17)"
+    )
+
     APPLY_DECIMATION = (
         "If apply decimation is enabled, the background terrain will be decimated to the "
         "specified value. It can be useful if you want to reduce the size of the 3D model. "
@@ -239,9 +261,15 @@ class Settings:
         "position as the field ends. This can cause some issues with gameplay.  \n"
         "ℹ️ **Units:** meters."
     )
+    FARMLAND_MARGIN_EXAMPLE = (
+        "![](https://github.com/user-attachments/assets/c160bf6d-9217-455b-9655-462dc09b943c)"
+    )
     RANDOM_PLANTS = (
         "If random plants are enabled the different species of plants will be generated. "
         "If unchecked, only basic smallDenseMix will be applied."
+    )
+    RANDOM_PLANTS_EXAMPLE = (
+        "![](https://github.com/user-attachments/assets/0728b31a-c2a3-4cc5-ab25-09d8832f0e3a)"
     )
 
     ADD_FARMYARDS = (
@@ -250,32 +278,55 @@ class Settings:
         "corresponding field. It can be useful if you want to add some farmland in the "
         "regions without fields."
     )
+    ADD_GRASS = (
+        "If add grass is enabled, all the empty areas (without fields, roads, etc.) will "
+        "be filled with grass."
+    )
+    ADD_GRASS_EXAMPLE = (
+        "![](https://github.com/user-attachments/assets/49c0376a-b83b-46f0-9e25-2f11e03e16c0)"
+    )
+
     BASE_GRASS = "Select the plant that will be used as a base grass."
     PLANTS_ISLAND_MINIMUM_SIZE = (
         "Plants island minimum size value is used to set the minimum size of the plants islands "
         "when random size of the island will be selected, it will be the lowest possible size.  \n"
         "ℹ️ **Units:** meters."
     )
+    PLANTS_ISLAND_MINIMUM_SIZE_EXAMPLE = (
+        "![](https://github.com/user-attachments/assets/1cac092f-62c7-4da3-82d1-a72cb64109cb)"
+    )
     PLANTS_ISLAND_MAXIMUM_SIZE = (
         "Plants island maximum size value is used to set the maximum size of the plants islands "
         "when random size of the island will be selected, it will be the highest possible size.  \n"
         "ℹ️ **Units:** meters."
+    )
+    PLANTS_ISLAND_MAXIMUM_SIZE_EXAMPLE = (
+        "![](https://github.com/user-attachments/assets/1cac092f-62c7-4da3-82d1-a72cb64109cb)"
     )
     PLANTS_ISLAND_VERTEX_COUNT = (
         "Plants island vertex count value is used to set the number of vertices of the plants. "
         "The higher the value, the more complex shapes of the island will be.  \n"
         "ℹ️ **Units:** number of vertices."
     )
+    PLANTS_ISLAND_VERTEX_COUNT_EXAMPLE = (
+        "![](https://github.com/user-attachments/assets/b8c7f1d5-9446-4d4c-9a51-5357f7984c60)"
+    )
     PLANTS_ISLAND_ROUNDING_RADIUS = (
         "Plants island rounding radius value is used to set the rounding radius of the plants. "
         "The higher the value, the more rounded the vertices will be.  \n"
         "ℹ️ **Units:** meters."
+    )
+    PLANTS_ISLAND_ROUNDING_RADIUS_EXAMPLE = (
+        "![](https://github.com/user-attachments/assets/1b488107-9e85-479b-a59d-d3778404db8d)"
     )
     PLANTS_ISLAND_PERCENT = (
         "Plants island percent value is used to set the relation between the map size and the "
         "number of islands of plants. For example, if set to 100% for map size of 2048, the number"
         " of islands will be 2048.  \n"
         "ℹ️ **Units:** percents of the map size."
+    )
+    PLANTS_ISLAND_PERCENT_EXAMPLE = (
+        "![](https://github.com/user-attachments/assets/aa10bfbc-1cea-4002-b8ef-bfe0a902d1d5)"
     )
     BASE_PRICE = (
         "Base price value is used to set the base price of the farmland. It will be used to "
@@ -295,6 +346,14 @@ class Settings:
 
     # I3D Settings
 
+    ADD_TREES = (
+        "If add trees is enabled, the trees will be added on the areas that defined as forests "
+        "on the OSM data."
+    )
+    ADD_TREES_EXAMPLE = (
+        "![](https://github.com/user-attachments/assets/50dd8f82-f4f9-411e-a17a-ea10a0b95c20)"
+    )
+
     FOREST_DENSITY = (
         "Forest density value represents the distance between trees in the forest. "
         "The higher the value, the more sparse the forest will be and less trees will be "
@@ -302,6 +361,9 @@ class Settings:
         "and the map size, it may generate dozens of thousands of trees, which can cause "
         "performance issues.  \n"
         "ℹ️ **Units:** meters between trees."
+    )
+    FOREST_DENSITY_EXAMPLE = (
+        "![](https://github.com/user-attachments/assets/bf353ed6-f25c-4226-b0d6-105ada0f097b)"
     )
 
     TREES_RELATIVE_SHIFT = (
@@ -318,11 +380,17 @@ class Settings:
         "It makes them look better in game, but it will require some time. "
         "It's recommended to keep this option enabled."
     )
+    DISSOLVE_EXAMPLE = (
+        "![](https://github.com/user-attachments/assets/b7da059b-eb35-4a4e-a656-168c31257b15)"
+    )
 
     FIELDS_PADDING = (
         "Field padding value is used to add some padding around the fields. "
         "It will make the fields smaller, can be useful if they are too close to each other.  \n"
         "ℹ️ **Units:** meters."
+    )
+    FIELDS_PADDING_EXAMPLE = (
+        "![](https://github.com/user-attachments/assets/b88ebfb3-7afb-4012-a845-42a04fefa7d2)"
     )
 
     SKIP_DRAINS = (
@@ -345,6 +413,9 @@ class Settings:
         "more smooth. Be careful with high values, because it may make your spline too complex.  \n"
         "ℹ️ **Units:** number of additional points between each pair of existing points."
     )
+    SPLINE_DENSITY_EXAMPLE = (
+        "![](https://github.com/user-attachments/assets/8acd2910-4b86-42d1-a509-e8ccc7c8169d)"
+    )
     ADD_REVERSED_SPLINES = (
         "If add reversed splines is enabled, the splines will be generated in both directions. "
         "Otherwise, only one direction will be generated (as in the OSM data)."
@@ -358,8 +429,9 @@ class Settings:
 
     SATELLITE_MARGIN = (
         "Satellite margin value (in meters) is used to add some margin around the satellite images. "
-        "It will result satellite images to be bigger than the map size, which can be useful "
-        "for adjusting the images.  \n"
+        "It's not recommended to change this value in most cases, because as a result, the "
+        "area of satellite images won't match the area of the map and it will lead to "
+        "challenges when trying to align the images with the map.  \n"
         "ℹ️ **Units:** meters."
     )
 
