@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 
 import requests
+import requests_cache
 import streamlit as st
 import streamlit.components.v1 as components
 from config import DOCS_DIRECTORY, FAQ_MD, get_mds
@@ -12,6 +13,8 @@ from templates import Messages, video_tutorials
 from toolbox import ToolboxUI
 
 from maps4fs.generator.statistics import get_main_settings
+
+requests_cache.install_cache("github_cache", expire_after=1800)
 
 
 class WebUI:
@@ -152,7 +155,7 @@ class WebUI:
                             f"[More info]({html_url})"
                         )
                 else:
-                    st.error(f"An error occurred while fetching the changelog: {response.text}")
+                    st.text("Too many requests to GitHub API. Use the link below to see releases.")
 
                 st.markdown("---")
                 st.markdown(
