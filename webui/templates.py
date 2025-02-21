@@ -404,6 +404,14 @@ class Settings:
         "want to get the most recent data, you should disable this option. This option has no "
         "effect when you're using the custom OSM file."
     )
+    USE_PRECISE_TAGS = (
+        "If enabled, the generator will use the **precise_tags** from texture schema instead "
+        "of using the default **tags**. With the default schema it can be used to generate "
+        "forests of specific leaf types, for example.  \n"
+        "Note, that if there are no precise tags added on OSM data (for example, leaf type "
+        "was not specified), the generator will not draw this texture at all, as well as will "
+        "not add any trees."
+    )
 
     # Splines Settings
 
