@@ -192,7 +192,9 @@ class Settings:
     ADD_FOUNDATIONS = (
         "If add foundations is enabled, the terrain under the buildings will be flattened."
     )
-    ADD_FOUNDATIONS_EXAMPLE = "TEST"
+    ADD_FOUNDATIONS_EXAMPLE = (
+        "![](https://github.com/user-attachments/assets/51cd6005-6971-49e5-a649-4ea31abac95d)"
+    )
 
     # Background Settings
 
