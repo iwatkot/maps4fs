@@ -144,15 +144,24 @@ class DEM(Component):
             data = self.dtm_provider.get_numpy()
         except Exception as e:  # pylint: disable=W0718
             self.logger.error("Failed to get DEM data from DTM provider: %s.", e)
-            raise e
+            raise ValueError(
+                f"Failed to get DEM data from DTM provider: {e}. "
+                "Try using different DTM provider."
+            )
 
         if len(data.shape) != 2:
             self.logger.error("DTM provider returned incorrect data: more than 1 channel.")
-            raise ValueError("DTM provider returned incorrect data: more than 1 channel.")
+            raise ValueError(
+                "DTM provider returned incorrect data: more than 1 channel. "
+                "Try using different DTM provider."
+            )
 
         if data.dtype not in ["int16", "uint16", "float", "float32"]:
             self.logger.error("DTM provider returned incorrect data type: %s.", data.dtype)
-            raise ValueError(f"DTM provider returned incorrect data type: {data.dtype}.")
+            raise ValueError(
+                f"DTM provider returned incorrect data type: {data.dtype}. "
+                "Try using different DTM provider."
+            )
 
         self.logger.debug(
             "DEM data was retrieved from DTM provider. Shape: %s, dtype: %s. Min: %s, max: %s.",
@@ -167,7 +176,7 @@ class DEM(Component):
         # Check if the data contains any non zero values, otherwise raise an error.
         if not np.any(data):
             self.logger.error("DTM provider returned empty data.")
-            raise ValueError("DTM provider returned empty data.")
+            raise ValueError("DTM provider returned empty data. Try using different DTM provider.")
 
         # 1. Resize DEM data to the output resolution.
         resampled_data = self.resize_to_output(data)

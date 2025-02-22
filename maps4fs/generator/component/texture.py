@@ -349,12 +349,6 @@ class Texture(ImageComponent):
             layer_path = layer.path(self._weights_dir)
             self.logger.debug("Drawing layer %s.", layer_path)
             layer_image = cv2.imread(layer_path, cv2.IMREAD_UNCHANGED)
-            self.logger.info(
-                "Layer %s loaded. Shape: %s, dtype: %s.",
-                layer.name,
-                layer_image.shape,
-                layer_image.dtype,
-            )
 
             if cumulative_image is None:
                 self.logger.debug("First layer, creating new cumulative image.")
@@ -363,12 +357,6 @@ class Texture(ImageComponent):
             mask = cv2.bitwise_not(cumulative_image)
             self._draw_layer(layer, info_layer_data, layer_image)
             self._add_roads(layer, info_layer_data)
-            self.logger.info(
-                "Layer %s drawn. Shape of the mask: %s, dtype: %s.",
-                layer.name,
-                mask.shape,
-                mask.dtype,
-            )
 
             output_image = cv2.bitwise_and(layer_image, mask)
             cumulative_image = cv2.bitwise_or(cumulative_image, output_image)
