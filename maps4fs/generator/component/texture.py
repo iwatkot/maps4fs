@@ -123,6 +123,17 @@ class Texture(ImageComponent):
                 return layer
         return None
 
+    def get_layers_by_usage(self, usage: str) -> list[Layer]:
+        """Returns layer by usage.
+
+        Arguments:
+            usage (str): Usage of the layer.
+
+        Returns:
+            list[Layer]: List of layers.
+        """
+        return [layer for layer in self.layers if layer.usage == usage]
+
     def process(self) -> None:
         """Processes the data to generate textures."""
         self._prepare_weights()
@@ -211,7 +222,7 @@ class Texture(ImageComponent):
         if self.rotation:
             # Iterate over the layers which have tags and rotate them.
             for layer in tqdm(self.layers, desc="Rotating textures", unit="layer"):
-                if layer.tags:
+                if layer.tags or layer.precise_tags:
                     self.logger.debug("Rotating layer %s.", layer.name)
                     layer_paths = layer.paths(self._weights_dir)
                     layer_paths += [layer.path_preview(self._weights_dir)]
@@ -263,7 +274,7 @@ class Texture(ImageComponent):
         Arguments:
             layer (Layer): Layer with textures and tags.
         """
-        if layer.tags is None:
+        if layer.tags is None and layer.precise_tags is None:
             size = (self.map_size, self.map_size)
         else:
             size = (self.map_rotated_size, self.map_rotated_size)
@@ -316,7 +327,9 @@ class Texture(ImageComponent):
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
         layers = self.layers_by_priority()
-        layers = [layer for layer in layers if layer.tags is not None]
+        layers = [
+            layer for layer in layers if layer.tags is not None or layer.precise_tags is not None
+        ]
 
         cumulative_image = None
 
@@ -376,7 +389,18 @@ class Texture(ImageComponent):
             info_layer_data (dict[list[list[int]]]): Dictionary to store info layer data.
             layer_image (np.ndarray): Layer image.
         """
-        for polygon in self.objects_generator(layer.tags, layer.width, layer.info_layer):
+        tags = layer.tags
+        if self.map.texture_settings.use_precise_tags:
+            if layer.precise_tags:
+                self.logger.debug(
+                    "Using precise tags: %s for layer %s.", layer.precise_tags, layer.name
+                )
+                tags = layer.precise_tags
+
+        if tags is None:
+            return
+
+        for polygon in self.objects_generator(tags, layer.width, layer.info_layer):
             if not len(polygon) > 2:
                 self.logger.debug("Skipping polygon with less than 3 points.")
                 continue
@@ -746,7 +770,11 @@ class Texture(ImageComponent):
             preview_size,
         )
 
-        active_layers = [layer for layer in self.layers if layer.tags is not None]
+        active_layers = [
+            layer
+            for layer in self.layers
+            if layer.tags is not None or layer.precise_tags is not None
+        ]
         self.logger.debug("Following layers have tag textures: %s.", len(active_layers))
 
         images = [
