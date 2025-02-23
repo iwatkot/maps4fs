@@ -189,7 +189,7 @@ class GeneratorUI:
 
         limited_settings = settings_json.copy()
         limited_settings["BackgroundSettings"]["resize_factor"] = 8
-        # limited_settings["TextureSettings"]["dissolve"] = False
+        limited_settings["TextureSettings"]["dissolve"] = False
         limited_settings["SatelliteSettings"]["zoom_level"] = 16
         # limited_settings["SatelliteSettings"]["download_images"] = False
         return limited_settings

@@ -291,7 +291,7 @@ class Background(MeshComponent, ImageComponent):
         mesh = self.mesh_from_np(
             dem_data,
             include_zeros=include_zeros,
-            z_scaling_factor=self.get_z_scaling_factor(),
+            z_scaling_factor=self.get_z_scaling_factor(ignore_height_scale_multiplier=True),
             resize_factor=self.map.background_settings.resize_factor,
             apply_decimation=self.map.background_settings.apply_decimation,
             decimation_percent=self.map.background_settings.decimation_percent,
