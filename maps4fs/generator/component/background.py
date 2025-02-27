@@ -6,10 +6,12 @@ from __future__ import annotations
 import os
 import shutil
 from copy import deepcopy
+from typing import Any
 
 import cv2
 import numpy as np
 from tqdm import tqdm
+from trimesh import Trimesh
 
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_mesh import MeshComponent
@@ -44,6 +46,7 @@ class Background(MeshComponent, ImageComponent):
 
         self.background_size = self.map_size + Parameters.BACKGROUND_DISTANCE * 2
         self.rotated_size = int(self.background_size * output_size_multiplier)
+        self.mesh_info: list[dict[str, Any]] = []
 
         self.background_directory = os.path.join(self.map_directory, "background")
         self.water_directory = os.path.join(self.map_directory, "water")
@@ -194,6 +197,7 @@ class Background(MeshComponent, ImageComponent):
 
         dem_info_sequence = self.dem.info_sequence()
         data["DEM"] = dem_info_sequence
+        data["Mesh"] = self.mesh_info
         return data  # type: ignore
 
     def qgis_sequence(self) -> None:
@@ -300,12 +304,40 @@ class Background(MeshComponent, ImageComponent):
             remove_size=self.map_size,
         )
 
+        try:
+            self.update_mesh_info(save_path, mesh)
+        except Exception as e:
+            self.logger.error("Could not update mesh info: %s", e)
+
         mesh.export(save_path)
         self.logger.debug("Obj file saved: %s", save_path)
 
         if create_preview:
             mesh.apply_scale([0.5, 0.5, 0.5])
             self.mesh_to_stl(mesh, save_path=self.stl_preview_path)
+
+    def update_mesh_info(self, save_path: str, mesh: Trimesh) -> None:
+        """Updates the mesh info with the data from the mesh.
+
+        Arguments:
+            save_path (str): The path where the mesh is saved.
+            mesh (Trimesh): The mesh to get the data from.
+        """
+        filename = os.path.splitext(os.path.basename(save_path))[0]
+        x_size, y_size, z_size = mesh.extents
+        x_center, y_center, z_center = mesh.centroid
+
+        entry = {
+            "name": filename,
+            "x_size": round(x_size, 4),
+            "y_size": round(y_size, 4),
+            "z_size": round(z_size, 4),
+            "x_center": round(x_center, 4),
+            "y_center": round(y_center, 4),
+            "z_center": round(z_center, 4),
+        }
+
+        self.mesh_info.append(entry)
 
     def previews(self) -> list[str]:
         """Returns the path to the image previews paths and the path to the STL preview file.
