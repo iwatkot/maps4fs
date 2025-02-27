@@ -1,5 +1,10 @@
 ## How to import background terrain into the Giants Editor
 
+📹 Check out the video version of this tutorial.  
+
+[![YouTube tutorial](https://github.com/user-attachments/assets/0c0a205d-b41e-4bfb-ac75-27737bd8f1e9)](https://www.youtube.com/watch?v=j0_tmJgfdpw)
+
+
 So, at this point, you should have the `*.i3d` files with the background terrain. Now, let's import them into the Giants Editor.
 
 ℹ️ In this tutorials it's assumed that you have already generated the map, downloaded satellite images using this tutorial: [Download high-resolution satellite images](download_satellite_images.md), and created a background terrain as described in the previous tutorial: [Prepare the i3d files](create_background_terrain.md).

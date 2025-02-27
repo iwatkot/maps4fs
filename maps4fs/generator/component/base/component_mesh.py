@@ -130,11 +130,12 @@ class MeshComponent(Component):
                 percent=percent, aggression=decimation_agression
             )
 
-        try:
-            if not mesh.is_watertight:
-                mesh = MeshComponent.fix_mesh(mesh)
-        except Exception:
-            pass
+        # * Looks like it takes some time but has no effect on the result.
+        # try:
+        #     if not mesh.is_watertight:
+        #         mesh = MeshComponent.fix_mesh(mesh)
+        # except Exception:
+        #     pass
 
         mesh = MeshComponent.mesh_to_output_size(
             mesh,
@@ -249,7 +250,26 @@ class MeshComponent(Component):
 
         _, _, z_size = mesh_copy.extents
 
+        try:
+            mesh_copy = MeshComponent.mesh_to_origin(mesh_copy)
+        except Exception:
+            pass
         cube_mesh = trimesh.creation.box([remove_size, remove_size, z_size * 4])
-        cube_mesh.apply_translation(mesh_copy.centroid - cube_mesh.centroid)
 
         return trimesh.boolean.difference([mesh_copy, cube_mesh], check_volume=False)
+
+    @staticmethod
+    def mesh_to_origin(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+        """Moves the mesh to the origin using mesh size.
+
+        Arguments:
+            mesh (trimesh.Trimesh): The mesh to move to the origin.
+
+        Returns:
+            trimesh.Trimesh: The mesh moved to the origin.
+        """
+        mesh_copy = mesh.copy()
+        x_size, _, _ = mesh_copy.extents
+        distance = int(round(x_size) / 2)
+        mesh_copy.apply_translation([-distance, distance, 0])
+        return mesh_copy
