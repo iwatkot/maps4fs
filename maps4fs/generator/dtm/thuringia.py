@@ -1,7 +1,7 @@
 """This module contains provider of Thuringia data."""
 
 import os
-from pyproj import Transformer, CRS
+from maps4fs.generator.dtm import utils
 from maps4fs.generator.dtm.dtm import DTMProvider
 
 class ThuringiaProvider(DTMProvider):
@@ -21,32 +21,21 @@ class ThuringiaProvider(DTMProvider):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.tiff_path = os.path.join(self._tile_directory, f"tiffs")
+        self.tiff_path = os.path.join(self._tile_directory, "tiffs")
         os.makedirs(self.tiff_path, exist_ok=True)
 
     def download_tiles(self) -> list[str]:
-        (north, south, east, west) = self.get_converted_bbox()
+        bbox = self.get_bbox()
+        west, east, north, south = utils.transform_bbox(bbox, "EPSG:25832")
         download_urls = self.get_download_urls(north, south, east, west)
         all_tif_files = self.download_tif_files(download_urls, self.tiff_path)
         return all_tif_files
-    
+
     @staticmethod
-    def get_first_n_digits(value: int, digits: int) -> int:
+    def get_first_n_digits(value: float, digits: int) -> int:
+        """Get the first n digits of a number."""
         return int(str(value)[:digits])
-    
-    def get_converted_bbox(self) -> dict[float, float, float, float]:
-        """Returns bounding box in the format of (north, south, east, west) in EPSG:25832."""
 
-        (north, south, east, west) = self.get_bbox()
-
-        transformer = Transformer.from_crs("epsg:4326", "epsg:25832")
-        north_utm, east_utm = transformer.transform(north, east)
-        south_utm, west_utm = transformer.transform(south, west)
-    
-        self.logger.debug("Converted bounding box: %s", (north_utm, south_utm, east_utm, west_utm))
-
-        return (north_utm, south_utm, east_utm, west_utm)
-    
     def get_download_urls(self, north: float, south: float, east: float, west: float) -> list[str]:
         """Calculate all possible tiles within the bounding box.
 
@@ -60,11 +49,11 @@ class ThuringiaProvider(DTMProvider):
             list: List of tile names.
         """
         urls = []
-        lat = self.get_first_n_digits(south, 3)
-        while lat <= self.get_first_n_digits(north, 3):
-            lon = self.get_first_n_digits(west, 4)
-            while lon <= self.get_first_n_digits(east, 4):
-                tile_url = f"https://geoportal.geoportal-th.de/hoehendaten/DGM/dgm_2020-2025/dgm1_32_{lat}_{lon}_1_th_2020-2025.zip"
+        lat = self.get_first_n_digits(south, 4)
+        while lat <= self.get_first_n_digits(north, 4):
+            lon = self.get_first_n_digits(west, 3)
+            while lon <= self.get_first_n_digits(east, 3):
+                tile_url = f"https://geoportal.geoportal-th.de/hoehendaten/DGM/dgm_2020-2025/dgm1_32_{lon}_{lat}_1_th_2020-2025.zip"
                 urls.append(tile_url)
                 lon += 1
             lat += 1

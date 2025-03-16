@@ -416,21 +416,19 @@ class DTMProvider(ABC):
         if os.path.exists(img_file_path):
             self.logger.debug("File already exists: %s", img_file_name)
             return img_file_path
-        elif os.path.exists(tif_file_path):
+        if os.path.exists(tif_file_path):
             self.logger.debug("File already exists: %s", tif_file_name)
             return tif_file_path
-        else:
-            with ZipFile(file_path, "r") as f_in:
-                if img_file_name in f_in.namelist():
-                    f_in.extract(img_file_name, output_path)
-                    self.logger.debug("Unzipped file %s to %s", file_name, img_file_name)
-                    return img_file_path
-                elif tif_file_name in f_in.namelist():
-                    f_in.extract(tif_file_name, output_path)
-                    self.logger.debug("Unzipped file %s to %s", file_name, tif_file_name)
-                    return tif_file_path
-                else:
-                    raise FileNotFoundError("No .img or .tif file found in the zip file.")
+        with ZipFile(file_path, "r") as f_in:
+            if img_file_name in f_in.namelist():
+                f_in.extract(img_file_name, output_path)
+                self.logger.debug("Unzipped file %s to %s", file_name, img_file_name)
+                return img_file_path
+            if tif_file_name in f_in.namelist():
+                f_in.extract(tif_file_name, output_path)
+                self.logger.debug("Unzipped file %s to %s", file_name, tif_file_name)
+                return tif_file_path
+        raise FileNotFoundError("No .img or .tif file found in the zip file.")
 
     def reproject_geotiff(self, input_tiff: str) -> str:
         """Reproject a GeoTIFF file to a new coordinate reference system (CRS).
