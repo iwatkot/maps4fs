@@ -700,6 +700,7 @@ In addition to SRTM 30m, which provides global coverage, the map above highlight
 | 🇩🇪 Mecklenburg-Vorpommern, Germany | 1-25 meter   | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇩🇪 Baden-Württemberg, Germany      | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇩🇪 Sachsen-Anhalt, Germany         | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🇩🇪 Thüringen, Germany              | 1 meter      | [H4rdB4se](https://github.com/H4rdB4se)     |
 | 🇨🇦 Canada                          | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇧🇪 Flanders, Belgium               | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇫🇷 France                          | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
