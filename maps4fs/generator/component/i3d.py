@@ -453,6 +453,8 @@ class I3d(XMLComponent):
 
         if leaf_type == "mixed":
             trees_with_leaf_type = [tree for tree in tree_schema if tree.get("leaf_type")]
+            if not trees_with_leaf_type:
+                return choice(tree_schema)
             return choice(trees_with_leaf_type)
 
         trees_by_leaf_type = [tree for tree in tree_schema if tree.get("leaf_type") == leaf_type]
