@@ -12,6 +12,7 @@ class TreeInfo(NamedTuple):
     name: str
     reference_id: str
     url: str
+    leaf_type: str | None = None
 
 
 class TreeSchemaEditorTool(Tool):
@@ -29,11 +30,12 @@ class TreeSchemaEditorTool(Tool):
         for tree in self.tree_schema:
             tree_name = tree["name"]
             tree_id = tree["reference_id"]
+            tree_leaf_type = tree.get("leaf_type")
             tree_url = TREE_URLS.get(tree_name)
             if not tree_url:
                 continue
 
-            tree_infos.append(TreeInfo(tree_name, tree_id, tree_url))
+            tree_infos.append(TreeInfo(tree_name, tree_id, tree_url, tree_leaf_type))
 
         self.button_container = st.container()
 
@@ -65,7 +67,12 @@ class TreeSchemaEditorTool(Tool):
         new_schema = []
         for tree_info, activated in self.checkboxes.items():
             if activated:
-                active_entry = {"name": tree_info.name, "reference_id": tree_info.reference_id}
+                active_entry = {
+                    "name": tree_info.name,
+                    "reference_id": tree_info.reference_id,
+                }
+                if tree_info.leaf_type:
+                    active_entry["leaf_type"] = tree_info.leaf_type
                 new_schema.append(active_entry)
 
         return new_schema
