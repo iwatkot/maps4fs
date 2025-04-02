@@ -510,6 +510,18 @@ class Background(MeshComponent, ImageComponent):
         cv2.imwrite(self.output_path, dem_image)
         self.logger.debug("Water depth subtracted from DEM data: %s", self.output_path)
 
+    def _get_blur_power(self) -> int:
+        """Returns the blur power for the water resources to apply Gaussian blur.
+
+        Returns:
+            int: The blur power for the water resources.
+        """
+        blur_power = max(3, min(self.map.background_settings.water_blurriness, 99))
+        if blur_power % 2 == 0:
+            blur_power += 1
+
+        return blur_power
+
     def generate_water_resources_obj(self) -> None:
         """Generates 3D obj files based on water resources data."""
         if not os.path.isfile(self.water_resources_path):
@@ -532,6 +544,13 @@ class Background(MeshComponent, ImageComponent):
 
         # Single channeled 16 bit DEM image of terrain.
         background_dem = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
+
+        if self.map.background_settings.water_blurriness:
+            # Apply Gaussian blur to the background dem.
+            blur_power = self._get_blur_power()
+            background_dem = cv2.GaussianBlur(
+                background_dem, (blur_power, blur_power), sigmaX=blur_power, sigmaY=blur_power
+            )
 
         # Remove all the values from the background dem where the plane_water is 0.
         background_dem[plane_water == 0] = 0

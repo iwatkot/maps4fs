@@ -570,6 +570,8 @@ You can also apply some advanced settings to the map generation process.<br>
 
 - Generate water - if enabled, the water planes obj files will be generated. You can turn it off if you already have those files or don't need them. By default, it's set to True.
 
+- Water blurriness - used to make the water surface smoother. The higher the value, the more flat surface of the water planes will be. However, too high values can lead to the water planes mesh not matching the terrain.
+
 - Resize factor - the factor by which the background terrain will be resized. It will be used as 1 / resize_factor while generating the models. Which means that the larger the value the more the terrain will be resized. The lowest value is 1, in this case background terrain will not be resized. Note, than low values will lead to long processing and enormous size of the obj files.
 
 - Remove center - if enabled, the playable region (map terrain) will be removed from the background terrain. By default, it's set to True.
