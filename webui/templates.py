@@ -224,7 +224,7 @@ class Settings:
     WATER_BLURRINESS = (
         "Water blurriness value is used to reduce the roughness of the water planes. The higher "
         "the value, the more flat surface of the water planes will be. However, too high values "
-        "can lead to the the water planes mesh not matching the terrain.  \n"
+        "can lead to the water planes mesh not matching the terrain.  \n"
         "ℹ️ **Units:** integer value."
     )
     WATER_BLURRINESS_EXAMPLE = "![](https://i.postimg.cc/2jn8zgpP/water-blurriness.png)"
