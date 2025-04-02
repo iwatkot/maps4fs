@@ -149,6 +149,7 @@ class BackgroundSettings(SettingsModel):
 
     generate_background: bool = False
     generate_water: bool = False
+    water_blurriness: int = 20
     resize_factor: int = 8
     remove_center: bool = True
     apply_decimation: bool = False

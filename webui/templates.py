@@ -221,6 +221,13 @@ class Settings:
         "The water planes obj files will be generated to edit them in Blender if turned on. "
         "Turn it off if you already have them or don't need them."
     )
+    WATER_BLURRINESS = (
+        "Water blurriness value is used to reduce the roughness of the water planes. The higher "
+        "the value, the more flat surface of the water planes will be. However, too high values "
+        "can lead to the the water planes mesh not matching the terrain.  \n"
+        "ℹ️ **Units:** integer value."
+    )
+    WATER_BLURRINESS_EXAMPLE = "![](https://i.postimg.cc/2jn8zgpP/water-blurriness.png)"
     RESIZE_FACTOR = (
         "The background resize factor is used to resize the background terrain. The higher the value, "
         "the less detailed the background terrain will be. If set to 1, the background terrain "
