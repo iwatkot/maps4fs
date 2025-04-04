@@ -186,7 +186,7 @@ class GRLE(ImageComponent, XMLComponent):
 
         if not farmlands:
             self.logger.warning(
-                "No farmlands was obtain from fields or farmyards, skipping the processing."
+                "No farmlands was obtained from fields or farmyards, skipping the processing."
             )
             return
 
