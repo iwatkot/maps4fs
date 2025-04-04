@@ -173,18 +173,22 @@ class GRLE(ImageComponent, XMLComponent):
     def _add_farmlands(self) -> None:
         """Adds farmlands to the InfoLayer PNG file."""
         farmlands = []
+
+        fields = self.get_infolayer_data(Parameters.TEXTURES, Parameters.FIELDS)
+        if fields:
+            self.logger.debug("Found %s fields in textures info layer.", len(fields))
+            farmlands.extend(fields)
+
         farmyards = self.get_infolayer_data(Parameters.TEXTURES, Parameters.FARMYARDS)
         if farmyards and self.map.grle_settings.add_farmyards:
             farmlands.extend(farmyards)
             self.logger.debug("Found %s farmyards in textures info layer.", len(farmyards))
 
-        fields = self.get_infolayer_data(Parameters.TEXTURES, Parameters.FIELDS)
-        if not fields:
-            self.logger.debug("Fields data not found in textures info layer.")
+        if not farmlands:
+            self.logger.warning(
+                "No farmlands was obtain from fields or farmyards, skipping the processing."
+            )
             return
-        farmlands.extend(fields)
-
-        self.logger.debug("Found %s fields in textures info layer.", len(fields))
 
         info_layer_farmlands_path = self.game.get_farmlands_path(self.map_directory)
 
