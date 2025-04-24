@@ -9,12 +9,12 @@ import numpy as np
 # import rasterio  # type: ignore
 from pympler import asizeof  # type: ignore
 
-from maps4fs.generator.component.base.component import Component
+from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.dtm.dtm import DTMProvider
 
 
 # pylint: disable=R0903, R0902
-class DEM(Component):
+class DEM(ImageComponent):
     """Component for processing Digital Elevation Model data.
 
     Arguments:
@@ -200,7 +200,7 @@ class DEM(Component):
         self.update_info("normalized", resampled_data)
 
         # 6. Blur DEM data.
-        resampled_data = self.apply_blur(resampled_data)
+        resampled_data = self.apply_blur(resampled_data, blur_radius=self.blur_radius)
 
         cv2.imwrite(self._dem_path, resampled_data)
         self.logger.debug("DEM data was saved to %s.", self._dem_path)
@@ -315,35 +315,6 @@ class DEM(Component):
         self.logger.debug("Size of resampled data: %s MB.", size_of_resampled_data)
 
         return resampled_data
-
-    def apply_blur(self, data: np.ndarray) -> np.ndarray:
-        """Apply blur to DEM data.
-
-        Arguments:
-            data (np.ndarray): DEM data.
-
-        Returns:
-            np.ndarray: Blurred DEM data.
-        """
-        if self.blur_radius == 0:
-            return data
-
-        self.logger.debug(
-            "Applying Gaussion blur to DEM data with kernel size %s.",
-            self.blur_radius,
-        )
-
-        blurred_data = cv2.GaussianBlur(
-            data, (self.blur_radius, self.blur_radius), sigmaX=10, sigmaY=10
-        )
-        self.logger.debug(
-            "DEM data was blurred. Shape: %s, dtype: %s. Min: %s, max: %s.",
-            blurred_data.shape,
-            blurred_data.dtype,
-            blurred_data.min(),
-            blurred_data.max(),
-        )
-        return blurred_data
 
     def rotate_dem(self) -> None:
         """Rotate DEM image."""
