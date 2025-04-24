@@ -138,3 +138,26 @@ class ImageComponent(Component):
             if dst_image is not None:
                 dst_image[border_slice][src_image[border_slice] != 0] = 255
             src_image[border_slice] = 0
+
+    def apply_blur(
+        self, data: np.ndarray, blur_radius: int, sigma_x: int = 10, sigma_y: int = 10
+    ) -> np.ndarray:
+        """Apply blur to DEM data.
+
+        Arguments:
+            data (np.ndarray): DEM data.
+            blur_radius (int): Radius of the blur.
+            sigma_x (int, optional): Standard deviation in X direction. Defaults to 10.
+            sigma_y (int, optional): Standard deviation in Y direction. Defaults to 10.
+
+        Returns:
+            np.ndarray: Blurred DEM data.
+        """
+        if blur_radius == 0:
+            return data
+
+        blurred_data = cv2.GaussianBlur(
+            data, (blur_radius, blur_radius), sigmaX=sigma_x, sigmaY=sigma_y
+        )
+
+        return blurred_data
