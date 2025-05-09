@@ -75,7 +75,7 @@ class Map:
             self.size_scale = self.output_size / self.size
             self.logger.warning(
                 "WARNING! Output size is an Experimental feature, may not work as expected. "
-                "NOTE: This WILL LEAD to lower quality, artifacts and blurinness of the DEM "
+                "NOTE: This WILL LEAD to lower quality, artifacts and blurriness of the DEM "
                 "image, which means that the terrain will look worse. "
                 "Output size is set to %s. Scaling factor is %s.",
                 self.output_size,
