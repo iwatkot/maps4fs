@@ -132,6 +132,17 @@ class Messages:
         "again so it may take longer to generate the map. Do not clean the cache unless you "
         "have any issues with it."
     )
+    OUTPUT_SIZE_INFO = (
+        "This value represents the map size in in-game meters. In case you want to "
+        "generate a map that covers real world area of a different size and then scale it "
+        "in-game, you can set this value to the desired size.  \n"
+        "**Note:** Downscaling of DEM images will result in a loss of detail, artifacts, "
+        "and bluriness.  \n"
+    )
+    OUTPUT_SIZE_EXPERIMENTAL = (
+        "This feature is experimental and may not work as expected leading to errors or "
+        "incorrectly generated map."
+    )
 
 
 class Settings:

@@ -50,20 +50,34 @@ class MainSettings(BaseComponent):
             on_change=self.map_preview,
         )
 
+        self.output_size = None
+
         if self.public:
             st.warning(Messages.PUBLIC_MAP_SIZE, icon="💡")
 
         if self.map_size_input == "Custom":
-            st.write("Enter map size (meters):")
+            st.write("Enter map size (real world meters):")
             custom_map_size_input = st.number_input(
-                label="Height (meters)",
+                label="Size (meters)",
                 min_value=2,
                 value=2048,
-                key="map_height",
+                key="custom_size",
                 label_visibility="collapsed",
                 on_change=self.map_preview,
             )
             self.map_size_input = custom_map_size_input
+
+            st.write("Enter output map size (in-game meters):")
+            self.output_size = st.number_input(
+                label="Output Size (in-game meters)",
+                min_value=2,
+                value=2048,
+                key="output_size",
+                label_visibility="collapsed",
+            )
+            if not custom_map_size_input == self.output_size:
+                st.warning(Messages.OUTPUT_SIZE_EXPERIMENTAL, icon="⚠️")
+            st.info(Messages.OUTPUT_SIZE_INFO)
 
         try:
             lat, lon = self.lat_lon
