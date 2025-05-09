@@ -40,20 +40,6 @@ class DEM(ImageComponent):
         self.output_resolution = self.get_output_resolution()
         self.logger.debug("Output resolution for DEM data: %s.", self.output_resolution)
 
-        blur_radius = self.map.dem_settings.blur_radius
-        if blur_radius is None or blur_radius <= 0:
-            # We'll disable blur if the radius is 0 or negative.
-            blur_radius = 0
-        elif blur_radius % 2 == 0:
-            blur_radius += 1
-        self.blur_radius = blur_radius
-        self.multiplier = self.map.dem_settings.multiplier
-        self.logger.debug(
-            "DEM value multiplier is %s, blur radius is %s.",
-            self.multiplier,
-            self.blur_radius,
-        )
-
         self.dtm_provider: DTMProvider = self.map.dtm_provider(  # type: ignore
             coordinates=self.coordinates,
             user_settings=self.map.dtm_provider_settings,
@@ -200,7 +186,7 @@ class DEM(ImageComponent):
         self.update_info("normalized", resampled_data)
 
         # 6. Blur DEM data.
-        resampled_data = self.apply_blur(resampled_data, blur_radius=self.blur_radius)
+        resampled_data = self.apply_blur(resampled_data, blur_radius=self.get_blur_radius())
 
         cv2.imwrite(self._dem_path, resampled_data)
         self.logger.debug("DEM data was saved to %s.", self._dem_path)
@@ -288,13 +274,14 @@ class DEM(ImageComponent):
         Returns:
             np.ndarray: Multiplied DEM data.
         """
-        if not self.multiplier != 1:
+        multiplier = self.map.dem_settings.multiplier
+        if not multiplier != 1:
             return data
 
-        multiplied_data = data * self.multiplier
+        multiplied_data = data * multiplier
         self.logger.debug(
             "DEM data was multiplied by %s. Min: %s, max: %s.",
-            self.multiplier,
+            multiplier,
             multiplied_data.min(),
             multiplied_data.max(),
         )

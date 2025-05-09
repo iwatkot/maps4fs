@@ -27,4 +27,5 @@ disable=raw-checker-failed,
         unused-argument,
         consider-using-from-import,
         line-too-long,
-        import-outside-toplevel
+        import-outside-toplevel,
+        too-many-branches

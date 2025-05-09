@@ -69,6 +69,18 @@ class Map:
 
         self.rotation = rotation
         self.rotated_size = int(size * rotation_multiplier)
+        self.output_size = kwargs.get("output_size", None)
+        self.size_scale = 1.0
+        if self.output_size:
+            self.size_scale = self.output_size / self.size
+            self.logger.warning(
+                "WARNING! Output size is an Experimental feature, may not work as expected. "
+                "NOTE: This WILL LEAD to lower quality, artifacts and blurinness of the DEM "
+                "image, which means that the terrain will look worse. "
+                "Output size is set to %s. Scaling factor is %s.",
+                self.output_size,
+                self.size_scale,
+            )
 
         self.game = game
         self.dtm_provider = dtm_provider
@@ -96,6 +108,8 @@ class Map:
         log_entry = ""
         log_entry += f"Map instance created for Game: {game.code}. "
         log_entry += f"Coordinates: {coordinates}. Size: {size}. Rotation: {rotation}. "
+        if self.output_size:
+            log_entry += f"Output size: {self.output_size}. Scaling: {self.size_scale}. "
         log_entry += f"DTM provider is {dtm_provider.name()}. "
 
         self.custom_osm = custom_osm

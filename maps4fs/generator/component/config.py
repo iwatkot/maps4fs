@@ -36,8 +36,8 @@ class Config(XMLComponent):
 
         root = tree.getroot()
         data = {
-            "width": str(self.map_size),
-            "height": str(self.map_size),
+            "width": str(self.scaled_size),
+            "height": str(self.scaled_size),
         }
 
         for element in root.iter("map"):

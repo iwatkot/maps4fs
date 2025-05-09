@@ -87,8 +87,8 @@ class GRLE(ImageComponent, XMLComponent):
                     self.game.weights_dir_path(self.map_directory), info_layer["name"]
                 )
 
-                height = int(self.map_size * info_layer["height_multiplier"])
-                width = int(self.map_size * info_layer["width_multiplier"])
+                height = int(self.scaled_size * info_layer["height_multiplier"])
+                width = int(self.scaled_size * info_layer["width_multiplier"])
                 channels = info_layer["channels"]
                 data_type = info_layer["data_type"]
 
@@ -333,7 +333,7 @@ class GRLE(ImageComponent, XMLComponent):
         grass_image_copy[grass_image != 0] = base_layer_pixel_value
 
         # Add islands of plants to the base image.
-        island_count = int(self.map_size * self.map.grle_settings.plants_island_percent // 100)
+        island_count = int(self.scaled_size * self.map.grle_settings.plants_island_percent // 100)
         self.logger.debug("Adding %s islands of plants to the base image.", island_count)
         if self.map.grle_settings.random_plants:
             grass_image_copy = self.create_island_of_plants(grass_image_copy, island_count)

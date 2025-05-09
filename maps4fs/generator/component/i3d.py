@@ -138,6 +138,13 @@ class I3d(XMLComponent):
             self.logger.warning("Not resized DEM not found.")
             return
 
+        if self.map.output_size is not None:
+            not_resized_dem = cv2.resize(
+                not_resized_dem,
+                (self.map.output_size, self.map.output_size),
+                interpolation=cv2.INTER_NEAREST,
+            )
+
         user_attributes_node = root.find(".//UserAttributes")
         if user_attributes_node is None:
             self.logger.warning("UserAttributes node not found in I3D file.")
@@ -509,6 +516,13 @@ class I3d(XMLComponent):
             if not_resized_dem is None:
                 self.logger.warning("Not resized DEM not found.")
                 return
+
+            if self.map.output_size is not None:
+                not_resized_dem = cv2.resize(
+                    not_resized_dem,
+                    (self.map.output_size, self.map.output_size),
+                    interpolation=cv2.INTER_NEAREST,
+                )
 
             forest_image = cv2.imread(forest_image_path, cv2.IMREAD_UNCHANGED)
             for x, y in self.non_empty_pixels(
