@@ -140,6 +140,10 @@ class Texture(ImageComponent):
         self._read_parameters()
         self.draw()
         self.rotate_textures()
+
+        if not self.kwargs.get("skip_scaling", False):
+            self.scale_textures()
+
         self.add_borders()
         if self.map.texture_settings.dissolve and self.game.dissolve:
             self.dissolve()
@@ -181,7 +185,7 @@ class Texture(ImageComponent):
         blockmask_path = os.path.join(self.procedural_dir, "BLOCKMASK.png")
         if not os.path.isfile(blockmask_path):
             self.logger.debug("BLOCKMASK.png not found, creating an empty file.")
-            img = np.zeros((self.map_size, self.map_size), dtype=np.uint8)
+            img = np.zeros((self.scaled_size, self.scaled_size), dtype=np.uint8)
             cv2.imwrite(blockmask_path, img)
 
         pg_layers_by_type = defaultdict(list)
@@ -200,7 +204,7 @@ class Texture(ImageComponent):
             procedural_save_path = os.path.join(self.procedural_dir, f"{procedural_layer_name}.png")
             if len(texture_paths) > 1:
                 # If there are more than one texture, merge them.
-                merged_texture = np.zeros((self.map_size, self.map_size), dtype=np.uint8)
+                merged_texture = np.zeros((self.scaled_size, self.scaled_size), dtype=np.uint8)
                 for texture_path in texture_paths:
                     texture = cv2.imread(texture_path, cv2.IMREAD_UNCHANGED)
                     merged_texture[texture == 255] = 255
@@ -238,6 +242,29 @@ class Texture(ImageComponent):
                     self.logger.debug(
                         "Skipping rotation of layer %s because it has no tags.", layer.name
                     )
+
+    def scale_textures(self) -> None:
+        """Resizes all the textures to the map output size."""
+        if not self.map.output_size:
+            self.logger.debug("No output size defined, skipping scaling.")
+            return
+
+        for layer in tqdm(self.layers, desc="Scaling textures", unit="layer"):
+            layer_paths = layer.paths(self._weights_dir)
+            layer_paths += [layer.path_preview(self._weights_dir)]
+
+            for layer_path in layer_paths:
+                if os.path.isfile(layer_path):
+                    self.logger.debug("Scaling layer %s.", layer_path)
+                    img = cv2.imread(layer_path, cv2.IMREAD_UNCHANGED)
+                    img = cv2.resize(
+                        img,
+                        (self.map.output_size, self.map.output_size),
+                        interpolation=cv2.INTER_NEAREST,
+                    )
+                    cv2.imwrite(layer_path, img)
+                else:
+                    self.logger.debug("Layer %s not found, skipping scaling.", layer_path)
 
     def _read_parameters(self) -> None:
         """Reads map parameters from OSM data, such as:
@@ -426,6 +453,11 @@ class Texture(ImageComponent):
             for linestring in self.objects_generator(
                 layer.tags, layer.width, layer.info_layer, yield_linestrings=True
             ):
+                if self.map.size_scale is not None:
+                    linestring = [
+                        (int(x * self.map.size_scale), int(y * self.map.size_scale))
+                        for x, y in linestring
+                    ]
                 linestring_entry = {
                     "points": linestring,
                     "tags": str(layer.tags),
@@ -519,7 +551,10 @@ class Texture(ImageComponent):
         Returns:
             list[tuple[int, int]]: List of tuples.
         """
-        return [(int(x), int(y)) for x, y in np_array.reshape(-1, 2)]
+        return [
+            (int(x * self.map.size_scale), int(y * self.map.size_scale))
+            for x, y in np_array.reshape(-1, 2)
+        ]
 
     def _to_np(self, geometry: Polygon, *args) -> np.ndarray:
         """Converts Polygon geometry to numpy array of polygon points.

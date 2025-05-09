@@ -339,8 +339,8 @@ class Component:
             tuple[int, int]: The coordinates in the center system.
         """
         x, y = top_left
-        cs_x = x - self.map_size // 2
-        cs_y = y - self.map_size // 2
+        cs_x = x - self.scaled_size // 2
+        cs_y = y - self.scaled_size // 2
 
         return cs_x, cs_y
 
@@ -368,15 +368,14 @@ class Component:
             raise ValueError("Either polygon or linestring points must be provided.")
 
         min_x = min_y = 0 + border
-        max_x = max_y = self.map_size - border
+        max_x = max_y = self.scaled_size - border
 
         object_type = Polygon if polygon_points else LineString
 
-        # polygon = Polygon(polygon_points)
         osm_object = object_type(polygon_points or linestring_points)
 
         if angle:
-            center_x = center_y = self.map_rotated_size // 2
+            center_x = center_y = self.map_rotated_size * self.map.size_scale // 2
             self.logger.debug(
                 "Rotating the osm_object by %s degrees with center at %sx%s",
                 angle,
@@ -384,7 +383,7 @@ class Component:
                 center_y,
             )
             osm_object = rotate(osm_object, -angle, origin=(center_x, center_y))
-            offset = (self.map_size / 2) - (self.map_rotated_size / 2)
+            offset = int((self.map_size / 2) - (self.map_rotated_size / 2)) * self.map.size_scale
             self.logger.debug("Translating the osm_object by %s", offset)
             osm_object = translate(osm_object, xoff=offset, yoff=offset)
             self.logger.debug("Rotated and translated the osm_object.")
@@ -566,3 +565,12 @@ class Component:
             scaling_factor *= 1 / self.map.shared_settings.mesh_z_scaling_factor
 
         return scaling_factor
+
+    @property
+    def scaled_size(self) -> int:
+        """Returns the output size of the map if it was set, otherwise returns the map size.
+
+        Returns:
+            int: The output size of the map or the map size.
+        """
+        return self.map_size if self.map.output_size is None else self.map.output_size

@@ -152,7 +152,7 @@ class Layer:
 
         # Inconsistent names are the name of textures that are not following the pattern
         # of texture_name{idx}_weight.png.
-        inconsistent_names = ["forestRockRoot", "waterPuddle"]
+        inconsistent_names = ["forestRockRoots", "waterPuddle"]
 
         if self.name in inconsistent_names:
             return [

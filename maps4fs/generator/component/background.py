@@ -87,15 +87,14 @@ class Background(MeshComponent, ImageComponent):
 
         if not self.map.custom_background_path:
             self.dem.process()
-            self.validate_np_for_mesh(self.dem.dem_path, self.map_size)
-
-        shutil.copyfile(self.dem.dem_path, self.not_substracted_path)
-        self.save_map_dem(self.dem.dem_path, save_path=self.not_resized_path)
+            self.validate_np_for_mesh(self.output_path, self.map_size)
 
         if self.map.dem_settings.water_depth:
             self.subtraction()
 
-        cutted_dem_path = self.save_map_dem(self.dem.dem_path)
+        cutted_dem_path = self.save_map_dem(self.output_path)
+        shutil.copyfile(self.output_path, self.not_substracted_path)
+        self.save_map_dem(self.output_path, save_path=self.not_resized_path)
         if self.game.additional_dem_name is not None:
             self.make_copy(cutted_dem_path, self.game.additional_dem_name)
 
@@ -213,19 +212,28 @@ class Background(MeshComponent, ImageComponent):
         """Iterates over all dems and generates 3D obj files based on DEM data.
         If at least one DEM file is missing, the generation will be stopped at all.
         """
-        if not os.path.isfile(self.dem.dem_path):
+        if not os.path.isfile(self.output_path):
             self.logger.error(
-                "DEM file not found, generation will be stopped: %s", self.dem.dem_path
+                "DEM file not found, generation will be stopped: %s", self.output_path
             )
             return
 
-        self.logger.debug("DEM file for found: %s", self.dem.dem_path)
+        self.logger.debug("DEM file for found: %s", self.output_path)
 
-        filename = os.path.splitext(os.path.basename(self.dem.dem_path))[0]
+        filename = os.path.splitext(os.path.basename(self.output_path))[0]
         save_path = os.path.join(self.background_directory, f"{filename}.obj")
         self.logger.debug("Generating obj file in path: %s", save_path)
 
-        dem_data = cv2.imread(self.dem.dem_path, cv2.IMREAD_UNCHANGED)
+        dem_data = cv2.imread(self.output_path, cv2.IMREAD_UNCHANGED)
+
+        if self.map.output_size is not None:
+            scaled_background_size = int(self.background_size * self.map.size_scale)
+            dem_data = cv2.resize(
+                dem_data,
+                (scaled_background_size, scaled_background_size),
+                interpolation=cv2.INTER_NEAREST,
+            )
+
         self.plane_from_np(
             dem_data,
             save_path,
@@ -255,7 +263,7 @@ class Background(MeshComponent, ImageComponent):
         if self.map.dem_settings.add_foundations:
             dem_data = self.create_foundations(dem_data)
 
-        output_size = self.map_size + 1
+        output_size = self.scaled_size + 1
 
         main_dem_path = self.game.dem_file_path(self.map_directory)
 
@@ -265,7 +273,7 @@ class Background(MeshComponent, ImageComponent):
             pass
 
         resized_dem_data = cv2.resize(
-            dem_data, (output_size, output_size), interpolation=cv2.INTER_LINEAR
+            dem_data, (output_size, output_size), interpolation=cv2.INTER_NEAREST
         )
 
         cv2.imwrite(main_dem_path, resized_dem_data)
@@ -301,7 +309,7 @@ class Background(MeshComponent, ImageComponent):
             decimation_percent=self.map.background_settings.decimation_percent,
             decimation_agression=self.map.background_settings.decimation_agression,
             remove_center=remove_center,
-            remove_size=self.map_size,
+            remove_size=self.scaled_size,
         )
 
         try:
@@ -348,7 +356,7 @@ class Background(MeshComponent, ImageComponent):
         preview_paths = self.dem_previews(self.game.dem_file_path(self.map_directory))
 
         background_dem_preview_path = os.path.join(self.previews_directory, "background_dem.png")
-        background_dem_preview_image = cv2.imread(self.dem.dem_path, cv2.IMREAD_UNCHANGED)
+        background_dem_preview_image = cv2.imread(self.output_path, cv2.IMREAD_UNCHANGED)
 
         background_dem_preview_image = cv2.resize(
             background_dem_preview_image, (0, 0), fx=1 / 4, fy=1 / 4
@@ -458,6 +466,7 @@ class Background(MeshComponent, ImageComponent):
             map_directory=self.map_directory,
             logger=self.logger,
             texture_custom_schema=background_layers,  # type: ignore
+            skip_scaling=True,  # type: ignore
         )
 
         self.background_texture.preprocess()
@@ -544,6 +553,19 @@ class Background(MeshComponent, ImageComponent):
 
         # Single channeled 16 bit DEM image of terrain.
         background_dem = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
+
+        if self.map.output_size is not None:
+            scaled_background_size = int(self.background_size * self.map.size_scale)
+            plane_water = cv2.resize(
+                plane_water,
+                (scaled_background_size, scaled_background_size),
+                interpolation=cv2.INTER_NEAREST,
+            )
+            background_dem = cv2.resize(
+                background_dem,
+                (scaled_background_size, scaled_background_size),
+                interpolation=cv2.INTER_NEAREST,
+            )
 
         if self.map.background_settings.water_blurriness:
             # Apply Gaussian blur to the background dem.

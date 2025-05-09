@@ -161,3 +161,17 @@ class ImageComponent(Component):
         )
 
         return blurred_data
+
+    def get_blur_radius(self) -> int:
+        """Get the blur radius from the DEM settings.
+
+        Returns:
+            int: The blur radius.
+        """
+        blur_radius = self.map.dem_settings.blur_radius
+        if blur_radius is None or blur_radius <= 0:
+            # We'll disable blur if the radius is 0 or negative.
+            blur_radius = 0
+        elif blur_radius % 2 == 0:
+            blur_radius += 1
+        return blur_radius

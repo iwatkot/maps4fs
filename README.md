@@ -9,8 +9,9 @@
   <a href="docs/step_by_step.md">Create a map in 10 steps</a> •
   <a href="#How-To-Run">How-To-Run</a><br>
   <a href="docs/FAQ.md">FAQ</a> •
-  <a href="docs/map_structure.md">Map Structure</a> •
-  <a href="#Modder-Toolbox">Modder Toolbox</a><br>
+  <a href="docs/map_structure.md">Map Structure</a>
+  <a href="#Modder-Toolbox">Modder Toolbox</a> •
+  <a href="#Main-Settings">Main Settings</a><br>
   <a href="#Supported-objects">Supported objects</a> •
   <a href="#Generation-info">Generation info</a> •
   <a href="#Texture-schema">Texture schema</a> •
@@ -42,15 +43,16 @@
 </div>
 
 🗺️ Supports 2x2, 4x4, 8x8, 16x16 and any custom size maps<br>
+✂️ Supports map scaling 🆕<br>
 🔄 Support map rotation<br>
-🌐 Supports custom [DTM Providers](#DTM-Providers) 🆕<br>
+🌐 Supports custom [DTM Providers](#DTM-Providers)<br>
 🌾 Automatically generates fields<br>
 🌽 Automatically generates farmlands<br>
 🌿 Automatically generates decorative foliage<br>
 🌲 Automatically generates forests<br>
 🌊 Automatically generates water planes<br>
-📈 Automatically generates splines 🆕<br>
-🛰️ Automatically downloads high resolution satellite images 🆕<br>
+📈 Automatically generates splines<br>
+🛰️ Automatically downloads high resolution satellite images<br>
 🌍 Based on real-world data from OpenStreetMap<br>
 🗺️ Supports [custom OSM maps](/docs/custom_osm.md)<br>
 🏞️ Generates height map using SRTM dataset<br>
@@ -168,7 +170,8 @@ Don't know where to start? Don't worry, just follow this [step-by-step guide](do
 
 🟢 Recommended for all users.  
 🛠️ Don't need to install anything.  
-🗺️ Supported map sizes: 2x2, 4x4, 8x8 km.  
+🗺️ Supported map sizes: 2x2, 4x4.  
+✂️ Map scaling: not supported.  
 ⚙️ Advanced settings: enabled.  
 🖼️ Texture dissolving: enabled.  
 Using the public version on [maps4fs.xyz](https://maps4fs.xyz) is the easiest way to generate a map template. Just open the link and follow the instructions.
@@ -181,6 +184,7 @@ Using it is easy and doesn't require any guides. Enjoy!
 🟠 Recommended for users who want bigger maps, fast generation, nice-looking textures, and advanced settings.  
 🛠️ Launch with one single command.  
 🗺️ Supported map sizes: 2x2, 4x4, 8x8, 16x16 km and any custom size.  
+✂️ Map scaling: supported.  
 ⚙️ Advanced settings: enabled.  
 🖼️ Texture dissolving: enabled.  
 Check out the [Docker FAQ](docs/FAQ_docker.md) if you have any questions.<br>
@@ -212,6 +216,7 @@ Remember to replace `*.*.*` with the version you want to use, e.g. `iwatkot/maps
 
 🔴 Recommended for developers.  
 🗺️ Supported map sizes: 2x2, 4x4, 8x8, 16x16 km and any custom size.  
+✂️ Map scaling: supported.  
 ⚙️ Advanced settings: enabled.  
 🖼️ Texture dissolving: enabled.  
 You can use the Python package to generate maps. Follow these steps:
@@ -315,6 +320,40 @@ Tools are divided into categories, which are listed below.
 #### For Background terrain
 
 - **Convert image to obj model** - allows you to convert the image to the obj model. You can use this tool to create the background terrain for your map. It can be extremely useful if you have access to the sources of high-resolution DEM data and want to create the background terrain using it.
+
+## Main Settings
+
+### Game Selection
+The tool supports two games: Farming Simulator 22 and Farming Simulator 25. You can select the game you want to generate the map for in the `Game` dropdown list. The default value is `FS25`, but you can change it to `FS22` if you want to generate a map for Farming Simulator 22.<br>
+**NOTE:** Support for Farming Simulator 22 is discontinued. The tool will not be updated for this game anymore. Some features, such as forest generation, fields generation not implemented and not planned to be implemented. The tool will be updated only for Farming Simulator 25.<br>
+
+### Latitude and Longitude
+These are the coordinates of the center of the map. The coordinates should be in decimal format, e.g. `45.28, 20.23`, any other format will not work.
+
+### Map Size
+
+#### Default sizes
+The tool supports all possible sizes of maps, but some of them only available in the [Docker version](#option-2-docker-version). <br>
+The sizes are:
+- 2x2 km
+- 4x4 km
+- 8x8 km
+- 16x16 km
+
+**NOTE:** 16 km maps probably won't work for FS25 due to the limitations of the game engine. The map will be generated, but you may have issues trying to open it in the Giants Editor.
+
+#### Custom size
+You can also specify any custom size of the map. Be aware that Giants Editor supports only square maps, which size is a power of 2 (2048, 4096 and so on). All other sizes will be generated, but if you try to open them in the Giants Editor, it will crash. If you want your map to cover other real-world region, use the [Output size](#output-size) option.
+
+#### Output size
+This setting can be useful if you want add some scaling to your map. For example, you can select a region of 3000 meters in real world and set the output size to 2048 meters. In this case, the map will be generated with a size of 2048x2048 meters, but it will contain the region of 3000x3000 meters in real world.
+
+### DTM Provider
+DTM Provider is a source of the height map data. will find the list of available providers in the [DTM Providers](#dtm-providers) section. The default provider is `SRTM30Provider` which is available all aroung the globe, but the resolution is not very high. If you want to use a different provider, you can select it in the dropdown list. You will only see the providers that are available for the selected region. It's better to use the provider that has the highest resolution for the selected region.
+**NOTE:** Some of the providers are community-developed and may not work properly. I do not provide any support for them. If you have any issues with them, please contact the provider's author.
+
+### Map Rotation
+You can rotate the map by any angle. The rotation is applied to the map and the height map. The rotation is in degrees, so you can use any value from 0 to 360. The default value is `0`, which means that the map will be generated without rotation.
 
 ## Supported objects
 

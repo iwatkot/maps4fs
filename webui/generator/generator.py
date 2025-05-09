@@ -276,6 +276,10 @@ class GeneratorUI:
         else:
             dtm_provider_settings = None
 
+        output_size = None
+        if self.main_settings.output_size != self.main_settings.map_size_input:
+            output_size = self.main_settings.output_size
+
         mp = mfs.Map(
             game,
             dtm_provider,
@@ -291,6 +295,7 @@ class GeneratorUI:
             tree_custom_schema=tree_schema,
             custom_background_path=self.expert_settings.custom_background_path,
             is_public=self.public,
+            output_size=output_size,
         )
 
         return mp, session_name
