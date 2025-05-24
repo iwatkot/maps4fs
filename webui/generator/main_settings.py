@@ -75,8 +75,6 @@ class MainSettings(BaseComponent):
                 key="output_size",
                 label_visibility="collapsed",
             )
-            if not custom_map_size_input == self.output_size:
-                st.warning(Messages.OUTPUT_SIZE_EXPERIMENTAL, icon="⚠️")
             st.info(Messages.OUTPUT_SIZE_INFO)
 
         try:
