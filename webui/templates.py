@@ -139,10 +139,6 @@ class Messages:
         "**Note:** Downscaling of DEM images will result in a loss of detail, artifacts, "
         "and bluriness.  \n"
     )
-    OUTPUT_SIZE_EXPERIMENTAL = (
-        "This feature is experimental and may not work as expected leading to errors or "
-        "incorrectly generated map."
-    )
 
 
 class Settings:
