@@ -85,8 +85,8 @@ class I3d(XMLComponent):
 
         data = {"heightScale": str(value)}
 
-        self.get_and_update_element(root, path, data)
-        self.save_tree(tree)
+        self.get_and_update_element(root, path, data)  # type: ignore
+        self.save_tree(tree)  # type: ignore
 
     def _update_parameters(self) -> None:
         """Updates the map I3D file with the  sun bounding box and displacement layer size."""
@@ -101,11 +101,11 @@ class I3d(XMLComponent):
             "lastShadowMapSplitBboxMax": f"{distance},148,{distance}",
         }
 
-        self.get_and_update_element(root, sun_element_path, data)
+        self.get_and_update_element(root, sun_element_path, data)  # type: ignore
 
         displacement_layer_path = ".//Scene/TerrainTransformGroup/Layers/DisplacementLayer"
         data = {"size": str(int(self.map_size * 8))}
-        self.get_and_update_element(root, displacement_layer_path, data)
+        self.get_and_update_element(root, displacement_layer_path, data)  # type: ignore
 
         self.save_tree(tree)
 
@@ -125,9 +125,9 @@ class I3d(XMLComponent):
 
         root = tree.getroot()
         # Find <Shapes> element in the I3D file.
-        shapes_node = root.find(".//Shapes")
+        shapes_node = root.find(".//Shapes")  # type: ignore
         # Find <Scene> element in the I3D file.
-        scene_node = root.find(".//Scene")
+        scene_node = root.find(".//Scene")  # type: ignore
 
         if shapes_node is None or scene_node is None:
             self.logger.warning("Shapes or Scene node not found in I3D file.")
@@ -145,7 +145,7 @@ class I3d(XMLComponent):
                 interpolation=cv2.INTER_NEAREST,
             )
 
-        user_attributes_node = root.find(".//UserAttributes")
+        user_attributes_node = root.find(".//UserAttributes")  # type: ignore
         if user_attributes_node is None:
             self.logger.warning("UserAttributes node not found in I3D file.")
             return
@@ -240,12 +240,12 @@ class I3d(XMLComponent):
         self.logger.debug("Starging to add fields to the I3D file.")
 
         root = tree.getroot()
-        gameplay_node = root.find(".//TransformGroup[@name='gameplay']")
+        gameplay_node = root.find(".//TransformGroup[@name='gameplay']")  # type: ignore
 
         if gameplay_node is None:
             return
         fields_node = gameplay_node.find(".//TransformGroup[@name='fields']")
-        user_attributes_node = root.find(".//UserAttributes")
+        user_attributes_node = root.find(".//UserAttributes")  # type: ignore
 
         if fields_node is None or user_attributes_node is None:
             return
@@ -497,7 +497,7 @@ class I3d(XMLComponent):
 
             tree = self.get_tree()
             root = tree.getroot()
-            scene_node = root.find(".//Scene")
+            scene_node = root.find(".//Scene")  # type: ignore
             if scene_node is None:
                 self.logger.warning("Scene element not found in I3D file.")
                 return

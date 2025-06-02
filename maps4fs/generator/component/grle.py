@@ -204,7 +204,7 @@ class GRLE(ImageComponent, XMLComponent):
 
         tree = self.get_tree()
         root = tree.getroot()
-        farmlands_node = root.find("farmlands")
+        farmlands_node = root.find("farmlands")  # type: ignore
         if farmlands_node is None:
             raise ValueError("Farmlands XML element not found in the farmlands XML file.")
 

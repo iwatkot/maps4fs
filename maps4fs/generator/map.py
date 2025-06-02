@@ -226,8 +226,8 @@ class Map:
                 self.rotation,
                 self.map_directory,
                 self.logger,
-                texture_custom_schema=self.texture_custom_schema,
-                tree_custom_schema=self.tree_custom_schema,
+                texture_custom_schema=self.texture_custom_schema,  # type: ignore
+                tree_custom_schema=self.tree_custom_schema,  # type: ignore
             )
             self.components.append(component)
 

@@ -35,7 +35,7 @@ class XMLComponent(Component):
         if not os.path.isfile(xml_path):
             raise FileNotFoundError(f"XML file {xml_path} does not exist.")
 
-        return ET.parse(xml_path)
+        return ET.parse(xml_path)  # type: ignore
 
     def save_tree(self, tree: ET.ElementTree, xml_path: str | None = None) -> None:
         """Saves the XML tree to the file.

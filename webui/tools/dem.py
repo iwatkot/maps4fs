@@ -23,6 +23,10 @@ class GeoTIFFWindowingTool(Tool):
     download_path = None
 
     def content(self):
+        st.warning(
+            "DEPRECATION WARNING: This tool is deprecated and will be removed in maps4fs 2.0. "
+            "If you want to continue using this tool, do not update maps4fs to 2.0."
+        )
         if is_on_community_server() or is_public():
             st.warning(Messages.TOOL_LOCAL)
             return
