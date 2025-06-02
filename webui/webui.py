@@ -4,15 +4,10 @@ from datetime import datetime
 import requests
 import requests_cache
 import streamlit as st
-import streamlit.components.v1 as components
 from config import DOCS_DIRECTORY, FAQ_MD, get_mds
 from generator.generator import GeneratorUI
-from osmp import MapEntry, get_rotated_previews
-from streamlit_folium import folium_static
 from templates import Messages, video_tutorials
 from toolbox import ToolboxUI
-
-from maps4fs.generator.statistics import get_main_settings
 
 requests_cache.install_cache("github_cache", expire_after=1800)
 
