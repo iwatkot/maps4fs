@@ -214,14 +214,6 @@ docker run -d -p 8501:8501 --name maps4fs iwatkot/maps4fs
 4. Fill in the required fields and click on the `Generate` button.
 5. When the map is generated click on the `Download` button to get the map.
 
-➡️ If you don't need Blender backend, you can use the **lite** version of the Docker image.
-
-```bash
-docker run -d -p 8501:8501 --name maps4fs iwatkot/maps4fs:*.*.*_lite
-```
-
-Remember to replace `*.*.*` with the version you want to use, e.g. `iwatkot/maps4fs:1.8.202_lite`. Also, pay attention that some features will not work in the lite version, such as removing the center part of the background mesh.
-
 ### Option 3: Python package or source code
 
 🔴 Recommended for developers.  
