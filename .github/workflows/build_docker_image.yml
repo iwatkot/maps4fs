@@ -1,4 +1,4 @@
-name: Build and deploy Docker image (full)
+name: Build and deploy Docker image
 
 on:
   release:
