@@ -1,5 +1,7 @@
 """This module contains functions to work with the background terrain of the map."""
 
+import warnings
+
 import cv2
 import numpy as np
 import trimesh  # type: ignore
@@ -22,6 +24,13 @@ def plane_from_np(
             will result in a simpler mesh.
         save_path (str) -- The path to save the obj file.
     """
+    warnings.warn(
+        "The 'plane_from_np' function is deprecated and will be removed in maps4fs 2.0. "
+        "Use 'trimesh' directly instead or maps4fs.generator.component.base.component_mesh."
+        "MeshComponent.mesh_from_np' instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     dem_data = cv2.resize(dem_data, (0, 0), fx=resize_factor, fy=resize_factor)
 
     # Invert the height values.

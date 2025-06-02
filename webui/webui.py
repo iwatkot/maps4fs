@@ -22,22 +22,18 @@ class WebUI:
         st.set_page_config(page_title="maps4FS", page_icon="🚜", layout="wide")
         (
             generator_tab,
-            # statistics_tab,
             step_by_step_tab,
             video_tutorials_tab,
-            # coverage_tab,
-            toolbox_tab,
+            toolbox_tab,  # TODO: Replace with schema_editor_tab
             knowledge_tab,
             faq_tab,
             changelog_tab,
         ) = st.tabs(
             [
                 "🗺️ Map Generator",
-                # "📊 Statistics",
                 "🔢 Step by step",
                 "📹 Video Tutorials",
-                # "🌐 Coverage",
-                "🧰 Modder Toolbox",
+                "🧰 Modder Toolbox",  # TODO: Replace with "📑 Schema Editor"
                 "📖 Knowledge base",
                 "📝 FAQ",
                 "📄 Changelog",
@@ -46,14 +42,6 @@ class WebUI:
 
         with generator_tab:
             self.generator = GeneratorUI()
-
-        # with statistics_tab:
-        #     components.iframe(
-        #         "https://stats.maps4fs.xyz/public/dashboard/"
-        #         "f8defe6a-09db-4db1-911f-b6b02075d4b2#refresh=60",
-        #         height=2000,
-        #         scrolling=False,
-        #     )
 
         with step_by_step_tab:
             step_by_step_tab_path = os.path.join(DOCS_DIRECTORY, "step_by_step.md")
@@ -70,49 +58,6 @@ class WebUI:
                             f"**Episode {video_tutorial.episode}:** {video_tutorial.title}  \n"
                             f"*{video_tutorial.description}*"
                         )
-
-        # with coverage_tab:
-        #     st.write(Messages.COVERAGE_INFO)
-        #     add_bboxes = st.checkbox("Add bounding boxes", value=True)
-        #     add_markers = st.checkbox("Add markers", value=False)
-        #     limit = st.number_input("Limit of entries", value=0, min_value=0)
-
-        #     if st.button("Show coverage map"):
-        #         try:
-        #             entries_json = get_main_settings(
-        #                 fields=["latitude", "longitude", "size", "rotation"], limit=limit
-        #             )
-
-        #             identifiers = []
-        #             filtered_entries = []
-        #             for entry in entries_json:
-        #                 lat, lon = entry.get("latitude"), entry.get("longitude")
-        #                 rotation = entry.get("rotation")
-        #                 size = entry.get("size")
-        #                 if lat and lon and rotation and size:
-        #                     identifier = (lat, lon, rotation, size)
-        #                     if identifier not in identifiers:
-        #                         identifiers.append(identifier)
-        #                         filtered_entries.append(entry)
-
-        #             unique_factor = len(filtered_entries) / len(entries_json) * 100
-
-        #             st.info(
-        #                 f"Retrievied {len(filtered_entries)} unique entries "
-        #                 f"from total {len(entries_json)}.  \nPercentage of "
-        #                 f"unique entries: {unique_factor:.2f}%."
-        #             )
-
-        #             entries = [MapEntry(**entry) for entry in entries_json]
-
-        #             folium_map = get_rotated_previews(
-        #                 entries,
-        #                 add_markers=add_markers,
-        #                 add_bboxes=add_bboxes,
-        #             )
-        #             folium_static(folium_map, height=500, width=1000)
-        #         except Exception as e:
-        #             st.error(f"An error occurred: {e}")
 
         with toolbox_tab:
             self.toolbox = ToolboxUI()

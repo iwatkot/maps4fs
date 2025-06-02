@@ -1,6 +1,7 @@
 """This module contains functions to work with custom OSM files."""
 
 import json
+import warnings
 from xml.etree import ElementTree as ET
 
 import osmnx as ox
@@ -19,6 +20,13 @@ def check_osm_file(file_path: str) -> bool:
     Returns:
         bool: True if the file is valid, False otherwise.
     """
+    warnings.warn(
+        "The 'check_osm_file' function is deprecated and will be removed in maps4fs 2.0. "
+        "The feature will be directly integrated into the maps4fs generator. "
+        "And will not be available as a separate function.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     with open(FS25().texture_schema, encoding="utf-8") as f:
         schema = json.load(f)
 
@@ -50,6 +58,13 @@ def fix_osm_file(input_file_path: str, output_file_path: str) -> tuple[bool, int
         tuple[bool, int]: A tuple containing the result of the check_osm_file function
             and the number of fixed errors.
     """
+    warnings.warn(
+        "The 'fix_osm_file' function is deprecated and will be removed in maps4fs 2.0. "
+        "The feature will be directly integrated into the maps4fs generator. "
+        "And will not be available as a separate function.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     broken_entries = ["relation", ".//*[@action='delete']"]
 
     tree = ET.parse(input_file_path)

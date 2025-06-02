@@ -1,3 +1,15 @@
+⚠️ Learn more about the upcoming 2.0.0 changes in the [migration guide](docs/migration.md).  
+⚠️ Some components are deprecated and there are major changes in the project structure.
+
+
+<p align="center">
+<a href="https://github.com/iwatkot/maps4fs">maps4fs</a> •
+<a href="https://github.com/iwatkot/maps4fsui">maps4fs UI</a> •
+<a href="https://github.com/iwatkot/maps4fsapi">maps4fs API</a> •
+<a href="https://github.com/iwatkot/maps4fsstats">maps4fs Stats</a> •
+<a href="https://github.com/iwatkot/maps4fsbot">maps4fs Bot</a>
+</p>
+
 <div align="center" markdown>
 <a href="https://discord.gg/Sj5QKKyE42">
 <img src="https://github.com/user-attachments/assets/37043333-d6ef-4ca3-9f3c-81323d9d0b71">
@@ -10,7 +22,7 @@
   <a href="#How-To-Run">How-To-Run</a><br>
   <a href="docs/FAQ.md">FAQ</a> •
   <a href="docs/map_structure.md">Map Structure</a>
-  <a href="#Modder-Toolbox">Modder Toolbox</a> •
+  <a href="#Schemas-Editor">Schemas Editor</a> •
   <a href="#Main-Settings">Main Settings</a><br>
   <a href="#Supported-objects">Supported objects</a> •
   <a href="#Generation-info">Generation info</a> •
@@ -61,7 +73,6 @@
 🔷 Generates \*.obj files for background terrain based on the real-world height map<br>
 📄 Generates scripts to download high-resolution satellite images from [QGIS](https://qgis.org/download/) in one click<br>
 📕 Detailed [documentation](/docs) and tutorials <br>
-🧰 Modder Toolbox to help you with various tasks <br>
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/cf8f5752-9c69-4018-bead-290f59ba6976"><br>
@@ -295,31 +306,11 @@ The map will be saved in the `map_directory` directory.
 
 ➡️ Check out the [demo.py](demo.py) file for a complete example.
 
-## Modder Toolbox
-
-The tool now has a Modder Toolbox, which is a set of tools to help you with various tasks. You can open the toolbox by switching to the `🧰 Modder Toolbox` tab in the StreamLit app.<br>
-
-![Modder Toolbox](https://github.com/user-attachments/assets/dffb252f-f5c0-4021-9d45-31e5bccc0d9b)
-
-### Tool Categories
-
-Tools are divided into categories, which are listed below.
-
-#### For custom schemas
+## Schemas Editor
 
 - **Tree Schema Editor** - allows you to view all the supported trees models and select the ones you need on your map. After it, you should click the Show updated schema button and copy the JSON schema to the clipboard. Then you can use it in the Expert settings to generate the map with the selected trees.
 
 - **Texture Schema Editor** - allows you to view all the supported textures and edit their parameters, such as priority, OSM tags and so on. After editing, you should click the Show updated schema button and copy the JSON schema to the clipboard. Then you can use it in the Expert settings to generate the map with the updated textures.
-
-#### For Textures and DEM
-
-- **Fix custom OSM file** - this tool fixes the most common errors in the custom OSM file, but it can not guarantee that the file will be fixed completely if some non-common errors are present.
-
-- **GeoTIFF windowing** - allows you to upload your GeoTIFF file and select the region of interest to extract it from the image. It's useful when you have high-resolution DEM data and want to create a height map using it.
-
-#### For Background terrain
-
-- **Convert image to obj model** - allows you to convert the image to the obj model. You can use this tool to create the background terrain for your map. It can be extremely useful if you have access to the sources of high-resolution DEM data and want to create the background terrain using it.
 
 ## Main Settings
 

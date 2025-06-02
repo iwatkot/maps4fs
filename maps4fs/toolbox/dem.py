@@ -1,6 +1,7 @@
 """This module contains functions for working with Digital Elevation Models (DEMs)."""
 
 import os
+import warnings
 
 import rasterio  # type: ignore
 from pyproj import Transformer
@@ -21,6 +22,12 @@ def read_geo_tiff(file_path: str) -> DatasetReader:
     Returns:
         DatasetReader: The DatasetReader object for the GeoTIFF file.
     """
+    warnings.warn(
+        "The 'read_geo_tiff' function is deprecated and will be removed in maps4fs 2.0. "
+        "Use 'rasterio.open' directly instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     if not os.path.isfile(file_path):
         raise FileNotFoundError(f"File not found: {file_path}")
 
@@ -51,6 +58,12 @@ def get_geo_tiff_bbox(
         tuple[float, float, float, float]: The bounding box in the destination CRS
             as (north, south, east, west).
     """
+    warnings.warn(
+        "The 'get_geo_tiff_bbox' function is deprecated and will be removed in maps4fs 2.0. "
+        "Use 'rasterio' methods directly instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     left, bottom, right, top = src.bounds
 
     transformer = Transformer.from_crs(src.crs, dst_crs, always_xy=True)
@@ -76,6 +89,12 @@ def extract_roi(file_path: str, bbox: tuple[float, float, float, float]) -> str:
     Returns:
         str: The path to the new GeoTIFF file containing the extracted ROI.
     """
+    warnings.warn(
+        "The 'extract_roi' function is deprecated and will be removed in maps4fs 2.0. "
+        "Use 'rasterio' methods directly instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     with rasterio.open(file_path) as src:
         transformer = Transformer.from_crs("EPSG:4326", src.crs, always_xy=True)
         north, south, east, west = bbox

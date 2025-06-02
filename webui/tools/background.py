@@ -4,8 +4,8 @@ import cv2
 import numpy as np
 import streamlit as st
 from config import INPUT_DIRECTORY, is_on_community_server, is_public
-from tools.tool import Tool
 from templates import Messages
+from tools.tool import Tool
 
 from maps4fs.toolbox.background import plane_from_np
 
@@ -24,6 +24,10 @@ class ConvertImageToObj(Tool):
     download_path = None
 
     def content(self):
+        st.warning(
+            "DEPRECATION WARNING: This tool is deprecated and will be removed in maps4fs 2.0. "
+            "If you want to continue using this tool, do not update maps4fs to 2.0."
+        )
         if is_on_community_server() or is_public():
             st.warning(Messages.TOOL_LOCAL)
             return

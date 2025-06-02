@@ -30,6 +30,9 @@ If you got a better data model you might want to create your own DEM file for yo
 
    
 3. Open maps4fs and go to "Modder Toolbox -> Textures and DEM"
+
+NOTE: Modder Toolbox has been deprecated and removed starting from the 2.0 release of maps4fs. You can use the older version of maps4fs or find an alternative tool for this step.  
+
     * Upload your single/merged GeoTiff file
     * Enter the center coordinates of your map
     * Enter the size of the ROI which should be the size of your map or background if you want to create the DEM for your background too. Add some additional meters to have some space to rotate and resize the image later.
