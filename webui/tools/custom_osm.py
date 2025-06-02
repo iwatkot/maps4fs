@@ -23,7 +23,7 @@ class FixCustomOsmFile(Tool):
         st.warning(
             "DEPRECATION WARNING: This tool is deprecated and will be removed in maps4fs 2.0. "
             "It will be integrated into the maps4fs generator and will not be available as "
-            "a separate tool."
+            "a separate tool. "
             "If you want to continue using this tool, do not update maps4fs to 2.0."
         )
         if "fixed_osm" not in st.session_state:
