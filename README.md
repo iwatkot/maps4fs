@@ -1,4 +1,4 @@
-⚠️ Learn more about the upcoming 2.0.0 changes in the [migration guide](docs/migration.md).  
+⚠️ Learn more about the upcoming 2.0 changes in the [migration guide](docs/migration.md).  
 ⚠️ Some components are deprecated and there are major changes in the project structure.
 
 
@@ -21,7 +21,7 @@
   <a href="docs/step_by_step.md">Create a map in 10 steps</a> •
   <a href="#How-To-Run">How-To-Run</a><br>
   <a href="docs/FAQ.md">FAQ</a> •
-  <a href="docs/map_structure.md">Map Structure</a>
+  <a href="docs/map_structure.md">Map Structure</a> •
   <a href="#Schemas-Editor">Schemas Editor</a> •
   <a href="#Main-Settings">Main Settings</a><br>
   <a href="#Supported-objects">Supported objects</a> •
