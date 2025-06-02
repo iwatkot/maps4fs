@@ -40,7 +40,7 @@ class Config(XMLComponent):
             "height": str(self.scaled_size),
         }
 
-        for element in root.iter("map"):
+        for element in root.iter("map"):  # type: ignore
             self.update_element(element, data)
             break
         self.save_tree(tree)
