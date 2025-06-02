@@ -1,0 +1,20 @@
+name: UI Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  relay-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create release in maps4fsui
+        env:
+          GH_TOKEN: ${{ secrets.RELAY_RELEASE_TOKEN }}
+        run: |
+          gh release create \
+            "${{ github.event.release.tag_name }}" \
+            --repo iwatkot/maps4fsui \
+            --title "${{ github.event.release.name }}" \
+            --notes "${{ github.event.release.body }}" \
+            --target "${{ github.event.release.target_commitish }}"
