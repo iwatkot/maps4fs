@@ -5,7 +5,6 @@
 <p align="center">
 <a href="https://github.com/iwatkot/maps4fs">maps4fs</a> •
 <a href="https://github.com/iwatkot/maps4fsui">maps4fs UI</a> •
-<a href="https://github.com/iwatkot/maps4fsapi">maps4fs API</a> •
 <a href="https://github.com/iwatkot/maps4fsstats">maps4fs Stats</a> •
 <a href="https://github.com/iwatkot/maps4fsbot">maps4fs Bot</a>
 </p>
