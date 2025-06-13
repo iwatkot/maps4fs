@@ -504,7 +504,7 @@ class Texture(ImageComponent):
 
             # Randomly assign non-zero values to sublayers.
             for coord in non_zero_coords:
-                sublayers[np.random.randint(0, layer.count)][coord[0], coord[1]] = 255
+                sublayers[np.random.randint(0, layer.count)][coord[0], coord[1]] = 255  # type: ignore
 
             # Save the sublayers.
             for sublayer, sublayer_path in zip(sublayers, layer_paths):

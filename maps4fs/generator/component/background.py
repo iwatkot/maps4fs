@@ -279,6 +279,8 @@ class Background(MeshComponent, ImageComponent):
         cv2.imwrite(main_dem_path, resized_dem_data)
         self.logger.debug("DEM cutout saved: %s", main_dem_path)
 
+        self.assets.dem = main_dem_path
+
         return main_dem_path
 
     def plane_from_np(

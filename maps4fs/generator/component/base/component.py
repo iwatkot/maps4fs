@@ -20,6 +20,16 @@ if TYPE_CHECKING:
     from maps4fs.generator.map import Map
 
 
+class AttrDict(dict):
+    """A dictionary that allows attribute-style access to its keys."""
+
+    def __getattr__(self, name):
+        return self[name]
+
+    def __setattr__(self, name, value):
+        self[name] = value
+
+
 class Component:
     """Base class for all map generation components.
 
@@ -71,6 +81,8 @@ class Component:
 
         self.save_bbox()
         self.preprocess()
+
+        self.assets = AttrDict()
 
     def preprocess(self) -> None:
         """Prepares the component for processing. Must be implemented in the child class."""

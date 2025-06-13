@@ -58,7 +58,7 @@ class Map:
         **kwargs,
     ):
         if not logger:
-            logger = Logger(to_stdout=True, to_file=False)
+            logger = Logger()
         self.logger = logger
         self.size = size
 
