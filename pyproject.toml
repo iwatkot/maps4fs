@@ -7,13 +7,13 @@ name = "maps4fs"
 version = "1.0.0"
 description = "Generate map templates for Farming Simulator from real places."
 authors = [{name = "iwatkot", email = "iwatkot@gmail.com"}]
-license = {text = "MIT License"}
+license = {text = "Apache License 2.0"}
 readme = "README.md"
 keywords = ["farmingsimulator", "fs", "farmingsimulator22", "farmingsimulator25", "fs22", "fs25"]
 classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache License 2.0",
     "Operating System :: OS Independent",
 ]
 dependencies = [
