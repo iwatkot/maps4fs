@@ -25,7 +25,7 @@ jobs:
             Note, that all issues regarding the availability of the Public version of the app will be closed automatically. Please use the [Docker version](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version) of the tool. Thank you!<br>
 
             If you want to proceed with the issue, please provide the following information:<br>
-            - Coordinates of the cetral point of the map<br>
+            - Coordinates of the central point of the map<br>
             - Map size<br>
             - Was auto preset enabled?<br>
             - Any additional settings if where enabled<br>
