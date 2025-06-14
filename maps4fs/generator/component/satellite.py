@@ -59,8 +59,12 @@ class Satellite(ImageComponent):
         overview_size = (self.map_size + margin) * 2
         overwiew_path = os.path.join(self.satellite_directory, "satellite_overview.png")
 
+        self.assets.overview = overwiew_path
+
         background_size = self.map_size + (Parameters.BACKGROUND_DISTANCE + margin) * 2
         background_path = os.path.join(self.satellite_directory, "satellite_background.png")
+
+        self.assets.background = background_path
 
         sizes = [overview_size, background_size]
         self.image_paths = [overwiew_path, background_path]

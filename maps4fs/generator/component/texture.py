@@ -149,6 +149,9 @@ class Texture(ImageComponent):
             self.dissolve()
         self.copy_procedural()
 
+        for layer in self.layers:
+            self.assets[layer.name] = layer.path(self._weights_dir)
+
     def add_borders(self) -> None:
         """Iterates over all the layers and picks the one which have the border propety defined.
         Borders are distance from the edge of the map on each side (top, right, bottom, left).
