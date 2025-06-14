@@ -263,6 +263,8 @@ class GRLE(ImageComponent, XMLComponent):
 
         cv2.imwrite(info_layer_farmlands_path, image)
 
+        self.assets.farmlands = info_layer_farmlands_path
+
         self.preview_paths["farmlands"] = info_layer_farmlands_path
 
     def _add_plants(self) -> None:
@@ -362,6 +364,9 @@ class GRLE(ImageComponent, XMLComponent):
         # Ensure that order of channels is correct because CV2 uses BGR and we need RGB.
         density_map_fruits = cv2.cvtColor(density_map_fruits, cv2.COLOR_BGR2RGB)
         cv2.imwrite(density_map_fruit_path, density_map_fruits)
+
+        self.assets.plants = density_map_fruit_path
+
         self.logger.debug("Updated density map for fruits saved in %s.", density_map_fruit_path)
 
     def create_island_of_plants(self, image: np.ndarray, count: int) -> np.ndarray:

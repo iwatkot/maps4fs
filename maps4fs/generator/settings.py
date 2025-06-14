@@ -145,6 +145,13 @@ class BackgroundSettings(SettingsModel):
         generate_water (bool): generate obj files for the water.
         resize_factor (int): resize factor for the background terrain and water.
             It will be used as 1 / resize_factor of the original size.
+        water_blurriness (int): blurriness of the water.
+        remove_center (bool): remove the center of the background terrain.
+            It will be used to remove the center of the map where the player starts.
+        apply_decimation (bool): apply decimation to the background terrain.
+        decimation_percent (int): percentage of the decimation.
+        decimation_agression (int): agression of the decimation.
+            It will be used to control the amount of decimation applied to the background terrain.
     """
 
     generate_background: bool = False
