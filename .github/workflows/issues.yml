@@ -13,23 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Check issue body
-        id: check_body
-        run: |
-          if echo "${{ github.event.issue.body }}" | grep -q "maps4fs.streamlit.app"; then
-            echo "close_issue=true" >> $GITHUB_ENV
-          else
-            echo "close_issue=false" >> $GITHUB_ENV
-          fi
-
-      - name: Close issue if condition met
-        if: env.close_issue == 'true'
-        run: gh issue close ${{ github.event.issue.number }} --comment "This issue is being closed automatically because it contains a question about the availability of the StreamLit community app. Please use the [Docker version](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version) of the tool. Thank you!"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Add comment
-        if: env.close_issue == 'false'
         run: gh issue comment "${{ github.event.issue.number }}" --body "$BODY"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -38,10 +22,10 @@ jobs:
           BODY: >
             Thank you for opening an issue!<br>
             Please, first check the [FAQ](https://github.com/iwatkot/maps4fs/blob/main/docs/FAQ.md) to see if your question has already been answered.<br>
-            Note, that all issues regarding the availability of the StreamLit community app will be closed automatically. Please use the [Docker version](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version) of the tool. Thank you!<br>
+            Note, that all issues regarding the availability of the Public version of the app will be closed automatically. Please use the [Docker version](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version) of the tool. Thank you!<br>
 
             If you want to proceed with the issue, please provide the following information:<br>
-            - Coordinates of the cetral point of the map<br>
+            - Coordinates of the central point of the map<br>
             - Map size<br>
             - Was auto preset enabled?<br>
             - Any additional settings if where enabled<br>

@@ -224,6 +224,8 @@ class Background(MeshComponent, ImageComponent):
         save_path = os.path.join(self.background_directory, f"{filename}.obj")
         self.logger.debug("Generating obj file in path: %s", save_path)
 
+        self.assets.background_mesh = save_path
+
         dem_data = cv2.imread(self.output_path, cv2.IMREAD_UNCHANGED)
 
         if self.map.output_size is not None:
@@ -279,6 +281,8 @@ class Background(MeshComponent, ImageComponent):
         cv2.imwrite(main_dem_path, resized_dem_data)
         self.logger.debug("DEM cutout saved: %s", main_dem_path)
 
+        self.assets.dem = main_dem_path
+
         return main_dem_path
 
     def plane_from_np(
@@ -321,8 +325,11 @@ class Background(MeshComponent, ImageComponent):
         self.logger.debug("Obj file saved: %s", save_path)
 
         if create_preview:
-            mesh.apply_scale([0.5, 0.5, 0.5])
-            self.mesh_to_stl(mesh, save_path=self.stl_preview_path)
+            try:
+                mesh.apply_scale([0.5, 0.5, 0.5])
+                self.mesh_to_stl(mesh, save_path=self.stl_preview_path)
+            except Exception as e:
+                self.logger.error("Could not create STL preview: %s", e)
 
     def update_mesh_info(self, save_path: str, mesh: Trimesh) -> None:
         """Updates the mesh info with the data from the mesh.
@@ -586,5 +593,7 @@ class Background(MeshComponent, ImageComponent):
         # Combine the dilated background dem with non-dilated background dem.
         elevated_water = np.where(mask, background_dem, elevated_water)
         elevated_save_path = os.path.join(self.water_directory, "elevated_water.obj")
+
+        self.assets.water_mesh = elevated_save_path
 
         self.plane_from_np(elevated_water, elevated_save_path, include_zeros=False)

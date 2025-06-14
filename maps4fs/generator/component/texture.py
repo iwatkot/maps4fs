@@ -149,6 +149,9 @@ class Texture(ImageComponent):
             self.dissolve()
         self.copy_procedural()
 
+        for layer in self.layers:
+            self.assets[layer.name] = layer.path(self._weights_dir)
+
     def add_borders(self) -> None:
         """Iterates over all the layers and picks the one which have the border propety defined.
         Borders are distance from the edge of the map on each side (top, right, bottom, left).
@@ -504,7 +507,7 @@ class Texture(ImageComponent):
 
             # Randomly assign non-zero values to sublayers.
             for coord in non_zero_coords:
-                sublayers[np.random.randint(0, layer.count)][coord[0], coord[1]] = 255
+                sublayers[np.random.randint(0, layer.count)][coord[0], coord[1]] = 255  # type: ignore
 
             # Save the sublayers.
             for sublayer, sublayer_path in zip(sublayers, layer_paths):

@@ -1,4 +1,4 @@
-⚠️ Learn more about the upcoming 2.0.0 changes in the [migration guide](docs/migration.md).  
+⚠️ Learn more about the upcoming 2.0 changes in the [migration guide](docs/migration.md).  
 ⚠️ Some components are deprecated and there are major changes in the project structure.
 
 
@@ -21,7 +21,7 @@
   <a href="docs/step_by_step.md">Create a map in 10 steps</a> •
   <a href="#How-To-Run">How-To-Run</a><br>
   <a href="docs/FAQ.md">FAQ</a> •
-  <a href="docs/map_structure.md">Map Structure</a>
+  <a href="docs/map_structure.md">Map Structure</a> •
   <a href="#Schemas-Editor">Schemas Editor</a> •
   <a href="#Main-Settings">Main Settings</a><br>
   <a href="#Supported-objects">Supported objects</a> •
@@ -213,14 +213,6 @@ docker run -d -p 8501:8501 --name maps4fs iwatkot/maps4fs
 3. Open your browser and go to [http://localhost:8501](http://localhost:8501).
 4. Fill in the required fields and click on the `Generate` button.
 5. When the map is generated click on the `Download` button to get the map.
-
-➡️ If you don't need Blender backend, you can use the **lite** version of the Docker image.
-
-```bash
-docker run -d -p 8501:8501 --name maps4fs iwatkot/maps4fs:*.*.*_lite
-```
-
-Remember to replace `*.*.*` with the version you want to use, e.g. `iwatkot/maps4fs:1.8.202_lite`. Also, pay attention that some features will not work in the lite version, such as removing the center part of the background mesh.
 
 ### Option 3: Python package or source code
 

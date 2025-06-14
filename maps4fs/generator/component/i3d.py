@@ -222,6 +222,8 @@ class I3d(XMLComponent):
         tree.write(splines_i3d_path)  # type: ignore
         self.logger.debug("Splines I3D file saved to: %s.", splines_i3d_path)
 
+        self.assets.splines = splines_i3d_path
+
     def _add_fields(self) -> None:
         """Adds fields to the map I3D file."""
         tree = self.get_tree()
@@ -284,6 +286,8 @@ class I3d(XMLComponent):
             field_id += 1
 
         self.save_tree(tree)
+
+        self.assets.fields = self.xml_path
 
     def _get_field_xml_entry(
         self, field_id: int, field_ccs: list[tuple[int, int]], node_id: int
@@ -558,6 +562,8 @@ class I3d(XMLComponent):
 
             scene_node.append(trees_node)
             self.save_tree(tree)
+
+        self.assets.forests = self.xml_path
 
     @staticmethod
     def randomize_coordinates(

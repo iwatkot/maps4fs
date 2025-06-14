@@ -49,6 +49,14 @@ class Game:
         if map_template_path:
             self._map_template_path = map_template_path
 
+    def set_components_by_names(self, component_names: list[str]) -> None:
+        """Sets the components used for map generation by their names.
+
+        Arguments:
+            component_names (list[str]): List of component names to be used.
+        """
+        self.components = [comp for comp in self.components if comp.__name__ in component_names]
+
     def map_xml_path(self, map_directory: str) -> str:
         """Returns the path to the map.xml file.
 
