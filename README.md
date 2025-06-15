@@ -54,7 +54,8 @@
 </div>
 
 🗺️ Supports 2x2, 4x4, 8x8, 16x16 and any custom size maps<br>
-✂️ Supports map scaling 🆕<br>
+🔗 Generate maps using an [API](https://github.com/iwatkot/maps4fsapi) 🆕<br>
+✂️ Supports map scaling<br>
 🔄 Support map rotation<br>
 🌐 Supports custom [DTM Providers](#DTM-Providers)<br>
 🌾 Automatically generates fields<br>
