@@ -92,6 +92,7 @@ class Map:
                 "dtm_provider": dtm_provider.name(),
                 "custom_osm": bool(custom_osm),
                 "is_public": kwargs.get("is_public", False),
+                "api_request": kwargs.get("api_request", False),
             }
             send_main_settings(main_settings)
         except Exception as e:
