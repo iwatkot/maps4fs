@@ -20,3 +20,6 @@ While the main code base remains in the `iwatkot/maps4fs` repository, all the co
 ### Settings model updates
 
 - The SplinesSettings model will be deprecated and merged into the I3dSettings model.
+- SatelliteSettings.satellite_margin will be removed.
+- BackgroundSettings.resize factor, apply decimation (and all realated settings) will be removed.
+- GRLESettings - all the settings related to the shape of random plants will be removed.
