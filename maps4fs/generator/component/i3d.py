@@ -119,6 +119,12 @@ class I3d(XMLComponent):
         tree = self.get_tree(splines_i3d_path)
 
         roads_polylines = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
+
+        if self.map.spline_settings.field_splines:
+            fields_polygons = self.get_infolayer_data(Parameters.TEXTURES, Parameters.FIELDS)
+            if isinstance(roads_polylines, list) and isinstance(fields_polygons, list):
+                roads_polylines.extend(fields_polygons)
+
         if not roads_polylines:
             self.logger.warning("Roads polylines data not found in textures info layer.")
             return
@@ -152,8 +158,14 @@ class I3d(XMLComponent):
 
         node_id = SPLINES_NODE_ID_STARTING_VALUE
         for road_id, road_info in enumerate(roads_polylines, start=1):
-            points = road_info.get("points")
-            tags = road_info.get("tags")
+            if isinstance(road_info, dict):
+                points = road_info.get("points")
+                tags = road_info.get("tags")
+                is_field = False
+            else:
+                points = road_info
+                tags = "field"
+                is_field = True
 
             try:
                 fitted_road = self.fit_object_into_bounds(
@@ -208,15 +220,16 @@ class I3d(XMLComponent):
 
                 shapes_node.append(nurbs_curve_node)
 
-                user_attribute_node = self.get_user_attribute_node(
-                    node_id,
-                    attributes=[
-                        ("maxSpeedScale", "integer", "1"),
-                        ("speedLimit", "integer", "100"),
-                    ],
-                )
+                if not is_field:
+                    user_attribute_node = self.get_user_attribute_node(
+                        node_id,
+                        attributes=[
+                            ("maxSpeedScale", "integer", "1"),
+                            ("speedLimit", "integer", "100"),
+                        ],
+                    )
 
-                user_attributes_node.append(user_attribute_node)
+                    user_attributes_node.append(user_attribute_node)
                 node_id += 1
 
         tree.write(splines_i3d_path)  # type: ignore
