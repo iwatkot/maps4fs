@@ -16,3 +16,10 @@ The full version can be pulled using `docker pull iwatkot/maps4fs:latest`.
 ### Repository split
 The repository has been split into multiple repositories to better organize the code and features.  
 While the main code base remains in the `iwatkot/maps4fs` repository, all the components related to the UI version of the application have been moved to the `iwatkot/maps4fsui` repository. This also includes Docker images as well as CI/CD pipelines.
+
+### Settings model updates
+
+- The SplinesSettings model will be deprecated and merged into the I3dSettings model.
+- SatelliteSettings.satellite_margin will be removed.
+- BackgroundSettings.resize factor, apply decimation (and all realated settings) will be removed.
+- GRLESettings - all the settings related to the shape of random plants will be removed.

@@ -25,6 +25,16 @@ class Parameters:
     FULL = "FULL"
     PREVIEW = "PREVIEW"
 
+    RESIZE_FACTOR = 8
+
+    FARMLAND_ID_LIMIT = 254
+
+    PLANTS_ISLAND_PERCENT = 100
+    PLANTS_ISLAND_MINIMUM_SIZE = 10
+    PLANTS_ISLAND_MAXIMUM_SIZE = 200
+    PLANTS_ISLAND_VERTEX_COUNT = 30
+    PLANTS_ISLAND_ROUNDING_RADIUS = 15
+
 
 class SharedSettings(BaseModel):
     """Represents the shared settings for all components."""
@@ -143,25 +153,15 @@ class BackgroundSettings(SettingsModel):
     Attributes:
         generate_background (bool): generate obj files for the background terrain.
         generate_water (bool): generate obj files for the water.
-        resize_factor (int): resize factor for the background terrain and water.
-            It will be used as 1 / resize_factor of the original size.
         water_blurriness (int): blurriness of the water.
         remove_center (bool): remove the center of the background terrain.
             It will be used to remove the center of the map where the player starts.
-        apply_decimation (bool): apply decimation to the background terrain.
-        decimation_percent (int): percentage of the decimation.
-        decimation_agression (int): agression of the decimation.
-            It will be used to control the amount of decimation applied to the background terrain.
     """
 
     generate_background: bool = False
     generate_water: bool = False
     water_blurriness: int = 20
-    resize_factor: int = 8
     remove_center: bool = True
-    apply_decimation: bool = False
-    decimation_percent: int = 25
-    decimation_agression: int = 3
 
 
 class GRLESettings(SettingsModel):
@@ -169,9 +169,15 @@ class GRLESettings(SettingsModel):
 
     Attributes:
         farmland_margin (int): margin around the farmland.
-        random_plants (bool): generate random plants on the map or use the default one.
-        add_farmyards (bool): If True, regions of frarmyards will be added to the map
+        add_farmyards (bool): If True, regions of farmyards will be added to the map
             without corresponding fields.
+        base_price (int): base price for the farmland.
+        price_scale (int): scale for the price of the farmland.
+        add_grass (bool): if True, grass will be added to the map.
+        base_grass (tuple | str): base grass to be used on the map.
+        random_plants (bool): generate random plants on the map or use the default one.
+        fill_empty_farmlands (bool): if True, empty farmlands will be filled with grass.
+
     """
 
     farmland_margin: int = 0
@@ -181,11 +187,6 @@ class GRLESettings(SettingsModel):
     add_grass: bool = True
     base_grass: tuple | str = ("smallDenseMix", "meadow")
     random_plants: bool = True
-    plants_island_minimum_size: int = 10
-    plants_island_maximum_size: int = 200
-    plants_island_vertex_count: int = 30
-    plants_island_rounding_radius: int = 15
-    plants_island_percent: int = 100
     fill_empty_farmlands: bool = False
 
 
@@ -193,12 +194,22 @@ class I3DSettings(SettingsModel):
     """Represents the advanced settings for I3D component.
 
     Attributes:
+        add_trees (bool): add trees to the map.
         forest_density (int): density of the forest (distance between trees).
+        trees_relative_shift (int): relative shift of the trees.
+        spline_density (int): the number of extra points that will be added between each two
+            existing points.
+        add_reversed_splines (bool): if True, reversed splines will be added to the map.
+        field_splines (bool): if True, splines will be added to the fields.
     """
 
     add_trees: bool = True
     forest_density: int = 10
     trees_relative_shift: int = 20
+
+    spline_density: int = 2
+    add_reversed_splines: bool = False
+    field_splines: bool = False
 
 
 class TextureSettings(SettingsModel):
@@ -217,19 +228,6 @@ class TextureSettings(SettingsModel):
     use_precise_tags: bool = False
 
 
-class SplineSettings(SettingsModel):
-    """Represents the advanced settings for spline component.
-
-    Attributes:
-        spline_density (int): the number of extra points that will be added between each two
-            existing points.
-    """
-
-    spline_density: int = 2
-    add_reversed_splines: bool = False
-    field_splines: bool = False
-
-
 class SatelliteSettings(SettingsModel):
     """Represents the advanced settings for satellite component.
 
@@ -239,5 +237,4 @@ class SatelliteSettings(SettingsModel):
     """
 
     download_images: bool = False
-    satellite_margin: int = 0
     zoom_level: int = 16

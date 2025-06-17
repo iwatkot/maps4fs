@@ -13,8 +13,6 @@ from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_xml import XMLComponent
 from maps4fs.generator.settings import Parameters
 
-FARMLAND_ID_LIMIT = 254
-
 
 def plant_to_pixel_value(plant_name: str) -> int | None:
     """Returns the pixel value representation of the plant.
@@ -229,7 +227,7 @@ class GRLE(ImageComponent, XMLComponent):
 
             farmland_np = self.polygon_points_to_np(fitted_farmland, divide=2)
 
-            if farmland_id > FARMLAND_ID_LIMIT:
+            if farmland_id > Parameters.FARMLAND_ID_LIMIT:
                 self.logger.warning(
                     "Farmland ID limit reached. Skipping the rest of the farmlands. "
                     "Giants Editor supports maximum 254 farmlands."
@@ -335,7 +333,7 @@ class GRLE(ImageComponent, XMLComponent):
         grass_image_copy[grass_image != 0] = base_layer_pixel_value
 
         # Add islands of plants to the base image.
-        island_count = int(self.scaled_size * self.map.grle_settings.plants_island_percent // 100)
+        island_count = int(self.scaled_size * Parameters.PLANTS_ISLAND_PERCENT // 100)
         self.logger.debug("Adding %s islands of plants to the base image.", island_count)
         if self.map.grle_settings.random_plants:
             grass_image_copy = self.create_island_of_plants(grass_image_copy, island_count)
@@ -387,8 +385,8 @@ class GRLE(ImageComponent, XMLComponent):
             plant_value = choice(possible_r_values)
             # Randomly choose the size of the island.
             island_size = randint(
-                self.map.grle_settings.plants_island_minimum_size,
-                self.map.grle_settings.plants_island_maximum_size,
+                Parameters.PLANTS_ISLAND_MINIMUM_SIZE,
+                Parameters.PLANTS_ISLAND_MAXIMUM_SIZE,
             )
             # Randomly choose the position of the island.
             x = randint(0, image.shape[1] - island_size)
@@ -396,10 +394,10 @@ class GRLE(ImageComponent, XMLComponent):
 
             try:
                 polygon_points = self.get_rounded_polygon(
-                    num_vertices=self.map.grle_settings.plants_island_vertex_count,
+                    num_vertices=Parameters.PLANTS_ISLAND_VERTEX_COUNT,
                     center=(x + island_size // 2, y + island_size // 2),
                     radius=island_size // 2,
-                    rounding_radius=self.map.grle_settings.plants_island_rounding_radius,
+                    rounding_radius=Parameters.PLANTS_ISLAND_ROUNDING_RADIUS,
                 )
                 if not polygon_points:
                     continue

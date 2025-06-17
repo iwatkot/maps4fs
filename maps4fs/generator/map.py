@@ -6,12 +6,15 @@ import json
 import os
 import shutil
 from typing import Any, Generator
+from xml.etree import ElementTree as ET
 
+import osmnx as ox
 from geopy.geocoders import Nominatim
+from osmnx._errors import InsufficientResponseError
 
 from maps4fs.generator.component import Background, Component, Layer, Texture
 from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
-from maps4fs.generator.game import Game
+from maps4fs.generator.game import FS25, Game
 from maps4fs.generator.settings import (
     BackgroundSettings,
     DEMSettings,
@@ -19,7 +22,6 @@ from maps4fs.generator.settings import (
     I3DSettings,
     SatelliteSettings,
     SharedSettings,
-    SplineSettings,
     TextureSettings,
 )
 from maps4fs.generator.statistics import send_advanced_settings, send_main_settings
@@ -53,7 +55,6 @@ class Map:
         grle_settings: GRLESettings = GRLESettings(),
         i3d_settings: I3DSettings = I3DSettings(),
         texture_settings: TextureSettings = TextureSettings(),
-        spline_settings: SplineSettings = SplineSettings(),
         satellite_settings: SatelliteSettings = SatelliteSettings(),
         **kwargs,
     ):
@@ -108,6 +109,21 @@ class Map:
         self.custom_osm = custom_osm
         log_entry += f"Custom OSM file: {custom_osm}. "
 
+        if self.custom_osm:
+            osm_is_valid = check_osm_file(self.custom_osm)
+            if not osm_is_valid:
+                self.logger.warning(
+                    "Custom OSM file %s is not valid. Attempting to fix it.", custom_osm
+                )
+                fixed, fixed_errors = fix_osm_file(self.custom_osm)
+                if not fixed:
+                    raise ValueError(
+                        f"Custom OSM file {custom_osm} is not valid and cannot be fixed."
+                    )
+                self.logger.info(
+                    "Custom OSM file %s fixed. Fixed errors: %d", custom_osm, fixed_errors
+                )
+
         # Make a copy of a custom osm file to the map directory, so it will be
         # included in the output archive.
         if custom_osm:
@@ -131,8 +147,6 @@ class Map:
         log_entry += f"I3D settings: {i3d_settings}. "
         self.texture_settings = texture_settings
         log_entry += f"Texture settings: {texture_settings}. "
-        self.spline_settings = spline_settings
-        log_entry += f"Spline settings: {spline_settings}. "
         self.satellite_settings = satellite_settings
 
         self.logger.info(log_entry)
@@ -145,7 +159,6 @@ class Map:
             grle_settings,
             i3d_settings,
             texture_settings,
-            spline_settings,
             satellite_settings,
         ]
 
@@ -386,3 +399,62 @@ class Map:
             self.logger.error("Error getting country name by coordinates: %s", e)
             return "Unknown"
         return "Unknown"
+
+
+def check_osm_file(file_path: str) -> bool:
+    """Tries to read the OSM file using OSMnx and returns True if the file is valid,
+    False otherwise.
+
+    Arguments:
+        file_path (str): Path to the OSM file.
+
+    Returns:
+        bool: True if the file is valid, False otherwise.
+    """
+    with open(FS25().texture_schema, encoding="utf-8") as f:
+        schema = json.load(f)
+
+    tags = []
+    for element in schema:
+        element_tags = element.get("tags")
+        if element_tags:
+            tags.append(element_tags)
+
+    for tag in tags:
+        try:
+            ox.features_from_xml(file_path, tags=tag)
+        except InsufficientResponseError:
+            continue
+        except Exception:  # pylint: disable=W0718
+            return False
+    return True
+
+
+def fix_osm_file(input_file_path: str, output_file_path: str | None = None) -> tuple[bool, int]:
+    """Fixes the OSM file by removing all the <relation> nodes and all the nodes with
+    action='delete'.
+
+    Arguments:
+        input_file_path (str): Path to the input OSM file.
+        output_file_path (str | None): Path to the output OSM file. If None, the input file
+            will be overwritten.
+
+    Returns:
+        tuple[bool, int]: A tuple containing the result of the check_osm_file function
+            and the number of fixed errors.
+    """
+    broken_entries = ["relation", ".//*[@action='delete']"]
+
+    tree = ET.parse(input_file_path)
+    root = tree.getroot()
+
+    fixed_errors = 0
+    for entry in broken_entries:
+        for element in root.findall(entry):
+            root.remove(element)
+            fixed_errors += 1
+
+    tree.write(output_file_path)  # type: ignore
+    result = check_osm_file(output_file_path)  # type: ignore
+
+    return result, fixed_errors

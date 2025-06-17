@@ -39,7 +39,6 @@ dtm_provider = DTMProvider.get_provider_by_code(dtm_provider_code)
 background_settings = BackgroundSettings(
     generate_background=True,
     generate_water=True,
-    resize_factor=16,
     remove_center=False,
 )
 
@@ -187,7 +186,7 @@ def test_map_pack():
 
     dem_settings = DEMSettings(multiplier=2, blur_radius=15, plateau=1000, water_depth=500)
 
-    satellite_settings = SatelliteSettings(download_images=True, satellite_margin=0, zoom_level=14)
+    satellite_settings = SatelliteSettings(download_images=True, zoom_level=14)
 
     directory = map_directory(game_code)
     map = Map(

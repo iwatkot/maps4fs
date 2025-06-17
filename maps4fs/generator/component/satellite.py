@@ -55,13 +55,12 @@ class Satellite(ImageComponent):
             self.logger.debug("Satellite images download is disabled.")
             return
 
-        margin = self.map.satellite_settings.satellite_margin
-        overview_size = (self.map_size + margin) * 2
+        overview_size = self.map_size * 2
         overwiew_path = os.path.join(self.satellite_directory, "satellite_overview.png")
 
         self.assets.overview = overwiew_path
 
-        background_size = self.map_size + (Parameters.BACKGROUND_DISTANCE + margin) * 2
+        background_size = self.map_size + Parameters.BACKGROUND_DISTANCE * 2
         background_path = os.path.join(self.satellite_directory, "satellite_background.png")
 
         self.assets.background = background_path
