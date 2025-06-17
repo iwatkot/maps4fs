@@ -169,9 +169,15 @@ class GRLESettings(SettingsModel):
 
     Attributes:
         farmland_margin (int): margin around the farmland.
-        random_plants (bool): generate random plants on the map or use the default one.
-        add_farmyards (bool): If True, regions of frarmyards will be added to the map
+        add_farmyards (bool): If True, regions of farmyards will be added to the map
             without corresponding fields.
+        base_price (int): base price for the farmland.
+        price_scale (int): scale for the price of the farmland.
+        add_grass (bool): if True, grass will be added to the map.
+        base_grass (tuple | str): base grass to be used on the map.
+        random_plants (bool): generate random plants on the map or use the default one.
+        fill_empty_farmlands (bool): if True, empty farmlands will be filled with grass.
+
     """
 
     farmland_margin: int = 0
