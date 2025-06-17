@@ -120,7 +120,7 @@ class I3d(XMLComponent):
 
         roads_polylines = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
 
-        if self.map.spline_settings.field_splines:
+        if self.map.i3d_settings.field_splines:
             fields_polygons = self.get_infolayer_data(Parameters.TEXTURES, Parameters.FIELDS)
             if isinstance(roads_polylines, list) and isinstance(fields_polygons, list):
                 roads_polylines.extend(fields_polygons)
@@ -180,11 +180,11 @@ class I3d(XMLComponent):
                 continue
 
             fitted_road = self.interpolate_points(
-                fitted_road, num_points=self.map.spline_settings.spline_density
+                fitted_road, num_points=self.map.i3d_settings.spline_density
             )
             fitted_roads = [(fitted_road, "original")]
 
-            if self.map.spline_settings.add_reversed_splines:
+            if self.map.i3d_settings.add_reversed_splines:
                 reversed_fitted_road = fitted_road[::-1]
                 fitted_roads.append((reversed_fitted_road, "reversed"))
 

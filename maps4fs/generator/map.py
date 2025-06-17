@@ -19,7 +19,6 @@ from maps4fs.generator.settings import (
     I3DSettings,
     SatelliteSettings,
     SharedSettings,
-    SplineSettings,
     TextureSettings,
 )
 from maps4fs.generator.statistics import send_advanced_settings, send_main_settings
@@ -53,7 +52,6 @@ class Map:
         grle_settings: GRLESettings = GRLESettings(),
         i3d_settings: I3DSettings = I3DSettings(),
         texture_settings: TextureSettings = TextureSettings(),
-        spline_settings: SplineSettings = SplineSettings(),
         satellite_settings: SatelliteSettings = SatelliteSettings(),
         **kwargs,
     ):
@@ -131,8 +129,6 @@ class Map:
         log_entry += f"I3D settings: {i3d_settings}. "
         self.texture_settings = texture_settings
         log_entry += f"Texture settings: {texture_settings}. "
-        self.spline_settings = spline_settings
-        log_entry += f"Spline settings: {spline_settings}. "
         self.satellite_settings = satellite_settings
 
         self.logger.info(log_entry)
@@ -145,7 +141,6 @@ class Map:
             grle_settings,
             i3d_settings,
             texture_settings,
-            spline_settings,
             satellite_settings,
         ]
 

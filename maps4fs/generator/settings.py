@@ -193,12 +193,22 @@ class I3DSettings(SettingsModel):
     """Represents the advanced settings for I3D component.
 
     Attributes:
+        add_trees (bool): add trees to the map.
         forest_density (int): density of the forest (distance between trees).
+        trees_relative_shift (int): relative shift of the trees.
+        spline_density (int): the number of extra points that will be added between each two
+            existing points.
+        add_reversed_splines (bool): if True, reversed splines will be added to the map.
+        field_splines (bool): if True, splines will be added to the fields.
     """
 
     add_trees: bool = True
     forest_density: int = 10
     trees_relative_shift: int = 20
+
+    spline_density: int = 2
+    add_reversed_splines: bool = False
+    field_splines: bool = False
 
 
 class TextureSettings(SettingsModel):
@@ -215,19 +225,6 @@ class TextureSettings(SettingsModel):
     skip_drains: bool = False
     use_cache: bool = True
     use_precise_tags: bool = False
-
-
-class SplineSettings(SettingsModel):
-    """Represents the advanced settings for spline component.
-
-    Attributes:
-        spline_density (int): the number of extra points that will be added between each two
-            existing points.
-    """
-
-    spline_density: int = 2
-    add_reversed_splines: bool = False
-    field_splines: bool = False
 
 
 class SatelliteSettings(SettingsModel):

@@ -65,7 +65,6 @@ texture_settings = mfs.settings.TextureSettings(
     fields_padding=10,
     skip_drains=True,
 )
-spline_settings = mfs.settings.SplineSettings(spline_density=0)
 satellite_settings = mfs.settings.SatelliteSettings(download_images=False, zoom_level=18)
 
 # 7️⃣ Optional: define custom tree and textures schemas.
@@ -92,7 +91,6 @@ mp = mfs.Map(
     grle_settings=grle_settings,
     i3d_settings=i3d_settings,
     texture_settings=texture_settings,
-    spline_settings=spline_settings,
     satellite_settings=satellite_settings,
     # texture_custom_schema=texture_custom_schema,
     # tree_custom_schema=tree_custom_schema,
