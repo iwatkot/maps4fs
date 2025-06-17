@@ -62,10 +62,6 @@ class MeshComponent(Component):
         image: np.ndarray,
         include_zeros: bool,
         z_scaling_factor: float,
-        resize_factor: int,
-        apply_decimation: bool,
-        decimation_percent: int,
-        decimation_agression: int,
         remove_center: bool,
         remove_size: int,
     ) -> trimesh.Trimesh:
@@ -75,10 +71,6 @@ class MeshComponent(Component):
             image (np.ndarray): The numpy array to generate the mesh from.
             include_zeros (bool): Whether to include zero values in the mesh.
             z_scaling_factor (float): The scaling factor for the Z-axis.
-            resize_factor (int): The resizing factor.
-            apply_decimation (bool): Whether to apply decimation to the mesh.
-            decimation_percent (int): The percent of the decimation.
-            decimation_agression (int): The agression of the decimation.
             remove_center (bool): Whether to remove the center from the mesh.
             remove_size (int): The size of the center to remove.
 
@@ -88,7 +80,7 @@ class MeshComponent(Component):
         output_x_size, _ = image.shape
         image = image.max() - image
 
-        image = image[::resize_factor, ::resize_factor]
+        image = image[:: Parameters.RESIZE_FACTOR, :: Parameters.RESIZE_FACTOR]
 
         rows, cols = image.shape
         x = np.linspace(0, cols - 1, cols)
@@ -124,22 +116,9 @@ class MeshComponent(Component):
         mesh = trimesh.Trimesh(vertices=vertices, faces=faces_np)
         mesh = MeshComponent.rotate_mesh(mesh)
 
-        if apply_decimation:
-            percent = decimation_percent / 100
-            mesh = mesh.simplify_quadric_decimation(
-                percent=percent, aggression=decimation_agression
-            )
-
-        # * Looks like it takes some time but has no effect on the result.
-        # try:
-        #     if not mesh.is_watertight:
-        #         mesh = MeshComponent.fix_mesh(mesh)
-        # except Exception:
-        #     pass
-
         mesh = MeshComponent.mesh_to_output_size(
             mesh,
-            resize_factor,
+            Parameters.RESIZE_FACTOR,
             z_scaling_factor,
             output_x_size,
             skip_resize_to_expected_size=not include_zeros,

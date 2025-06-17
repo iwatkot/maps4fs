@@ -39,7 +39,6 @@ dtm_provider = DTMProvider.get_provider_by_code(dtm_provider_code)
 background_settings = BackgroundSettings(
     generate_background=True,
     generate_water=True,
-    resize_factor=16,
     remove_center=False,
 )
 

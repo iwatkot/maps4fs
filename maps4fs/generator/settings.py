@@ -25,6 +25,16 @@ class Parameters:
     FULL = "FULL"
     PREVIEW = "PREVIEW"
 
+    RESIZE_FACTOR = 8
+
+    FARMLAND_ID_LIMIT = 254
+
+    PLANTS_ISLAND_PERCENT = 100
+    PLANTS_ISLAND_MINIMUM_SIZE = 10
+    PLANTS_ISLAND_MAXIMUM_SIZE = 200
+    PLANTS_ISLAND_VERTEX_COUNT = 30
+    PLANTS_ISLAND_ROUNDING_RADIUS = 15
+
 
 class SharedSettings(BaseModel):
     """Represents the shared settings for all components."""
@@ -143,25 +153,19 @@ class BackgroundSettings(SettingsModel):
     Attributes:
         generate_background (bool): generate obj files for the background terrain.
         generate_water (bool): generate obj files for the water.
-        resize_factor (int): resize factor for the background terrain and water.
-            It will be used as 1 / resize_factor of the original size.
         water_blurriness (int): blurriness of the water.
         remove_center (bool): remove the center of the background terrain.
             It will be used to remove the center of the map where the player starts.
-        apply_decimation (bool): apply decimation to the background terrain.
-        decimation_percent (int): percentage of the decimation.
-        decimation_agression (int): agression of the decimation.
-            It will be used to control the amount of decimation applied to the background terrain.
     """
 
     generate_background: bool = False
     generate_water: bool = False
     water_blurriness: int = 20
-    resize_factor: int = 8
+    # resize_factor: int = 8
     remove_center: bool = True
-    apply_decimation: bool = False
-    decimation_percent: int = 25
-    decimation_agression: int = 3
+    # apply_decimation: bool = False
+    # decimation_percent: int = 25
+    # decimation_agression: int = 3
 
 
 class GRLESettings(SettingsModel):

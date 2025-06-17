@@ -594,16 +594,8 @@ You can also apply some advanced settings to the map generation process.<br>
 
 - Water blurriness - used to make the water surface smoother. The higher the value, the more flat surface of the water planes will be. However, too high values can lead to the water planes mesh not matching the terrain.
 
-- Resize factor - the factor by which the background terrain will be resized. It will be used as 1 / resize_factor while generating the models. Which means that the larger the value the more the terrain will be resized. The lowest value is 1, in this case background terrain will not be resized. Note, than low values will lead to long processing and enormous size of the obj files.
-
 - Remove center - if enabled, the playable region (map terrain) will be removed from the background terrain. By default, it's set to True.
 
-- Apply decimation - if enabled, the mesh will be simplified to reduce the number of faces.
-
-- Decimation percent - the target percentage of decimation. The higher the value, the more simplified the mesh will be. Note, that high values will break the 3D model entirely.
-
-- Decimation agression - the aggression of the decimation. The higher the value, the more aggressive the
-  decimation will be, which means the higher it will affect the geometry. It's not recommended to make it higher than the default value, otherwise the background terrain will not match the map terrain.
 
 ### GRLE Advanced settings
 
