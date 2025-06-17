@@ -621,16 +621,6 @@ You can also apply some advanced settings to the map generation process.<br>
 
 - Base grass - you can select which plant will be used as a base grass on the map.
 
-- Plants island minimum size - when random plants are enabled, the generator will add islands of differents plants to the map and choose the random size of those island between the minimum and maximum values. This one is the minimum size of the island in meters.
-
-- Plants island maximum size - it's the same as above, but for the maximum size of the island in meters.
-
-- Plants island vertex count - the number of vertices in the island. The higher the value, the more detailed the island will be. Note, that high values will turn the smoothed island into geometric madness.
-
-- Plants insland rounding radius - used to round the vertices of the island. The higher the value, the more rounded the island will be.
-
-- Plants island percent - defines the relation between the map size and the number of islands of plants. For example, if set to 100% for map size of 2048 will be added 2048 islands of plants.
-
 - Fill empty farmlands - if enabled, the empty (zero value) pixels of the farmlands image will be replaces with the value of 255.
 
 ### I3D Advanced settings
@@ -640,6 +630,10 @@ You can also apply some advanced settings to the map generation process.<br>
 - Forest density - the density of the forest in meters. The lower the value, the lower the distance between the trees, which makes the forest denser. Note, that low values will lead to enormous number of trees, which may cause the Giants Editor to crash or lead to performance issues. By default, it's set to 10.
 
 - Trees relative shift - represents the maximum possible shift of the tree from it's original position in percents of the forest density value. The higher the value, the more the trees will be shifted from their original positions. Warning: higher values can lead to overlapping trees.
+
+- Splines density - number of points, which will be added (interpolate) between each pair of existing points. The higher the value, the denser the spline will be. It can smooth the splines, but high values can in opposite make the splines look unnatural.
+- Add reversed splines - if enabled, the tool will add the reversed copies of the splines. It can be useful if you want to have the splines on both directions. By default, it's set to False.
+- Field splines - if enabled, the tool will generate the splines around the fields. It may not work if the field appears on the map only partially, e.g., when the part of the field is outside the map area. By default, it's set to False.
 
 ### Texture Advanced settings
 
@@ -653,11 +647,6 @@ You can also apply some advanced settings to the map generation process.<br>
 
 - Use precise tags - if enabled, the tool will use the precise tags from the texture schema and will ignore basic tags specified for the texture. In the default schema being used for specific types of forests: broadleaved, needleleaved, mixed, and so on. Note, that if it's enabled and the object does not have the precise tag, it will not be drawn on the map. By default, it's set to False.
 
-### Splines Advanced settings
-
-- Splines density - number of points, which will be added (interpolate) between each pair of existing points. The higher the value, the denser the spline will be. It can smooth the splines, but high values can in opposite make the splines look unnatural.
-- Add reversed splines - if enabled, the tool will add the reversed copies of the splines. It can be useful if you want to have the splines on both directions. By default, it's set to False.
-- Field splines - if enabled, the tool will generate the splines around the fields. It may not work if the field appears on the map only partially, e.g., when the part of the field is outside the map area. By default, it's set to False.
 
 ### Satellite Advanced settings
 

@@ -14,6 +14,11 @@ from maps4fs.generator.component.base.component_xml import XMLComponent
 from maps4fs.generator.settings import Parameters
 
 FARMLAND_ID_LIMIT = 254
+PLANTS_ISLAND_PERCENT = 100
+PLANTS_ISLAND_MINIMUM_SIZE = 10
+PLANTS_ISLAND_MAXIMUM_SIZE = 200
+PLANTS_ISLAND_VERTEX_COUNT = 30
+PLANTS_ISLAND_ROUNDING_RADIUS = 15
 
 
 def plant_to_pixel_value(plant_name: str) -> int | None:
@@ -335,7 +340,7 @@ class GRLE(ImageComponent, XMLComponent):
         grass_image_copy[grass_image != 0] = base_layer_pixel_value
 
         # Add islands of plants to the base image.
-        island_count = int(self.scaled_size * self.map.grle_settings.plants_island_percent // 100)
+        island_count = int(self.scaled_size * PLANTS_ISLAND_PERCENT // 100)
         self.logger.debug("Adding %s islands of plants to the base image.", island_count)
         if self.map.grle_settings.random_plants:
             grass_image_copy = self.create_island_of_plants(grass_image_copy, island_count)
@@ -387,8 +392,8 @@ class GRLE(ImageComponent, XMLComponent):
             plant_value = choice(possible_r_values)
             # Randomly choose the size of the island.
             island_size = randint(
-                self.map.grle_settings.plants_island_minimum_size,
-                self.map.grle_settings.plants_island_maximum_size,
+                PLANTS_ISLAND_MINIMUM_SIZE,
+                PLANTS_ISLAND_MAXIMUM_SIZE,
             )
             # Randomly choose the position of the island.
             x = randint(0, image.shape[1] - island_size)
@@ -396,10 +401,10 @@ class GRLE(ImageComponent, XMLComponent):
 
             try:
                 polygon_points = self.get_rounded_polygon(
-                    num_vertices=self.map.grle_settings.plants_island_vertex_count,
+                    num_vertices=PLANTS_ISLAND_VERTEX_COUNT,
                     center=(x + island_size // 2, y + island_size // 2),
                     radius=island_size // 2,
-                    rounding_radius=self.map.grle_settings.plants_island_rounding_radius,
+                    rounding_radius=PLANTS_ISLAND_ROUNDING_RADIUS,
                 )
                 if not polygon_points:
                     continue
