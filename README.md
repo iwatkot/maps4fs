@@ -1,4 +1,4 @@
-⚠️ Learn more about the upcoming 2.0 changes in the [migration guide](docs/migration.md).  
+⚠️ Learn more about the 2.0 changes in the [migration guide](docs/migration.md).  
 ⚠️ Some components are deprecated and there are major changes in the project structure.
 
 
