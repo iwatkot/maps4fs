@@ -63,7 +63,13 @@ dev\create_venv.ps1 # For Windows
 
 Dependencies will be installed from the `dev/requirements.txt` file.
 
-ℹ️ When working with the Maps4FSUI repository, you'll need to put the `data` directory from the main Maps4FS repository into the root `maps4fsui` directory. You can do this by running the following command:
+ℹ️ When working with the Maps4FSUI repository, you'll need to put the `data` and the `docs` directories from the main Maps4FS repository into the root `maps4fsui` directory. You can do this by running the following command:
+
+```bash
+git clone https://github.com/iwatkot/maps4fs.git
+mv maps4fs/data maps4fsui/data
+mv maps4fs/docs maps4fsui/docs
+```
 
 5. **Make Your Changes**: Now, you can make your changes in the codebase. Ensure that your code follows the project's coding standards and conventions.
 
