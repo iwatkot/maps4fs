@@ -93,7 +93,16 @@ pylint maps4fs # Or other corresponding directory (maps4fsui, maps4fsapi, etc.)
 
 ℹ️ The automatic checks will also be performed by the CI/CD pipeline, but it's a good practice to run them locally before submitting a pull request.
 
-9. **Optional: Use a symlink**: If you're working with the Maps4FSUI or Maps4fSAPI repositories and in the same time you may need to make changes in the main Maps4FS repository, you can use a symlink to avoid additional steps and make your development process smoother.  
+9. ⚠️ **Run PyTest**: The project uses [PyTest](https://docs.pytest.org/en/stable/) for automated testing. 
+   Before submitting a pull request, ensure that your code passes all tests. You can run the tests with the following command:
+
+```bash
+pytest maps4fs # Or other corresponding directory (maps4fsui, maps4fsapi, etc.)
+```
+
+ℹ️ The automatic tests will also be performed by the CI/CD pipeline, but it's a good practice to run them locally before submitting a pull request.
+
+10. **Optional: Use a symlink**: If you're working with the Maps4FSUI or Maps4fSAPI repositories and in the same time you may need to make changes in the main Maps4FS repository, you can use a symlink to avoid additional steps and make your development process smoother.  
 
 You'll find the [`dev/create_symlink.sh`](https://github.com/iwatkot/maps4fsapi/blob/main/dev/create_symlink.sh) script in the `dev` directory of the Maps4FSAPI repository.  
 
