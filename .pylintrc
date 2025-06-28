@@ -28,4 +28,5 @@ disable=raw-checker-failed,
         consider-using-from-import,
         line-too-long,
         import-outside-toplevel,
-        too-many-branches
+        too-many-branches,
+        too-many-nested-blocks
