@@ -99,7 +99,7 @@ class WalesProvider(DTMProvider):
 
                 response = requests.get(# pylint: disable=W3101
                     self.url,  # type: ignore
-                    params=params,
+                    params=params,  # type: ignore
                     timeout=60
                 )
 
@@ -109,7 +109,7 @@ class WalesProvider(DTMProvider):
                 if response.status_code == 200:
                     json_data = response.json()
                     features = json_data.get("features", [])
-                    for i, feature in enumerate(features):
+                    for feature in features:
                         dtm_link = feature.get("properties", {}).get("dtm_link")
                         if dtm_link:
                             urls.append("https://"+dtm_link)
