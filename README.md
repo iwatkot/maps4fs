@@ -699,6 +699,7 @@ In addition to SRTM 30m, which provides global coverage, the map above highlight
 | 🇺🇸 USGS                            | 1-90 meters  | [ZenJakey](https://github.com/ZenJakey)     |
 | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 England                         | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland                        | 0.25-1 meter | [kbrandwijk](https://github.com/kbrandwijk) |
+| 🏴󠁧󠁢󠁷󠁬󠁳󠁿󠁧󠁢󠁷󠁬󠁳󠁿 Wales                           | 1 meter      | [garnwenshared](https://github.com/garnshared) |
 | 🇩🇪 Hessen, Germany                 | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇩🇪 Niedersachsen, Germany          | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
 | 🇩🇪 Bayern, Germany                 | 1 meter      | [H4rdB4se](https://github.com/H4rdB4se)     |
