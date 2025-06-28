@@ -71,11 +71,12 @@ class WalesProvider(DTMProvider):
         y_tiles = abs(y_max - y_min) // 1000
 
 
-        for x_tile, y_tile in [(x, y) for x in range(x_tiles) for y in range(y_tiles)]:
-            b_west = x_min + 1000 * (x_tile + 1) - 855
-            b_south = y_min + 1000 * (y_tile + 1) - 855
-            b_east = b_west + 145
-            b_north = b_south + 145
+        for x_tile in range(x_tiles):
+            for y_tile in range(y_tiles):
+                b_west = x_min + 1000 * (x_tile + 1) - 855
+                b_south = y_min + 1000 * (y_tile + 1) - 855
+                b_east = b_west + 145
+                b_north = b_south + 145
 
             try:
                 params = {
