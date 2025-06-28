@@ -159,7 +159,7 @@ class DEM(ImageComponent):
 
         self.update_info("original", data)
 
-        # Check if the data contains any non zero values, otherwise raise an error.
+        # Check if the data contains any non-zero values, otherwise raise an error.
         if not np.any(data):
             self.logger.error("DTM provider returned empty data.")
             raise ValueError("DTM provider returned empty data. Try using different DTM provider.")
@@ -275,7 +275,7 @@ class DEM(ImageComponent):
             np.ndarray: Multiplied DEM data.
         """
         multiplier = self.map.dem_settings.multiplier
-        if not multiplier != 1:
+        if multiplier == 1:
             return data
 
         multiplied_data = data * multiplier

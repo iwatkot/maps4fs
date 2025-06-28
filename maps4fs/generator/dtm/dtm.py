@@ -298,7 +298,7 @@ class DTMProvider(ABC):
 
     def get_numpy(self) -> np.ndarray:
         """Get numpy array of the tile.
-        Resulting array must be 16 bit (signed or unsigned) integer and it should be already
+        Resulting array must be 16 bit (signed or unsigned) integer, and it should be already
         windowed to the bounding box of ROI. It also must have only one channel.
 
         Returns:
