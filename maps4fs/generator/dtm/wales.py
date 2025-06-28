@@ -78,46 +78,46 @@ class WalesProvider(DTMProvider):
                 b_east = b_west + 145
                 b_north = b_south + 145
 
-            try:
-                params = {
-                    "service": "WMS",
-                    "version": self._wms_version,
-                    "request": "GetFeatureInfo",
-                    "exceptions": "application/json",
-                    "layers": "geonode:welsh_government_lidar_tile_catalogue_2020_2023",
-                    "query_layers": "geonode:welsh_government_lidar_tile_catalogue_2020_2023",
-                    "styles": "",
-                    "x": 51,
-                    "y": 51,
-                    "height": 101,
-                    "width": 101,
-                    "srs": self._source_crs,
-                    "bbox": f"{b_west},{b_south},{b_east},{b_north}",
-                    "feature_count": 10,
-                    "info_format": "application/json",
-                    "ENV": "mapstore_language:en"
-                }
+                try:
+                    params = {
+                        "service": "WMS",
+                        "version": self._wms_version,
+                        "request": "GetFeatureInfo",
+                        "exceptions": "application/json",
+                        "layers": "geonode:welsh_government_lidar_tile_catalogue_2020_2023",
+                        "query_layers": "geonode:welsh_government_lidar_tile_catalogue_2020_2023",
+                        "styles": "",
+                        "x": 51,
+                        "y": 51,
+                        "height": 101,
+                        "width": 101,
+                        "srs": self._source_crs,
+                        "bbox": f"{b_west},{b_south},{b_east},{b_north}",
+                        "feature_count": 10,
+                        "info_format": "application/json",
+                        "ENV": "mapstore_language:en"
+                    }
 
-                response = requests.get(# pylint: disable=W3101
-                    self.url,  # type: ignore
-                    params=params,  # type: ignore
-                    timeout=60
-                )
+                    response = requests.get(# pylint: disable=W3101
+                        self.url,  # type: ignore
+                        params=params,  # type: ignore
+                        timeout=60
+                    )
 
-                self.logger.debug("Getting file locations from Welsh Government WMS GetFeatureInfo...")
+                    self.logger.debug("Getting file locations from Welsh Government WMS GetFeatureInfo...")
 
-                # Check if the request was successful (HTTP status code 200)
-                if response.status_code == 200:
-                    json_data = response.json()
-                    features = json_data.get("features", [])
-                    for feature in features:
-                        dtm_link = feature.get("properties", {}).get("dtm_link")
-                        if dtm_link:
-                            urls.append("https://"+dtm_link)
-                else:
-                    self.logger.error("Failed to get data. HTTP Status Code: %s", response.status_code)
-            except Exception as e:
-                self.logger.error("Failed to get data. Error: %s", e)
+                    # Check if the request was successful (HTTP status code 200)
+                    if response.status_code == 200:
+                        json_data = response.json()
+                        features = json_data.get("features", [])
+                        for feature in features:
+                            dtm_link = feature.get("properties", {}).get("dtm_link")
+                            if dtm_link:
+                                urls.append("https://"+dtm_link)
+                    else:
+                        self.logger.error("Failed to get data. HTTP Status Code: %s", response.status_code)
+                except Exception as e:
+                    self.logger.error("Failed to get data. Error: %s", e)
 
         self.logger.debug("Received %s urls", len(urls))
         return urls
