@@ -27,7 +27,8 @@ jobs:
             If you want to proceed with the issue, please provide the following information:<br>
             - Coordinates of the central point of the map<br>
             - Map size<br>
-            - Was auto preset enabled?<br>
+            - Map rotation<br>
+            - Map output size<br>
             - Any additional settings if where enabled<br>
             - Error message if any<br>
             - Screenshots if possible<br>
