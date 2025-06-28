@@ -24,3 +24,4 @@ from maps4fs.generator.dtm.srtm import SRTM30Provider
 from maps4fs.generator.dtm.switzerland import SwitzerlandProvider
 from maps4fs.generator.dtm.thuringia import ThuringiaProvider
 from maps4fs.generator.dtm.usgs_wcs import USGSWCSProvider
+from maps4fs.generator.dtm.wales import WalesProvider
