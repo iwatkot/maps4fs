@@ -5,12 +5,12 @@ from typing import Any
 
 import cv2
 import numpy as np
+from pydtmdl import DTMProvider
 
 # import rasterio  # type: ignore
 from pympler import asizeof  # type: ignore
 
 from maps4fs.generator.component.base.component_image import ImageComponent
-from maps4fs.generator.dtm.dtm import DTMProvider
 
 
 # pylint: disable=R0903, R0902
@@ -46,7 +46,6 @@ class DEM(ImageComponent):
             size=self.map_rotated_size,
             directory=self.temp_dir,
             logger=self.logger,
-            map=self.map,
         )
 
         self.info: dict[str, Any] = {}

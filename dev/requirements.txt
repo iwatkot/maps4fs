@@ -20,3 +20,4 @@ tqdm
 types-tqdm
 scipy
 python-dotenv
+pydtmdl

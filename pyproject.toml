@@ -30,6 +30,7 @@ dependencies = [
     "owslib",
     "tqdm",
     "scipy",
+    "pydtmdl",
 ]
 
 [project.urls]

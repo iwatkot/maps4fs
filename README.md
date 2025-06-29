@@ -35,7 +35,6 @@
   <a href="#Resources">Resources</a> •
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a><br>
   <a href="docs/procedural_generation.md">Procedural Generation</a> •
-  <a href="#DTM-Providers">DTM Providers</a> •
   <a href="#Special-thanks">Special thanks</a>
 </p>
 
@@ -57,7 +56,7 @@
 🔗 Generate maps using an [API](https://github.com/iwatkot/maps4fsapi) 🆕<br>
 ✂️ Supports map scaling<br>
 🔄 Support map rotation<br>
-🌐 Supports custom [DTM Providers](#DTM-Providers)<br>
+🌐 Supports custom [DTM Providers](https://github.com/iwatkot/pydtmdl)<br>
 🌾 Automatically generates fields<br>
 🌽 Automatically generates farmlands<br>
 🌿 Automatically generates decorative foliage<br>
@@ -332,7 +331,7 @@ You can also specify any custom size of the map. Be aware that Giants Editor sup
 This setting can be useful if you want add some scaling to your map. For example, you can select a region of 3000 meters in real world and set the output size to 2048 meters. In this case, the map will be generated with a size of 2048x2048 meters, but it will contain the region of 3000x3000 meters in real world.
 
 ### DTM Provider
-DTM Provider is a source of the height map data. will find the list of available providers in the [DTM Providers](#dtm-providers) section. The default provider is `SRTM30Provider` which is available all aroung the globe, but the resolution is not very high. If you want to use a different provider, you can select it in the dropdown list. You will only see the providers that are available for the selected region. It's better to use the provider that has the highest resolution for the selected region.
+DTM Provider is a source of the height map data. will find the list of available providers in the [pydtmdl](https://github.com/iwatkot/pydtmdl) repository. The default provider is `SRTM30Provider` which is available all aroung the globe, but the resolution is not very high. If you want to use a different provider, you can select it in the dropdown list. You will only see the providers that are available for the selected region. It's better to use the provider that has the highest resolution for the selected region.
 **NOTE:** Some of the providers are community-developed and may not work properly. I do not provide any support for them. If you have any issues with them, please contact the provider's author.
 
 ### Map Rotation
@@ -680,46 +679,6 @@ To create a basic map, you only need the Giants Editor. But if you want to creat
 
 ➡️ Please, before creating an issue or asking some questions, check the [FAQ](docs/FAQ.md) section.<br>
 If you find a bug or have an idea for a new feature, please create an issue [here](https://github.com/iwatkot/maps4fs/issues) or contact me directly on [Telegram](https://t.me/iwatkot) or on Discord: `iwatkot`.
-
-## DTM Providers
-
-The generator supports adding the own DTM providers, please refer to the [DTM Providers](docs/dtm_providers.md) section to learn how to add the custom DTM provider.
-
-### Supported DTM providers
-
-![coverage map](https://github.com/user-attachments/assets/be5c5ce1-7318-4352-97eb-efba7ec587cd)
-
-In addition to SRTM 30m, which provides global coverage, the map above highlights all countries and/or regions where higher resolution coverage is provided by one of the DTM providers.
-
-| Provider Name                      | Resolution   | Developer                                   |
-| ---------------------------------- | ------------ | ------------------------------------------- |
-| 🌎 SRTM30                          | 30 meters    | [iwatkot](https://github.com/iwatkot)       |
-| 🌎 ArcticDEM                       | 2 meters     | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🌎 REMA Antarctica                 | 2 meters     | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇺🇸 USGS                            | 1-90 meters  | [ZenJakey](https://github.com/ZenJakey)     |
-| 🏴󠁧󠁢󠁥󠁮󠁧󠁿 England                         | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland                        | 0.25-1 meter | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🏴󠁧󠁢󠁷󠁬󠁳󠁿󠁧󠁢󠁷󠁬󠁳󠁿 Wales                           | 1 meter      | [garnwenshared](https://github.com/garnshared) |
-| 🇩🇪 Hessen, Germany                 | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇩🇪 Niedersachsen, Germany          | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇩🇪 Bayern, Germany                 | 1 meter      | [H4rdB4se](https://github.com/H4rdB4se)     |
-| 🇩🇪 Nordrhein-Westfalen, Germany    | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇩🇪 Mecklenburg-Vorpommern, Germany | 1-25 meter   | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇩🇪 Baden-Württemberg, Germany      | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇩🇪 Sachsen-Anhalt, Germany         | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇩🇪 Thüringen, Germany              | 1 meter      | [H4rdB4se](https://github.com/H4rdB4se)     |
-| 🇨🇦 Canada                          | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇧🇪 Flanders, Belgium               | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇫🇷 France                          | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇮🇹 Italy                           | 10 meter     | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇳🇴 Norway                          | 1 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇪🇸 Spain                           | 5 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇫🇮 Finland                         | 2 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇩🇰 Denmark                         | 0.4 meter    | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇨🇭 Switzerland                     | 0.5-2 meter  | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇨🇿 Czech Republic                  | 5 meter      | [kbrandwijk](https://github.com/kbrandwijk) |
-| 🇱🇹 Lithuania                       | 1 meter      | [Tox3](https://github.com/Tox3) |
-
 
 ## Special thanks
 

@@ -11,9 +11,10 @@ from xml.etree import ElementTree as ET
 import osmnx as ox
 from geopy.geocoders import Nominatim
 from osmnx._errors import InsufficientResponseError
+from pydtmdl import DTMProvider
+from pydtmdl.base.dtm import DTMProviderSettings
 
 from maps4fs.generator.component import Background, Component, Layer, Texture
-from maps4fs.generator.dtm.dtm import DTMProvider, DTMProviderSettings
 from maps4fs.generator.game import FS25, Game
 from maps4fs.generator.settings import (
     BackgroundSettings,
