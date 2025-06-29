@@ -1,5 +1,5 @@
 ⚠️ Learn more about the 2.0 changes in the [migration guide](docs/migration.md).  
-⚠️ Some components are deprecated and there are major changes in the project structure.
+⚠️ Some components are deprecated, and there are major changes in the project structure.
 
 
 <p align="center">
@@ -7,7 +7,9 @@
 <a href="https://github.com/iwatkot/maps4fsui">maps4fs UI</a> •
 <a href="https://github.com/iwatkot/maps4fsapi">maps4fs API</a> •
 <a href="https://github.com/iwatkot/maps4fsstats">maps4fs Stats</a> •
-<a href="https://github.com/iwatkot/maps4fsbot">maps4fs Bot</a>
+<a href="https://github.com/iwatkot/maps4fsbot">maps4fs Bot</a><br>
+<a href="https://github.com/iwatkot/pygmdl">pygmdl</a> •
+<a href="https://github.com/iwatkot/pydtmdl">pydtmdl</a>
 </p>
 
 <div align="center" markdown>
