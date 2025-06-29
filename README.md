@@ -120,7 +120,7 @@ There are several ways to use the tool. You obviously need the **first one**, bu
 
 **Option 1:** Open the [maps4fs](https://maps4fs.xyz) and generate a map template in a few clicks.<br>
 
-![Basic WebUI](https://github.com/user-attachments/assets/52f499cc-f28a-4da3-abef-0e818abe8dbe)
+![Basic WebUI](https://github.com/iwatkot/maps4fs/releases/download/2.0.0/maps4fs_wui.png)
 
 ### 😎 For advanced users
 
