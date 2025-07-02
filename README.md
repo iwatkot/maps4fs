@@ -21,6 +21,7 @@
   <a href="#Quick-Start">Quick Start</a> •
   <a href="#Overview">Overview</a> • 
   <a href="docs/step_by_step.md">Create a map in 10 steps</a> •
+  <a href="docs/recommendations.md">Practical recommendations</a> •
   <a href="#How-To-Run">How-To-Run</a><br>
   <a href="docs/FAQ.md">FAQ</a> •
   <a href="docs/map_structure.md">Map Structure</a> •
