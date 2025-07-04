@@ -17,6 +17,15 @@ assignees: iwatkot
 
 To help us resolve your issue quickly, please provide the following information:
 
+### Description
+*Please describe the issue you are experiencing in detail.*
+
+### Steps to Reproduce
+1. Step one
+2. Step two
+3. Step three
+4. ...
+
 ### Map Configuration
 - **Coordinates of the central point:** 
 - **Map size:** 
