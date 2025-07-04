@@ -35,7 +35,7 @@ jobs:
         run: pylint maps4fs
 
       - name: Run pytest with coverage
-        run: pytest --cov=maps4fs --cov-branch --cov-report xml
+        run: pytest --cov=maps4fs --cov-report xml
 
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
