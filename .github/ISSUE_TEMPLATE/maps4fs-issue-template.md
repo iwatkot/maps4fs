@@ -9,8 +9,8 @@ assignees: iwatkot
 
 ## Thank you for opening an issue!
 
-**Note:** All issues regarding the availability of the Public version of the app will be closed automatically. Please use the [Docker version](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version) of the tool. Thank you!
-
+**⚠️ Important:** All issues regarding the availability of the Public version of the app will be closed automatically.  
+**⚠️ Important:** Issues without the required information will be closed. Thank you for your cooperation!
 ---
 
 ## Issue Information
@@ -55,4 +55,3 @@ To help us resolve your issue quickly, please provide the following information:
 
 ---
 
-**⚠️ Important:** Issues without the required information will be closed. Thank you for your cooperation!
