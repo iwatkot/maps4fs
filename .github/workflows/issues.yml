@@ -21,17 +21,32 @@ jobs:
           NUMBER: ${{ github.event.issue.number }}
           BODY: >
             Thank you for opening an issue!<br>
-            Please, first check the [FAQ](https://github.com/iwatkot/maps4fs/blob/main/docs/FAQ.md) to see if your question has already been answered.<br>
-            Note, that all issues regarding the availability of the Public version of the app will be closed automatically. Please use the [Docker version](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version) of the tool. Thank you!<br>
+            **⚠️ Important:** All issues regarding the availability of the Public version of the app will be closed automatically. Please use the [Docker version](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#option-2-docker-version) of the tool. Thank you!<br>
+            **⚠️ Important:** Issues without the required information will be closed.<br>
+            <br>
 
             If you want to proceed with the issue, please provide the following information:<br>
+            **Map Configuration:**<br>
             - Coordinates of the central point of the map<br>
             - Map size<br>
             - Map rotation<br>
-            - Map output size<br>
-            - Any additional settings if where enabled<br>
-            - Error message if any<br>
-            - Screenshots if possible<br>
-            - Any additional information that you think might be useful<br>
+            - Map output size (if set)<br>
+            - DTM Provider<br>
 
-            Thank you!
+            **Files:**<br>
+            - generation_info.json file attached<br>
+            - generation_settings.json file attached<br>
+
+            **Environment:**<br>
+            - App version: Local / Public / Docker<br>
+            - Feature area: UI / Python / API<br>
+            - maps4fs version<br>
+            - Additional settings enabled<br>
+
+            **Error Details:**<br>
+            - Error message<br>
+            - Traceback (if available)<br>
+            - Screenshots (if possible)<br>
+
+            **Additional Information:**<br>
+            - Any other details you think might be useful<br>
