@@ -7,8 +7,8 @@ assignees: iwatkot
 
 ---
 
-## Thank you for opening an issue!
-
+## Thank you for opening an issue!  
+<br>
 **⚠️ Important:** All issues regarding the availability of the Public version of the app will be closed automatically.  
 **⚠️ Important:** Issues without the required information will be closed. Thank you for your cooperation!
 ---
