@@ -1,7 +1,7 @@
 opencv-python
 osmnx>=2.0.0
 rasterio
-mypy
+mypy<=1.16.0
 pylint
 pandas-stubs
 types-requests

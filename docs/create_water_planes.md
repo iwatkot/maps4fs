@@ -1,5 +1,9 @@
 ## How to create water planes
 
+📹 Check out the video version of this tutorial.  
+
+[![YouTube tutorial](https://github.com/iwatkot/maps4fs/releases/download/2.0.2/ep06-play.png)](https://www.youtube.com/watch?v=lZeEZ-ce3cI)  
+
 The generator will automatically generates the obj files for the water planes, but you need to process them both in Blender and in Giants Editor for them to look correctly in the game.
 
 1. Find the obj file in the `water` directory.
