@@ -144,7 +144,7 @@ class Background(MeshComponent, ImageComponent):
                 self.logger.debug("Could not create mask for building with error: %s", e)
                 continue
 
-            mean_value = cv2.mean(dem_image, mask=mask)[0]
+            mean_value = cv2.mean(dem_image, mask=mask)[0]  # type: ignore
             mean_value = np.round(mean_value).astype(dem_image.dtype)
             self.logger.debug("Mean value of the building area: %s", mean_value)
 
@@ -231,13 +231,13 @@ class Background(MeshComponent, ImageComponent):
         if self.map.output_size is not None:
             scaled_background_size = int(self.background_size * self.map.size_scale)
             dem_data = cv2.resize(
-                dem_data,
+                dem_data,  # type: ignore
                 (scaled_background_size, scaled_background_size),
                 interpolation=cv2.INTER_NEAREST,
             )
 
         self.plane_from_np(
-            dem_data,
+            dem_data,  # type: ignore
             save_path,
             create_preview=True,
             remove_center=self.map.background_settings.remove_center,
@@ -255,7 +255,7 @@ class Background(MeshComponent, ImageComponent):
         """
         dem_data = cv2.imread(dem_path, cv2.IMREAD_UNCHANGED)
         half_size = self.map_size // 2
-        dem_data = self.cut_out_np(dem_data, half_size, return_cutout=True)
+        dem_data = self.cut_out_np(dem_data, half_size, return_cutout=True)  # type: ignore
 
         if save_path:
             cv2.imwrite(save_path, dem_data)
@@ -362,7 +362,7 @@ class Background(MeshComponent, ImageComponent):
         background_dem_preview_image = cv2.imread(self.output_path, cv2.IMREAD_UNCHANGED)
 
         background_dem_preview_image = cv2.resize(
-            background_dem_preview_image, (0, 0), fx=1 / 4, fy=1 / 4
+            background_dem_preview_image, (0, 0), fx=1 / 4, fy=1 / 4  # type: ignore
         )
         background_dem_preview_image = cv2.normalize(
             background_dem_preview_image,
@@ -411,7 +411,7 @@ class Background(MeshComponent, ImageComponent):
         self.logger.debug("Creating grayscale preview of DEM data in %s.", grayscale_dem_path)
 
         dem_data = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-        dem_data_rgb = cv2.cvtColor(dem_data, cv2.COLOR_GRAY2RGB)
+        dem_data_rgb = cv2.cvtColor(dem_data, cv2.COLOR_GRAY2RGB)  # type: ignore
         cv2.imwrite(grayscale_dem_path, dem_data_rgb)
         return grayscale_dem_path
 
@@ -435,7 +435,7 @@ class Background(MeshComponent, ImageComponent):
         dem_data_normalized = np.empty_like(dem_data)
 
         # Normalize the DEM data to the range [0, 255]
-        cv2.normalize(dem_data, dem_data_normalized, 0, 255, cv2.NORM_MINMAX)
+        cv2.normalize(dem_data, dem_data_normalized, 0, 255, cv2.NORM_MINMAX)  # type: ignore
         dem_data_colored = cv2.applyColorMap(dem_data_normalized, cv2.COLORMAP_JET)
 
         cv2.imwrite(colored_dem_path, dem_data_colored)
@@ -513,8 +513,8 @@ class Background(MeshComponent, ImageComponent):
         )
 
         dem_image = self.subtract_by_mask(
-            dem_image,
-            water_resources_image,
+            dem_image,  # type: ignore
+            water_resources_image,  # type: ignore
             int(self.map.dem_settings.water_depth * z_scaling_factor),
         )
 
@@ -544,12 +544,12 @@ class Background(MeshComponent, ImageComponent):
         plane_water = cv2.imread(self.water_resources_path, cv2.IMREAD_UNCHANGED)
 
         # Check if the image contains non-zero values.
-        if not np.any(plane_water):
+        if not np.any(plane_water):  # type: ignore
             self.logger.debug("Water resources image is empty, skipping water generation.")
             return
 
         dilated_plane_water = cv2.dilate(
-            plane_water.astype(np.uint8), np.ones((5, 5), np.uint8), iterations=5
+            plane_water.astype(np.uint8), np.ones((5, 5), np.uint8), iterations=5  # type: ignore
         ).astype(np.uint8)
         plane_save_path = os.path.join(self.water_directory, "plane_water.obj")
         self.plane_from_np(dilated_plane_water, plane_save_path, include_zeros=False)
@@ -560,12 +560,12 @@ class Background(MeshComponent, ImageComponent):
         if self.map.output_size is not None:
             scaled_background_size = int(self.background_size * self.map.size_scale)
             plane_water = cv2.resize(
-                plane_water,
+                plane_water,  # type: ignore
                 (scaled_background_size, scaled_background_size),
                 interpolation=cv2.INTER_NEAREST,
             )
             background_dem = cv2.resize(
-                background_dem,
+                background_dem,  # type: ignore
                 (scaled_background_size, scaled_background_size),
                 interpolation=cv2.INTER_NEAREST,
             )
@@ -574,20 +574,20 @@ class Background(MeshComponent, ImageComponent):
             # Apply Gaussian blur to the background dem.
             blur_power = self._get_blur_power()
             background_dem = cv2.GaussianBlur(
-                background_dem, (blur_power, blur_power), sigmaX=blur_power, sigmaY=blur_power
+                background_dem, (blur_power, blur_power), sigmaX=blur_power, sigmaY=blur_power  # type: ignore
             )
 
         # Remove all the values from the background dem where the plane_water is 0.
-        background_dem[plane_water == 0] = 0
+        background_dem[plane_water == 0] = 0  # type: ignore
 
         # Dilate the background dem to make the water more smooth.
-        elevated_water = cv2.dilate(background_dem, np.ones((3, 3), np.uint16), iterations=10)
+        elevated_water = cv2.dilate(background_dem, np.ones((3, 3), np.uint16), iterations=10)  # type: ignore
 
         # Use the background dem as a mask to prevent the original values from being overwritten.
-        mask = background_dem > 0
+        mask = background_dem > 0  # type: ignore
 
         # Combine the dilated background dem with non-dilated background dem.
-        elevated_water = np.where(mask, background_dem, elevated_water)
+        elevated_water = np.where(mask, background_dem, elevated_water)  # type: ignore
         elevated_save_path = os.path.join(self.water_directory, "elevated_water.obj")
 
         self.assets.water_mesh = elevated_save_path

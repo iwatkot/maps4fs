@@ -174,9 +174,9 @@ class Texture(ImageComponent):
             if not border:
                 continue
 
-            self.transfer_border(layer_image, base_layer_image, border)
+            self.transfer_border(layer_image, base_layer_image, border)  # type: ignore
 
-            cv2.imwrite(layer.path(self._weights_dir), layer_image)
+            cv2.imwrite(layer.path(self._weights_dir), layer_image)  # type: ignore
             self.logger.debug("Borders added to layer %s.", layer.name)
 
         if base_layer_image is not None:
@@ -261,7 +261,7 @@ class Texture(ImageComponent):
                     self.logger.debug("Scaling layer %s.", layer_path)
                     img = cv2.imread(layer_path, cv2.IMREAD_UNCHANGED)
                     img = cv2.resize(
-                        img,
+                        img,  # type: ignore
                         (self.map.output_size, self.map.output_size),
                         interpolation=cv2.INTER_NEAREST,
                     )
@@ -384,12 +384,12 @@ class Texture(ImageComponent):
                 self.logger.debug("First layer, creating new cumulative image.")
                 cumulative_image = layer_image
 
-            mask = cv2.bitwise_not(cumulative_image)
-            self._draw_layer(layer, info_layer_data, layer_image)
+            mask = cv2.bitwise_not(cumulative_image)  # type: ignore
+            self._draw_layer(layer, info_layer_data, layer_image)  # type: ignore
             self._add_roads(layer, info_layer_data)
 
-            output_image = cv2.bitwise_and(layer_image, mask)
-            cumulative_image = cv2.bitwise_or(cumulative_image, output_image)
+            output_image = cv2.bitwise_and(layer_image, mask)  # type: ignore
+            cumulative_image = cv2.bitwise_or(cumulative_image, output_image)  # type: ignore
 
             cv2.imwrite(layer_path, output_image)
             self.logger.debug("Texture %s saved.", layer_path)
@@ -490,17 +490,17 @@ class Texture(ImageComponent):
             # Check if the image contains any non-zero values, otherwise continue.
             layer_image = cv2.imread(layer_path, cv2.IMREAD_UNCHANGED)
 
-            if not np.any(layer_image):
+            if not np.any(layer_image):  # type: ignore
                 self.logger.debug(
                     "Layer %s does not contain any non-zero values, skipping.", layer.name
                 )
                 continue
 
             # Save the original image to use it for preview later, without combining the sublayers.
-            cv2.imwrite(layer.path_preview(self._weights_dir), layer_image.copy())
+            cv2.imwrite(layer.path_preview(self._weights_dir), layer_image.copy())  # type: ignore
 
             # Get the coordinates of non-zero values.
-            non_zero_coords = np.column_stack(np.where(layer_image > 0))
+            non_zero_coords = np.column_stack(np.where(layer_image > 0))  # type: ignore
 
             # Prepare sublayers.
             sublayers = [np.zeros_like(layer_image) for _ in range(layer.count)]
@@ -817,7 +817,7 @@ class Texture(ImageComponent):
 
         images = [
             cv2.resize(
-                cv2.imread(layer.get_preview_or_path(self._weights_dir), cv2.IMREAD_UNCHANGED),
+                cv2.imread(layer.get_preview_or_path(self._weights_dir), cv2.IMREAD_UNCHANGED),  # type: ignore
                 preview_size,
             )
             for layer in active_layers

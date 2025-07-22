@@ -118,14 +118,14 @@ class GRLE(ImageComponent, XMLComponent):
             # Resize the preview image to the maximum size allowed for previews.
             image = cv2.imread(preview_path, cv2.IMREAD_GRAYSCALE)
             if (
-                image.shape[0] > Parameters.PREVIEW_MAXIMUM_SIZE
-                or image.shape[1] > Parameters.PREVIEW_MAXIMUM_SIZE
+                image.shape[0] > Parameters.PREVIEW_MAXIMUM_SIZE  # type: ignore
+                or image.shape[1] > Parameters.PREVIEW_MAXIMUM_SIZE  # type: ignore
             ):
                 image = cv2.resize(
-                    image, (Parameters.PREVIEW_MAXIMUM_SIZE, Parameters.PREVIEW_MAXIMUM_SIZE)
+                    image, (Parameters.PREVIEW_MAXIMUM_SIZE, Parameters.PREVIEW_MAXIMUM_SIZE)  # type: ignore
                 )
             image_normalized = np.empty_like(image)
-            cv2.normalize(image, image_normalized, 0, 255, cv2.NORM_MINMAX)
+            cv2.normalize(image, image_normalized, 0, 255, cv2.NORM_MINMAX)  # type: ignore
             image_colored = cv2.applyColorMap(image_normalized, cv2.COLORMAP_JET)
             cv2.imwrite(save_path, image_colored)
             preview_paths.append(save_path)
@@ -163,7 +163,7 @@ class GRLE(ImageComponent, XMLComponent):
             return None
         fields_np = cv2.imread(fields_layer_path)
         # Resize fields_np to the same size as farmlands_np.
-        fields_np = cv2.resize(fields_np, (farmlands_np.shape[1], farmlands_np.shape[0]))
+        fields_np = cv2.resize(fields_np, (farmlands_np.shape[1], farmlands_np.shape[0]))  # type: ignore
 
         # use fields_np as base layer and overlay farmlands_np on top of it with 50% alpha blending.
         return cv2.addWeighted(fields_np, 0.5, farmlands_np, 0.5, 0)
@@ -235,7 +235,7 @@ class GRLE(ImageComponent, XMLComponent):
                 break
 
             try:
-                cv2.fillPoly(image, [farmland_np], (float(farmland_id),))
+                cv2.fillPoly(image, [farmland_np], (float(farmland_id),))  # type: ignore
             except Exception as e:
                 self.logger.debug(
                     "Farmland %s could not be added to the InfoLayer PNG file with error: %s",
@@ -257,9 +257,9 @@ class GRLE(ImageComponent, XMLComponent):
 
         # Replace all the zero values on the info layer image with 255.
         if self.map.grle_settings.fill_empty_farmlands:
-            image[image == 0] = 255
+            image[image == 0] = 255  # type: ignore
 
-        cv2.imwrite(info_layer_farmlands_path, image)
+        cv2.imwrite(info_layer_farmlands_path, image)  # type: ignore
 
         self.assets.farmlands = info_layer_farmlands_path
 
@@ -303,8 +303,8 @@ class GRLE(ImageComponent, XMLComponent):
         # Density map of the fruits is 2X size of the base image, so we need to resize it.
         # We'll resize the base image to make it bigger, so we can compare the values.
         grass_image = cv2.resize(
-            grass_image,
-            (grass_image.shape[1] * 2, grass_image.shape[0] * 2),
+            grass_image,  # type: ignore
+            (grass_image.shape[1] * 2, grass_image.shape[0] * 2),  # type: ignore
             interpolation=cv2.INTER_NEAREST,
         )
         if forest_image is not None:
@@ -352,15 +352,15 @@ class GRLE(ImageComponent, XMLComponent):
         # Three channeled 8-bit image, where non-zero values are the
         # different types of plants (only in the R channel).
         density_map_fruits = cv2.imread(density_map_fruit_path, cv2.IMREAD_UNCHANGED)
-        self.logger.debug("Density map for fruits loaded, shape: %s.", density_map_fruits.shape)
+        self.logger.debug("Density map for fruits loaded, shape: %s.", density_map_fruits.shape)  # type: ignore
 
         # Put the updated base image as the B channel in the density map.
-        density_map_fruits[:, :, 0] = grass_image_copy
+        density_map_fruits[:, :, 0] = grass_image_copy  # type: ignore
         self.logger.debug("Updated base image added as the B channel in the density map.")
 
         # Save the updated density map.
         # Ensure that order of channels is correct because CV2 uses BGR and we need RGB.
-        density_map_fruits = cv2.cvtColor(density_map_fruits, cv2.COLOR_BGR2RGB)
+        density_map_fruits = cv2.cvtColor(density_map_fruits, cv2.COLOR_BGR2RGB)  # type: ignore
         cv2.imwrite(density_map_fruit_path, density_map_fruits)
 
         self.assets.plants = density_map_fruit_path

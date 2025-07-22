@@ -543,7 +543,7 @@ class I3d(XMLComponent):
 
             forest_image = cv2.imread(forest_image_path, cv2.IMREAD_UNCHANGED)
             for x, y in self.non_empty_pixels(
-                forest_image, step=self.map.i3d_settings.forest_density
+                forest_image, step=self.map.i3d_settings.forest_density  # type: ignore
             ):
                 shifted_x, shifted_y = self.randomize_coordinates(
                     (x, y),
