@@ -22,11 +22,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r dev/requirements.txt
 
-      - name: Run mypy to generate cache
-        run: mypy maps4fs || true
-
       - name: Install missing stub packages
         run: mypy --install-types --non-interactive
+
+      - name: Run mypy to generate cache
+        run: mypy maps4fs || true
 
       - name: Run mypy
         run: mypy maps4fs
