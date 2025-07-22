@@ -1,8 +1,6 @@
 ## Create a Farming Simulator map in 10 steps
 
-📹 WIP: Check out the complete playlist of video turorials on [YouTube](https://www.youtube.com/watch?v=hPbJZ0HoiDE&list=PLug0g7UYHX8D1Jik6NkJjQhdxqS-NOtB9). 🆕  
-
-📹 A complete step-by-step video tutorial is on [YouTube](https://www.youtube.com/watch?v=Nl_aqXJ5nAk&)!  
+📹 Check out the complete playlist of video turorials on [YouTube](https://www.youtube.com/watch?v=hPbJZ0HoiDE&list=PLug0g7UYHX8D1Jik6NkJjQhdxqS-NOtB9). 🆕   
 
 Hey, farmer!  
 So, you're ready to create your own map for the Farming Simulator? Great, the `maps4fs` tool will save you a lot of time and effort. In this section, I'll guide you through the process of creating a map from scratch using the generator.  
