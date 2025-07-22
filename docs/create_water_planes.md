@@ -75,7 +75,10 @@ It's placed in `where-the-game-is-installed/data/maps/textures/shared/water_norm
 
 ![Normal map window](https://github.com/user-attachments/assets/bee7955f-7f6c-4d94-978c-0ab7835b9e2b)
 
-20. It should look like this.
+20. Now switch to the UserAttributes tag, enter name `onCreate`, select the `Script callback`, and click Add.
+After it, set the value of the Attribute to `Environment.onCreateWater`.
+
+22. It should look like this.
 
 ![Water plane in GE](https://github.com/user-attachments/assets/b246cf85-b044-4ceb-bff4-9b32a753b143)
 
