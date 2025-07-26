@@ -252,3 +252,18 @@ class MeshComponent(Component):
         distance = int(round(x_size) / 2)
         mesh_copy.apply_translation([-distance, distance, 0])
         return mesh_copy
+
+    @staticmethod
+    def invert_faces(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+        """
+        Inverts the faces (normals) of the mesh by reversing the order of indices in each face.
+
+        Arguments:
+            mesh (trimesh.Trimesh): The mesh whose faces are to be inverted.
+
+        Returns:
+            trimesh.Trimesh: A new mesh with inverted faces.
+        """
+        mesh_copy = mesh.copy()
+        mesh_copy.faces = mesh_copy.faces[:, ::-1]
+        return mesh_copy

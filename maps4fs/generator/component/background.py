@@ -11,6 +11,7 @@ from typing import Any
 import cv2
 import numpy as np
 import shapely
+import trimesh
 from tqdm import tqdm
 from trimesh import Trimesh
 
@@ -471,7 +472,7 @@ class Background(MeshComponent, ImageComponent):
             logger=self.logger,
             texture_custom_schema=background_layers,  # type: ignore
             skip_scaling=True,  # type: ignore
-            info_layer_path=os.path.join(self.info_layers_directory, "background.json"),
+            info_layer_path=os.path.join(self.info_layers_directory, "background.json"),  # type: ignore
         )
 
         self.background_texture.preprocess()
@@ -537,10 +538,18 @@ class Background(MeshComponent, ImageComponent):
         return blur_power
 
     def generate_linebased_water(self) -> None:
+        """Generates water resources based on line-based polylines from the background info layer.
+        It creates polygons from the polylines, fits them into the map bounds, and generates a mesh.
+        """
         self.logger.debug("Starting line-based water generation...")
 
         water_polylines = self.get_infolayer_data(Parameters.BACKGROUND, Parameters.WATER_POLYLINES)
-        print(f"Found {len(water_polylines)} water polylines in background info layer.")
+        self.logger.debug(
+            "Found %s water polylines in background info layer.", len(water_polylines)  # type: ignore
+        )
+        if not water_polylines:
+            self.logger.warning("No water polylines found in background info layer.")
+            return
 
         polygons: list[shapely.Polygon] = []
         for polyline in water_polylines:
@@ -557,7 +566,9 @@ class Background(MeshComponent, ImageComponent):
                 self.logger.warning("Skipping polyline with non-positive width: %s", polyline)
                 continue
 
-            polygon = line.buffer(width / 2, cap_style=shapely.geometry.CAP_STYLE.round)
+            polygon = line.buffer(
+                width + Parameters.WATER_ADD_WIDTH, cap_style=shapely.geometry.CAP_STYLE.square
+            )
             if polygon.is_empty:
                 self.logger.warning("Skipping empty polygon created from polyline: %s", polyline)
                 continue
@@ -591,31 +602,29 @@ class Background(MeshComponent, ImageComponent):
 
         # Create a mesh from the 3D polygons
         mesh = self.mesh_from_3d_polygons(fitted_polygons)
-        print(f"Generated mesh with {len(mesh.vertices)} vertices and {len(mesh.faces)} faces.")
+        if mesh is None:
+            self.logger.warning("No mesh could be created from the water polygons.")
+            return
+        self.logger.debug("Created mesh from %s water polygons.", len(fitted_polygons))
 
-        # Convert polylines to polygons using the width (in meters).
-        # points = water_polylines[0]["points"]
-        # width = water_polylines[0]["width"]
-
-        # get the actual height (Z value) for the coordinates
-
-        # z = self.get_z_coordinate_from_dem(not_resized_dem, x, y)
-
-        # now we have polygons with X, Y and Z coordinates
-        # and we need to create a mesh from them
+        mesh = self.rotate_mesh(mesh)
+        mesh = self.invert_faces(mesh)
 
         line_based_save_path = os.path.join(self.water_directory, "line_based_water.obj")
         mesh.export(line_based_save_path)
-        print(f"Line-based water mesh saved to {line_based_save_path}")
+        self.logger.debug("Line-based water mesh saved to %s", line_based_save_path)
 
-    def mesh_from_3d_polygons(self, polygons: list[shapely.Polygon]) -> Trimesh:
-        """
-        Create a simple mesh from a list of 3D shapely Polygons.
+    def mesh_from_3d_polygons(self, polygons: list[shapely.Polygon]) -> Trimesh | None:
+        """Create a simple mesh from a list of 3D shapely Polygons.
         Each polygon must be flat (all Z the same or nearly the same for each polygon).
         Returns a single Trimesh mesh.
+
+        Arguments:
+            polygons (list[shapely.Polygon]): List of 3D shapely Polygons to create the mesh from.
+
+        Returns:
+            Trimesh: A single Trimesh object containing the mesh created from the polygons.
         """
-        import numpy as np
-        import trimesh
 
         all_vertices = []
         all_faces = []
@@ -644,10 +653,10 @@ class Background(MeshComponent, ImageComponent):
                 idx = np.argmin(dists)
                 # z = exterior_coords[idx, 2]
                 z = self.get_z_coordinate_from_dem(
-                    not_resized_dem, exterior_coords[idx, 0], exterior_coords[idx, 1]
+                    not_resized_dem, exterior_coords[idx, 0], exterior_coords[idx, 1]  # type: ignore
                 )
                 vertices_3d.append([v[0], v[1], z])
-            vertices_3d = np.array(vertices_3d)
+            vertices_3d = np.array(vertices_3d)  # type: ignore
 
             faces = faces + vertex_offset
             all_vertices.append(vertices_3d)
@@ -665,7 +674,10 @@ class Background(MeshComponent, ImageComponent):
     def generate_water_resources_obj(self) -> None:
         """Generates 3D obj files based on water resources data."""
         self.logger.debug("Starting water resources generation...")
-        self.generate_linebased_water()
+        try:
+            self.generate_linebased_water()
+        except Exception as e:
+            self.logger.error("Error during line-based water generation: %s", e)
 
         if not os.path.isfile(self.water_resources_path):
             self.logger.warning("Water resources texture not found.")

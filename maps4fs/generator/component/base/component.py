@@ -8,6 +8,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
 import cv2
+import numpy as np
 import osmnx as ox
 from pyproj import Transformer
 from shapely.affinity import rotate, translate

@@ -47,7 +47,7 @@ class Texture(ImageComponent):
         if not self.kwargs.get("info_layer_path"):
             self.info_layer_path = os.path.join(self.info_layers_directory, "textures.json")
         else:
-            self.info_layer_path = self.kwargs["info_layer_path"]
+            self.info_layer_path = self.kwargs["info_layer_path"]  # type: ignore
 
     def read_layers(self, layers_schema: list[dict[str, Any]]) -> None:
         """Reads layers from the schema.

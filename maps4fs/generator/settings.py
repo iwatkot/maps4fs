@@ -37,6 +37,8 @@ class Parameters:
     PLANTS_ISLAND_VERTEX_COUNT = 30
     PLANTS_ISLAND_ROUNDING_RADIUS = 15
 
+    WATER_ADD_WIDTH = 2
+
 
 class SharedSettings(BaseModel):
     """Represents the shared settings for all components."""

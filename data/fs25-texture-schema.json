@@ -257,6 +257,7 @@
     },
     "width": 10,
     "color": [255, 20, 20],
-    "background": true
+    "background": true,
+    "info_layer": "water"
   }
 ]
