@@ -638,24 +638,3 @@ class I3d(XMLComponent):
         not_resized_dem = cv2.imread(background_component.not_resized_path, cv2.IMREAD_UNCHANGED)
 
         return not_resized_dem
-
-    def get_z_coordinate_from_dem(self, not_resized_dem: np.ndarray, x: int, y: int) -> float:
-        """Gets the Z coordinate from the DEM image for the given coordinates.
-
-        Arguments:
-            not_resized_dem (np.ndarray): The not resized DEM image.
-            x (int): The x coordinate.
-            y (int): The y coordinate.
-
-        Returns:
-            float: The Z coordinate.
-        """
-        dem_x_size, dem_y_size = not_resized_dem.shape
-
-        x = int(max(0, min(x, dem_x_size - 1)))
-        y = int(max(0, min(y, dem_y_size - 1)))
-
-        z = not_resized_dem[y, x]
-        z *= self.get_z_scaling_factor(ignore_height_scale_multiplier=True)
-
-        return z

@@ -10,6 +10,7 @@ from typing import Any
 
 import cv2
 import numpy as np
+import shapely
 from tqdm import tqdm
 from trimesh import Trimesh
 
@@ -470,6 +471,7 @@ class Background(MeshComponent, ImageComponent):
             logger=self.logger,
             texture_custom_schema=background_layers,  # type: ignore
             skip_scaling=True,  # type: ignore
+            info_layer_path=os.path.join(self.info_layers_directory, "background.json"),
         )
 
         self.background_texture.preprocess()
@@ -534,8 +536,137 @@ class Background(MeshComponent, ImageComponent):
 
         return blur_power
 
+    def generate_linebased_water(self) -> None:
+        self.logger.debug("Starting line-based water generation...")
+
+        water_polylines = self.get_infolayer_data(Parameters.BACKGROUND, Parameters.WATER_POLYLINES)
+        print(f"Found {len(water_polylines)} water polylines in background info layer.")
+
+        polygons: list[shapely.Polygon] = []
+        for polyline in water_polylines:
+            points = polyline["points"]
+            width = polyline["width"]
+            if not points or len(points) < 2:
+                self.logger.warning("Skipping polyline with insufficient points: %s", polyline)
+                continue
+
+            # Create a shapely LineString from the points
+            line = shapely.geometry.LineString(points)
+            # Create a buffer around the line to create a polygon
+            if width <= 0:
+                self.logger.warning("Skipping polyline with non-positive width: %s", polyline)
+                continue
+
+            polygon = line.buffer(width / 2, cap_style=shapely.geometry.CAP_STYLE.round)
+            if polygon.is_empty:
+                self.logger.warning("Skipping empty polygon created from polyline: %s", polyline)
+                continue
+
+            # Ensure the polygon is valid and not empty
+            if not polygon.is_valid:
+                self.logger.warning("Invalid polygon created from polyline, skipping: %s", polyline)
+                continue
+
+            polygons.append(polygon)
+
+        fitted_polygons = []
+        for polygon in polygons:
+            try:
+                fitted_polygon_points = self.fit_object_into_bounds(
+                    polygon_points=polygon.exterior.coords,
+                    angle=self.rotation,
+                    canvas_size=self.background_size,
+                )
+                fitted_polygon = shapely.Polygon(fitted_polygon_points)
+                fitted_polygons.append(fitted_polygon)
+            except Exception as e:
+                self.logger.warning(
+                    "Could not fit polygon into bounds with error: %s, polygon: %s", e, polygon
+                )
+                continue
+
+        if not fitted_polygons:
+            self.logger.warning("No valid water polygons created from polylines.")
+            return
+
+        # Create a mesh from the 3D polygons
+        mesh = self.mesh_from_3d_polygons(fitted_polygons)
+        print(f"Generated mesh with {len(mesh.vertices)} vertices and {len(mesh.faces)} faces.")
+
+        # Convert polylines to polygons using the width (in meters).
+        # points = water_polylines[0]["points"]
+        # width = water_polylines[0]["width"]
+
+        # get the actual height (Z value) for the coordinates
+
+        # z = self.get_z_coordinate_from_dem(not_resized_dem, x, y)
+
+        # now we have polygons with X, Y and Z coordinates
+        # and we need to create a mesh from them
+
+        line_based_save_path = os.path.join(self.water_directory, "line_based_water.obj")
+        mesh.export(line_based_save_path)
+        print(f"Line-based water mesh saved to {line_based_save_path}")
+
+    def mesh_from_3d_polygons(self, polygons: list[shapely.Polygon]) -> Trimesh:
+        """
+        Create a simple mesh from a list of 3D shapely Polygons.
+        Each polygon must be flat (all Z the same or nearly the same for each polygon).
+        Returns a single Trimesh mesh.
+        """
+        import numpy as np
+        import trimesh
+
+        all_vertices = []
+        all_faces = []
+        vertex_offset = 0
+
+        not_resized_dem = cv2.imread(self.not_resized_path, cv2.IMREAD_UNCHANGED)
+
+        for polygon in polygons:
+            # Get exterior 3D coordinates
+            exterior_coords = np.array(polygon.exterior.coords)
+            # Project to 2D for triangulation
+            exterior_2d = exterior_coords[:, :2]
+            poly_2d = shapely.geometry.Polygon(
+                exterior_2d, [np.array(ring.coords)[:, :2] for ring in polygon.interiors]
+            )
+
+            # Triangulate in 2D
+            vertices_2d, faces = trimesh.creation.triangulate_polygon(poly_2d)
+            # tris.vertices is 2D, tris.faces are indices
+
+            # Map 2D triangulated vertices back to 3D by matching to original 3D coords
+            vertices_3d = []
+            for v in vertices_2d:
+                # Find closest original 2D point to get Z
+                dists = np.linalg.norm(exterior_2d - v[:2], axis=1)
+                idx = np.argmin(dists)
+                # z = exterior_coords[idx, 2]
+                z = self.get_z_coordinate_from_dem(
+                    not_resized_dem, exterior_coords[idx, 0], exterior_coords[idx, 1]
+                )
+                vertices_3d.append([v[0], v[1], z])
+            vertices_3d = np.array(vertices_3d)
+
+            faces = faces + vertex_offset
+            all_vertices.append(vertices_3d)
+            all_faces.append(faces)
+            vertex_offset += len(vertices_3d)
+
+        if not all_vertices:
+            return None
+
+        vertices = np.vstack(all_vertices)
+        faces = np.vstack(all_faces)
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
+        return mesh
+
     def generate_water_resources_obj(self) -> None:
         """Generates 3D obj files based on water resources data."""
+        self.logger.debug("Starting water resources generation...")
+        self.generate_linebased_water()
+
         if not os.path.isfile(self.water_resources_path):
             self.logger.warning("Water resources texture not found.")
             return

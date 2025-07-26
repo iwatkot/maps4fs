@@ -363,6 +363,7 @@ class Component:
         margin: int = 0,
         angle: int = 0,
         border: int = 0,
+        canvas_size: int | None = None,
     ) -> list[tuple[int, int]]:
         """Fits a polygon into the bounds of the map.
 
@@ -379,8 +380,10 @@ class Component:
         if polygon_points is None and linestring_points is None:
             raise ValueError("Either polygon or linestring points must be provided.")
 
+        limit = canvas_size or self.scaled_size
+
         min_x = min_y = 0 + border
-        max_x = max_y = self.scaled_size - border
+        max_x = max_y = limit - border
 
         object_type = Polygon if polygon_points else LineString
 
@@ -586,3 +589,24 @@ class Component:
             int: The output size of the map or the map size.
         """
         return self.map_size if self.map.output_size is None else self.map.output_size
+
+    def get_z_coordinate_from_dem(self, not_resized_dem: np.ndarray, x: int, y: int) -> float:
+        """Gets the Z coordinate from the DEM image for the given coordinates.
+
+        Arguments:
+            not_resized_dem (np.ndarray): The not resized DEM image.
+            x (int): The x coordinate.
+            y (int): The y coordinate.
+
+        Returns:
+            float: The Z coordinate.
+        """
+        dem_x_size, dem_y_size = not_resized_dem.shape
+
+        x = int(max(0, min(x, dem_x_size - 1)))
+        y = int(max(0, min(y, dem_y_size - 1)))
+
+        z = not_resized_dem[y, x]
+        z *= self.get_z_scaling_factor(ignore_height_scale_multiplier=True)
+
+        return z

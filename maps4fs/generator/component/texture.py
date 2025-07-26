@@ -44,7 +44,10 @@ class Texture(ImageComponent):
         os.makedirs(self.procedural_dir, exist_ok=True)
 
         self.info_save_path = os.path.join(self.map_directory, "generation_info.json")
-        self.info_layer_path = os.path.join(self.info_layers_directory, "textures.json")
+        if not self.kwargs.get("info_layer_path"):
+            self.info_layer_path = os.path.join(self.info_layers_directory, "textures.json")
+        else:
+            self.info_layer_path = self.kwargs["info_layer_path"]
 
     def read_layers(self, layers_schema: list[dict[str, Any]]) -> None:
         """Reads layers from the schema.
@@ -452,7 +455,11 @@ class Texture(ImageComponent):
             layer (Layer): Layer with textures and tags.
             info_layer_data (dict[list[list[int]]]): Dictionary to store info layer data.
         """
-        if layer.info_layer == "roads":
+        linestring_infolayers = ["roads"]
+        if self.kwargs.get("info_layer_path", None):
+            linestring_infolayers.append("water")
+
+        if layer.info_layer in linestring_infolayers:
             for linestring in self.objects_generator(
                 layer.tags, layer.width, layer.info_layer, yield_linestrings=True
             ):
@@ -464,6 +471,7 @@ class Texture(ImageComponent):
                 linestring_entry = {
                     "points": linestring,
                     "tags": str(layer.tags),
+                    "width": layer.width,
                 }
                 info_layer_data[f"{layer.info_layer}_polylines"].append(linestring_entry)  # type: ignore
 

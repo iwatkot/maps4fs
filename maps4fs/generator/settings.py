@@ -15,8 +15,10 @@ class Parameters:
     FIELDS = "fields"
     BUILDINGS = "buildings"
     TEXTURES = "textures"
+    BACKGROUND = "background"
     FOREST = "forest"
     ROADS_POLYLINES = "roads_polylines"
+    WATER_POLYLINES = "water_polylines"
     FARMYARDS = "farmyards"
 
     PREVIEW_MAXIMUM_SIZE = 2048
