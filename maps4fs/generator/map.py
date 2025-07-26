@@ -445,6 +445,7 @@ def fix_osm_file(input_file_path: str, output_file_path: str | None = None) -> t
             and the number of fixed errors.
     """
     broken_entries = ["relation", ".//*[@action='delete']"]
+    output_file_path = output_file_path or input_file_path
 
     tree = ET.parse(input_file_path)
     root = tree.getroot()
