@@ -19,6 +19,7 @@ class Parameters:
     FOREST = "forest"
     ROADS_POLYLINES = "roads_polylines"
     WATER_POLYLINES = "water_polylines"
+    WATER = "water"
     FARMYARDS = "farmyards"
 
     PREVIEW_MAXIMUM_SIZE = 2048
