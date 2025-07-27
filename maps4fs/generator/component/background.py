@@ -542,41 +542,28 @@ class Background(MeshComponent, ImageComponent):
         It creates polygons from the polylines, fits them into the map bounds, and generates a mesh.
         """
         self.logger.debug("Starting line-based water generation...")
-
-        water_polylines = self.get_infolayer_data(Parameters.BACKGROUND, Parameters.WATER_POLYLINES)
+        water_polygons = self.get_infolayer_data(Parameters.BACKGROUND, Parameters.WATER)
         self.logger.debug(
-            "Found %s water polylines in background info layer.", len(water_polylines)  # type: ignore
+            "Found %s water polygons in background info layer.", len(water_polygons)  # type: ignore
         )
-        if not water_polylines:
-            self.logger.warning("No water polylines found in background info layer.")
+        if not water_polygons:
+            self.logger.warning("No water polygons found in background info layer.")
             return
 
         polygons: list[shapely.Polygon] = []
-        for polyline in water_polylines:
-            points = polyline["points"]
-            width = polyline["width"]
-            if not points or len(points) < 2:
-                self.logger.warning("Skipping polyline with insufficient points: %s", polyline)
+        for polygon_points in water_polygons:
+            if not polygon_points or len(polygon_points) < 2:
+                self.logger.warning("Skipping polygon with insufficient points...")
                 continue
 
-            # Create a shapely LineString from the points
-            line = shapely.geometry.LineString(points)
-            # Create a buffer around the line to create a polygon
-            if width <= 0:
-                self.logger.warning("Skipping polyline with non-positive width: %s", polyline)
+            polygon = shapely.Polygon(polygon_points)
+
+            if polygon.is_empty or not polygon.is_valid:
+                self.logger.warning("Skipping empty or invalid polygon...")
                 continue
 
-            polygon = line.buffer(
-                width + Parameters.WATER_ADD_WIDTH, cap_style=shapely.geometry.CAP_STYLE.square
-            )
-            if polygon.is_empty:
-                self.logger.warning("Skipping empty polygon created from polyline: %s", polyline)
-                continue
-
-            # Ensure the polygon is valid and not empty
-            if not polygon.is_valid:
-                self.logger.warning("Invalid polygon created from polyline, skipping: %s", polyline)
-                continue
+            # Make Polygon a little bit bigger to hide under the terrain when creating water planes.
+            polygon = polygon.buffer(Parameters.WATER_ADD_WIDTH, resolution=4)
 
             polygons.append(polygon)
 

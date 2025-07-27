@@ -28,11 +28,11 @@ game = mfs.Game.from_code(game_code)
 dtm_provider = mfs.dtm.SRTM30Provider
 
 # 3️⃣ Define the coordinates of the central point of the map, size and rotation.
-lat, lon = 45.2915463035936, 20.219764914521804
+lat, lon = 45.28664672442379, 20.23913383374618
 coordinates = (lat, lon)
-size = 2048
-rotation = 15
-output_size = 1024
+size = 1024
+rotation = 0
+# output_size = 1024
 
 # 4️⃣ Define the output directory.
 map_directory = "map_directory"
@@ -47,9 +47,9 @@ osm_file = "path/to/osm_file.osm"
 # it's recommended to change them according to your needs.
 dem_settings = mfs.settings.DEMSettings(multiplier=1, blur_radius=40, plateau=15, water_depth=10)
 background_settings = mfs.settings.BackgroundSettings(
-    generate_background=True,
+    # generate_background=True,
     generate_water=True,
-    water_blurriness=50,
+    water_blurriness=100,
     remove_center=True,
 )
 grle_settings = mfs.settings.GRLESettings(
@@ -90,7 +90,7 @@ mp = mfs.Map(
     satellite_settings=satellite_settings,
     # texture_custom_schema=texture_custom_schema,
     # tree_custom_schema=tree_custom_schema,
-    output_size=output_size,
+    # output_size=output_size,
 )
 
 # 9️⃣ Launch the generation process.
