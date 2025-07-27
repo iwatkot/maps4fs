@@ -542,8 +542,6 @@ class Background(MeshComponent, ImageComponent):
         It creates polygons from the polylines, fits them into the map bounds, and generates a mesh.
         """
         self.logger.debug("Starting line-based water generation...")
-
-        # water_polylines = self.get_infolayer_data(Parameters.BACKGROUND, Parameters.WATER_POLYLINES)
         water_polygons = self.get_infolayer_data(Parameters.BACKGROUND, Parameters.WATER)
         self.logger.debug(
             "Found %s water polygons in background info layer.", len(water_polygons)  # type: ignore
@@ -667,7 +665,6 @@ class Background(MeshComponent, ImageComponent):
             self.generate_linebased_water()
         except Exception as e:
             self.logger.error("Error during line-based water generation: %s", e)
-            raise
 
         if not os.path.isfile(self.water_resources_path):
             self.logger.warning("Water resources texture not found.")
