@@ -40,6 +40,8 @@ class Parameters:
 
     WATER_ADD_WIDTH = 2
 
+    HEIGHT_SCALE = "heightScale"
+
 
 class SharedSettings(BaseModel):
     """Represents the shared settings for all components."""
