@@ -4,6 +4,7 @@ import os
 from xml.etree import ElementTree as ET
 
 from maps4fs.generator.component.base.component import Component
+from maps4fs.generator.settings import Parameters
 
 
 class XMLComponent(Component):
@@ -57,6 +58,20 @@ class XMLComponent(Component):
 
         tree.write(xml_path, encoding="utf-8", xml_declaration=True)
 
+    def get_element_from_tree(self, path: str, xml_path: str | None = None) -> ET.Element | None:
+        """Finds an element in the XML tree by the path.
+
+        Arguments:
+            path (str): The path to the element.
+            xml_path (str, optional): The path to the XML file. Defaults to None.
+
+        Returns:
+            ET.Element | None: The found element or None if not found.
+        """
+        tree = self.get_tree(xml_path)
+        root = tree.getroot()
+        return root.find(path)  # type: ignore
+
     def get_and_update_element(self, root: ET.Element, path: str, data: dict[str, str]) -> None:
         """Finds the element by the path and updates it with the provided data.
 
@@ -106,3 +121,25 @@ class XMLComponent(Component):
         """
         element = ET.SubElement(parent, element_name)
         self.update_element(element, data)
+
+    def get_height_scale(self) -> int:
+        """Returns the height scale from the I3D file.
+
+        Returns:
+            int: The height scale value.
+
+        Raises:
+            ValueError: If the height scale element is not found in the I3D file.
+        """
+        height_scale_element = self.get_element_from_tree(
+            path=".//Scene/TerrainTransformGroup",
+            xml_path=self.game.i3d_file_path(self.map_directory),
+        )
+        if height_scale_element is None:
+            raise ValueError("Height scale element not found in the I3D file.")
+
+        height_scale = height_scale_element.get(Parameters.HEIGHT_SCALE)
+        if height_scale is None:
+            raise ValueError("Height scale not found in the I3D file.")
+
+        return int(height_scale)

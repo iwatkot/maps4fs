@@ -83,7 +83,7 @@ class I3d(XMLComponent):
         root = tree.getroot()
         path = ".//Scene/TerrainTransformGroup"
 
-        data = {"heightScale": str(value)}
+        data = {Parameters.HEIGHT_SCALE: str(value)}
 
         self.get_and_update_element(root, path, data)  # type: ignore
         self.save_tree(tree)  # type: ignore
