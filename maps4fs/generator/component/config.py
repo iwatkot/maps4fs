@@ -131,7 +131,7 @@ class Config(XMLComponent):
         root = tree.getroot()
 
         # Find the <latitude>40.6</latitude> element in the XML file.
-        latitude_element = root.find("./latitude")
+        latitude_element = root.find("./latitude")  # type: ignore
         if latitude_element is not None:
             map_latitude = round(self.map.coordinates[0], 1)
             latitude_element.text = str(map_latitude)
