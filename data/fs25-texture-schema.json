@@ -37,7 +37,8 @@
     "width": 8,
     "color": [130, 130, 130],
     "info_layer": "buildings",
-    "procedural": ["PG_buildings"]
+    "procedural": ["PG_buildings"],
+    "area_type": "city"
   },
   {
     "name": "concreteGravelSand",
@@ -258,6 +259,7 @@
     "width": 10,
     "color": [255, 20, 20],
     "background": true,
-    "info_layer": "water"
+    "info_layer": "water",
+    "area_water": true
   }
 ]

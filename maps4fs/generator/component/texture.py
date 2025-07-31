@@ -137,6 +137,28 @@ class Texture(ImageComponent):
         """
         return [layer for layer in self.layers if layer.usage == usage]
 
+    def get_area_type_layers(self, area_type: str | None = None) -> list[Layer]:
+        """Returns layers by area type. If area_type is None, returns all layers
+        with area_type set (not None).
+
+        Arguments:
+            area_type (str | None): Area type of the layer.
+
+        Returns:
+            list[Layer]: List of layers.
+        """
+        if area_type is None:
+            return [layer for layer in self.layers if layer.area_type is not None]
+        return [layer for layer in self.layers if layer.area_type == area_type]
+
+    def get_water_area_layers(self) -> list[Layer]:
+        """Returns layers which are water areas.
+
+        Returns:
+            list[Layer]: List of layers which are water areas.
+        """
+        return [layer for layer in self.layers if layer.area_water]
+
     def process(self) -> None:
         """Processes the data to generate textures."""
         self._prepare_weights()
