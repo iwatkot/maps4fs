@@ -515,6 +515,8 @@ Let's have a closer look at the fields:
 - `border` - this value defines the border between the texture and the edge of the map. It's used to prevent the texture from being drawn on the edge of the map. The value is in pixels.
 - `precise_tags` - can be used for more specific tags, for example instead of `"natural": "wood"` you can use `"leaf_type": "broadleaved"` to draw only broadleaved trees.
 - `precise_usage` - the same as `usage`, but being used with `precise_tags`.
+- `area_type` - one of the supported by Giants Editor area types, such as: "open_land", "city", "village", "harbor", "industrial", "open_water". It will be reflected in the environment info layer file.  
+- `area_water` - whenever this field is set to true, the area will be considered as water, and it will be changed in the environment info layer file.
 
 ## Background terrain
 
