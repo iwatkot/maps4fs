@@ -265,5 +265,5 @@ class MeshComponent(Component):
             trimesh.Trimesh: A new mesh with inverted faces.
         """
         mesh_copy = mesh.copy()
-        mesh_copy.faces = mesh_copy.faces[:, ::-1]
+        mesh_copy.faces = mesh_copy.faces[:, ::-1]  # type: ignore
         return mesh_copy

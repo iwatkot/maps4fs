@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 from random import choice, randint, uniform
-from typing import Generator
+from typing import Any, Generator
 from xml.etree import ElementTree as ET
 
 import cv2
@@ -47,6 +47,9 @@ class I3d(XMLComponent):
         """Gets the path to the map I3D file from the game instance and saves it to the instance
         attribute. If the game does not support I3D files, the attribute is set to None."""
         self.xml_path = self.game.i3d_file_path(self.map_directory)
+
+        self.forest_info: dict[str, Any] = {}
+        self.field_info: dict[str, Any] = {}
 
     def process(self) -> None:
         """Updates the map I3D file and creates splines in a separate I3D file."""
@@ -267,6 +270,8 @@ class I3d(XMLComponent):
 
         node_id = NODE_ID_STARTING_VALUE
         field_id = 1
+        added_fields = skipped_fields = 0
+        skipped_field_ids: list[int] = []
 
         for field in tqdm(fields, desc="Adding fields", unit="field"):
             try:
@@ -279,6 +284,7 @@ class I3d(XMLComponent):
                     field_id,
                     e,
                 )
+                skipped_fields += 1
                 continue
 
             field_ccs = [self.top_left_coordinates_to_center(point) for point in fitted_field]
@@ -297,6 +303,11 @@ class I3d(XMLComponent):
 
             node_id += 1
             field_id += 1
+            added_fields += 1
+
+        self.field_info["added_fields"] = added_fields
+        self.field_info["skipped_fields"] = skipped_fields
+        self.field_info["skipped_field_ids"] = skipped_field_ids
 
         self.save_tree(tree)
 
@@ -504,6 +515,8 @@ class I3d(XMLComponent):
 
         node_id = TREE_NODE_ID_STARTING_VALUE
 
+        tree_count = 0
+
         for forest_layer in forest_layers:
             weights_directory = self.game.weights_dir_path(self.map_directory)
             forest_image_path = forest_layer.get_preview_or_path(weights_directory)
@@ -542,12 +555,17 @@ class I3d(XMLComponent):
                 )
 
             forest_image = cv2.imread(forest_image_path, cv2.IMREAD_UNCHANGED)
-            for x, y in self.non_empty_pixels(
-                forest_image, step=self.map.i3d_settings.forest_density  # type: ignore
-            ):
+
+            step = self.get_step_by_limit(
+                forest_image,
+                self.map.i3d_settings.tree_limit,
+                self.map.i3d_settings.forest_density,
+            )
+
+            for x, y in self.non_empty_pixels(forest_image, step=step):  # type: ignore
                 shifted_x, shifted_y = self.randomize_coordinates(
                     (x, y),
-                    self.map.i3d_settings.forest_density,
+                    step,
                     self.map.i3d_settings.trees_relative_shift,
                 )
 
@@ -573,8 +591,15 @@ class I3d(XMLComponent):
                 }
                 trees_node.append(self.create_element("ReferenceNode", data))
 
+                tree_count += 1
+
             scene_node.append(trees_node)
             self.save_tree(tree)
+
+        self.forest_info["tree_count"] = tree_count
+        self.forest_info["tree_limit"] = self.map.i3d_settings.tree_limit
+        self.forest_info["initial_step"] = self.map.i3d_settings.forest_density
+        self.forest_info["actual_step"] = step
 
         self.assets.forests = self.xml_path
 
@@ -606,19 +631,61 @@ class I3d(XMLComponent):
         image: np.ndarray, step: int = 1
     ) -> Generator[tuple[int, int], None, None]:
         """Receives numpy array, which represents single-channeled image of uint8 type.
-        Yield coordinates of non-empty pixels (pixels with value greater than 0).
+        Yield coordinates of non-empty pixels (pixels with value greater than 0), sampling about 1/step of them.
 
         Arguments:
             image (np.ndarray): The image to get non-empty pixels from.
-            step (int, optional): The step to iterate through the image. Defaults to 1.
+            step (int, optional): The step to sample non-empty pixels. Defaults to 1.
 
         Yields:
             tuple[int, int]: The coordinates of non-empty pixels.
         """
-        for y, row in enumerate(image[::step]):
-            for x, value in enumerate(row[::step]):
+        count = 0
+        for y, row in enumerate(image):
+            for x, value in enumerate(row):
                 if value > 0:
-                    yield x * step, y * step
+                    if count % step == 0:
+                        yield x, y
+                    count += 1
+
+    @staticmethod
+    def non_empty_pixels_count(image: np.ndarray) -> int:
+        """Counts the number of non-empty pixels in the image.
+
+        Arguments:
+            image (np.ndarray): The image to count non-empty pixels in.
+
+        Returns:
+            int: The number of non-empty pixels in the image.
+        """
+        result = np.count_nonzero(image > 0)
+        return result
+
+    def get_step_by_limit(
+        self, image: np.ndarray, limit: int, current_step: int | None = None
+    ) -> int:
+        """Calculates the step size for iterating through the image based on the limit based
+        on the number of non-empty pixels in the image.
+
+        Arguments:
+            image (np.ndarray): The image to calculate the step size for.
+            limit (int): The maximum number of non-empty pixels to process.
+            current_step (int | None, optional): The current step size. If provided, the method
+                will return the maximum of the recommended step and the current step.
+
+        Returns:
+            int: The recommended step size for iterating through the image.
+        """
+        available_tree_count = self.non_empty_pixels_count(image)
+        self.forest_info["available_tree_count"] = available_tree_count
+        if limit <= 0 or available_tree_count <= limit:
+            recommended_step = 1
+        else:
+            recommended_step = int(available_tree_count / limit)
+
+        self.forest_info["step_by_limit"] = recommended_step
+
+        return recommended_step if not current_step else max(recommended_step, current_step)
 
     def get_not_resized_dem(self) -> np.ndarray | None:
         """Reads the not resized DEM image from the background component.
@@ -638,3 +705,16 @@ class I3d(XMLComponent):
         not_resized_dem = cv2.imread(background_component.not_resized_path, cv2.IMREAD_UNCHANGED)
 
         return not_resized_dem
+
+    def info_sequence(self) -> dict[str, dict[str, str | float | int]]:
+        """Returns information about the component.
+
+        Returns:
+            dict[str, dict[str, str | float | int]]: Information about the component.
+        """
+        data = {
+            "Forests": self.forest_info,
+            "Fields": self.field_info,
+        }
+
+        return data

@@ -203,6 +203,7 @@ class I3DSettings(SettingsModel):
     Attributes:
         add_trees (bool): add trees to the map.
         forest_density (int): density of the forest (distance between trees).
+        tree_limit (int): maximum number of trees to be added to the map.
         trees_relative_shift (int): relative shift of the trees.
         spline_density (int): the number of extra points that will be added between each two
             existing points.
@@ -212,6 +213,7 @@ class I3DSettings(SettingsModel):
 
     add_trees: bool = True
     forest_density: int = 10
+    tree_limit: int = 0
     trees_relative_shift: int = 20
 
     spline_density: int = 2
