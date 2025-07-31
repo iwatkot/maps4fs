@@ -12,5 +12,16 @@
         "PYTHONPATH": "${workspaceFolder}"
       }
     },
+    {
+      "name": "GRLE to PNG Converter",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/dev/utils/grle_to_png/converter.py",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    },
   ]
 }
