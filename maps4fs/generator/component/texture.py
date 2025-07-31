@@ -159,6 +159,14 @@ class Texture(ImageComponent):
         """
         return [layer for layer in self.layers if layer.area_water]
 
+    def get_indoor_layers(self) -> list[Layer]:
+        """Returns layers which are indoor areas.
+
+        Returns:
+            list[Layer]: List of layers which are indoor areas.
+        """
+        return [layer for layer in self.layers if layer.indoor]
+
     def process(self) -> None:
         """Processes the data to generate textures."""
         self._prepare_weights()

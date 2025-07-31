@@ -38,7 +38,8 @@
     "color": [130, 130, 130],
     "info_layer": "buildings",
     "procedural": ["PG_buildings"],
-    "area_type": "city"
+    "area_type": "city",
+    "indoor": true
   },
   {
     "name": "concreteGravelSand",

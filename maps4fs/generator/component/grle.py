@@ -132,6 +132,7 @@ class GRLE(ImageComponent, XMLComponent):
             self._add_plants()
         if self.game.environment_processing:
             self._process_environment()
+            self._process_indoor()
 
     def previews(self) -> list[str]:
         """Returns a list of paths to the preview images (empty list).
@@ -595,8 +596,47 @@ class GRLE(ImageComponent, XMLComponent):
             "Resized weight image for area type layer, new shape: %s.", weight_image.shape
         )
 
+        if dilations <= 0:
+            return weight_image
+
         dilated_weight_image = cv2.dilate(
             weight_image.astype(np.uint8), np.ones((dilations, dilations), np.uint8), iterations=dilations  # type: ignore
         )
 
         return dilated_weight_image
+
+    def _process_indoor(self) -> None:
+        """Processes the indoor layers."""
+        info_layer_indoor_path = self.game.get_indoor_mask_path(self.map_directory)
+        if not info_layer_indoor_path or not os.path.isfile(info_layer_indoor_path):
+            self.logger.warning(
+                "Indoor InfoLayer PNG file not found in %s.", info_layer_indoor_path
+            )
+            return
+
+        indoor_mask_image = cv2.imread(info_layer_indoor_path, cv2.IMREAD_UNCHANGED)
+        if indoor_mask_image is None:
+            self.logger.warning(
+                "Failed to read the indoor InfoLayer PNG file %s.", info_layer_indoor_path
+            )
+            return
+
+        indoor_mask_size = int(indoor_mask_image.shape[0])
+        self.logger.debug("Indoor InfoLayer PNG file loaded, shape: %s.", indoor_mask_image.shape)
+
+        texture_component = self.map.get_texture_component()
+        if not texture_component:
+            self.logger.warning("Texture component not found in the map.")
+            return
+
+        for layer in texture_component.get_indoor_layers():
+            weight_image = self.get_resized_weight(layer, indoor_mask_size, dilations=0)
+            if weight_image is None:
+                self.logger.warning("Weight image for indoor layer not found in %s.", layer.name)
+                continue
+
+            indoor_mask_image[weight_image > 0] = 1
+
+        cv2.imwrite(info_layer_indoor_path, indoor_mask_image)
+        self.logger.debug("Indoor InfoLayer PNG file saved: %s.", info_layer_indoor_path)
+        self.preview_paths["indoor"] = info_layer_indoor_path
