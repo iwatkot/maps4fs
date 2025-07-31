@@ -46,6 +46,9 @@ class Layer:
         border: int | None = None,
         precise_tags: dict[str, str | list[str] | bool] | None = None,
         precise_usage: str | None = None,
+        area_type: str | None = None,
+        area_water: bool = False,
+        indoor: bool = False,
     ):
         self.name = name
         self.count = count
@@ -62,6 +65,9 @@ class Layer:
         self.border = border
         self.precise_tags = precise_tags
         self.precise_usage = precise_usage
+        self.area_type = area_type
+        self.area_water = area_water
+        self.indoor = indoor
 
     def to_json(self) -> dict[str, str | list[str] | bool]:  # type: ignore
         """Returns dictionary with layer data.
@@ -84,6 +90,9 @@ class Layer:
             "border": self.border,
             "precise_tags": self.precise_tags,
             "precise_usage": self.precise_usage,
+            "area_type": self.area_type,
+            "area_water": self.area_water,
+            "indoor": self.indoor,
         }
 
         data = {k: v for k, v in data.items() if v is not None}

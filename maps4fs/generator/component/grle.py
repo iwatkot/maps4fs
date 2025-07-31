@@ -11,7 +11,12 @@ from tqdm import tqdm
 
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_xml import XMLComponent
+from maps4fs.generator.component.layer import Layer
 from maps4fs.generator.settings import Parameters
+
+# This value sums up the pixel value of the basic area type to convert it from "No Water" to "Near Water".
+# For example, if the basic area type is "city" (1), then the pixel value for "near water" will be 9.
+WATER_AREA_PIXEL_VALUE = 8
 
 
 def plant_to_pixel_value(plant_name: str) -> int | None:
@@ -29,6 +34,27 @@ def plant_to_pixel_value(plant_name: str) -> int | None:
         "meadow": 131,
     }
     return plants.get(plant_name)
+
+
+def area_type_to_pixel_value(area_type: str) -> int | None:
+    """Returns the pixel value representation of the area type.
+    If not found, returns None.
+
+    Arguments:
+        area_type (str): name of the area type
+
+    Returns:
+        int | None: pixel value of the area type or None if not found.
+    """
+    area_types = {
+        "open_land": 0,
+        "city": 1,
+        "village": 2,
+        "harbor": 3,
+        "industrial": 4,
+        "open_water": 5,
+    }
+    return area_types.get(area_type)
 
 
 class GRLE(ImageComponent, XMLComponent):
@@ -104,6 +130,9 @@ class GRLE(ImageComponent, XMLComponent):
         self._add_farmlands()
         if self.game.plants_processing and self.map.grle_settings.add_grass:
             self._add_plants()
+        if self.game.environment_processing:
+            self._process_environment()
+            self._process_indoor()
 
     def previews(self) -> list[str]:
         """Returns a list of paths to the preview images (empty list).
@@ -129,6 +158,9 @@ class GRLE(ImageComponent, XMLComponent):
             image_colored = cv2.applyColorMap(image_normalized, cv2.COLORMAP_JET)
             cv2.imwrite(save_path, image_colored)
             preview_paths.append(save_path)
+
+            if preview_name != "farmlands":
+                continue
 
             with_fields_save_path = os.path.join(
                 self.previews_directory, f"{preview_name}_with_fields.png"
@@ -462,3 +494,149 @@ class GRLE(ImageComponent, XMLComponent):
         image_np[:, 0] = 0  # Left side
         image_np[:, -1] = 0  # Right side
         return image_np
+
+    def _process_environment(self) -> None:
+        info_layer_environment_path = self.game.get_environment_path(self.map_directory)
+        if not info_layer_environment_path or not os.path.isfile(info_layer_environment_path):
+            self.logger.warning(
+                "Environment InfoLayer PNG file not found in %s.", info_layer_environment_path
+            )
+            return
+
+        self.logger.debug(
+            "Processing environment InfoLayer PNG file: %s.", info_layer_environment_path
+        )
+
+        environment_image = cv2.imread(info_layer_environment_path, cv2.IMREAD_UNCHANGED)
+        if environment_image is None:
+            self.logger.error("Failed to read the environment InfoLayer PNG file.")
+            return
+
+        self.logger.debug(
+            "Environment InfoLayer PNG file loaded, shape: %s.", environment_image.shape
+        )
+
+        environment_size = int(environment_image.shape[0])
+
+        # 1. Get the texture layers that contain "area_type" property.
+        # 2. Read the corresponding weight image (not the dissolved ones!).
+        # 3. Resize it to match the environment image size (probably 1/4 of the texture size).
+        # 4. Dilate the texture mask to make it little bit bigger.
+        # 5. Set the corresponding pixel values of the environment image to the pixel value of the area type.
+        # 6. Get the texture layer that "area_water" is True.
+        # 7. Same as resize, dilate, etc.
+        # 8. Sum the current pixel value with the WATER_AREA_PIXEL_VALUE.
+
+        texture_component = self.map.get_texture_component()
+        if not texture_component:
+            self.logger.warning("Texture component not found in the map.")
+            return
+
+        for layer in texture_component.get_area_type_layers():
+            pixel_value = area_type_to_pixel_value(layer.area_type)  # type: ignore
+            weight_image = self.get_resized_weight(layer, environment_size)  # type: ignore
+            if weight_image is None:
+                self.logger.warning("Weight image for area type layer not found in %s.", layer.name)
+                continue
+            environment_image[weight_image > 0] = pixel_value  # type: ignore
+
+        for layer in texture_component.get_water_area_layers():
+            pixel_value = WATER_AREA_PIXEL_VALUE
+            weight_image = self.get_resized_weight(layer, environment_size)
+            if weight_image is None:
+                self.logger.warning(
+                    "Weight image for water area layer not found in %s.", layer.name
+                )
+                continue
+            environment_image[weight_image > 0] += pixel_value  # type: ignore
+
+        cv2.imwrite(info_layer_environment_path, environment_image)
+        self.logger.debug("Environment InfoLayer PNG file saved: %s.", info_layer_environment_path)
+        self.preview_paths["environment"] = info_layer_environment_path
+
+    def get_resized_weight(
+        self, layer: Layer, resize_to: int, dilations: int = 3
+    ) -> np.ndarray | None:
+        """Get the resized weight image for a given layer.
+
+        Arguments:
+            layer (Layer): The layer for which to get the weight image.
+            resize_to (int): The size to which the weight image should be resized.
+            dilations (int): The number of dilations to apply to the weight image.
+
+        Returns:
+            np.ndarray | None: The resized and dilated weight image, or None if the image could not be loaded.
+        """
+        weight_image_path = layer.get_preview_or_path(
+            self.game.weights_dir_path(self.map_directory)
+        )
+        self.logger.debug("Weight image path for area type layer: %s.", weight_image_path)
+
+        if not weight_image_path or not os.path.isfile(weight_image_path):
+            self.logger.warning(
+                "Weight image for area type layer not found in %s.", weight_image_path
+            )
+            return None
+
+        weight_image = cv2.imread(weight_image_path, cv2.IMREAD_UNCHANGED)
+        if weight_image is None:
+            self.logger.error("Failed to read the weight image for area type layer.")
+            return None
+
+        self.logger.debug("Weight image for area type layer loaded, shape: %s.", weight_image.shape)
+
+        # Resize the weight image to match the environment image size.
+        weight_image = cv2.resize(
+            weight_image,
+            (resize_to, resize_to),
+            interpolation=cv2.INTER_NEAREST,
+        )
+
+        self.logger.debug(
+            "Resized weight image for area type layer, new shape: %s.", weight_image.shape
+        )
+
+        if dilations <= 0:
+            return weight_image
+
+        dilated_weight_image = cv2.dilate(
+            weight_image.astype(np.uint8), np.ones((dilations, dilations), np.uint8), iterations=dilations  # type: ignore
+        )
+
+        return dilated_weight_image
+
+    def _process_indoor(self) -> None:
+        """Processes the indoor layers."""
+        info_layer_indoor_path = self.game.get_indoor_mask_path(self.map_directory)
+        if not info_layer_indoor_path or not os.path.isfile(info_layer_indoor_path):
+            self.logger.warning(
+                "Indoor InfoLayer PNG file not found in %s.", info_layer_indoor_path
+            )
+            return
+
+        indoor_mask_image = cv2.imread(info_layer_indoor_path, cv2.IMREAD_UNCHANGED)
+        if indoor_mask_image is None:
+            self.logger.warning(
+                "Failed to read the indoor InfoLayer PNG file %s.", info_layer_indoor_path
+            )
+            return
+
+        indoor_mask_size = int(indoor_mask_image.shape[0])
+        self.logger.debug("Indoor InfoLayer PNG file loaded, shape: %s.", indoor_mask_image.shape)
+
+        texture_component = self.map.get_texture_component()
+        if not texture_component:
+            self.logger.warning("Texture component not found in the map.")
+            return
+
+        for layer in texture_component.get_indoor_layers():
+            weight_image = self.get_resized_weight(layer, indoor_mask_size, dilations=0)
+            if weight_image is None:
+                self.logger.warning("Weight image for indoor layer not found in %s.", layer.name)
+                continue
+
+            indoor_mask_image[weight_image > 0] = 1
+
+        cv2.imwrite(info_layer_indoor_path, indoor_mask_image)
+        self.logger.debug("Indoor InfoLayer PNG file saved: %s.", info_layer_indoor_path)
+        self.preview_paths["indoor"] = info_layer_indoor_path

@@ -40,6 +40,7 @@ class Game:
     _tree_schema: str | None = None
     _i3d_processing: bool = True
     _plants_processing: bool = True
+    _environment_processing: bool = True
     _fog_processing: bool = True
     _dissolve: bool = True
 
@@ -180,6 +181,28 @@ class Game:
         weights_dir = self.weights_dir_path(map_directory)
         return os.path.join(weights_dir, "infoLayer_farmlands.png")
 
+    def get_environment_path(self, map_directory: str) -> str:
+        """Returns the path to the environment file.
+
+        Arguments:
+            map_directory (str): The path to the map directory.
+
+        Returns:
+            str: The path to the environment file."""
+        weights_dir = self.weights_dir_path(map_directory)
+        return os.path.join(weights_dir, "infoLayer_environment.png")
+
+    def get_indoor_mask_path(self, map_directory: str) -> str:
+        """Returns the path to the indoor mask file.
+
+        Arguments:
+            map_directory (str): The path to the map directory.
+
+        Returns:
+            str: The path to the indoor mask file."""
+        weights_dir = self.weights_dir_path(map_directory)
+        return os.path.join(weights_dir, "infoLayer_indoorMask.png")
+
     def get_farmlands_xml_path(self, map_directory: str) -> str:
         """Returns the path to the farmlands xml file.
 
@@ -217,6 +240,14 @@ class Game:
         Returns:
             bool: True if the i3d file should be processed, False otherwise."""
         return self._i3d_processing
+
+    @property
+    def environment_processing(self) -> bool:
+        """Returns whether the environment should be processed.
+
+        Returns:
+            bool: True if the environment should be processed, False otherwise."""
+        return self._environment_processing
 
     @property
     def fog_processing(self) -> bool:
@@ -269,6 +300,7 @@ class FS22(Game):
     _map_template_path = os.path.join(working_directory, "data", "fs22-map-template.zip")
     _texture_schema = os.path.join(working_directory, "data", "fs22-texture-schema.json")
     _i3d_processing = False
+    _environment_processing = False
     _fog_processing = False
     _plants_processing = False
     _dissolve = False

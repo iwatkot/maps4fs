@@ -20,3 +20,4 @@ history.json
 map_directory/
 local.env
 *.sqlite
+dev/utils/grle_to_png/data/
