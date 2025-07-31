@@ -557,7 +557,7 @@ class I3d(XMLComponent):
             forest_image = cv2.imread(forest_image_path, cv2.IMREAD_UNCHANGED)
 
             step = self.get_step_by_limit(
-                forest_image,
+                forest_image,  # type: ignore
                 self.map.i3d_settings.tree_limit,
                 self.map.i3d_settings.forest_density,
             )
