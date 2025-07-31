@@ -619,6 +619,8 @@ You can also apply some advanced settings to the map generation process.<br>
 
 - Forest density - the density of the forest in meters. The lower the value, the lower the distance between the trees, which makes the forest denser. Note, that low values will lead to enormous number of trees, which may cause the Giants Editor to crash or lead to performance issues. By default, it's set to 10.
 
+- Tree limit - this value will be used to adjust the forest density value. For example, if it's possible to place 100000 trees from OSM data, and the forest density is set to 10, the expected number of trees on map will be 10000. At the same time, if you set the tree limit to 5000, the forest density will be adjusted to 20, which means that the distance between the trees will be doubled. This value is useful to prevent the Giants Editor from crashing due to too many trees on the map. By default, it's set to 0, which means that it's disabled and will use the forest density value as is. Note, that it will not lead to the exact number of trees, but will adjust the forest density value to fit the tree limit so the resulting number of trees will be more or less equal to the tree limit value.
+
 - Trees relative shift - represents the maximum possible shift of the tree from it's original position in percents of the forest density value. The higher the value, the more the trees will be shifted from their original positions. Warning: higher values can lead to overlapping trees.
 
 - Splines density - number of points, which will be added (interpolate) between each pair of existing points. The higher the value, the denser the spline will be. It can smooth the splines, but high values can in opposite make the splines look unnatural.
