@@ -528,7 +528,7 @@ class Background(MeshComponent, ImageComponent):
         )
 
         dem_image = self.blur_edges_by_mask(
-            dem_image, water_resources_image, smaller_kernel=3, iterations=5, bigger_kernel=5
+            dem_image, water_resources_image, smaller_kernel=3, iterations=5, bigger_kernel=5  # type: ignore
         )
 
         # Save the modified dem_image back to the output path
