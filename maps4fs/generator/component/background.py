@@ -789,13 +789,25 @@ class Background(MeshComponent, ImageComponent):
                 polygon = segment.buffer(width, resolution=4, cap_style="flat", join_style="mitre")
                 road_polygons.append(polygon)
 
-            # road_np = self.polygon_points_to_np(polygon)
-            # mask = np.zeros(dem_image.shape, dtype=np.uint8)
+            for polygon in road_polygons:
+                polygon_points = polygon.exterior.coords
+                road_np = self.polygon_points_to_np(polygon_points)
+                mask = np.zeros(dem_image.shape, dtype=np.uint8)
 
-            # try:
-            #     cv2.fillPoly(mask, [road_np], 255)  # type: ignore
-            # except Exception as e:
-            #     self.logger.debug("Could not create mask for road with error: %s", e)
-            #     continue
+                try:
+                    cv2.fillPoly(mask, [road_np], 255)  # type: ignore
+                except Exception as e:
+                    self.logger.debug("Could not create mask for road with error: %s", e)
+                    continue
 
-            # mean_value = cv2.mean(dem_image, mask=mask)[0]
+                mean_value = cv2.mean(dem_image, mask=mask)[0]
+                dem_image[mask == 255] = mean_value
+
+        main_dem_path = self.game.dem_file_path(self.map_directory)
+        output_size = dem_image.shape[0] + 1
+        resized_dem = cv2.resize(
+            dem_image, (output_size, output_size), interpolation=cv2.INTER_NEAREST
+        )
+
+        cv2.imwrite(main_dem_path, resized_dem)
+        print("Flattened roads saved to DEM file: %s", main_dem_path)
