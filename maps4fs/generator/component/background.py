@@ -100,7 +100,7 @@ class Background(MeshComponent, ImageComponent):
         shutil.copyfile(self.output_path, self.not_substracted_path)
         self.save_map_dem(self.output_path, save_path=self.not_resized_path)
 
-        if self.game.background_settings.flatten_roads:
+        if self.map.background_settings.flatten_roads:
             self.flatten_roads()
 
         if self.game.additional_dem_name is not None:
