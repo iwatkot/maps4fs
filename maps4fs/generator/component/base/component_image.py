@@ -176,7 +176,7 @@ class ImageComponent(Component):
             blur_radius += 1
         return blur_radius
 
-    def blur_by_mask(self, data: np.ndarray, mask: np.ndarray) -> np.ndarray:
+    def blur_by_mask(self, data: np.ndarray, mask: np.ndarray, blur_radius: int = 3) -> np.ndarray:
         """Blurs the provided image only where the mask is set.
 
         Arguments:
@@ -190,14 +190,21 @@ class ImageComponent(Component):
             raise ValueError("Data and mask must have the same dimensions.")
 
         # Create a blurred version of the data
-        blurred_data = cv2.GaussianBlur(data, (3, 3), sigmaX=3)
+        blurred_data = cv2.GaussianBlur(data, (blur_radius, blur_radius), sigmaX=3)
 
         # Combine the blurred data with the original data using the mask
         result = np.where(mask == 255, blurred_data, data)
 
         return result
 
-    def blur_edges_by_mask(self, data: np.ndarray, mask: np.ndarray) -> np.ndarray:
+    def blur_edges_by_mask(
+        self,
+        data: np.ndarray,
+        mask: np.ndarray,
+        bigger_kernel: int = 3,
+        smaller_kernel: int = 1,
+        iterations: int = 1,
+    ) -> np.ndarray:
         """Blurs the edges of the edge region where changes were made by mask earlier.
         Creates a slightly bigger mask, a slightly smaller mask, subtract them
         and obtains the mask for the edges.
@@ -214,8 +221,12 @@ class ImageComponent(Component):
         if data.shape[:2] != mask.shape[:2]:
             raise ValueError("Data and mask must have the same dimensions.")
 
-        bigger_mask = cv2.dilate(mask, np.ones((3, 3), np.uint8), iterations=1)
-        smaller_mask = cv2.erode(mask, np.ones((1, 1), np.uint8), iterations=1)
+        bigger_mask = cv2.dilate(
+            mask, np.ones((bigger_kernel, bigger_kernel), np.uint8), iterations=iterations
+        )
+        smaller_mask = cv2.erode(
+            mask, np.ones((smaller_kernel, smaller_kernel), np.uint8), iterations=iterations
+        )
 
         edge_mask = cv2.subtract(bigger_mask, smaller_mask)
 

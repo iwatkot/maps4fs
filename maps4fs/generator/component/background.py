@@ -21,6 +21,8 @@ from maps4fs.generator.component.dem import DEM
 from maps4fs.generator.component.texture import Texture
 from maps4fs.generator.settings import Parameters
 
+SEGMENT_LENGTH = 2
+
 
 class Background(MeshComponent, ImageComponent):
     """Component for creating 3D obj files based on DEM data around the map.
@@ -98,7 +100,7 @@ class Background(MeshComponent, ImageComponent):
         shutil.copyfile(self.output_path, self.not_substracted_path)
         self.save_map_dem(self.output_path, save_path=self.not_resized_path)
 
-        if True:
+        if self.game.background_settings.flatten_roads:
             self.flatten_roads()
 
         if self.game.additional_dem_name is not None:
@@ -729,6 +731,7 @@ class Background(MeshComponent, ImageComponent):
         self.plane_from_np(elevated_water, elevated_save_path, include_zeros=False)
 
     def flatten_roads(self) -> None:
+        """Flattens the roads in the DEM data by averaging the height values along the road polylines."""
         if not self.not_resized_path or not os.path.isfile(self.not_resized_path):
             self.logger.warning("No DEM data found for flattening roads.")
             return
@@ -765,10 +768,8 @@ class Background(MeshComponent, ImageComponent):
                 )
                 continue
 
-            # fitted_road = self.interpolate_points(fitted_road, num_points=20)
-
             polyline = shapely.LineString(fitted_road)
-            SEGMENT_LENGTH = 2
+
             total_length = polyline.length
             self.logger.debug("Total length of the road polyline: %s", total_length)
 
@@ -804,7 +805,7 @@ class Background(MeshComponent, ImageComponent):
                     self.logger.debug("Could not create mask for road with error: %s", e)
                     continue
 
-                mean_value = cv2.mean(dem_image, mask=mask)[0]
+                mean_value = cv2.mean(dem_image, mask=mask)[0]  # type: ignore
                 dem_image[mask == 255] = mean_value
                 full_mask[mask == 255] = 255
 
@@ -812,7 +813,6 @@ class Background(MeshComponent, ImageComponent):
         dem_image = self.blur_by_mask(dem_image, full_mask)
         dem_image = self.blur_edges_by_mask(dem_image, full_mask)
 
-        # ! DEBUG SECTION !
         output_size = dem_image.shape[0] + 1
         resized_dem = cv2.resize(
             dem_image, (output_size, output_size), interpolation=cv2.INTER_NEAREST
@@ -820,5 +820,3 @@ class Background(MeshComponent, ImageComponent):
 
         cv2.imwrite(main_dem_path, resized_dem)
         self.logger.debug("Flattened roads saved to DEM file: %s", main_dem_path)
-
-        # ! END OF DEBUG SECTION !
