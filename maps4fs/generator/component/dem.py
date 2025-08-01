@@ -132,7 +132,7 @@ class DEM(ImageComponent):
             raise ValueError(
                 f"Failed to get DEM data from DTM provider: {e}. "
                 "Try using different DTM provider."
-            )
+            ) from e
 
         if len(data.shape) != 2:
             self.logger.error("DTM provider returned incorrect data: more than 1 channel.")
