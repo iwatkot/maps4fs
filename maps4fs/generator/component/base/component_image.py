@@ -175,3 +175,59 @@ class ImageComponent(Component):
         elif blur_radius % 2 == 0:
             blur_radius += 1
         return blur_radius
+
+    def blur_by_mask(self, data: np.ndarray, mask: np.ndarray, blur_radius: int = 3) -> np.ndarray:
+        """Blurs the provided image only where the mask is set.
+
+        Arguments:
+            data (np.ndarray): The image data to be blurred.
+            mask (np.ndarray): The mask where the blur should be applied.
+
+        Returns:
+            np.ndarray: The image with the blur applied according to the mask.
+        """
+        if data.shape[:2] != mask.shape[:2]:
+            raise ValueError("Data and mask must have the same dimensions.")
+
+        # Create a blurred version of the data
+        blurred_data = cv2.GaussianBlur(data, (blur_radius, blur_radius), sigmaX=3)
+
+        # Combine the blurred data with the original data using the mask
+        result = np.where(mask == 255, blurred_data, data)
+
+        return result
+
+    def blur_edges_by_mask(
+        self,
+        data: np.ndarray,
+        mask: np.ndarray,
+        bigger_kernel: int = 3,
+        smaller_kernel: int = 1,
+        iterations: int = 1,
+    ) -> np.ndarray:
+        """Blurs the edges of the edge region where changes were made by mask earlier.
+        Creates a slightly bigger mask, a slightly smaller mask, subtract them
+        and obtains the mask for the edges.
+        Then applies blur to the image data only where the mask is set.
+
+        Arguments:
+            data (np.ndarray): The image data to be blurred.
+            mask (np.ndarray): The mask where changes were made.
+            blur_radius (int): The radius of the blur.
+
+        Returns:
+            np.ndarray: The image with the edges blurred according to the mask.
+        """
+        if data.shape[:2] != mask.shape[:2]:
+            raise ValueError("Data and mask must have the same dimensions.")
+
+        bigger_mask = cv2.dilate(
+            mask, np.ones((bigger_kernel, bigger_kernel), np.uint8), iterations=iterations
+        )
+        smaller_mask = cv2.erode(
+            mask, np.ones((smaller_kernel, smaller_kernel), np.uint8), iterations=iterations
+        )
+
+        edge_mask = cv2.subtract(bigger_mask, smaller_mask)
+
+        return self.blur_by_mask(data, edge_mask)

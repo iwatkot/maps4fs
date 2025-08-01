@@ -30,7 +30,7 @@ dtm_provider = mfs.dtm.SRTM30Provider
 # 3️⃣ Define the coordinates of the central point of the map, size and rotation.
 lat, lon = 45.28664672442379, 20.23913383374618
 coordinates = (lat, lon)
-size = 1024
+size = 2048
 rotation = 0
 # output_size = 1024
 
@@ -53,9 +53,9 @@ background_settings = mfs.settings.BackgroundSettings(
     remove_center=True,
 )
 grle_settings = mfs.settings.GRLESettings(
-    farmland_margin=10, random_plants=True, add_farmyards=True
+    add_grass=False, farmland_margin=10, random_plants=True, add_farmyards=True
 )
-i3d_settings = mfs.settings.I3DSettings(forest_density=8)
+i3d_settings = mfs.settings.I3DSettings(forest_density=8, add_trees=False)
 texture_settings = mfs.settings.TextureSettings(
     dissolve=False,
     fields_padding=10,
