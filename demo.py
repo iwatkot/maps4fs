@@ -51,6 +51,7 @@ background_settings = mfs.settings.BackgroundSettings(
     generate_water=True,
     water_blurriness=100,
     remove_center=True,
+    flatten_roads=True,
 )
 grle_settings = mfs.settings.GRLESettings(
     add_grass=False, farmland_margin=10, random_plants=True, add_farmyards=True

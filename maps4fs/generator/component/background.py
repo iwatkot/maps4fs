@@ -527,6 +527,10 @@ class Background(MeshComponent, ImageComponent):
             int(self.map.dem_settings.water_depth * z_scaling_factor),
         )
 
+        dem_image = self.blur_edges_by_mask(
+            dem_image, water_resources_image, smaller_kernel=3, iterations=5, bigger_kernel=5
+        )
+
         # Save the modified dem_image back to the output path
         cv2.imwrite(self.output_path, dem_image)
         self.logger.debug("Water depth subtracted from DEM data: %s", self.output_path)
