@@ -417,7 +417,7 @@ class Component:
             fitted_osm_object = osm_object.intersection(bounds)
             self.logger.debug("Fitted the osm_object into the bounds: %s", bounds)
         except Exception as e:
-            raise ValueError(f"Could not fit the osm_object into the bounds: {e}")
+            raise ValueError(f"Could not fit the osm_object into the bounds: {e}") from e
 
         if not isinstance(fitted_osm_object, object_type):
             raise ValueError("The fitted osm_object is not valid (probably splitted into parts).")
