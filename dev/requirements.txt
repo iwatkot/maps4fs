@@ -21,3 +21,5 @@ types-tqdm
 scipy
 python-dotenv
 pydtmdl
+mapbox-earcut
+manifold3d
