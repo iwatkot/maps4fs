@@ -743,7 +743,9 @@ class Background(MeshComponent, ImageComponent):
             self.logger.warning("No roads polylines found in textures info layer.")
             return
 
-        print("Found %s roads polylines in textures info layer.", len(roads_polylines))
+        self.logger.debug("Found %s roads polylines in textures info layer.", len(roads_polylines))
+
+        full_mask = np.zeros(dem_image.shape, dtype=np.uint8)
 
         for road_polyline in tqdm(roads_polylines, desc="Flattening roads", unit="road"):
             points = road_polyline.get("points")
@@ -768,7 +770,7 @@ class Background(MeshComponent, ImageComponent):
             polyline = shapely.LineString(fitted_road)
             SEGMENT_LENGTH = 2
             total_length = polyline.length
-            print("Total length of the road polyline: %s", total_length)
+            self.logger.debug("Total length of the road polyline: %s", total_length)
 
             current_distance = 0
             segments: list[shapely.LineString] = []
@@ -782,11 +784,13 @@ class Background(MeshComponent, ImageComponent):
                 segments.append(segment)
                 current_distance += SEGMENT_LENGTH
 
-            print("Number of segments created: %s", len(segments))
+            self.logger.debug("Number of segments created: %s", len(segments))
 
             road_polygons: list[shapely.Polygon] = []
             for segment in segments:
-                polygon = segment.buffer(width, resolution=4, cap_style="flat", join_style="mitre")
+                polygon = segment.buffer(
+                    width * 2, resolution=4, cap_style="flat", join_style="mitre"
+                )
                 road_polygons.append(polygon)
 
             for polygon in road_polygons:
@@ -802,12 +806,19 @@ class Background(MeshComponent, ImageComponent):
 
                 mean_value = cv2.mean(dem_image, mask=mask)[0]
                 dem_image[mask == 255] = mean_value
+                full_mask[mask == 255] = 255
 
         main_dem_path = self.game.dem_file_path(self.map_directory)
+        dem_image = self.blur_by_mask(dem_image, full_mask)
+        dem_image = self.blur_edges_by_mask(dem_image, full_mask)
+
+        # ! DEBUG SECTION !
         output_size = dem_image.shape[0] + 1
         resized_dem = cv2.resize(
             dem_image, (output_size, output_size), interpolation=cv2.INTER_NEAREST
         )
 
         cv2.imwrite(main_dem_path, resized_dem)
-        print("Flattened roads saved to DEM file: %s", main_dem_path)
+        self.logger.debug("Flattened roads saved to DEM file: %s", main_dem_path)
+
+        # ! END OF DEBUG SECTION !
