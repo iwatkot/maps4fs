@@ -30,7 +30,7 @@ dtm_provider = mfs.dtm.SRTM30Provider
 # 3️⃣ Define the coordinates of the central point of the map, size and rotation.
 lat, lon = 45.28664672442379, 20.23913383374618
 coordinates = (lat, lon)
-size = 1024
+size = 2048
 rotation = 0
 # output_size = 1024
 

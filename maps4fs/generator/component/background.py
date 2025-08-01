@@ -97,6 +97,10 @@ class Background(MeshComponent, ImageComponent):
         cutted_dem_path = self.save_map_dem(self.output_path)
         shutil.copyfile(self.output_path, self.not_substracted_path)
         self.save_map_dem(self.output_path, save_path=self.not_resized_path)
+
+        if True:
+            self.flatten_roads()
+
         if self.game.additional_dem_name is not None:
             self.make_copy(cutted_dem_path, self.game.additional_dem_name)
 
@@ -723,3 +727,75 @@ class Background(MeshComponent, ImageComponent):
         self.assets.water_mesh = elevated_save_path
 
         self.plane_from_np(elevated_water, elevated_save_path, include_zeros=False)
+
+    def flatten_roads(self) -> None:
+        if not self.not_resized_path or not os.path.isfile(self.not_resized_path):
+            self.logger.warning("No DEM data found for flattening roads.")
+            return
+
+        dem_image = cv2.imread(self.not_resized_path, cv2.IMREAD_UNCHANGED)
+        if dem_image is None:
+            self.logger.warning("Failed to read DEM data.")
+            return
+
+        roads_polylines = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
+        if not roads_polylines:
+            self.logger.warning("No roads polylines found in textures info layer.")
+            return
+
+        print("Found %s roads polylines in textures info layer.", len(roads_polylines))
+
+        for road_polyline in tqdm(roads_polylines, desc="Flattening roads", unit="road"):
+            points = road_polyline.get("points")
+            width = road_polyline.get("width")
+            if not points or not width:
+                self.logger.warning("Skipping road with insufficient data: %s", road_polyline)
+                continue
+
+            try:
+                fitted_road = self.fit_object_into_bounds(
+                    linestring_points=points, angle=self.rotation
+                )
+            except ValueError as e:
+                self.logger.debug(
+                    "Road polyline could not be fitted into the map bounds with error: %s",
+                    e,
+                )
+                continue
+
+            # fitted_road = self.interpolate_points(fitted_road, num_points=20)
+
+            polyline = shapely.LineString(fitted_road)
+            SEGMENT_LENGTH = 2
+            total_length = polyline.length
+            print("Total length of the road polyline: %s", total_length)
+
+            current_distance = 0
+            segments: list[shapely.LineString] = []
+            while current_distance < total_length:
+                start_point = polyline.interpolate(current_distance)
+                end_distance = min(current_distance + SEGMENT_LENGTH, total_length)
+                end_point = polyline.interpolate(end_distance)
+
+                # Create a small segment LineString
+                segment = shapely.LineString([start_point, end_point])
+                segments.append(segment)
+                current_distance += SEGMENT_LENGTH
+
+            print("Number of segments created: %s", len(segments))
+
+            road_polygons: list[shapely.Polygon] = []
+            for segment in segments:
+                polygon = segment.buffer(width, resolution=4, cap_style="flat", join_style="mitre")
+                road_polygons.append(polygon)
+
+            # road_np = self.polygon_points_to_np(polygon)
+            # mask = np.zeros(dem_image.shape, dtype=np.uint8)
+
+            # try:
+            #     cv2.fillPoly(mask, [road_np], 255)  # type: ignore
+            # except Exception as e:
+            #     self.logger.debug("Could not create mask for road with error: %s", e)
+            #     continue
+
+            # mean_value = cv2.mean(dem_image, mask=mask)[0]
