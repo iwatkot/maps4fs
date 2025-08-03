@@ -69,6 +69,8 @@ class Background(MeshComponent, ImageComponent):
         )
         self.not_resized_path: str = os.path.join(self.background_directory, "not_resized.png")
 
+        self.flatten_water_to: int | None = None
+
         self.dem = DEM(
             self.game,
             self.map,
@@ -520,11 +522,22 @@ class Background(MeshComponent, ImageComponent):
             if self.map.shared_settings.mesh_z_scaling_factor is not None
             else 257
         )
+        flatten_to = None
+        subtract_by = int(self.map.dem_settings.water_depth * z_scaling_factor)
+
+        if self.map.background_settings.flatten_water:
+            try:
+                mask = water_resources_image == 255
+                flatten_to = int(np.mean(dem_image[mask]) - subtract_by)  # type: ignore
+                self.flatten_water_to = flatten_to  # type: ignore
+            except Exception as e:
+                self.logger.warning("Error occurred while flattening water: %s", e)
 
         dem_image = self.subtract_by_mask(
             dem_image,  # type: ignore
             water_resources_image,  # type: ignore
-            int(self.map.dem_settings.water_depth * z_scaling_factor),
+            subtract_by=subtract_by,
+            flatten_to=flatten_to,
         )
 
         dem_image = self.blur_edges_by_mask(
@@ -598,7 +611,7 @@ class Background(MeshComponent, ImageComponent):
             return
 
         # Create a mesh from the 3D polygons
-        mesh = self.mesh_from_3d_polygons(fitted_polygons)
+        mesh = self.mesh_from_3d_polygons(fitted_polygons, single_z_value=self.flatten_water_to)
         if mesh is None:
             self.logger.warning("No mesh could be created from the water polygons.")
             return
@@ -611,13 +624,16 @@ class Background(MeshComponent, ImageComponent):
         mesh.export(line_based_save_path)
         self.logger.debug("Line-based water mesh saved to %s", line_based_save_path)
 
-    def mesh_from_3d_polygons(self, polygons: list[shapely.Polygon]) -> Trimesh | None:
+    def mesh_from_3d_polygons(
+        self, polygons: list[shapely.Polygon], single_z_value: int | None = None
+    ) -> Trimesh | None:
         """Create a simple mesh from a list of 3D shapely Polygons.
         Each polygon must be flat (all Z the same or nearly the same for each polygon).
         Returns a single Trimesh mesh.
 
         Arguments:
             polygons (list[shapely.Polygon]): List of 3D shapely Polygons to create the mesh from.
+            single_z_value (int | None): The Z value to use for all vertices in the mesh.
 
         Returns:
             Trimesh: A single Trimesh object containing the mesh created from the polygons.
@@ -649,9 +665,12 @@ class Background(MeshComponent, ImageComponent):
                 dists = np.linalg.norm(exterior_2d - v[:2], axis=1)
                 idx = np.argmin(dists)
                 # z = exterior_coords[idx, 2]
-                z = self.get_z_coordinate_from_dem(
-                    not_resized_dem, exterior_coords[idx, 0], exterior_coords[idx, 1]  # type: ignore
-                )
+                if not single_z_value:
+                    z = self.get_z_coordinate_from_dem(
+                        not_resized_dem, exterior_coords[idx, 0], exterior_coords[idx, 1]  # type: ignore
+                    )
+                else:
+                    z = single_z_value
                 vertices_3d.append([v[0], v[1], z])
             vertices_3d = np.array(vertices_3d)  # type: ignore
 
