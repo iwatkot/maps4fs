@@ -173,7 +173,7 @@ class BackgroundSettings(SettingsModel):
     water_blurriness: int = 20
     remove_center: bool = True
     flatten_roads: bool = False
-    flatten_water: bool = True
+    flatten_water: bool = False
 
 
 class GRLESettings(SettingsModel):

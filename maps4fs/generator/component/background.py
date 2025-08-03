@@ -526,9 +526,12 @@ class Background(MeshComponent, ImageComponent):
         subtract_by = int(self.map.dem_settings.water_depth * z_scaling_factor)
 
         if self.map.background_settings.flatten_water:
-            mask = water_resources_image == 255
-            flatten_to = int(np.mean(dem_image[mask]) - subtract_by)  # type: ignore
-            self.flatten_water_to = flatten_to  # type: ignore
+            try:
+                mask = water_resources_image == 255
+                flatten_to = int(np.mean(dem_image[mask]) - subtract_by)  # type: ignore
+                self.flatten_water_to = flatten_to  # type: ignore
+            except Exception as e:
+                self.logger.warning("Error occurred while flattening water: %s", e)
 
         dem_image = self.subtract_by_mask(
             dem_image,  # type: ignore
