@@ -93,12 +93,7 @@ class ImageComponent(Component):
 
         image[mask] = image[mask] - subtract_by
 
-        # if flatten_to_mean:
         if flatten_to:
-            # 1. Calculate the mean value of the image where the mask is True.
-            # 2. Set the pixels in the image where the mask is True to the mean value.
-            # mean_value = np.mean(image[mask])
-            # image[mask] = mean_value
             image[mask] = flatten_to
 
         return image
