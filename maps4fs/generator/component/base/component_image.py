@@ -67,6 +67,7 @@ class ImageComponent(Component):
         mask_by: int = 255,
         erode_kernel: int | None = 3,
         erode_iter: int | None = 1,
+        flatten_to: int | None = None,
     ) -> np.ndarray:
         """Subtracts a value from the image where the mask is equal to the mask by value.
 
@@ -77,6 +78,7 @@ class ImageComponent(Component):
             mask_by (int, optional): The value to mask by. Defaults to 255.
             erode_kernel (int, optional): The kernel size for the erosion. Defaults to 3.
             erode_iter (int, optional): The number of iterations for the erosion. Defaults to 1.
+            flatten_to_mean (bool, optional): Whether to flatten the image to the mean value.
 
         Returns:
             np.ndarray: The image with the subtracted value.
@@ -90,6 +92,15 @@ class ImageComponent(Component):
             ).astype(bool)
 
         image[mask] = image[mask] - subtract_by
+
+        # if flatten_to_mean:
+        if flatten_to:
+            # 1. Calculate the mean value of the image where the mask is True.
+            # 2. Set the pixels in the image where the mask is True to the mean value.
+            # mean_value = np.mean(image[mask])
+            # image[mask] = mean_value
+            image[mask] = flatten_to
+
         return image
 
     @staticmethod

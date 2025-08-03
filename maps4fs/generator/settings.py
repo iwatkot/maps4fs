@@ -164,6 +164,8 @@ class BackgroundSettings(SettingsModel):
         remove_center (bool): remove the center of the background terrain.
             It will be used to remove the center of the map where the player starts.
         flatten_roads (bool): if True, roads will be flattened in the DEM data.
+        flatten_water (bool): if True, the bottom of the water resources will be flattened
+            to the average height of the water resources.
     """
 
     generate_background: bool = False
@@ -171,6 +173,7 @@ class BackgroundSettings(SettingsModel):
     water_blurriness: int = 20
     remove_center: bool = True
     flatten_roads: bool = False
+    flatten_water: bool = True
 
 
 class GRLESettings(SettingsModel):
