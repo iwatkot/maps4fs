@@ -279,6 +279,7 @@ class GenerationSettings(BaseModel):
             "SatelliteSettings": self.satellite_settings.model_dump(),
         }
 
+    @classmethod
     def from_json(cls, data: dict[str, Any]) -> GenerationSettings:
         """Create a GenerationSettings instance from JSON data.
 
