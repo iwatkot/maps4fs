@@ -21,8 +21,10 @@ from maps4fs.generator.game import FS25, Game
 from maps4fs.generator.settings import (
     BackgroundSettings,
     DEMSettings,
+    GenerationSettings,
     GRLESettings,
     I3DSettings,
+    MainSettings,
     SatelliteSettings,
     SharedSettings,
     TextureSettings,
@@ -88,19 +90,21 @@ class Map:
         )
 
         try:
-            main_settings = {
-                "game": game.code,
-                "latitude": coordinates[0],
-                "longitude": coordinates[1],
-                "country": self.get_country_by_coordinates(),
-                "size": size,
-                "rotation": rotation,
-                "dtm_provider": dtm_provider.name(),
-                "custom_osm": bool(custom_osm),
-                "is_public": kwargs.get("is_public", False),
-                "api_request": kwargs.get("api_request", False),
-            }
-            send_main_settings(main_settings)
+            main_settings = MainSettings.from_json(
+                {
+                    "game": game.code,  # type: ignore
+                    "latitude": coordinates[0],
+                    "longitude": coordinates[1],
+                    "country": self.get_country_by_coordinates(),
+                    "size": size,
+                    "rotation": rotation,
+                    "dtm_provider": dtm_provider.name(),
+                    "custom_osm": bool(custom_osm),
+                    "is_public": kwargs.get("is_public", False),
+                    "api_request": kwargs.get("api_request", False),
+                }
+            )
+            send_main_settings(main_settings.to_json())
         except Exception as e:
             self.logger.error("Error sending main settings: %s", e)
 
@@ -158,19 +162,14 @@ class Map:
         os.makedirs(self.map_directory, exist_ok=True)
         self.logger.debug("Map directory created: %s", self.map_directory)
 
-        settings = [
-            dem_settings,
-            background_settings,
-            grle_settings,
-            i3d_settings,
-            texture_settings,
-            satellite_settings,
-        ]
-
-        settings_json = {}
-
-        for setting in settings:
-            settings_json[setting.__class__.__name__] = setting.model_dump()
+        settings_json = GenerationSettings(
+            dem_settings=dem_settings,
+            background_settings=background_settings,
+            grle_settings=grle_settings,
+            i3d_settings=i3d_settings,
+            texture_settings=texture_settings,
+            satellite_settings=satellite_settings,
+        ).to_json()
 
         try:
             send_advanced_settings(settings_json)

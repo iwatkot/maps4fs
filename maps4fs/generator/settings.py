@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import Any, NamedTuple
 
 from pydantic import BaseModel, ConfigDict
 
@@ -252,3 +252,75 @@ class SatelliteSettings(SettingsModel):
 
     download_images: bool = False
     zoom_level: int = 16
+
+
+class GenerationSettings(BaseModel):
+    """Represents the settings for the map generation process."""
+
+    dem_settings: DEMSettings
+    background_settings: BackgroundSettings
+    grle_settings: GRLESettings
+    i3d_settings: I3DSettings
+    texture_settings: TextureSettings
+    satellite_settings: SatelliteSettings
+
+    def to_json(self) -> dict[str, Any]:
+        """Convert the GenerationSettings instance to JSON format.
+
+        Returns:
+            dict[str, Any]: JSON representation of the GenerationSettings.
+        """
+        return {
+            "DEMSettings": self.dem_settings.model_dump(),
+            "BackgroundSettings": self.background_settings.model_dump(),
+            "GRLESettings": self.grle_settings.model_dump(),
+            "I3DSettings": self.i3d_settings.model_dump(),
+            "TextureSettings": self.texture_settings.model_dump(),
+            "SatelliteSettings": self.satellite_settings.model_dump(),
+        }
+
+
+class MainSettings(NamedTuple):
+    """Represents the main settings for the map generation."""
+
+    game: str
+    latitude: float
+    longitude: float
+    country: str
+    size: int
+    rotation: int
+    dtm_provider: str
+    custom_osm: bool
+    is_public: bool
+    api_request: bool
+
+    @classmethod
+    def from_json(cls, data: dict[str, str | float | int | bool]) -> MainSettings:
+        """Create a MainSettings instance from JSON data.
+
+        Arguments:
+            data (dict[str, str | float | int | bool]): JSON data.
+
+        Returns:
+            MainSettings: Instance of MainSettings.
+        """
+        return cls(**data)  # type: ignore
+
+    def to_json(self) -> dict[str, str | float | int | bool]:
+        """Convert the MainSettings instance to JSON format.
+
+        Returns:
+            dict[str, str | float | int | bool]: JSON representation of the MainSettings.
+        """
+        return {
+            "game": self.game,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "country": self.country,
+            "size": self.size,
+            "rotation": self.rotation,
+            "dtm_provider": self.dtm_provider,
+            "custom_osm": self.custom_osm,
+            "is_public": self.is_public,
+            "api_request": self.api_request,
+        }
