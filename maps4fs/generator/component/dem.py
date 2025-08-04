@@ -10,6 +10,7 @@ from pydtmdl import DTMProvider
 # import rasterio  # type: ignore
 from pympler import asizeof  # type: ignore
 
+import maps4fs.generator.config as mfscfg
 from maps4fs.generator.component.base.component_image import ImageComponent
 
 
@@ -30,7 +31,6 @@ class DEM(ImageComponent):
 
     def preprocess(self) -> None:
         self._dem_path = self.game.dem_file_path(self.map_directory)
-        self.temp_dir = "temp"
 
         self.logger.debug("Map size: %s x %s.", self.map_size, self.map_size)
         self.logger.debug(
@@ -44,7 +44,7 @@ class DEM(ImageComponent):
             coordinates=self.coordinates,
             user_settings=self.map.dtm_provider_settings,
             size=self.map_rotated_size,
-            directory=self.temp_dir,
+            directory=mfscfg.DTM_CACHE_DIR,
             logger=self.logger,
         )
 

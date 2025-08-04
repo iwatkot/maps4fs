@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+from datetime import datetime
 from typing import Any, Generator
 from xml.etree import ElementTree as ET
 
@@ -14,13 +15,16 @@ from osmnx._errors import InsufficientResponseError
 from pydtmdl import DTMProvider
 from pydtmdl.base.dtm import DTMProviderSettings
 
+import maps4fs.generator.config as mfscfg
 from maps4fs.generator.component import Background, Component, Layer, Texture
 from maps4fs.generator.game import FS25, Game
 from maps4fs.generator.settings import (
     BackgroundSettings,
     DEMSettings,
+    GenerationSettings,
     GRLESettings,
     I3DSettings,
+    MainSettings,
     SatelliteSettings,
     SharedSettings,
     TextureSettings,
@@ -48,7 +52,7 @@ class Map:
         coordinates: tuple[float, float],
         size: int,
         rotation: int,
-        map_directory: str,
+        map_directory: str | None = None,
         logger: Any = None,
         custom_osm: str | None = None,
         dem_settings: DEMSettings = DEMSettings(),
@@ -81,11 +85,13 @@ class Map:
         self.dtm_provider_settings = dtm_provider_settings
         self.components: list[Component] = []
         self.coordinates = coordinates
-        self.map_directory = map_directory
+        self.map_directory = map_directory or self.suggest_map_directory(
+            coordinates=coordinates, game_code=game.code  # type: ignore
+        )
 
-        try:
-            main_settings = {
-                "game": game.code,
+        main_settings = MainSettings.from_json(
+            {
+                "game": game.code,  # type: ignore
                 "latitude": coordinates[0],
                 "longitude": coordinates[1],
                 "country": self.get_country_by_coordinates(),
@@ -95,10 +101,23 @@ class Map:
                 "custom_osm": bool(custom_osm),
                 "is_public": kwargs.get("is_public", False),
                 "api_request": kwargs.get("api_request", False),
+                "date": datetime.now().strftime("%Y-%m-%d"),
+                "time": datetime.now().strftime("%H:%M:%S"),
+                "version": mfscfg.PACKAGE_VERSION,
+                "completed": False,
+                "error": None,
             }
-            send_main_settings(main_settings)
+        )
+        main_settings_json = main_settings.to_json()
+
+        try:
+            send_main_settings(main_settings_json)
         except Exception as e:
             self.logger.error("Error sending main settings: %s", e)
+
+        self.main_settings_path = os.path.join(self.map_directory, "main_settings.json")
+        with open(self.main_settings_path, "w", encoding="utf-8") as file:
+            json.dump(main_settings_json, file, indent=4)
 
         log_entry = ""
         log_entry += f"Map instance created for Game: {game.code}. "
@@ -154,19 +173,14 @@ class Map:
         os.makedirs(self.map_directory, exist_ok=True)
         self.logger.debug("Map directory created: %s", self.map_directory)
 
-        settings = [
-            dem_settings,
-            background_settings,
-            grle_settings,
-            i3d_settings,
-            texture_settings,
-            satellite_settings,
-        ]
-
-        settings_json = {}
-
-        for setting in settings:
-            settings_json[setting.__class__.__name__] = setting.model_dump()
+        settings_json = GenerationSettings(
+            dem_settings=dem_settings,
+            background_settings=background_settings,
+            grle_settings=grle_settings,
+            i3d_settings=i3d_settings,
+            texture_settings=texture_settings,
+            satellite_settings=satellite_settings,
+        ).to_json()
 
         try:
             send_advanced_settings(settings_json)
@@ -205,6 +219,52 @@ class Map:
         except Exception as e:
             raise RuntimeError(f"Can not unpack map template due to error: {e}") from e
 
+        self.logger.debug(
+            "MFS_DATA_DIR: %s. MFS_CACHE_DIR %s", mfscfg.MFS_DATA_DIR, mfscfg.MFS_CACHE_DIR
+        )
+
+    @staticmethod
+    def suggest_map_directory(coordinates: tuple[float, float], game_code: str) -> str:
+        """Generate map directory path from coordinates and game code.
+
+        Returns:
+            str: Map directory path.
+        """
+        return os.path.join(mfscfg.MFS_DATA_DIR, Map.suggest_directory_name(coordinates, game_code))
+
+    @staticmethod
+    def suggest_directory_name(coordinates: tuple[float, float], game_code: str) -> str:
+        """Generate directory name from coordinates and game code.
+
+        Returns:
+            str: Directory name.
+        """
+        lat, lon = coordinates
+        latr = Map.coordinate_to_string(lat)
+        lonr = Map.coordinate_to_string(lon)
+        return f"{Map.get_timestamp()}_{game_code}_{latr}_{lonr}".lower()
+
+    @staticmethod
+    def get_timestamp() -> str:
+        """Get current underscore-separated timestamp.
+
+        Returns:
+            str: Current timestamp.
+        """
+        return datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    @staticmethod
+    def coordinate_to_string(coordinate: float) -> str:
+        """Convert coordinate to string with 3 decimal places.
+
+        Arguments:
+            coordinate (float): Coordinate value.
+
+        Returns:
+            str: Coordinate as string.
+        """
+        return f"{coordinate:.3f}".replace(".", "_")
+
     @property
     def texture_schema(self) -> list[dict[str, Any]] | None:
         """Return texture schema (custom if provided, default otherwise).
@@ -230,6 +290,7 @@ class Map:
             self.size,
             self.rotation,
         )
+        error_text = None
 
         for game_component in self.game.components:
             component = game_component(
@@ -256,7 +317,18 @@ class Map:
                     component.__class__.__name__,
                     e,
                 )
+                error_text = str(e)
                 raise e
+
+            finally:
+                with open(self.main_settings_path, "r", encoding="utf-8") as file:
+                    main_settings_json = json.load(file)
+
+                main_settings_json["completed"] = True
+                main_settings_json["error"] = error_text
+
+                with open(self.main_settings_path, "w", encoding="utf-8") as file:
+                    json.dump(main_settings_json, file, indent=4)
 
             try:
                 component.commit_generation_info()

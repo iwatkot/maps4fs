@@ -52,7 +52,7 @@ background_settings = mfs.settings.BackgroundSettings(
     generate_water=True,
     # water_blurriness=100,
     remove_center=True,
-    flatten_roads=True,
+    # flatten_roads=True,
     flatten_water=True,
 )
 grle_settings = mfs.settings.GRLESettings(
@@ -62,11 +62,11 @@ i3d_settings = mfs.settings.I3DSettings(
     forest_density=8, add_trees=True, tree_limit=40000, trees_relative_shift=1
 )
 texture_settings = mfs.settings.TextureSettings(
-    dissolve=True,
+    # dissolve=True,
     fields_padding=8,
     skip_drains=True,
 )
-satellite_settings = mfs.settings.SatelliteSettings(download_images=False, zoom_level=18)
+satellite_settings = mfs.settings.SatelliteSettings(download_images=True, zoom_level=16)
 
 # 7️⃣ Optional: define custom tree and textures schemas.
 # Default schemas can be found in the `data` directory of the repository.
@@ -88,7 +88,7 @@ mp = mfs.Map(
     size,
     rotation,
     map_directory,
-    custom_osm=osm_file,
+    # custom_osm=osm_file,
     dem_settings=dem_settings,
     background_settings=background_settings,
     grle_settings=grle_settings,
