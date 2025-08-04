@@ -314,24 +314,26 @@ class MainSettings(NamedTuple):
     api_request: bool
     date: str
     time: str
+    completed: bool
+    error: str | None = None
 
     @classmethod
-    def from_json(cls, data: dict[str, str | float | int | bool]) -> MainSettings:
+    def from_json(cls, data: dict[str, str | float | int | bool | None]) -> MainSettings:
         """Create a MainSettings instance from JSON data.
 
         Arguments:
-            data (dict[str, str | float | int | bool]): JSON data.
+            data (dict[str, str | float | int | bool | None]): JSON data.
 
         Returns:
             MainSettings: Instance of MainSettings.
         """
         return cls(**data)  # type: ignore
 
-    def to_json(self) -> dict[str, str | float | int | bool]:
+    def to_json(self) -> dict[str, str | float | int | bool | None]:
         """Convert the MainSettings instance to JSON format.
 
         Returns:
-            dict[str, str | float | int | bool]: JSON representation of the MainSettings.
+            dict[str, str | float | int | bool | None]: JSON representation of the MainSettings.
         """
         return {
             "game": self.game,
@@ -346,4 +348,6 @@ class MainSettings(NamedTuple):
             "api_request": self.api_request,
             "date": self.date,
             "time": self.time,
+            "completed": self.completed,
+            "error": self.error,
         }

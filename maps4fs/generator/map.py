@@ -103,6 +103,8 @@ class Map:
                 "api_request": kwargs.get("api_request", False),
                 "date": datetime.now().strftime("%Y-%m-%d"),
                 "time": datetime.now().strftime("%H:%M:%S"),
+                "completed": False,
+                "error": None,
             }
         )
         main_settings_json = main_settings.to_json()
@@ -112,9 +114,8 @@ class Map:
         except Exception as e:
             self.logger.error("Error sending main settings: %s", e)
 
-        with open(
-            os.path.join(self.map_directory, "main_settings.json"), "w", encoding="utf-8"
-        ) as file:
+        self.main_settings_path = os.path.join(self.map_directory, "main_settings.json")
+        with open(self.main_settings_path, "w", encoding="utf-8") as file:
             json.dump(main_settings_json, file, indent=4)
 
         log_entry = ""
@@ -288,6 +289,7 @@ class Map:
             self.size,
             self.rotation,
         )
+        error_text = None
 
         for game_component in self.game.components:
             component = game_component(
@@ -314,7 +316,18 @@ class Map:
                     component.__class__.__name__,
                     e,
                 )
+                error_text = str(e)
                 raise e
+
+            finally:
+                with open(self.main_settings_path, "r", encoding="utf-8") as file:
+                    main_settings_json = json.load(file)
+
+                main_settings_json["completed"] = True
+                main_settings_json["error"] = error_text
+
+                with open(self.main_settings_path, "w", encoding="utf-8") as file:
+                    json.dump(main_settings_json, file, indent=4)
 
             try:
                 component.commit_generation_info()
