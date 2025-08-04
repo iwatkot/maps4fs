@@ -89,24 +89,31 @@ class Map:
             coordinates=coordinates, game_code=game.code  # type: ignore
         )
 
+        main_settings = MainSettings.from_json(
+            {
+                "game": game.code,  # type: ignore
+                "latitude": coordinates[0],
+                "longitude": coordinates[1],
+                "country": self.get_country_by_coordinates(),
+                "size": size,
+                "rotation": rotation,
+                "dtm_provider": dtm_provider.name(),
+                "custom_osm": bool(custom_osm),
+                "is_public": kwargs.get("is_public", False),
+                "api_request": kwargs.get("api_request", False),
+            }
+        )
+        main_settings_json = main_settings.to_json()
+
         try:
-            main_settings = MainSettings.from_json(
-                {
-                    "game": game.code,  # type: ignore
-                    "latitude": coordinates[0],
-                    "longitude": coordinates[1],
-                    "country": self.get_country_by_coordinates(),
-                    "size": size,
-                    "rotation": rotation,
-                    "dtm_provider": dtm_provider.name(),
-                    "custom_osm": bool(custom_osm),
-                    "is_public": kwargs.get("is_public", False),
-                    "api_request": kwargs.get("api_request", False),
-                }
-            )
-            send_main_settings(main_settings.to_json())
+            send_main_settings(main_settings_json)
         except Exception as e:
             self.logger.error("Error sending main settings: %s", e)
+
+        with open(
+            os.path.join(self.map_directory, "main_settings.json"), "w", encoding="utf-8"
+        ) as file:
+            json.dump(main_settings_json, file, indent=4)
 
         log_entry = ""
         log_entry += f"Map instance created for Game: {game.code}. "
