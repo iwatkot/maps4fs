@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+from datetime import datetime
 from typing import Any, Generator
 from xml.etree import ElementTree as ET
 
@@ -49,7 +50,7 @@ class Map:
         coordinates: tuple[float, float],
         size: int,
         rotation: int,
-        map_directory: str,  # ! generate by default
+        map_directory: str | None = None,
         logger: Any = None,
         custom_osm: str | None = None,
         dem_settings: DEMSettings = DEMSettings(),
@@ -82,7 +83,7 @@ class Map:
         self.dtm_provider_settings = dtm_provider_settings
         self.components: list[Component] = []
         self.coordinates = coordinates
-        self.map_directory = map_directory
+        self.map_directory = map_directory or self.suggest_map_directory()
 
         try:
             main_settings = {
@@ -209,6 +210,40 @@ class Map:
         self.logger.debug(
             "MFS_DATA_DIR: %s. MFS_CACHE_DIR %s", mfscfg.MFS_DATA_DIR, mfscfg.MFS_CACHE_DIR
         )
+
+    def suggest_map_directory(self) -> str:
+        """Generate map directory path from coordinates and game code.
+
+        Returns:
+            str: Map directory path.
+        """
+        lat, lon = self.coordinates
+        latr = self.coordinate_to_string(lat)
+        lonr = self.coordinate_to_string(lon)
+        directory_name = f"{self.get_timestamp()}_{self.game.code}_{latr}_{lonr}".lower()
+
+        return os.path.join(mfscfg.MFS_DATA_DIR, directory_name)
+
+    @staticmethod
+    def get_timestamp() -> str:
+        """Get current underscore-separated timestamp.
+
+        Returns:
+            str: Current timestamp.
+        """
+        return datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    @staticmethod
+    def coordinate_to_string(coordinate: float) -> str:
+        """Convert coordinate to string with 3 decimal places.
+
+        Arguments:
+            coordinate (float): Coordinate value.
+
+        Returns:
+            str: Coordinate as string.
+        """
+        return f"{coordinate:.3f}".replace(".", "_")
 
     @property
     def texture_schema(self) -> list[dict[str, Any]] | None:
