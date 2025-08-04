@@ -344,4 +344,6 @@ class MainSettings(NamedTuple):
             "custom_osm": self.custom_osm,
             "is_public": self.is_public,
             "api_request": self.api_request,
+            "date": self.date,
+            "time": self.time,
         }
