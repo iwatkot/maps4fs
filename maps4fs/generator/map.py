@@ -84,7 +84,7 @@ class Map:
         self.components: list[Component] = []
         self.coordinates = coordinates
         self.map_directory = map_directory or self.suggest_map_directory(
-            coordinates=coordinates, game_code=game.code
+            coordinates=coordinates, game_code=game.code  # type: ignore
         )
 
         try:
@@ -220,12 +220,19 @@ class Map:
         Returns:
             str: Map directory path.
         """
+        return os.path.join(mfscfg.MFS_DATA_DIR, Map.suggest_directory_name(coordinates, game_code))
+
+    @staticmethod
+    def suggest_directory_name(coordinates: tuple[float, float], game_code: str) -> str:
+        """Generate directory name from coordinates and game code.
+
+        Returns:
+            str: Directory name.
+        """
         lat, lon = coordinates
         latr = Map.coordinate_to_string(lat)
         lonr = Map.coordinate_to_string(lon)
-        directory_name = f"{Map.get_timestamp()}_{game_code}_{latr}_{lonr}".lower()
-
-        return os.path.join(mfscfg.MFS_DATA_DIR, directory_name)
+        return f"{Map.get_timestamp()}_{game_code}_{latr}_{lonr}".lower()
 
     @staticmethod
     def get_timestamp() -> str:
