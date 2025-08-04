@@ -52,6 +52,37 @@ DO NOT TOUCH SCALE AND DIMENSIONS!
 
 ![Export selected](https://github.com/user-attachments/assets/ba592c54-2d33-4e5b-9fe4-d03e49268d7d)
 
+13. Open the i3d file you just exported in any text editor and find the Material section, which should look like this:
+
+```xml
+  <Materials>
+    <Material name="wtr" materialId="1" diffuseColor="0.8 0.8 0.8 1" specularColor="0.501961 1 0" customShaderId="4">
+      <Normalmap fileId="2"/>
+    </Material>
+  </Materials>
+```
+
+After the line with the `Normalmap` tag, add the following line:
+
+```xml
+      <Refractionmap coeff="1" bumpScale="0.01" withSSRData="true"/>
+```
+
+So result will look like this:
+
+```xml
+  <Materials>
+    <Material name="wtr" materialId="1" diffuseColor="0.8 0.8 0.8 1" specularColor="0.501961 1 0" customShaderId="4">
+      <Normalmap fileId="2"/>
+      <Refractionmap coeff="1" bumpScale="0.01" withSSRData="true"/>
+    </Material>
+  </Materials>
+```
+
+Save the file and continue with the next steps.  
+
+Note: this is very important step, otherwise the water shader will not work correctly and will have weird looking lines all over the water plane.
+
 13. Open the Giants Editor and import the i3d file. It will be black, but don't worry, it's normal.  
 After it, position the water plane in the correct place.
 
