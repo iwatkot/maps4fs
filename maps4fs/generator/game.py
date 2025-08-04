@@ -45,8 +45,7 @@ class Game:
     _dissolve: bool = True
 
     # Order matters! Some components depend on others.
-    # components = [Texture, Background, GRLE, I3d, Config, Satellite]
-    components = [Background]
+    components = [Texture, Background, GRLE, I3d, Config, Satellite]
 
     def __init__(self, map_template_path: str | None = None):
         if map_template_path:
