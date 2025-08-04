@@ -83,7 +83,9 @@ class Map:
         self.dtm_provider_settings = dtm_provider_settings
         self.components: list[Component] = []
         self.coordinates = coordinates
-        self.map_directory = map_directory or self.suggest_map_directory()
+        self.map_directory = map_directory or self.suggest_map_directory(
+            coordinates=coordinates, game_code=game.code
+        )
 
         try:
             main_settings = {
@@ -211,16 +213,17 @@ class Map:
             "MFS_DATA_DIR: %s. MFS_CACHE_DIR %s", mfscfg.MFS_DATA_DIR, mfscfg.MFS_CACHE_DIR
         )
 
-    def suggest_map_directory(self) -> str:
+    @staticmethod
+    def suggest_map_directory(coordinates: tuple[float, float], game_code: str) -> str:
         """Generate map directory path from coordinates and game code.
 
         Returns:
             str: Map directory path.
         """
-        lat, lon = self.coordinates
-        latr = self.coordinate_to_string(lat)
-        lonr = self.coordinate_to_string(lon)
-        directory_name = f"{self.get_timestamp()}_{self.game.code}_{latr}_{lonr}".lower()
+        lat, lon = coordinates
+        latr = Map.coordinate_to_string(lat)
+        lonr = Map.coordinate_to_string(lon)
+        directory_name = f"{Map.get_timestamp()}_{game_code}_{latr}_{lonr}".lower()
 
         return os.path.join(mfscfg.MFS_DATA_DIR, directory_name)
 
