@@ -13,9 +13,8 @@ os.makedirs(MFS_DATA_DIR, exist_ok=True)
 DTM_CACHE_DIR = os.path.join(MFS_CACHE_DIR, "dtm")
 SAT_CACHE_DIR = os.path.join(MFS_CACHE_DIR, "sat")
 
-osmnx_folder = os.path.join(MFS_CACHE_DIR, "osmnx")
-osmnx_cache = os.path.join(osmnx_folder, "cache")
-osmnx_data = os.path.join(osmnx_folder, "data")
+osmnx_cache = os.path.join(MFS_CACHE_DIR, "osmnx")
+osmnx_data = os.path.join(MFS_CACHE_DIR, "odata")
 os.makedirs(osmnx_cache, exist_ok=True)
 os.makedirs(osmnx_data, exist_ok=True)
 
