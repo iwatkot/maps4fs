@@ -113,7 +113,13 @@ It's placed in `where-the-game-is-installed/data/maps/textures/shared/water_norm
 21. Now switch to the UserAttributes tag, enter name `onCreate`, select the `Script callback`, and click Add.
 After it, set the value of the Attribute to `Environment.onCreateWater`.
 
-22. It should look like this.
+22. On the **Attributes** - **Transform** tab check the `Rigid body` checkbox.  
+
+23. Switch to the **Rigid body** tab and set the `Preset` to `WATER`.
+
+24. Now, go to the **Shape** tab and uncheck the `Cast shadowmap` checkbox (if it's checked).
+
+25. It should look like this.
 
 ![Water plane in GE](https://github.com/user-attachments/assets/b246cf85-b044-4ceb-bff4-9b32a753b143)
 
