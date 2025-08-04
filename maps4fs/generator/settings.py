@@ -279,6 +279,24 @@ class GenerationSettings(BaseModel):
             "SatelliteSettings": self.satellite_settings.model_dump(),
         }
 
+    def from_json(cls, data: dict[str, Any]) -> GenerationSettings:
+        """Create a GenerationSettings instance from JSON data.
+
+        Arguments:
+            data (dict[str, Any]): JSON data.
+
+        Returns:
+            GenerationSettings: Instance of GenerationSettings.
+        """
+        return cls(
+            dem_settings=DEMSettings(**data["DEMSettings"]),
+            background_settings=BackgroundSettings(**data["BackgroundSettings"]),
+            grle_settings=GRLESettings(**data["GRLESettings"]),
+            i3d_settings=I3DSettings(**data["I3DSettings"]),
+            texture_settings=TextureSettings(**data["TextureSettings"]),
+            satellite_settings=SatelliteSettings(**data["SatelliteSettings"]),
+        )
+
 
 class MainSettings(NamedTuple):
     """Represents the main settings for the map generation."""
