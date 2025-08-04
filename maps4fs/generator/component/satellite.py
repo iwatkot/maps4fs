@@ -7,6 +7,7 @@ from typing import NamedTuple
 
 from pygmdl import save_image
 
+import maps4fs.generator.config as mfscfg
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.settings import Parameters
 
@@ -85,6 +86,7 @@ class Satellite(ImageComponent):
                     zoom=task.zoom,
                     from_center=True,
                     logger=self.logger,
+                    tiles_dir=mfscfg.SAT_CACHE_DIR,
                 )
 
             except Exception as e:

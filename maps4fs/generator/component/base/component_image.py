@@ -196,7 +196,7 @@ class ImageComponent(Component):
             raise ValueError("Data and mask must have the same dimensions.")
 
         # Create a blurred version of the data
-        blurred_data = cv2.GaussianBlur(data, (blur_radius, blur_radius), sigmaX=3)
+        blurred_data = cv2.GaussianBlur(data, (blur_radius, blur_radius), sigmaX=10)
 
         # Combine the blurred data with the original data using the mask
         result = np.where(mask == 255, blurred_data, data)

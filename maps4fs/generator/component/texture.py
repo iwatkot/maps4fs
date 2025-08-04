@@ -20,8 +20,7 @@ from tqdm import tqdm
 
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.layer import Layer
-
-PREVIEW_MAXIMUM_SIZE = 2048
+from maps4fs.generator.settings import Parameters
 
 
 class Texture(ImageComponent):
@@ -834,7 +833,7 @@ class Texture(ImageComponent):
         Returns:
             str: Path to the preview.
         """
-        scaling_factor = PREVIEW_MAXIMUM_SIZE / self.map_size
+        scaling_factor = Parameters.PREVIEW_MAXIMUM_SIZE / self.map_size
 
         preview_size = (
             int(self.map_size * scaling_factor),

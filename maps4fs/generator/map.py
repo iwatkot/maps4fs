@@ -14,6 +14,7 @@ from osmnx._errors import InsufficientResponseError
 from pydtmdl import DTMProvider
 from pydtmdl.base.dtm import DTMProviderSettings
 
+import maps4fs.generator.config as mfscfg
 from maps4fs.generator.component import Background, Component, Layer, Texture
 from maps4fs.generator.game import FS25, Game
 from maps4fs.generator.settings import (
@@ -48,7 +49,7 @@ class Map:
         coordinates: tuple[float, float],
         size: int,
         rotation: int,
-        map_directory: str,
+        map_directory: str,  # ! generate by default
         logger: Any = None,
         custom_osm: str | None = None,
         dem_settings: DEMSettings = DEMSettings(),
@@ -204,6 +205,10 @@ class Map:
             self.logger.debug("Map template unpacked to %s", self.map_directory)
         except Exception as e:
             raise RuntimeError(f"Can not unpack map template due to error: {e}") from e
+
+        self.logger.debug(
+            "MFS_DATA_DIR: %s. MFS_CACHE_DIR %s", mfscfg.MFS_DATA_DIR, mfscfg.MFS_CACHE_DIR
+        )
 
     @property
     def texture_schema(self) -> list[dict[str, Any]] | None:

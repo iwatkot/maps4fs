@@ -833,7 +833,7 @@ class Background(MeshComponent, ImageComponent):
                 full_mask[mask == 255] = 255
 
         main_dem_path = self.game.dem_file_path(self.map_directory)
-        dem_image = self.blur_by_mask(dem_image, full_mask)
+        dem_image = self.blur_by_mask(dem_image, full_mask, blur_radius=5)
         dem_image = self.blur_edges_by_mask(dem_image, full_mask)
 
         output_size = dem_image.shape[0] + 1

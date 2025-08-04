@@ -1,13 +1,10 @@
 """This module contains the Logger class for logging to the file and stdout."""
 
 import logging
-import os
 import sys
 from typing import Literal
 
 LOGGER_NAME = "maps4fs"
-log_directory = os.path.join(os.getcwd(), "logs")
-os.makedirs(log_directory, exist_ok=True)
 
 
 class Logger(logging.Logger):
