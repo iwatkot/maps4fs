@@ -103,6 +103,7 @@ class Map:
                 "api_request": kwargs.get("api_request", False),
                 "date": datetime.now().strftime("%Y-%m-%d"),
                 "time": datetime.now().strftime("%H:%M:%S"),
+                "version": mfscfg.PACKAGE_VERSION,
                 "completed": False,
                 "error": None,
             }

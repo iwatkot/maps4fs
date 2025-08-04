@@ -314,6 +314,7 @@ class MainSettings(NamedTuple):
     api_request: bool
     date: str
     time: str
+    version: str
     completed: bool
     error: str | None = None
 
@@ -348,6 +349,7 @@ class MainSettings(NamedTuple):
             "api_request": self.api_request,
             "date": self.date,
             "time": self.time,
+            "version": self.version,
             "completed": self.completed,
             "error": self.error,
         }
