@@ -83,34 +83,34 @@ Save the file and continue with the next steps.
 
 Note: this is very important step, otherwise the water shader will not work correctly and will have weird looking lines all over the water plane.
 
-13. Open the Giants Editor and import the i3d file. It will be black, but don't worry, it's normal.  
+14. Open the Giants Editor and import the i3d file. It will be black, but don't worry, it's normal.  
 After it, position the water plane in the correct place.
 
 ![Position the water plane](https://github.com/user-attachments/assets/c7257060-bd83-498f-a5dc-098e675540df)
 
-14. Open the **Material Editing** window and select your water plane.
+15. Open the **Material Editing** window and select your water plane.
 
-15. Change the **Variation** to **simple** and then edit values as on the screenshot.  
+16. Change the **Variation** to **simple** and then edit values as on the screenshot.  
 Those are default values for the water plane, but you can play with them to achieve the desired effect.
 
 ![Water plane values](https://github.com/user-attachments/assets/6624878c-818d-4371-bbf9-8bb6ace6589f)
 
-16. Set **Smoothness** and **Metalness** to **1**.
+17. Set **Smoothness** and **Metalness** to **1**.
 
-17. Click on the button near the **Normal map**.
+18. Click on the button near the **Normal map**.
 
 ![Normal map](https://github.com/user-attachments/assets/95adc493-983a-46ae-bd20-7d1f4e998ba7)
 
-18. Click on the **...** button and provide the path to the **water_normal.dds** file.  
+19. Click on the **...** button and provide the path to the **water_normal.dds** file.  
 It's placed in `where-the-game-is-installed/data/maps/textures/shared/water_normal.dds`.
 
 ![Water normal map](https://github.com/user-attachments/assets/515de60b-bc1a-4843-b548-2820107435af)
 
-19. You should see the normal map in the window. Press the **OK** button.
+20. You should see the normal map in the window. Press the **OK** button.
 
 ![Normal map window](https://github.com/user-attachments/assets/bee7955f-7f6c-4d94-978c-0ab7835b9e2b)
 
-20. Now switch to the UserAttributes tag, enter name `onCreate`, select the `Script callback`, and click Add.
+21. Now switch to the UserAttributes tag, enter name `onCreate`, select the `Script callback`, and click Add.
 After it, set the value of the Attribute to `Environment.onCreateWater`.
 
 22. It should look like this.
