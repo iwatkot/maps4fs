@@ -312,6 +312,8 @@ class MainSettings(NamedTuple):
     custom_osm: bool
     is_public: bool
     api_request: bool
+    date: str
+    time: str
 
     @classmethod
     def from_json(cls, data: dict[str, str | float | int | bool]) -> MainSettings:

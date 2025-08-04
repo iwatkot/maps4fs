@@ -101,6 +101,8 @@ class Map:
                 "custom_osm": bool(custom_osm),
                 "is_public": kwargs.get("is_public", False),
                 "api_request": kwargs.get("api_request", False),
+                "date": datetime.now().strftime("%Y-%m-%d"),
+                "time": datetime.now().strftime("%H:%M:%S"),
             }
         )
         main_settings_json = main_settings.to_json()
