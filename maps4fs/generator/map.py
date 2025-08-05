@@ -310,7 +310,6 @@ class Map:
             try:
                 component.process()
                 component.commit_generation_info()
-                1 / 0
             except Exception as e:
                 self.logger.error(
                     "Error processing or committing generation info for component %s: %s",
