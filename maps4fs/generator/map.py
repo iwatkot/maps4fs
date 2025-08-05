@@ -290,8 +290,6 @@ class Map:
             self.size,
             self.rotation,
         )
-        error_text = None
-
         for game_component in self.game.components:
             component = game_component(
                 self.game,
@@ -311,34 +309,18 @@ class Map:
 
             try:
                 component.process()
-            except Exception as e:
-                self.logger.error(
-                    "Error processing component %s: %s",
-                    component.__class__.__name__,
-                    e,
-                )
-                error_text = str(e)
-                raise e
-
-            finally:
-                with open(self.main_settings_path, "r", encoding="utf-8") as file:
-                    main_settings_json = json.load(file)
-
-                main_settings_json["completed"] = True
-                main_settings_json["error"] = error_text
-
-                with open(self.main_settings_path, "w", encoding="utf-8") as file:
-                    json.dump(main_settings_json, file, indent=4)
-
-            try:
                 component.commit_generation_info()
+                1 / 0
             except Exception as e:
                 self.logger.error(
-                    "Error committing generation info for component %s: %s",
+                    "Error processing or committing generation info for component %s: %s",
                     component.__class__.__name__,
                     e,
                 )
+                self._update_main_settings({"error": str(e)})
                 raise e
+
+        self._update_main_settings({"completed": True})
 
         self.logger.debug(
             "Map generation completed. Game code: %s. Coordinates: %s, size: %s. Rotation: %s.",
@@ -347,6 +329,20 @@ class Map:
             self.size,
             self.rotation,
         )
+
+    def _update_main_settings(self, data: dict[str, Any]) -> None:
+        """Update main settings with provided data.
+
+        Arguments:
+            data (dict[str, Any]): Data to update main settings.
+        """
+        with open(self.main_settings_path, "r", encoding="utf-8") as file:
+            main_settings_json = json.load(file)
+
+        main_settings_json.update(data)
+
+        with open(self.main_settings_path, "w", encoding="utf-8") as file:
+            json.dump(main_settings_json, file, indent=4)
 
     def get_component(self, component_name: str) -> Component | None:
         """Get component by name.

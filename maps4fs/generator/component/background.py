@@ -601,9 +601,7 @@ class Background(MeshComponent, ImageComponent):
                 fitted_polygon = shapely.Polygon(fitted_polygon_points)
                 fitted_polygons.append(fitted_polygon)
             except Exception as e:
-                self.logger.warning(
-                    "Could not fit polygon into bounds with error: %s, polygon: %s", e, polygon
-                )
+                self.logger.debug("Could not fit polygon into bounds with error: %s.", e)
                 continue
 
         if not fitted_polygons:
