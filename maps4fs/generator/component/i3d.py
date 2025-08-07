@@ -658,8 +658,7 @@ class I3d(XMLComponent):
         Returns:
             int: The number of non-empty pixels in the image.
         """
-        result = np.count_nonzero(image > 0)
-        return result
+        return int(np.count_nonzero(image > 0))
 
     def get_step_by_limit(
         self, image: np.ndarray, limit: int, current_step: int | None = None
