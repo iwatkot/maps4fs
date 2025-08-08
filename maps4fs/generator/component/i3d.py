@@ -562,12 +562,14 @@ class I3d(XMLComponent):
                 self.map.i3d_settings.forest_density,
             )
 
+            shift = (
+                self.map.i3d_settings.forest_density
+                * self.map.i3d_settings.trees_relative_shift
+                / 100
+            )
+
             for x, y in self.non_empty_pixels(forest_image, step=step):  # type: ignore
-                shifted_x, shifted_y = self.randomize_coordinates(
-                    (x, y),
-                    step,
-                    self.map.i3d_settings.trees_relative_shift,
-                )
+                shifted_x, shifted_y = self.randomize_coordinates((x, y), shift)
 
                 shifted_x, shifted_y = int(shifted_x), int(shifted_y)
 
@@ -600,25 +602,23 @@ class I3d(XMLComponent):
         self.forest_info["tree_limit"] = self.map.i3d_settings.tree_limit
         self.forest_info["initial_step"] = self.map.i3d_settings.forest_density
         self.forest_info["actual_step"] = step
+        self.forest_info["shift"] = shift
 
         self.assets.forests = self.xml_path
 
     @staticmethod
     def randomize_coordinates(
-        coordinates: tuple[int, int], density: int, shift_percent: int
+        coordinates: tuple[int, int], shift_range: float
     ) -> tuple[float, float]:
         """Randomizes the coordinates of the point with the given density.
 
         Arguments:
             coordinates (tuple[int, int]): The coordinates of the point.
-            density (int): The density of the randomization.
-            shift_percent (int): Maximum relative shift in percent.
+            shift_range (float): Maximum absolute shift in pixels.
 
         Returns:
             tuple[float, float]: The randomized coordinates of the point.
         """
-        shift_range = density * shift_percent / 100
-
         x_shift = uniform(-shift_range, shift_range)
         y_shift = uniform(-shift_range, shift_range)
 
