@@ -562,11 +562,20 @@ class I3d(XMLComponent):
                 self.map.i3d_settings.forest_density,
             )
 
+            if step > self.map.i3d_settings.forest_density:
+                shift_multiplier = self.map.i3d_settings.forest_density / step
+            else:
+                shift_multiplier = 1
+
+            shift = int(shift_multiplier * self.map.i3d_settings.trees_relative_shift)
+
+            print(f"Step: {step}, density: {self.map.i3d_settings.forest_density}")
+
             for x, y in self.non_empty_pixels(forest_image, step=step):  # type: ignore
                 shifted_x, shifted_y = self.randomize_coordinates(
                     (x, y),
                     step,
-                    self.map.i3d_settings.trees_relative_shift,
+                    shift,
                 )
 
                 shifted_x, shifted_y = int(shifted_x), int(shifted_y)
@@ -600,6 +609,13 @@ class I3d(XMLComponent):
         self.forest_info["tree_limit"] = self.map.i3d_settings.tree_limit
         self.forest_info["initial_step"] = self.map.i3d_settings.forest_density
         self.forest_info["actual_step"] = step
+        self.forest_info["initial_shift"] = self.map.i3d_settings.trees_relative_shift
+        self.forest_info["shift_multiplier"] = shift_multiplier
+        self.forest_info["actual_shift"] = shift
+        self.forest_info["initial_maximum_tree_shift"] = (
+            self.map.i3d_settings.trees_relative_shift / 100 * self.map.i3d_settings.forest_density
+        )
+        self.forest_info["actual_maximum_tree_shift"] = (shift / 100) * step
 
         self.assets.forests = self.xml_path
 
