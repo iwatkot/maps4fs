@@ -569,8 +569,6 @@ class I3d(XMLComponent):
 
             shift = int(shift_multiplier * self.map.i3d_settings.trees_relative_shift)
 
-            print(f"Step: {step}, density: {self.map.i3d_settings.forest_density}")
-
             for x, y in self.non_empty_pixels(forest_image, step=step):  # type: ignore
                 shifted_x, shifted_y = self.randomize_coordinates(
                     (x, y),
