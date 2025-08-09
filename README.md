@@ -14,7 +14,7 @@
 
 <div align="center" markdown>
 <a href="https://discord.gg/Sj5QKKyE42">
-<img src="https://github.com/user-attachments/assets/37043333-d6ef-4ca3-9f3c-81323d9d0b71">
+<img src="https://github.com/iwatkot/maps4fs/releases/download/2.2.0/maps4fs-poster-discord-mymaps.png">
 </a>
 
 <p align="center">
@@ -54,8 +54,10 @@
 
 </div>
 
+🔥🔥🔥🗂️ Track, store and organize all your maps using the [My Maps](docs/my_maps.md) feature. 🔥🔥🔥<br>
+<br>
 🗺️ Supports 2x2, 4x4, 8x8, 16x16 and any custom size maps<br>
-🔗 Generate maps using an [API](https://github.com/iwatkot/maps4fsapi) 🆕<br>
+🔗 Generate maps using an [API](https://github.com/iwatkot/maps4fsapi)<br>
 ✂️ Supports map scaling<br>
 🔄 Support map rotation<br>
 🌐 Supports custom [DTM Providers](https://github.com/iwatkot/pydtmdl)<br>
@@ -127,6 +129,14 @@ There are several ways to use the tool. You obviously need the **first one**, bu
 docker run -d -p 8501:8501 -p 8000:8000 --name maps4fs iwatkot/maps4fs
 ```
 
+If you want to persist your data, you can mount a directory to the container: 
+
+```bash
+docker run -d -p 8501:8501 -p 8000:8000 --name maps4fs -v /c/maps4fs:/usr/src/app/mfsrootdir iwatkot/maps4fs
+```
+
+Learn more in the [My Maps](docs/my_maps.md) documentation.
+
 And open [http://localhost:8501](http://localhost:8501) in your browser.<br>
 If you don't know how to use Docker, navigate to the [Docker version](#option-2-docker-version), it's really simple.<br>
 Check out the [Docker FAQ](docs/FAQ_docker.md) if you have any questions.<br>
@@ -181,8 +191,8 @@ Don't know where to start? Don't worry, just follow this [step-by-step guide](do
 🛠️ Don't need to install anything.  
 🗺️ Supported map sizes: 2x2, 4x4.  
 ✂️ Map scaling: not supported.  
-⚙️ Advanced settings: enabled.  
-🖼️ Texture dissolving: enabled.  
+⚙️ Advanced settings: partial.  
+🖼️ Texture dissolving: disabled.  
 Using the public version on [maps4fs.xyz](https://maps4fs.xyz) is the easiest way to generate a map template. Just open the link and follow the instructions.
 Note: due to CPU and RAM limitations of the hosting, the generation may take some time. If you need faster processing, use the [Docker version](#option-2-docker-version).<br>
 
@@ -207,6 +217,12 @@ You can launch the project with minimalistic UI in your browser using Docker. Fo
 
 ```bash
 docker run -d -p 8501:8501 -p 8000:8000 --name maps4fs iwatkot/maps4fs
+```
+
+If you want to persist your data, you can mount a directory to the container:
+
+```bash
+docker run -d -p 8501:8501 -p 8000:8000 --name maps4fs -v /c/maps4fs:/usr/src/app/mfsrootdir iwatkot/maps4fs
 ```
 
 3. Open your browser and go to [http://localhost:8501](http://localhost:8501).
