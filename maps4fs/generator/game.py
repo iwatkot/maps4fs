@@ -53,23 +53,23 @@ class Game:
             if not self._map_template_file:
                 raise ValueError("Map template file not set.")
             self._map_template_path = os.path.join(
-                mfscfg.MFS_TEMPLATES_DIR, self._map_template_file
+                mfscfg.MFS_TEMPLATES_DIR, self._map_template_file  # type: ignore
             )
 
         if not self._texture_schema_file:
             self._texture_schema = None
         else:
-            self._texture_schema = os.path.join(mfscfg.MFS_TEMPLATES_DIR, self._texture_schema_file)
+            self._texture_schema = os.path.join(mfscfg.MFS_TEMPLATES_DIR, self._texture_schema_file)  # type: ignore
 
         if not self._grle_schema_file:
             self._grle_schema = None
         else:
-            self._grle_schema = os.path.join(mfscfg.MFS_TEMPLATES_DIR, self._grle_schema_file)
+            self._grle_schema = os.path.join(mfscfg.MFS_TEMPLATES_DIR, self._grle_schema_file)  # type: ignore
 
         if not self._tree_schema_file:
             self._tree_schema = None
         else:
-            self._tree_schema = os.path.join(mfscfg.MFS_TEMPLATES_DIR, self._tree_schema_file)
+            self._tree_schema = os.path.join(mfscfg.MFS_TEMPLATES_DIR, self._tree_schema_file)  # type: ignore
 
     def set_components_by_names(self, component_names: list[str]) -> None:
         """Sets the components used for map generation by their names.
