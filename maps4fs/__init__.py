@@ -4,7 +4,6 @@ from pydtmdl import DTMProvider
 
 import maps4fs.generator.component as component
 import maps4fs.generator.settings as settings
-from maps4fs.generator.config import set_root_directory, set_templates_directory
 from maps4fs.generator.game import Game
 from maps4fs.generator.map import Map
 from maps4fs.logger import Logger
