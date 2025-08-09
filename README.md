@@ -23,6 +23,7 @@
   <a href="docs/step_by_step.md">Create a map in 10 steps</a> •
   <a href="docs/recommendations.md">Practical recommendations</a> •
   <a href="#How-To-Run">How-To-Run</a><br>
+  <a href="docs/my_maps.md">My Maps</a> •
   <a href="docs/FAQ.md">FAQ</a> •
   <a href="docs/map_structure.md">Map Structure</a> •
   <a href="#Schemas-Editor">Schemas Editor</a> •
