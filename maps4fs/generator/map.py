@@ -96,6 +96,7 @@ class Map:
                 "longitude": coordinates[1],
                 "country": self.get_country_by_coordinates(),
                 "size": size,
+                "output_size": self.output_size,
                 "rotation": rotation,
                 "dtm_provider": dtm_provider.name(),
                 "custom_osm": bool(custom_osm),

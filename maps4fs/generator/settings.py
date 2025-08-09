@@ -307,6 +307,7 @@ class MainSettings(NamedTuple):
     longitude: float
     country: str
     size: int
+    output_size: int | None
     rotation: int
     dtm_provider: str
     custom_osm: bool
@@ -342,6 +343,7 @@ class MainSettings(NamedTuple):
             "longitude": self.longitude,
             "country": self.country,
             "size": self.size,
+            "output_size": self.output_size,
             "rotation": self.rotation,
             "dtm_provider": self.dtm_provider,
             "custom_osm": self.custom_osm,
