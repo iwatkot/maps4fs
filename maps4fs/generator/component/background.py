@@ -597,6 +597,7 @@ class Background(MeshComponent, ImageComponent):
                     polygon_points=polygon.exterior.coords,
                     angle=self.rotation,
                     canvas_size=self.background_size,
+                    xshift=-Parameters.BACKGROUND_DISTANCE,
                 )
                 fitted_polygon = shapely.Polygon(fitted_polygon_points)
                 fitted_polygons.append(fitted_polygon)

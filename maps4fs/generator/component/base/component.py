@@ -365,6 +365,8 @@ class Component:
         angle: int = 0,
         border: int = 0,
         canvas_size: int | None = None,
+        xshift: int = 0,
+        yshift: int = 0,
     ) -> list[tuple[int, int]]:
         """Fits a polygon into the bounds of the map.
 
@@ -374,6 +376,9 @@ class Component:
             margin (int, optional): The margin to add to the polygon. Defaults to 0.
             angle (int, optional): The angle to rotate the polygon by. Defaults to 0.
             border (int, optional): The border to add to the bounds. Defaults to 0.
+            canvas_size (int, optional): The size of the canvas. Defaults to None.
+            xshift (int, optional): The x-axis shift to apply. Will be added to calculated offset.
+            yshift (int, optional): The y-axis shift to apply. Will be added to calculated offset.
 
         Returns:
             list[tuple[int, int]]: The points of the polygon fitted into the map bounds.
@@ -400,8 +405,11 @@ class Component:
             )
             osm_object = rotate(osm_object, -angle, origin=(center_x, center_y))
             offset = int((self.map_size / 2) - (self.map_rotated_size / 2)) * self.map.size_scale
-            self.logger.debug("Translating the osm_object by %s", offset)
-            osm_object = translate(osm_object, xoff=offset, yoff=offset)
+            xoff = yoff = offset
+            xoff += xshift
+            yoff += yshift
+            self.logger.debug("Translating the osm_object by X: %s, Y: %s", xoff, yoff)
+            osm_object = translate(osm_object, xoff=xoff, yoff=yoff)
             self.logger.debug("Rotated and translated the osm_object.")
 
         if margin and object_type is Polygon:

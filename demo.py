@@ -33,7 +33,6 @@ lat, lon = 45.2858, 20.219
 coordinates = (lat, lon)
 size = 4096
 rotation = 25
-# output_size = 1024
 
 # 4️⃣ Define the output directory.
 map_directory = "map_directory"
@@ -48,21 +47,20 @@ osm_file = "C:/Maps/FS25_Titelski_breg/dev/custom_osm.osm"
 # it's recommended to change them according to your needs.
 dem_settings = mfs.settings.DEMSettings(multiplier=1, blur_radius=40, plateau=15, water_depth=10)
 background_settings = mfs.settings.BackgroundSettings(
-    # generate_background=True,
+    generate_background=True,
     generate_water=True,
-    # water_blurriness=100,
     remove_center=True,
-    # flatten_roads=True,
+    flatten_roads=True,
     flatten_water=True,
 )
 grle_settings = mfs.settings.GRLESettings(
     add_grass=True, farmland_margin=8, random_plants=True, add_farmyards=True
 )
 i3d_settings = mfs.settings.I3DSettings(
-    forest_density=8, add_trees=True, tree_limit=40000, trees_relative_shift=1
+    forest_density=8, add_trees=True, tree_limit=50000, trees_relative_shift=20
 )
 texture_settings = mfs.settings.TextureSettings(
-    # dissolve=True,
+    dissolve=True,
     fields_padding=8,
     skip_drains=True,
 )
@@ -70,9 +68,6 @@ satellite_settings = mfs.settings.SatelliteSettings(download_images=True, zoom_l
 
 # 7️⃣ Optional: define custom tree and textures schemas.
 # Default schemas can be found in the `data` directory of the repository.
-texture_custom_schema = [
-    # Your texture schema here.
-]
 tree_custom_schema_path = "C:/Maps/tree_schema.json"
 tree_custom_schema = json.load(open(tree_custom_schema_path, "r", encoding="utf-8"))
 
@@ -88,7 +83,7 @@ mp = mfs.Map(
     size,
     rotation,
     map_directory,
-    # custom_osm=osm_file,
+    custom_osm=osm_file,
     dem_settings=dem_settings,
     background_settings=background_settings,
     grle_settings=grle_settings,
@@ -97,7 +92,6 @@ mp = mfs.Map(
     satellite_settings=satellite_settings,
     texture_custom_schema=texture_custom_schema,
     tree_custom_schema=tree_custom_schema,
-    # output_size=output_size,
 )
 
 # 9️⃣ Launch the generation process.
