@@ -5,6 +5,7 @@ import subprocess
 
 from osmnx import settings as ox_settings
 
+MFS_TEMPLATES_DIR = os.getenv("MFS_TEMPLATES_DIRECTORY", os.path.join(os.getcwd(), "data"))
 MFS_ROOT_DIR = os.getenv("MFS_ROOT_DIRECTORY", os.path.join(os.getcwd(), "mfsrootdir"))
 MFS_CACHE_DIR = os.path.join(MFS_ROOT_DIR, "cache")
 MFS_DATA_DIR = os.path.join(MFS_ROOT_DIR, "data")
@@ -50,3 +51,23 @@ def get_package_version(package_name: str) -> str:
 
 
 PACKAGE_VERSION = get_package_version("maps4fs")
+
+
+def set_templates_directory(path: str) -> None:
+    """Set the templates directory.
+
+    Arguments:
+        path (str): The path to the templates directory.
+    """
+    global MFS_TEMPLATES_DIR
+    MFS_TEMPLATES_DIR = path
+
+
+def set_root_directory(path: str) -> None:
+    """Set the root directory.
+
+    Arguments:
+        path (str): The path to the root directory.
+    """
+    global MFS_ROOT_DIR
+    MFS_ROOT_DIR = path

@@ -6,14 +6,13 @@ from __future__ import annotations
 
 import os
 
+import maps4fs.generator.config as mfscfg
 from maps4fs.generator.component.background import Background
 from maps4fs.generator.component.config import Config
 from maps4fs.generator.component.grle import GRLE
 from maps4fs.generator.component.i3d import I3d
 from maps4fs.generator.component.satellite import Satellite
 from maps4fs.generator.component.texture import Texture
-
-working_directory = os.getcwd()
 
 
 class Game:
@@ -34,10 +33,10 @@ class Game:
     code: str | None = None
     dem_multipliyer: int = 2
     _additional_dem_name: str | None = None
-    _map_template_path: str | None = None
-    _texture_schema: str | None = None
-    _grle_schema: str | None = None
-    _tree_schema: str | None = None
+    _map_template_file: str | None = None
+    _texture_schema_file: str | None = None
+    _grle_schema_file: str | None = None
+    _tree_schema_file: str | None = None
     _i3d_processing: bool = True
     _plants_processing: bool = True
     _environment_processing: bool = True
@@ -50,6 +49,14 @@ class Game:
     def __init__(self, map_template_path: str | None = None):
         if map_template_path:
             self._map_template_path = map_template_path
+        else:
+            self._map_template_path = os.path.join(
+                mfscfg.MFS_TEMPLATES_DIR, self._map_template_file
+            )
+
+        self._texture_schema = os.path.join(mfscfg.MFS_TEMPLATES_DIR, self._texture_schema_file)
+        self._grle_schema = os.path.join(mfscfg.MFS_TEMPLATES_DIR, self._grle_schema_file)
+        self._tree_schema = os.path.join(mfscfg.MFS_TEMPLATES_DIR, self._tree_schema_file)
 
     def set_components_by_names(self, component_names: list[str]) -> None:
         """Sets the components used for map generation by their names.
@@ -297,8 +304,8 @@ class FS22(Game):
     """Class used to define the game version FS22."""
 
     code = "FS22"
-    _map_template_path = os.path.join(working_directory, "data", "fs22-map-template.zip")
-    _texture_schema = os.path.join(working_directory, "data", "fs22-texture-schema.json")
+    _map_template_file = "fs22-map-template.zip"
+    _texture_schema_file = "fs22-texture-schema.json"
     _i3d_processing = False
     _environment_processing = False
     _fog_processing = False
@@ -342,10 +349,10 @@ class FS25(Game):
     code = "FS25"
     dem_multipliyer: int = 2
     _additional_dem_name = "unprocessedHeightMap.png"
-    _map_template_path = os.path.join(working_directory, "data", "fs25-map-template.zip")
-    _texture_schema = os.path.join(working_directory, "data", "fs25-texture-schema.json")
-    _grle_schema = os.path.join(working_directory, "data", "fs25-grle-schema.json")
-    _tree_schema = os.path.join(working_directory, "data", "fs25-tree-schema.json")
+    _map_template_file = "fs25-map-template.zip"
+    _texture_schema_file = "fs25-texture-schema.json"
+    _grle_schema_file = "fs25-grle-schema.json"
+    _tree_schema_file = "fs25-tree-schema.json"
 
     def dem_file_path(self, map_directory: str) -> str:
         """Returns the path to the DEM file.
