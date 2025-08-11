@@ -203,14 +203,28 @@
     "name": "mudLight",
     "count": 2,
     "tags": { "highway": ["unclassified", "residential", "track"] },
-    "width": 2,
+    "width": 4,
     "color": [33, 67, 101],
     "info_layer": "roads",
-    "procedural": ["PG_dirtpaths"]
+    "procedural": ["PG_dirtpaths"],
+    "priority": 7
   },
   {
     "name": "mudPebbles",
-    "count": 2
+    "count": 2,
+    "color": [8, 16, 24],
+    "width": 3,
+    "tags": { "highway": ["unclassified", "residential", "track"] },
+    "priority": 8
+  },
+  {
+    "name": "mudTracks",
+    "count": 2,
+    "tags": { "highway": ["unclassified", "residential", "track"] },
+    "width": 1,
+    "color": [33, 67, 101],
+    "priority": 9,
+    "merge_into": "mudLight"
   },
   {
     "name": "mudPebblesLight",
