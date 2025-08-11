@@ -258,6 +258,14 @@ class Texture(ImageComponent):
                 )
 
     def get_layer_by_name(self, layer_name: str) -> Layer | None:
+        """Returns the layer with the given name.
+
+        Arguments:
+            layer_name: The name of the layer to retrieve.
+
+        Returns:
+            The layer with the given name, or None if not found.
+        """
         for layer in self.layers:
             if layer.name == layer_name:
                 return layer
