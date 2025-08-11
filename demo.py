@@ -49,10 +49,10 @@ dem_settings = mfs.settings.DEMSettings(
     multiplier=1, blur_radius=40, plateau=15, water_depth=10, add_foundations=True
 )
 background_settings = mfs.settings.BackgroundSettings(
-    generate_background=True,
-    generate_water=True,
-    remove_center=True,
-    flatten_roads=True,
+    # generate_background=True,
+    # generate_water=True,
+    # remove_center=True,
+    # flatten_roads=True,
     flatten_water=True,
 )
 grle_settings = mfs.settings.GRLESettings(

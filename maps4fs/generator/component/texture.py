@@ -282,6 +282,13 @@ class Texture(ImageComponent):
                     )
                     layer_image = cv2.imread(layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED)
                     if target_layer_image is not None and layer_image is not None:
+                        if target_layer_image.shape != layer_image.shape:
+                            self.logger.warning(
+                                "Layer %s and target layer %s have different shapes, skipping merge.",
+                                layer.name,
+                                target_layer.name,
+                            )
+                            continue
                         target_layer_image = cv2.add(target_layer_image, layer_image)
                         cv2.imwrite(target_layer.path(self._weights_dir), target_layer_image)
                     self.logger.debug("Merged layer %s into %s.", layer.name, target_layer.name)
