@@ -41,16 +41,18 @@ if os.path.isdir(map_directory):
 os.makedirs(map_directory, exist_ok=True)
 
 # 5️⃣ Optional: use a custom OSM file.
-osm_file = "C:/Maps/FS25_Titelski_breg/dev/custom_osm.osm"
+osm_file = "C:/Maps/FS25_Titelski_breg/custom_osm.osm"
 
 # 6️⃣ Optional: advanced settings. You can use the default settings, but
 # it's recommended to change them according to your needs.
-dem_settings = mfs.settings.DEMSettings(multiplier=1, blur_radius=40, plateau=15, water_depth=10)
+dem_settings = mfs.settings.DEMSettings(
+    multiplier=1, blur_radius=40, plateau=15, water_depth=10, add_foundations=True
+)
 background_settings = mfs.settings.BackgroundSettings(
-    generate_background=True,
-    generate_water=True,
-    remove_center=True,
-    flatten_roads=True,
+    # generate_background=True,
+    # generate_water=True,
+    # remove_center=True,
+    # flatten_roads=True,
     flatten_water=True,
 )
 grle_settings = mfs.settings.GRLESettings(

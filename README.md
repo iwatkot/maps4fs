@@ -535,6 +535,7 @@ Let's have a closer look at the fields:
 - `area_type` - one of the supported by Giants Editor area types, such as: "open_land", "city", "village", "harbor", "industrial", "open_water". It will be reflected in the environment info layer file.  
 - `area_water` - whenever this field is set to true, the area will be considered as water, and it will be changed in the environment info layer file.
 - `indoor` - whenever this field is set to true, the area will be considered as indoor, and it will be reflected in the indoorMask info layer.
+- `merge_into` - if specified, the layer with this parameter will be merged into the target layer and the content of the layer will be transferred to the target layer.
 
 ## Background terrain
 

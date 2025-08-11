@@ -49,6 +49,7 @@ class Layer:
         area_type: str | None = None,
         area_water: bool = False,
         indoor: bool = False,
+        merge_into: str | None = None,
     ):
         self.name = name
         self.count = count
@@ -68,6 +69,7 @@ class Layer:
         self.area_type = area_type
         self.area_water = area_water
         self.indoor = indoor
+        self.merge_into = merge_into
 
     def to_json(self) -> dict[str, str | list[str] | bool]:  # type: ignore
         """Returns dictionary with layer data.
@@ -93,6 +95,7 @@ class Layer:
             "area_type": self.area_type,
             "area_water": self.area_water,
             "indoor": self.indoor,
+            "merge_into": self.merge_into,
         }
 
         data = {k: v for k, v in data.items() if v is not None}

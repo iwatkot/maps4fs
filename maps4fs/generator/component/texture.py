@@ -172,6 +172,7 @@ class Texture(ImageComponent):
         self._read_parameters()
         self.draw()
         self.rotate_textures()
+        self.merge_into()
 
         if not self.kwargs.get("skip_scaling", False):
             self.scale_textures()
@@ -255,6 +256,46 @@ class Texture(ImageComponent):
                 self.logger.debug(
                     "Procedural file %s copied from %s.", procedural_save_path, texture_paths[0]
                 )
+
+    def get_layer_by_name(self, layer_name: str) -> Layer | None:
+        """Returns the layer with the given name.
+
+        Arguments:
+            layer_name: The name of the layer to retrieve.
+
+        Returns:
+            The layer with the given name, or None if not found.
+        """
+        for layer in self.layers:
+            if layer.name == layer_name:
+                return layer
+        return None
+
+    def merge_into(self) -> None:
+        """Merges the content of layers into their target layers."""
+        for layer in self.layers:
+            if layer.merge_into:
+                target_layer = self.get_layer_by_name(layer.merge_into)
+                if target_layer:
+                    target_layer_image = cv2.imread(
+                        target_layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED
+                    )
+                    layer_image = cv2.imread(layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED)
+                    if target_layer_image is not None and layer_image is not None:
+                        if target_layer_image.shape != layer_image.shape:
+                            self.logger.warning(
+                                "Layer %s and target layer %s have different shapes, skipping merge.",
+                                layer.name,
+                                target_layer.name,
+                            )
+                            continue
+                        target_layer_image = cv2.add(target_layer_image, layer_image)
+                        cv2.imwrite(target_layer.path(self._weights_dir), target_layer_image)
+                    self.logger.debug("Merged layer %s into %s.", layer.name, target_layer.name)
+
+                    # Clear the content of the layer which have merge_into property.
+                    cv2.imwrite(layer.path(self._weights_dir), np.zeros_like(layer_image))
+                    self.logger.debug("Cleared layer %s.", layer.name)
 
     def rotate_textures(self) -> None:
         """Rotates textures of the layers which have tags."""
