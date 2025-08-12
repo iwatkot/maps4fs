@@ -22,11 +22,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r dev/requirements.txt
 
-      - name: Install missing stub packages
-        run: mypy --install-types --non-interactive
+      - name: Install zip utility
+        run: sudo apt-get update && sudo apt-get install -y zip
+
+      - name: Clone maps4fsdata and prepare data
+        run: |
+          git clone --depth 1 https://github.com/iwatkot/maps4fsdata.git /tmp/maps4fsdata
+          cd /tmp/maps4fsdata
+          chmod +x prepare_data.sh
+          ./prepare_data.sh
+          cp -r data $GITHUB_WORKSPACE/data
+          rm -rf /tmp/maps4fsdata
 
       - name: Run mypy to generate cache
         run: mypy maps4fs || true
+
+      - name: Install missing stub packages
+        run: mypy --install-types --non-interactive
 
       - name: Run mypy
         run: mypy maps4fs
