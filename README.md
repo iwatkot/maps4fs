@@ -12,7 +12,6 @@
 <a href="https://github.com/iwatkot/pygmdl">pygmdl</a> •
 <a href="https://github.com/iwatkot/pydtmdl">pydtmdl</a>
 </p>
-</p>
 
 <div align="center" markdown>
 <a href="https://discord.gg/Sj5QKKyE42">
