@@ -34,11 +34,11 @@ jobs:
           cp -r data $GITHUB_WORKSPACE/data
           rm -rf /tmp/maps4fsdata
 
-      - name: Install missing stub packages
-        run: mypy --install-types --non-interactive
-
       - name: Run mypy to generate cache
         run: mypy maps4fs || true
+
+      - name: Install missing stub packages
+        run: mypy --install-types --non-interactive
 
       - name: Run mypy
         run: mypy maps4fs
