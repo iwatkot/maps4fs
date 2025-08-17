@@ -22,3 +22,4 @@ local.env
 *.sqlite
 dev/utils/grle_to_png/data/
 mfsrootdir/
+data/
