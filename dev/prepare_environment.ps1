@@ -58,9 +58,9 @@ Write-Host ""
 Write-Host "=================================================" -ForegroundColor Green
 Write-Host "    [SUCCESS] Environment setup completed!       " -ForegroundColor Green
 Write-Host "                                                 " -ForegroundColor Green
-Write-Host "  ✓ Data files downloaded and ready              " -ForegroundColor Green
-Write-Host "  ✓ Virtual environment created and activated    " -ForegroundColor Green
-Write-Host "  ✓ Dependencies installed                       " -ForegroundColor Green
+Write-Host "  Data files downloaded and ready                " -ForegroundColor Green
+Write-Host "  Virtual environment created and activated      " -ForegroundColor Green
+Write-Host "  Dependencies installed                         " -ForegroundColor Green
 Write-Host "                                                 " -ForegroundColor Green
 Write-Host "         Your maps4fs environment is ready!      " -ForegroundColor Green
 Write-Host "=================================================" -ForegroundColor Green
