@@ -63,22 +63,15 @@ class Map:
         satellite_settings: SatelliteSettings = SatelliteSettings(),
         **kwargs,
     ):
-        if not logger:
-            logger = Logger()
-        self.logger = logger
+        self.logger = logger if logger else Logger()
         self.size = size
 
-        if rotation:
-            rotation_multiplier = 1.5
-        else:
-            rotation_multiplier = 1
-
+        rotation_multiplier = 1.5 if rotation else 1
         self.rotation = rotation
         self.rotated_size = int(size * rotation_multiplier)
+
         self.output_size = kwargs.get("output_size", None)
-        self.size_scale = 1.0
-        if self.output_size:
-            self.size_scale = self.output_size / self.size
+        self.size_scale = 1.0 if not self.output_size else self.output_size / size
 
         self.game = game
         self.dtm_provider = dtm_provider
@@ -89,46 +82,18 @@ class Map:
             coordinates=coordinates, game_code=game.code  # type: ignore
         )
 
-        main_settings = MainSettings.from_json(
-            {
-                "game": game.code,  # type: ignore
-                "latitude": coordinates[0],
-                "longitude": coordinates[1],
-                "country": self.get_country_by_coordinates(),
-                "size": size,
-                "output_size": self.output_size,
-                "rotation": rotation,
-                "dtm_provider": dtm_provider.name(),
-                "custom_osm": bool(custom_osm),
-                "is_public": kwargs.get("is_public", False),
-                "api_request": kwargs.get("api_request", False),
-                "date": datetime.now().strftime("%Y-%m-%d"),
-                "time": datetime.now().strftime("%H:%M:%S"),
-                "version": mfscfg.PACKAGE_VERSION,
-                "completed": False,
-                "error": None,
-            }
-        )
+        main_settings = MainSettings.from_map(self)
         main_settings_json = main_settings.to_json()
+        self._update_main_settings(main_settings_json)
 
         try:
+            # TODO: Move to separate method along with generation settings.
             send_main_settings(main_settings_json)
         except Exception as e:
             self.logger.error("Error sending main settings: %s", e)
 
-        self.main_settings_path = os.path.join(self.map_directory, "main_settings.json")
-        with open(self.main_settings_path, "w", encoding="utf-8") as file:
-            json.dump(main_settings_json, file, indent=4)
-
-        log_entry = ""
-        log_entry += f"Map instance created for Game: {game.code}. "
-        log_entry += f"Coordinates: {coordinates}. Size: {size}. Rotation: {rotation}. "
-        if self.output_size:
-            log_entry += f"Output size: {self.output_size}. Scaling: {self.size_scale}. "
-        log_entry += f"DTM provider is {dtm_provider.name()}. "
-
+        # TODO: Move custom OSM handling to a separate method.
         self.custom_osm = custom_osm
-        log_entry += f"Custom OSM file: {custom_osm}. "
 
         if self.custom_osm:
             osm_is_valid = check_osm_file(self.custom_osm)
@@ -152,8 +117,9 @@ class Map:
             shutil.copyfile(custom_osm, copy_path)
             self.logger.debug("Custom OSM file copied to %s", copy_path)
 
+        # TODO: Move to separate method (process settings) or integrate into
+        # the class itself (GenerationSettings).
         self.dem_settings = dem_settings
-        log_entry += f"DEM settings: {dem_settings}. "
         if self.dem_settings.water_depth > 0:
             # Make sure that the plateau value is >= water_depth
             self.dem_settings.plateau = max(
@@ -161,16 +127,11 @@ class Map:
             )
 
         self.background_settings = background_settings
-        log_entry += f"Background settings: {background_settings}. "
         self.grle_settings = grle_settings
-        log_entry += f"GRLE settings: {grle_settings}. "
         self.i3d_settings = i3d_settings
-        log_entry += f"I3D settings: {i3d_settings}. "
         self.texture_settings = texture_settings
-        log_entry += f"Texture settings: {texture_settings}. "
         self.satellite_settings = satellite_settings
 
-        self.logger.info(log_entry)
         os.makedirs(self.map_directory, exist_ok=True)
         self.logger.debug("Map directory created: %s", self.map_directory)
 

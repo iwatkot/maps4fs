@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 import re
-from typing import Any, NamedTuple
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from pydantic import BaseModel, ConfigDict
+
+if TYPE_CHECKING:
+    import maps4fs.generator.config as mfscfg
+    from maps4fs.generator.map import Map
 
 
 class Parameters:
@@ -355,3 +360,24 @@ class MainSettings(NamedTuple):
             "completed": self.completed,
             "error": self.error,
         }
+
+    @classmethod
+    def from_map(cls, map: Map) -> MainSettings:
+        return cls(
+            game=map.game.code,
+            latitude=map.coordinates[0],
+            longitude=map.coordinates[1],
+            country=map.get_country_by_coordinates(),
+            size=map.size,
+            output_size=map.output_size,
+            rotation=map.rotation,
+            dtm_provider=map.dtm_provider.name(),
+            custom_osm=bool(map.custom_osm),
+            is_public=map.kwargs.get("is_public", False),
+            api_request=map.kwargs.get("api_request", False),
+            date=datetime.now().strftime("%Y-%m-%d"),
+            time=datetime.now().strftime("%H:%M:%S"),
+            version=mfscfg.PACKAGE_VERSION,
+            completed=False,
+            error=None,
+        )
