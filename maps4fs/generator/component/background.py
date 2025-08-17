@@ -586,7 +586,7 @@ class Background(MeshComponent, ImageComponent):
                 continue
 
             # Make Polygon a little bit bigger to hide under the terrain when creating water planes.
-            polygon = polygon.buffer(Parameters.WATER_ADD_WIDTH, resolution=4)
+            polygon = polygon.buffer(Parameters.WATER_ADD_WIDTH, quad_segs=4)
 
             polygons.append(polygon)
 

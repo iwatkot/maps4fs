@@ -41,7 +41,7 @@ if os.path.isdir(map_directory):
 os.makedirs(map_directory, exist_ok=True)
 
 # 5️⃣ Optional: use a custom OSM file.
-osm_file = "C:/Maps/FS25_Titelski_breg/custom_osm.osm"
+osm_file = "C:/Maps/FS25_Titelski_breg/dev/custom_osm.osm"
 
 # 6️⃣ Optional: advanced settings. You can use the default settings, but
 # it's recommended to change them according to your needs.
@@ -76,6 +76,15 @@ tree_custom_schema = json.load(open(tree_custom_schema_path, "r", encoding="utf-
 texture_custom_schema_path = "C:/Maps/texture-schema.json"
 texture_custom_schema = json.load(open(texture_custom_schema_path, "r", encoding="utf-8"))
 
+generation_settings = mfs.GenerationSettings(
+    dem_settings=dem_settings,
+    background_settings=background_settings,
+    grle_settings=grle_settings,
+    i3d_settings=i3d_settings,
+    texture_settings=texture_settings,
+    satellite_settings=satellite_settings,
+)
+
 # 8️⃣ Create an instance of the Map class with specified settings.
 mp = mfs.Map(
     game,
@@ -86,12 +95,7 @@ mp = mfs.Map(
     rotation,
     map_directory,
     custom_osm=osm_file,
-    dem_settings=dem_settings,
-    background_settings=background_settings,
-    grle_settings=grle_settings,
-    i3d_settings=i3d_settings,
-    texture_settings=texture_settings,
-    satellite_settings=satellite_settings,
+    generation_settings=generation_settings,
     texture_custom_schema=texture_custom_schema,
     tree_custom_schema=tree_custom_schema,
 )

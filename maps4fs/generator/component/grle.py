@@ -472,7 +472,7 @@ class GRLE(ImageComponent, XMLComponent):
             for a, r in zip(random_angles, random_radii)
         ]
         polygon = Polygon(points)
-        buffered_polygon = polygon.buffer(rounding_radius, resolution=16)
+        buffered_polygon = polygon.buffer(rounding_radius, quad_segs=16)
         rounded_polygon = list(buffered_polygon.exterior.coords)
         if not rounded_polygon:
             return None

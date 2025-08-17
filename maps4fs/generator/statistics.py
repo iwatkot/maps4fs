@@ -36,17 +36,17 @@ def post(endpoint: str, data: dict[str, Any]) -> None:
     def _post_thread():
         try:
             if not STATS_HOST or not API_TOKEN:
-                logger.info("STATS_HOST or API_TOKEN not set in environment, can't send settings.")
+                logger.debug("STATS_HOST or API_TOKEN not set in environment, can't send settings.")
                 return
 
             headers = {"Authorization": f"Bearer {API_TOKEN}", "Content-Type": "application/json"}
             response = requests.post(endpoint, headers=headers, json=data, timeout=10)
             if response.status_code != 200:
-                logger.error("Failed to send settings: %s", response.text)
+                logger.warning("Failed to send settings: %s", response.text)
                 return
-            logger.info("Settings sent successfully")
+            logger.debug("Settings sent successfully")
         except Exception as e:
-            logger.error("Error in async post: %s", str(e))
+            logger.warning("Error while trying to send settings: %s", e)
 
     thread = threading.Thread(target=_post_thread, daemon=True)
     thread.start()

@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING, Any, NamedTuple
 
 from pydantic import BaseModel, ConfigDict
 
+import maps4fs.generator.config as mfscfg
+
 if TYPE_CHECKING:
-    import maps4fs.generator.config as mfscfg
     from maps4fs.generator.map import Map
 
 
@@ -262,12 +263,12 @@ class SatelliteSettings(SettingsModel):
 class GenerationSettings(BaseModel):
     """Represents the settings for the map generation process."""
 
-    dem_settings: DEMSettings
-    background_settings: BackgroundSettings
-    grle_settings: GRLESettings
-    i3d_settings: I3DSettings
-    texture_settings: TextureSettings
-    satellite_settings: SatelliteSettings
+    dem_settings: DEMSettings = DEMSettings()
+    background_settings: BackgroundSettings = BackgroundSettings()
+    grle_settings: GRLESettings = GRLESettings()
+    i3d_settings: I3DSettings = I3DSettings()
+    texture_settings: TextureSettings = TextureSettings()
+    satellite_settings: SatelliteSettings = SatelliteSettings()
 
     def to_json(self) -> dict[str, Any]:
         """Convert the GenerationSettings instance to JSON format.
@@ -363,11 +364,21 @@ class MainSettings(NamedTuple):
 
     @classmethod
     def from_map(cls, map: Map) -> MainSettings:
+        """Create a MainSettings instance from a Map instance.
+
+        Arguments:
+            map (Map): Instance of Map.
+
+        Returns:
+            MainSettings: Instance of MainSettings.
+        """
+        from maps4fs.generator.utils import get_country_by_coordinates
+
         return cls(
-            game=map.game.code,
+            game=map.game.code,  # type: ignore
             latitude=map.coordinates[0],
             longitude=map.coordinates[1],
-            country=map.get_country_by_coordinates(),
+            country=get_country_by_coordinates(map.coordinates),
             size=map.size,
             output_size=map.output_size,
             rotation=map.rotation,
