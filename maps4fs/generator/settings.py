@@ -85,7 +85,7 @@ class SettingsModel(BaseModel):
 
     @classmethod
     def all_settings_from_json(
-        cls, data: dict, flattening: bool = True, from_snake: bool = False
+        cls, data: dict, flattening: bool = True, from_snake: bool = False, safe: bool = False
     ) -> dict[str, SettingsModel]:
         """Create settings instances from JSON data.
 
@@ -104,7 +104,8 @@ class SettingsModel(BaseModel):
                 subclass_key = subclass.__name__.replace("Settings", "_settings").lower()
             else:
                 subclass_key = subclass.__name__
-            subclass_data = data[subclass_key]
+
+            subclass_data = data.get(subclass_key, {}) if safe else data[subclass_key]
             if flattening:
                 for key, value in subclass_data.items():
                     if isinstance(value, (list, tuple)):
@@ -291,18 +292,21 @@ class GenerationSettings(BaseModel):
         }
 
     @classmethod
-    def from_json(cls, data: dict[str, Any], from_snake: bool = False) -> GenerationSettings:
+    def from_json(
+        cls, data: dict[str, Any], from_snake: bool = False, safe: bool = False
+    ) -> GenerationSettings:
         """Create a GenerationSettings instance from JSON data.
 
         Arguments:
             data (dict[str, Any]): JSON data.
             from_snake (bool): if set to True will convert snake_case keys to camelCase.
+            safe (bool): if set to True will ignore unknown keys.
 
         Returns:
             GenerationSettings: Instance of GenerationSettings.
         """
         all_settings = SettingsModel.all_settings_from_json(
-            data, flattening=False, from_snake=from_snake
+            data, flattening=False, from_snake=from_snake, safe=safe
         )
         return cls(**all_settings)  # type: ignore
 
