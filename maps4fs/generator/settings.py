@@ -85,7 +85,7 @@ class SettingsModel(BaseModel):
 
     @classmethod
     def all_settings_from_json(
-        cls, data: dict, flattening: bool = True
+        cls, data: dict, flattening: bool = True, from_snake: bool = False
     ) -> dict[str, SettingsModel]:
         """Create settings instances from JSON data.
 
@@ -93,13 +93,18 @@ class SettingsModel(BaseModel):
             data (dict): JSON data.
             flattening (bool): if set to True will flattet iterables to use the first element
                 of it.
+            from_snake (bool): if set to True will convert snake_case keys to camelCase.
 
         Returns:
             dict[str, Type[SettingsModel]]: Dictionary with settings instances.
         """
         settings = {}
         for subclass in cls.__subclasses__():
-            subclass_data = data[subclass.__name__]
+            if from_snake:
+                subclass_key = subclass.__name__.replace("Settings", "_settings").lower()
+            else:
+                subclass_key = subclass.__name__
+            subclass_data = data[subclass_key]
             if flattening:
                 for key, value in subclass_data.items():
                     if isinstance(value, (list, tuple)):
@@ -286,23 +291,20 @@ class GenerationSettings(BaseModel):
         }
 
     @classmethod
-    def from_json(cls, data: dict[str, Any]) -> GenerationSettings:
+    def from_json(cls, data: dict[str, Any], from_snake: bool = False) -> GenerationSettings:
         """Create a GenerationSettings instance from JSON data.
 
         Arguments:
             data (dict[str, Any]): JSON data.
+            from_snake (bool): if set to True will convert snake_case keys to camelCase.
 
         Returns:
             GenerationSettings: Instance of GenerationSettings.
         """
-        return cls(
-            dem_settings=DEMSettings(**data["DEMSettings"]),
-            background_settings=BackgroundSettings(**data["BackgroundSettings"]),
-            grle_settings=GRLESettings(**data["GRLESettings"]),
-            i3d_settings=I3DSettings(**data["I3DSettings"]),
-            texture_settings=TextureSettings(**data["TextureSettings"]),
-            satellite_settings=SatelliteSettings(**data["SatelliteSettings"]),
+        all_settings = SettingsModel.all_settings_from_json(
+            data, flattening=False, from_snake=from_snake
         )
+        return cls(**all_settings)  # type: ignore
 
 
 class MainSettings(NamedTuple):
