@@ -784,6 +784,320 @@ function Show-DockerStatus {
     }
 }
 
+# Function to check for existing maps4fs containers
+function Test-ExistingContainers {
+    try {
+        Write-Host ">> Checking for existing maps4fs containers..." -ForegroundColor Yellow
+        
+        # Get all containers (running and stopped) with maps4fs in the name
+        $containers = docker ps -a --filter "name=maps4fs" --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Image}}" 2>$null
+        
+        if ($LASTEXITCODE -eq 0 -and $containers) {
+            # Parse container information (skip header line)
+            $containerLines = $containers -split "`n" | Select-Object -Skip 1 | Where-Object { $_.Trim() -ne "" }
+            
+            if ($containerLines.Count -gt 0) {
+                $containerInfo = @()
+                foreach ($line in $containerLines) {
+                    $parts = $line -split "`t"
+                    if ($parts.Count -ge 4) {
+                        $containerInfo += @{
+                            ID = $parts[0].Trim()
+                            Name = $parts[1].Trim()
+                            Status = $parts[2].Trim()
+                            Image = $parts[3].Trim()
+                            IsRunning = $parts[2] -match "Up"
+                        }
+                    }
+                }
+                
+                return @{
+                    Found = $true
+                    Containers = $containerInfo
+                    Message = "Found $($containerInfo.Count) maps4fs container(s)"
+                }
+            }
+        }
+        
+        return @{
+            Found = $false
+            Containers = @()
+            Message = "No maps4fs containers found"
+        }
+    } catch {
+        return @{
+            Found = $false
+            Containers = @()
+            Message = "Error checking containers: $($_.Exception.Message)"
+        }
+    }
+}
+
+# Function to stop and remove maps4fs containers
+function Remove-ExistingContainers {
+    param(
+        [array]$Containers
+    )
+    
+    $success = $true
+    $results = @()
+    
+    foreach ($container in $Containers) {
+        try {
+            Write-Host ">> Processing container: $($container.Name)" -ForegroundColor Yellow
+            
+            # Stop container if running
+            if ($container.IsRunning) {
+                Write-Host "   Stopping running container..." -ForegroundColor Yellow
+                docker stop $container.ID 2>$null | Out-Null
+                if ($LASTEXITCODE -ne 0) {
+                    $results += "Failed to stop $($container.Name)"
+                    $success = $false
+                    continue
+                }
+            }
+            
+            # Remove container
+            Write-Host "   Removing container..." -ForegroundColor Yellow
+            docker rm $container.ID 2>$null | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                $results += "Failed to remove $($container.Name)"
+                $success = $false
+            } else {
+                $results += "Successfully removed $($container.Name)"
+            }
+            
+        } catch {
+            $results += "Error processing $($container.Name): $($_.Exception.Message)"
+            $success = $false
+        }
+    }
+    
+    return @{
+        Success = $success
+        Results = $results
+    }
+}
+
+# Function to show existing containers and prompt for removal
+function Show-ExistingContainers {
+    param(
+        [object]$ContainerResult
+    )
+    
+    if (-not $ContainerResult.Found) {
+        # No containers found - show brief success message
+        $noContainersContent = @(
+            "",
+            "                        [OK] NO EXISTING CONTAINERS",
+            "",
+            "                      No maps4fs containers found",
+            "",
+            "                         Ready to proceed!",
+            "",
+            "---",
+            "",
+            "                      Press any key to continue",
+            ""
+        )
+        
+        Clear-Host
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        $title = "CONTAINER CHECK - CLEAN"
+        $padding = (80 - $title.Length - 2) / 2
+        $leftPadding = [int][Math]::Floor($padding)
+        $rightPadding = [int][Math]::Ceiling($padding)
+        Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor Green
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        foreach ($line in $noContainersContent) {
+            if ($line -eq "---") {
+                Write-Host ("-" * 80) -ForegroundColor Gray
+            } elseif ($line.Contains("[OK] NO EXISTING CONTAINERS")) {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+            } else {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+            }
+        }
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        $key = Wait-ForUserInput -PromptText ">> Press any key to continue"
+        return $true
+    }
+    
+    # Show existing containers
+    $containerContent = @(
+        "",
+        "                      [!] EXISTING CONTAINERS FOUND",
+        "",
+        "                     Found maps4fs containers that may",
+        "                        conflict with new deployment:",
+        ""
+    )
+    
+    # Add container details
+    foreach ($container in $ContainerResult.Containers) {
+        $status = if ($container.IsRunning) { "RUNNING" } else { "STOPPED" }
+        $statusColor = if ($container.IsRunning) { "Red" } else { "Yellow" }
+        $containerContent += "                  * $($container.Name) [$status]"
+    }
+    
+    $containerContent += @(
+        "",
+        "                      It's recommended to remove these",
+        "                      containers before proceeding.",
+        "",
+        "---",
+        "",
+        "                 Y - Stop and remove all containers",
+        "                 N - Continue without removing",
+        "                 E - Exit wizard",
+        ""
+    )
+    
+    Clear-Host
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    $title = "EXISTING CONTAINERS DETECTED"
+    $padding = (80 - $title.Length - 2) / 2
+    $leftPadding = [int][Math]::Floor($padding)
+    $rightPadding = [int][Math]::Ceiling($padding)
+    Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor Yellow
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    
+    foreach ($line in $containerContent) {
+        if ($line -eq "---") {
+            Write-Host ("-" * 80) -ForegroundColor Gray
+        } elseif ($line.Contains("[!] EXISTING CONTAINERS FOUND")) {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
+        } elseif ($line.Contains("RUNNING")) {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Red
+        } elseif ($line.Contains("STOPPED")) {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
+        } else {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+        }
+    }
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    
+    # Wait for user choice
+    do {
+        $key = Wait-ForUserInput -PromptText ">> Remove containers (Y/N/E)"
+        $choice = $key.Character.ToString().ToUpper()
+        
+        if ($choice -eq "Y") {
+            # Remove containers
+            Write-Host ""
+            Write-Host "Removing existing containers..." -ForegroundColor Yellow
+            
+            $removeResult = Remove-ExistingContainers -Containers $ContainerResult.Containers
+            
+            # Show removal results
+            $resultContent = @("", "                          CONTAINER REMOVAL RESULTS", "")
+            
+            foreach ($result in $removeResult.Results) {
+                $resultContent += "                  $result"
+            }
+            
+            if ($removeResult.Success) {
+                $resultContent += @(
+                    "",
+                    "                    [OK] All containers removed successfully",
+                    "",
+                    "---",
+                    "",
+                    "                      Press any key to continue",
+                    ""
+                )
+                $titleColor = "Green"
+                $titleText = "CONTAINERS REMOVED"
+            } else {
+                $resultContent += @(
+                    "",
+                    "                   [!] Some containers failed to remove",
+                    "",
+                    "                     You may need to remove them manually",
+                    "",
+                    "---",
+                    "",
+                    "                 Y - Continue anyway",
+                    "                 N - Exit wizard",
+                    ""
+                )
+                $titleColor = "Yellow"
+                $titleText = "PARTIAL SUCCESS"
+            }
+            
+            Clear-Host
+            Write-Host ("=" * 80) -ForegroundColor Cyan
+            $title = $titleText
+            $padding = (80 - $title.Length - 2) / 2
+            $leftPadding = [int][Math]::Floor($padding)
+            $rightPadding = [int][Math]::Ceiling($padding)
+            Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor $titleColor
+            Write-Host ("=" * 80) -ForegroundColor Cyan
+            
+            foreach ($line in $resultContent) {
+                if ($line -eq "---") {
+                    Write-Host ("-" * 80) -ForegroundColor Gray
+                } elseif ($line.Contains("[OK]")) {
+                    $contentLength = $line.Length
+                    $padding = 80 - $contentLength - 2
+                    Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+                } elseif ($line.Contains("[!]")) {
+                    $contentLength = $line.Length
+                    $padding = 80 - $contentLength - 2
+                    Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
+                } else {
+                    $contentLength = $line.Length
+                    $padding = 80 - $contentLength - 2
+                    Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+                }
+            }
+            Write-Host ("=" * 80) -ForegroundColor Cyan
+            
+            if ($removeResult.Success) {
+                $key = Wait-ForUserInput -PromptText ">> Press any key to continue"
+                return $true
+            } else {
+                # Partial success - ask if continue
+                do {
+                    $continueKey = Wait-ForUserInput -PromptText ">> Continue anyway (Y/N)"
+                    $continueChoice = $continueKey.Character.ToString().ToUpper()
+                    
+                    if ($continueChoice -eq "Y") {
+                        return $true
+                    } elseif ($continueChoice -eq "N") {
+                        return $false
+                    } else {
+                        Write-Host "Please press Y or N" -ForegroundColor Red
+                        Start-Sleep -Seconds 1
+                    }
+                } while ($true)
+            }
+            
+        } elseif ($choice -eq "N") {
+            return $true  # Continue without removing
+        } elseif ($choice -eq "E") {
+            return $false  # Exit
+        } else {
+            Write-Host "Please press Y, N, or E" -ForegroundColor Red
+            Start-Sleep -Seconds 1
+        }
+    } while ($true)
+}
+
 # Main execution
 try {
     # Step 1: Welcome screen
@@ -830,7 +1144,20 @@ try {
         exit 0
     }
     
-    # Step 5: Continue with next steps...
+    # Step 5: Check for existing maps4fs containers
+    Write-Host "Checking for existing containers..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 1
+    
+    $containerResult = Test-ExistingContainers
+    $containerContinue = Show-ExistingContainers -ContainerResult $containerResult
+    
+    if (-not $containerContinue) {
+        Show-Frame -Content @("", "                              Setup aborted", "") -Title "GOODBYE"
+        Start-Sleep -Seconds 2
+        exit 0
+    }
+    
+    # Step 6: Continue with next steps...
     Show-Frame -Content @("", "                     Docker is ready and running!", "", "                        ... (More steps to implement)", "") -Title "SETUP IN PROGRESS"
     
     # Placeholder for next steps
