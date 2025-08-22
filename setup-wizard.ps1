@@ -139,6 +139,15 @@ function Show-DockerRequirement {
 }
 
 function Test-DockerInstalled {
+    # DEBUG: Force failure for testing
+    return @{
+        Installed = $false
+        Version = $null
+        Message = "Docker command not found (DEBUG MODE)"
+    }
+    
+    # Original code (commented out for debug)
+    <#
     try {
         $dockerVersion = docker --version 2>$null
         if ($LASTEXITCODE -eq 0) {
@@ -159,6 +168,48 @@ function Test-DockerInstalled {
             Installed = $false
             Version = $null
             Message = "Error checking Docker: $($_.Exception.Message)"
+        }
+    }
+    #>
+}
+
+function Download-DockerDesktop {
+    try {
+        $dockerUrl = "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe"
+        $outputPath = "$env:TEMP\DockerDesktopInstaller.exe"
+        
+        Write-Host ""
+        Write-Host "Downloading Docker Desktop installer..." -ForegroundColor Yellow
+        Write-Host "This may take a few minutes depending on your connection" -ForegroundColor Gray
+        Write-Host ""
+        
+        # Show progress
+        $progressParams = @{
+            Activity = "Downloading Docker Desktop"
+            Status = "Please wait..."
+            PercentComplete = 0
+        }
+        Write-Progress @progressParams
+        
+        # Download with progress
+        Invoke-WebRequest -Uri $dockerUrl -OutFile $outputPath -UseBasicParsing
+        
+        Write-Progress @progressParams -Completed
+        Write-Host "Download completed!" -ForegroundColor Green
+        Write-Host "Installer saved to: $outputPath" -ForegroundColor Gray
+        
+        return @{
+            Success = $true
+            FilePath = $outputPath
+            Message = "Docker Desktop installer downloaded successfully"
+        }
+        
+    } catch {
+        Write-Host "Failed to download Docker Desktop: $($_.Exception.Message)" -ForegroundColor Red
+        return @{
+            Success = $false
+            FilePath = $null
+            Message = "Download failed: $($_.Exception.Message)"
         }
     }
 }
@@ -182,7 +233,7 @@ function Show-DockerStatus {
             ""
         )
         $title = "DOCKER CHECK - SUCCESS"
-        $color = "Green"
+        $titleColor = "Green"
     } else {
         $statusContent = @(
             "",
@@ -190,21 +241,60 @@ function Show-DockerStatus {
             "",
             "                    Docker is not installed or not accessible",
             "",
-            "                    Please install Docker Desktop from:",
-            "                      https://www.docker.com/products/docker-desktop",
+            "                           You have two options:",
             "",
-            "                        After installation, restart this wizard",
+            "                 1. Download manually from Docker website:",
+            "                   https://www.docker.com/products/docker-desktop",
+            "",
+            "                 2. Press Y to download the installer here",
             "",
             "---",
             "",
-            "                         Press any key to exit",
+            "                    Press Y to download or N to exit",
             ""
         )
         $title = "DOCKER CHECK - FAILED"
-        $color = "Red"
+        $titleColor = "Red"
     }
     
-    Show-Frame -Content $statusContent -Title $title
+    # Show frame with colored title
+    Clear-Host
+    
+    # Top border
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    
+    # Title with appropriate color
+    $padding = (80 - $title.Length - 2) / 2
+    $leftPadding = [int][Math]::Floor($padding)
+    $rightPadding = [int][Math]::Ceiling($padding)
+    Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor $titleColor
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    
+    # Content with colored status line
+    foreach ($line in $statusContent) {
+        if ($line -eq "---") {
+            Write-Host ("-" * 80) -ForegroundColor Gray
+        } elseif ($line.Contains("[OK] DOCKER FOUND")) {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+        } elseif ($line.Contains("[X] DOCKER NOT FOUND")) {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Red
+        } elseif ($line.Contains("1. Download manually") -or $line.Contains("2. Press Y to download")) {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
+        } else {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+        }
+    }
+    
+    # Bottom border
+    Write-Host ("=" * 80) -ForegroundColor Cyan
     
     if ($DockerResult.Installed) {
         do {
@@ -221,8 +311,59 @@ function Show-DockerStatus {
             }
         } while ($true)
     } else {
-        $key = Wait-ForUserInput -PromptText ">> Press any key to exit"
-        return $false
+        do {
+            $key = Wait-ForUserInput -PromptText ">> Download Docker Desktop (Y/N)"
+            $choice = $key.Character.ToString().ToUpper()
+            
+            if ($choice -eq "Y") {
+                # Download Docker Desktop
+                $downloadResult = Download-DockerDesktop
+                
+                if ($downloadResult.Success) {
+                    $downloadContent = @(
+                        "",
+                        "                        [OK] DOWNLOAD COMPLETED",
+                        "",
+                        "                Docker Desktop installer has been downloaded",
+                        "",
+                        "                     File location: $($downloadResult.FilePath)",
+                        "",
+                        "                   Please run the installer and restart this",
+                        "                          wizard after installation",
+                        "",
+                        "---",
+                        "",
+                        "                       Press any key to exit",
+                        ""
+                    )
+                    Show-Frame -Content $downloadContent -Title "DOWNLOAD SUCCESS"
+                    $key = Wait-ForUserInput -PromptText ">> Press any key to exit"
+                } else {
+                    $errorContent = @(
+                        "",
+                        "                        [X] DOWNLOAD FAILED",
+                        "",
+                        "                     Failed to download installer",
+                        "",
+                        "                  Please download manually from:",
+                        "                https://www.docker.com/products/docker-desktop",
+                        "",
+                        "---",
+                        "",
+                        "                       Press any key to exit",
+                        ""
+                    )
+                    Show-Frame -Content $errorContent -Title "DOWNLOAD ERROR"
+                    $key = Wait-ForUserInput -PromptText ">> Press any key to exit"
+                }
+                return $false
+            } elseif ($choice -eq "N") {
+                return $false
+            } else {
+                Write-Host "Please press Y or N" -ForegroundColor Red
+                Start-Sleep -Seconds 1
+            }
+        } while ($true)
     }
 }
 
