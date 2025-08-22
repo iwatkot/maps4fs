@@ -139,15 +139,6 @@ function Show-DockerRequirement {
 }
 
 function Test-DockerInstalled {
-    # DEBUG: Force failure for testing
-    return @{
-        Installed = $false
-        Version = $null
-        Message = "Docker command not found (DEBUG MODE)"
-    }
-    
-    # Original code (commented out for debug)
-    <#
     try {
         $dockerVersion = docker --version 2>$null
         if ($LASTEXITCODE -eq 0) {
@@ -170,7 +161,6 @@ function Test-DockerInstalled {
             Message = "Error checking Docker: $($_.Exception.Message)"
         }
     }
-    #>
 }
 
 function Download-DockerDesktop {
@@ -197,32 +187,34 @@ function Download-DockerDesktop {
         
         Write-Host ""
         
-        # Create WebClient for progress tracking
-        $webClient = New-Object System.Net.WebClient
-        
-        # Register progress event
-        Register-ObjectEvent -InputObject $webClient -EventName "DownloadProgressChanged" -Action {
-            $received = [math]::Round($Event.SourceEventArgs.BytesReceived / 1MB, 1)
-            $total = [math]::Round($Event.SourceEventArgs.TotalBytesToReceive / 1MB, 1)
-            $percent = $Event.SourceEventArgs.ProgressPercentage
-            
-            Write-Host "`r>> Downloading: $received MB / $total MB ($percent%)" -ForegroundColor Yellow -NoNewline
-        } | Out-Null
-        
+        # Simple clean download without progress mess
         try {
-            # Start download
-            Write-Host ">> Starting download..." -ForegroundColor Yellow
-            $webClient.DownloadFile($dockerUrl, $fullPath)
+            # Show animated dots while downloading
+            $job = Start-Job -ScriptBlock {
+                param($url, $path)
+                $ProgressPreference = 'SilentlyContinue'  # Hide ugly progress
+                Invoke-WebRequest -Uri $url -OutFile $path -UseBasicParsing
+            } -ArgumentList $dockerUrl, $fullPath
             
-            # Clean up event
-            Get-EventSubscriber | Where-Object { $_.SourceObject -eq $webClient } | Unregister-Event
-            $webClient.Dispose()
+            # Show simple animated progress
+            $dots = @(".", "..", "...", "")
+            $counter = 0
+            
+            while ($job.State -eq "Running") {
+                Write-Host "`r>> Downloading Docker Desktop $($dots[$counter % 4])" -ForegroundColor Yellow -NoNewline
+                $counter++
+                Start-Sleep -Milliseconds 800
+            }
+            
+            # Check if job completed successfully
+            $jobResult = Receive-Job -Job $job
+            Remove-Job -Job $job
             
             Write-Host ""
             Write-Host ""
             Write-Host "Download completed successfully!" -ForegroundColor Green
             
-            # Verify file exists and get size
+            # Verify file exists and get final size
             if (Test-Path $fullPath) {
                 $fileSize = [math]::Round((Get-Item $fullPath).Length / 1MB, 1)
                 Write-Host "File size: $fileSize MB" -ForegroundColor Gray
@@ -239,9 +231,6 @@ function Download-DockerDesktop {
             }
             
         } catch {
-            # Clean up on error
-            Get-EventSubscriber | Where-Object { $_.SourceObject -eq $webClient } | Unregister-Event
-            $webClient.Dispose()
             throw $_
         }
         
