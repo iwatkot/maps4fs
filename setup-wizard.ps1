@@ -163,6 +163,303 @@ function Test-DockerInstalled {
     }
 }
 
+function Test-DockerRunning {
+    try {
+        Write-Host ">> Testing Docker with hello-world container..." -ForegroundColor Yellow
+        
+        # Run hello-world container and capture output
+        $dockerOutput = docker run --rm hello-world 2>&1
+        
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host ">> Docker is running correctly!" -ForegroundColor Green
+            
+            # Clean up any leftover hello-world images
+            docker rmi hello-world 2>$null | Out-Null
+            
+            return @{
+                Running = $true
+                Output = $dockerOutput
+                Message = "Docker is running and accessible"
+            }
+        } else {
+            return @{
+                Running = $false
+                Output = $dockerOutput
+                Message = "Docker is not running or not accessible"
+            }
+        }
+    } catch {
+        return @{
+            Running = $false
+            Output = $null
+            Message = "Error testing Docker: $($_.Exception.Message)"
+        }
+    }
+}
+
+function Show-DockerRunningStatus {
+    param([hashtable]$DockerRunResult)
+    
+    if ($DockerRunResult.Running) {
+        $statusContent = @(
+            "",
+            "                            [OK] DOCKER IS RUNNING",
+            "",
+            "                     Docker is installed and running correctly!",
+            "",
+            "                        Hello-world test completed successfully",
+            "",
+            "---",
+            "",
+            "                     Press Y to continue with setup",
+            "                       or N to exit the wizard",
+            ""
+        )
+        $titleColor = "Green"
+    } else {
+        $statusContent = @(
+            "",
+            "                            [X] DOCKER NOT RUNNING",
+            "",
+            "                    Docker is installed but not running properly",
+            "",
+            "                           We can try to fix this:",
+            "",
+            "                     Y - Launch Docker Desktop automatically",
+            "                     N - Exit (launch manually later)",
+            "",
+            "---",
+            "",
+            "                    Press Y to launch or N to exit",
+            ""
+        )
+        $titleColor = "Red"
+    }
+    
+    $title = if ($DockerRunResult.Running) { "DOCKER TEST - SUCCESS" } else { "DOCKER TEST - FAILED" }
+    
+    # Show frame with colored title
+    Clear-Host
+    
+    # Top border
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    
+    # Title with appropriate color
+    $padding = (80 - $title.Length - 2) / 2
+    $leftPadding = [int][Math]::Floor($padding)
+    $rightPadding = [int][Math]::Ceiling($padding)
+    Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor $titleColor
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    
+    # Content with colored status line
+    foreach ($line in $statusContent) {
+        if ($line -eq "---") {
+            Write-Host ("-" * 80) -ForegroundColor Gray
+        } elseif ($line.Contains("[OK] DOCKER IS RUNNING")) {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+        } elseif ($line.Contains("[X] DOCKER NOT RUNNING")) {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Red
+        } elseif ($line.Contains("Y - Launch Docker") -or $line.Contains("N - Exit")) {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
+        } else {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+        }
+    }
+    
+    # Bottom border
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    
+    if ($DockerRunResult.Running) {
+        do {
+            $key = Wait-ForUserInput -PromptText ">> Continue with setup (Y/N)"
+            $choice = $key.Character.ToString().ToUpper()
+            
+            if ($choice -eq "Y") {
+                return $true
+            } elseif ($choice -eq "N") {
+                return $false
+            } else {
+                Write-Host "Please press Y or N" -ForegroundColor Red
+                Start-Sleep -Seconds 1
+            }
+        } while ($true)
+    } else {
+        do {
+            $key = Wait-ForUserInput -PromptText ">> Launch Docker Desktop (Y/N)"
+            $choice = $key.Character.ToString().ToUpper()
+            
+            if ($choice -eq "Y") {
+                # Try to launch Docker Desktop
+                Write-Host ""
+                Write-Host "Launching Docker Desktop..." -ForegroundColor Yellow
+                
+                try {
+                    # Try docker command first (newer versions support this)
+                    Write-Host ">> Trying docker command..." -ForegroundColor Gray
+                    
+                    $dockerStartResult = docker desktop start 2>$null
+                    if ($LASTEXITCODE -eq 0) {
+                        Write-Host ">> Docker Desktop launched successfully!" -ForegroundColor Green
+                        
+                        $launchContent = @(
+                            "",
+                            "                         DOCKER DESKTOP STARTED",
+                            "",
+                            "                    Docker Desktop is starting up...",
+                            "",
+                            "                           Please wait for:",
+                            "                    1. Docker Desktop to fully start",
+                            "                    2. Docker engine to become ready",
+                            "                    3. System tray icon to show 'running'",
+                            "",
+                            "                      This may take a few minutes",
+                            "",
+                            "                    Press Y when ready to test Docker",
+                            "                         or N to exit",
+                            "",
+                            "---",
+                            "",
+                            "                    Press Y to test or N to exit",
+                            ""
+                        )
+                        Show-Frame -Content $launchContent -Title "DOCKER DESKTOP STARTING"
+                        
+                        do {
+                            $key = Wait-ForUserInput -PromptText ">> Test Docker now (Y/N)"
+                            $choice = $key.Character.ToString().ToUpper()
+                            
+                            if ($choice -eq "Y") {
+                                # Re-test Docker after startup
+                                Write-Host ""
+                                Write-Host "Re-testing Docker functionality..." -ForegroundColor Yellow
+                                Start-Sleep -Seconds 2
+                                
+                                $retestResult = Test-DockerRunning
+                                if ($retestResult.Running) {
+                                    # Success! Docker is now running
+                                    $successContent = @(
+                                        "",
+                                        "                        [OK] DOCKER IS NOW RUNNING",
+                                        "",
+                                        "                   Docker Desktop started successfully!",
+                                        "",
+                                        "                    Hello-world test completed successfully",
+                                        "",
+                                        "---",
+                                        "",
+                                        "                     Press Y to continue with setup",
+                                        "                       or N to exit the wizard",
+                                        ""
+                                    )
+                                    
+                                    Clear-Host
+                                    Write-Host ("=" * 80) -ForegroundColor Cyan
+                                    $title = "DOCKER TEST - SUCCESS"
+                                    $padding = (80 - $title.Length - 2) / 2
+                                    $leftPadding = [int][Math]::Floor($padding)
+                                    $rightPadding = [int][Math]::Ceiling($padding)
+                                    Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor Green
+                                    Write-Host ("=" * 80) -ForegroundColor Cyan
+                                    
+                                    foreach ($line in $successContent) {
+                                        if ($line -eq "---") {
+                                            Write-Host ("-" * 80) -ForegroundColor Gray
+                                        } elseif ($line.Contains("[OK] DOCKER IS NOW RUNNING")) {
+                                            $contentLength = $line.Length
+                                            $padding = 80 - $contentLength - 2
+                                            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+                                        } else {
+                                            $contentLength = $line.Length
+                                            $padding = 80 - $contentLength - 2
+                                            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+                                        }
+                                    }
+                                    Write-Host ("=" * 80) -ForegroundColor Cyan
+                                    
+                                    do {
+                                        $finalKey = Wait-ForUserInput -PromptText ">> Continue with setup (Y/N)"
+                                        $finalChoice = $finalKey.Character.ToString().ToUpper()
+                                        
+                                        if ($finalChoice -eq "Y") {
+                                            return $true  # Continue with setup
+                                        } elseif ($finalChoice -eq "N") {
+                                            return $false
+                                        } else {
+                                            Write-Host "Please press Y or N" -ForegroundColor Red
+                                            Start-Sleep -Seconds 1
+                                        }
+                                    } while ($true)
+                                    
+                                } else {
+                                    # Still not working
+                                    Write-Host "Docker is still not responding properly" -ForegroundColor Red
+                                    Write-Host "Docker Desktop may need more time to start" -ForegroundColor Yellow
+                                    Write-Host "Please wait a bit longer and try again" -ForegroundColor Yellow
+                                    Start-Sleep -Seconds 3
+                                    # Return to the waiting screen
+                                    Show-Frame -Content $launchContent -Title "DOCKER DESKTOP STARTING"
+                                }
+                                
+                            } elseif ($choice -eq "N") {
+                                return $false
+                            } else {
+                                Write-Host "Please press Y or N" -ForegroundColor Red
+                                Start-Sleep -Seconds 1
+                            }
+                        } while ($true)
+                        return $false
+                    } else {
+                        # Docker command failed - installation issue
+                        Write-Host ">> Docker command failed" -ForegroundColor Red
+                        
+                        $errorContent = @(
+                            "",
+                            "                        [X] CANNOT LAUNCH DOCKER",
+                            "",
+                            "                    Docker installation appears incomplete",
+                            "",
+                            "                           This usually means:",
+                            "                    1. Docker Desktop needs to be reinstalled",
+                            "                    2. Docker is not in system PATH",
+                            "                    3. Installation was corrupted",
+                            "",
+                            "                    Please check your Docker installation",
+                            "                      and try launching from Start Menu",
+                            "",
+                            "---",
+                            "",
+                            "                       Press any key to exit",
+                            ""
+                        )
+                        Show-Frame -Content $errorContent -Title "INSTALLATION PROBLEM"
+                        $key = Wait-ForUserInput -PromptText ">> Press any key to exit"
+                        return $false
+                    }
+                    
+                } catch {
+                    Write-Host "Failed to launch Docker Desktop: $($_.Exception.Message)" -ForegroundColor Red
+                    Start-Sleep -Seconds 3
+                }
+                
+                return $false
+            } elseif ($choice -eq "N") {
+                return $false
+            } else {
+                Write-Host "Please press Y or N" -ForegroundColor Red
+                Start-Sleep -Seconds 1
+            }
+        } while ($true)
+    }
+}
+
 function Download-DockerDesktop {
     try {
         $dockerUrl = "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe"
@@ -512,8 +809,21 @@ try {
         exit 0
     }
     
-    # Step 4: Continue with next steps...
-    Show-Frame -Content @("", "                     Docker check passed successfully!", "", "                        ... (More steps to implement)", "") -Title "SETUP IN PROGRESS"
+    # Step 4: Test if Docker is actually running
+    Write-Host "Testing Docker functionality..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 1
+    
+    $dockerRunResult = Test-DockerRunning
+    $dockerRunContinue = Show-DockerRunningStatus -DockerRunResult $dockerRunResult
+    
+    if (-not $dockerRunContinue) {
+        Show-Frame -Content @("", "                              Setup aborted", "") -Title "GOODBYE"
+        Start-Sleep -Seconds 2
+        exit 0
+    }
+    
+    # Step 5: Continue with next steps...
+    Show-Frame -Content @("", "                     Docker is ready and running!", "", "                        ... (More steps to implement)", "") -Title "SETUP IN PROGRESS"
     
     # Placeholder for next steps
     Write-Host ""
