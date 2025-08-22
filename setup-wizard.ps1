@@ -176,39 +176,83 @@ function Test-DockerInstalled {
 function Download-DockerDesktop {
     try {
         $dockerUrl = "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe"
-        $outputPath = "$env:TEMP\DockerDesktopInstaller.exe"
+        $outputPath = ".\DockerDesktopInstaller.exe"
+        $fullPath = (Resolve-Path ".").Path + "\DockerDesktopInstaller.exe"
+        
+        # Show clean download screen
+        $downloadContent = @(
+            "",
+            "                        DOWNLOADING DOCKER DESKTOP",
+            "",
+            "                      Please wait while we download the",
+            "                         Docker Desktop installer...",
+            "",
+            "                    File will be saved to current directory:",
+            "                           $((Get-Location).Path)",
+            "",
+            "                              Please be patient!",
+            ""
+        )
+        Show-Frame -Content $downloadContent -Title "DOWNLOAD IN PROGRESS"
         
         Write-Host ""
-        Write-Host "Downloading Docker Desktop installer..." -ForegroundColor Yellow
-        Write-Host "This may take a few minutes depending on your connection" -ForegroundColor Gray
-        Write-Host ""
         
-        # Show progress
-        $progressParams = @{
-            Activity = "Downloading Docker Desktop"
-            Status = "Please wait..."
-            PercentComplete = 0
-        }
-        Write-Progress @progressParams
+        # Create WebClient for progress tracking
+        $webClient = New-Object System.Net.WebClient
         
-        # Download with progress
-        Invoke-WebRequest -Uri $dockerUrl -OutFile $outputPath -UseBasicParsing
+        # Register progress event
+        Register-ObjectEvent -InputObject $webClient -EventName "DownloadProgressChanged" -Action {
+            $received = [math]::Round($Event.SourceEventArgs.BytesReceived / 1MB, 1)
+            $total = [math]::Round($Event.SourceEventArgs.TotalBytesToReceive / 1MB, 1)
+            $percent = $Event.SourceEventArgs.ProgressPercentage
+            
+            Write-Host "`r>> Downloading: $received MB / $total MB ($percent%)" -ForegroundColor Yellow -NoNewline
+        } | Out-Null
         
-        Write-Progress @progressParams -Completed
-        Write-Host "Download completed!" -ForegroundColor Green
-        Write-Host "Installer saved to: $outputPath" -ForegroundColor Gray
-        
-        return @{
-            Success = $true
-            FilePath = $outputPath
-            Message = "Docker Desktop installer downloaded successfully"
+        try {
+            # Start download
+            Write-Host ">> Starting download..." -ForegroundColor Yellow
+            $webClient.DownloadFile($dockerUrl, $fullPath)
+            
+            # Clean up event
+            Get-EventSubscriber | Where-Object { $_.SourceObject -eq $webClient } | Unregister-Event
+            $webClient.Dispose()
+            
+            Write-Host ""
+            Write-Host ""
+            Write-Host "Download completed successfully!" -ForegroundColor Green
+            
+            # Verify file exists and get size
+            if (Test-Path $fullPath) {
+                $fileSize = [math]::Round((Get-Item $fullPath).Length / 1MB, 1)
+                Write-Host "File size: $fileSize MB" -ForegroundColor Gray
+                
+                return @{
+                    Success = $true
+                    FilePath = $fullPath
+                    FileName = "DockerDesktopInstaller.exe"
+                    FileSize = $fileSize
+                    Message = "Docker Desktop installer downloaded successfully"
+                }
+            } else {
+                throw "Downloaded file not found"
+            }
+            
+        } catch {
+            # Clean up on error
+            Get-EventSubscriber | Where-Object { $_.SourceObject -eq $webClient } | Unregister-Event
+            $webClient.Dispose()
+            throw $_
         }
         
     } catch {
+        Write-Host ""
         Write-Host "Failed to download Docker Desktop: $($_.Exception.Message)" -ForegroundColor Red
         return @{
             Success = $false
             FilePath = $null
+            FileName = $null
+            FileSize = 0
             Message = "Download failed: $($_.Exception.Message)"
         }
     }
@@ -324,20 +368,99 @@ function Show-DockerStatus {
                         "",
                         "                        [OK] DOWNLOAD COMPLETED",
                         "",
-                        "                Docker Desktop installer has been downloaded",
+                        "                Docker Desktop installer has been downloaded!",
                         "",
-                        "                     File location: $($downloadResult.FilePath)",
+                        "                     File: $($downloadResult.FileName)",
+                        "                     Size: $($downloadResult.FileSize) MB",
+                        "                     Location: Current directory",
                         "",
-                        "                   Please run the installer and restart this",
-                        "                          wizard after installation",
+                        "                           What would you like to do?",
+                        "",
+                        "                     Y - Launch installer now",
+                        "                     N - Exit (launch manually later)",
                         "",
                         "---",
                         "",
-                        "                       Press any key to exit",
+                        "                    Press Y to launch or N to exit",
                         ""
                     )
-                    Show-Frame -Content $downloadContent -Title "DOWNLOAD SUCCESS"
-                    $key = Wait-ForUserInput -PromptText ">> Press any key to exit"
+                    
+                    # Custom frame with green success message
+                    Clear-Host
+                    Write-Host ("=" * 80) -ForegroundColor Cyan
+                    $title = "DOWNLOAD SUCCESS"
+                    $padding = (80 - $title.Length - 2) / 2
+                    $leftPadding = [int][Math]::Floor($padding)
+                    $rightPadding = [int][Math]::Ceiling($padding)
+                    Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor Green
+                    Write-Host ("=" * 80) -ForegroundColor Cyan
+                    
+                    foreach ($line in $downloadContent) {
+                        if ($line -eq "---") {
+                            Write-Host ("-" * 80) -ForegroundColor Gray
+                        } elseif ($line.Contains("[OK] DOWNLOAD COMPLETED")) {
+                            $contentLength = $line.Length
+                            $padding = 80 - $contentLength - 2
+                            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+                        } elseif ($line.Contains("Y - Launch installer") -or $line.Contains("N - Exit")) {
+                            $contentLength = $line.Length
+                            $padding = 80 - $contentLength - 2
+                            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
+                        } else {
+                            $contentLength = $line.Length
+                            $padding = 80 - $contentLength - 2
+                            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+                        }
+                    }
+                    Write-Host ("=" * 80) -ForegroundColor Cyan
+                    
+                    # Ask user if they want to launch installer
+                    do {
+                        $key = Wait-ForUserInput -PromptText ">> Launch installer now (Y/N)"
+                        $choice = $key.Character.ToString().ToUpper()
+                        
+                        if ($choice -eq "Y") {
+                            # Launch installer
+                            Write-Host ""
+                            Write-Host "Launching Docker Desktop installer..." -ForegroundColor Yellow
+                            
+                            try {
+                                Start-Process -FilePath $downloadResult.FilePath -Wait
+                                
+                                # After installation completion
+                                $completionContent = @(
+                                    "",
+                                    "                         INSTALLATION COMPLETED",
+                                    "",
+                                    "                   Docker Desktop installation finished!",
+                                    "",
+                                    "                           Important notes:",
+                                    "",
+                                    "                   1. Restart your computer if prompted",
+                                    "                   2. Start Docker Desktop from Start Menu",
+                                    "                   3. Wait for Docker to fully start",
+                                    "                   4. Run this wizard again to continue setup",
+                                    "",
+                                    "---",
+                                    "",
+                                    "                       Press any key to exit",
+                                    ""
+                                )
+                                Show-Frame -Content $completionContent -Title "INSTALLATION COMPLETE"
+                                $key = Wait-ForUserInput -PromptText ">> Press any key to exit"
+                                
+                            } catch {
+                                Write-Host "Failed to launch installer: $($_.Exception.Message)" -ForegroundColor Red
+                                Start-Sleep -Seconds 2
+                            }
+                            break
+                        } elseif ($choice -eq "N") {
+                            break
+                        } else {
+                            Write-Host "Please press Y or N" -ForegroundColor Red
+                            Start-Sleep -Seconds 1
+                        }
+                    } while ($true)
                 } else {
                     $errorContent = @(
                         "",
