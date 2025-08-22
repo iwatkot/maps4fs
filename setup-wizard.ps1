@@ -164,14 +164,22 @@ function Test-DockerInstalled {
 }
 
 function Test-DockerRunning {
+    param(
+        [bool]$ShowTestMessage = $true
+    )
+    
     try {
-        Write-Host ">> Testing Docker with hello-world container..." -ForegroundColor Yellow
+        if ($ShowTestMessage) {
+            Write-Host ">> Testing Docker with hello-world container..." -ForegroundColor Yellow
+        }
         
         # Run hello-world container and capture output
         $dockerOutput = docker run --rm hello-world 2>&1
         
         if ($LASTEXITCODE -eq 0) {
-            Write-Host ">> Docker is running correctly!" -ForegroundColor Green
+            if ($ShowTestMessage) {
+                Write-Host ">> Docker is running correctly!" -ForegroundColor Green
+            }
             
             # Clean up any leftover hello-world images
             docker rmi hello-world 2>$null | Out-Null
@@ -342,7 +350,7 @@ function Show-DockerRunningStatus {
                                 Write-Host "Re-testing Docker functionality..." -ForegroundColor Yellow
                                 Start-Sleep -Seconds 2
                                 
-                                $retestResult = Test-DockerRunning
+                                $retestResult = Test-DockerRunning -ShowTestMessage $false
                                 if ($retestResult.Running) {
                                     # Success! Docker is now running
                                     $successContent = @(
