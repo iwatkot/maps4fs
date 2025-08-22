@@ -1098,6 +1098,183 @@ function Show-ExistingContainers {
     } while ($true)
 }
 
+# Function to check if a port is available
+function Test-PortAvailable {
+    param(
+        [int]$Port
+    )
+    
+    try {
+        $tcpListener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Any, $Port)
+        $tcpListener.Start()
+        $tcpListener.Stop()
+        
+        return @{
+            Available = $true
+            Port = $Port
+            Message = "Port $Port is available"
+        }
+    } catch {
+        return @{
+            Available = $false
+            Port = $Port
+            Message = "Port $Port is in use"
+            Error = $_.Exception.Message
+        }
+    }
+}
+
+# Function to check required ports for maps4fs
+function Test-RequiredPorts {
+    $requiredPorts = @(3000, 8000)
+    $results = @()
+    
+    Write-Host ">> Checking required ports..." -ForegroundColor Yellow
+    
+    foreach ($port in $requiredPorts) {
+        Write-Host "   Checking port $port..." -ForegroundColor Gray
+        $portResult = Test-PortAvailable -Port $port
+        $results += $portResult
+        
+        if ($portResult.Available) {
+            Write-Host "   Port $port is available" -ForegroundColor Green
+        } else {
+            Write-Host "   Port $port is in use" -ForegroundColor Red
+        }
+    }
+    
+    $allAvailable = ($results | Where-Object { -not $_.Available }).Count -eq 0
+    
+    return @{
+        AllAvailable = $allAvailable
+        Results = $results
+        Message = if ($allAvailable) { "All required ports are available" } else { "Some required ports are in use" }
+    }
+}
+
+# Function to show port availability results
+function Show-PortAvailability {
+    param(
+        [object]$PortResult
+    )
+    
+    if ($PortResult.AllAvailable) {
+        # All ports available - show success
+        $successContent = @(
+            "",
+            "                        [OK] PORTS AVAILABLE",
+            "",
+            "                     All required ports are free:",
+            "",
+            "                          * Port 3000: Available",
+            "                          * Port 8000: Available", 
+            "",
+            "                         Ready to proceed!",
+            "",
+            "---",
+            "",
+            "                      Press any key to continue",
+            ""
+        )
+        
+        Clear-Host
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        $title = "PORT CHECK - SUCCESS"
+        $padding = (80 - $title.Length - 2) / 2
+        $leftPadding = [int][Math]::Floor($padding)
+        $rightPadding = [int][Math]::Ceiling($padding)
+        Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor Green
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        foreach ($line in $successContent) {
+            if ($line -eq "---") {
+                Write-Host ("-" * 80) -ForegroundColor Gray
+            } elseif ($line.Contains("[OK] PORTS AVAILABLE")) {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+            } else {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+            }
+        }
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        $key = Wait-ForUserInput -PromptText ">> Press any key to continue"
+        return $true
+    }
+    
+    # Some ports are in use - show error
+    $errorContent = @(
+        "",
+        "                        [!] PORTS REQUIRED",
+        "",
+        "                    Maps4fs requires these ports:",
+        ""
+    )
+    
+    # Add port status details
+    foreach ($result in $PortResult.Results) {
+        if ($result.Available) {
+            $errorContent += "                        * Port $($result.Port): Available"
+        } else {
+            $errorContent += "                        * Port $($result.Port): IN USE"
+        }
+    }
+    
+    $errorContent += @(
+        "",
+        "                    Please free the required ports:",
+        "",
+        "                   - Port 3000: Frontend application",
+        "                   - Port 8000: Backend API server",
+        "",
+        "                    Close applications using these ports",
+        "                       and run the wizard again.",
+        "",
+        "---",
+        "",
+        "                      Press any key to exit",
+        ""
+    )
+    
+    Clear-Host
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    $title = "PORT CHECK - FAILED"
+    $padding = (80 - $title.Length - 2) / 2
+    $leftPadding = [int][Math]::Floor($padding)
+    $rightPadding = [int][Math]::Ceiling($padding)
+    Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor Red
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    
+    foreach ($line in $errorContent) {
+        if ($line -eq "---") {
+            Write-Host ("-" * 80) -ForegroundColor Gray
+        } elseif ($line.Contains("[!] PORTS REQUIRED")) {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Red
+        } elseif ($line.Contains("IN USE")) {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Red
+        } elseif ($line.Contains("Available")) {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+        } else {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+        }
+    }
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    
+    $key = Wait-ForUserInput -PromptText ">> Press any key to exit"
+    return $false
+}
+
 # Main execution
 try {
     # Step 1: Welcome screen
@@ -1157,7 +1334,20 @@ try {
         exit 0
     }
     
-    # Step 6: Continue with next steps...
+    # Step 6: Check required ports availability
+    Write-Host "Checking port availability..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 1
+    
+    $portResult = Test-RequiredPorts
+    $portContinue = Show-PortAvailability -PortResult $portResult
+    
+    if (-not $portContinue) {
+        Show-Frame -Content @("", "                       Ports are required for maps4fs", "", "                      Please free ports and try again", "") -Title "GOODBYE"
+        Start-Sleep -Seconds 3
+        exit 1
+    }
+    
+    # Step 7: Continue with next steps...
     Show-Frame -Content @("", "                     Docker is ready and running!", "", "                        ... (More steps to implement)", "") -Title "SETUP IN PROGRESS"
     
     # Placeholder for next steps
