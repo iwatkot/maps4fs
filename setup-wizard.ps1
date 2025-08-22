@@ -36,6 +36,31 @@ function Show-Frame {
     Write-Host ("=" * 80) -ForegroundColor Cyan
 }
 
+function Wait-ForUserInput {
+    param(
+        [string]$PromptText = "Waiting for input"
+    )
+    
+    Write-Host ""
+    Write-Host "$PromptText " -ForegroundColor Yellow -NoNewline
+    
+    $dots = @(".", "..", "...", "")
+    $counter = 0
+    
+    do {
+        Write-Host "`r$PromptText $($dots[$counter % 4])" -ForegroundColor Yellow -NoNewline
+        $counter++
+        
+        if ([Console]::KeyAvailable) {
+            $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+            Write-Host ""  # New line after input
+            return $key
+        }
+        
+        Start-Sleep -Milliseconds 500
+    } while ($true)
+}
+
 function Show-Welcome {
     $welcomeContent = @(
         "",
@@ -61,13 +86,16 @@ function Show-Welcome {
     Show-Frame -Content $welcomeContent -Title "WELCOME TO MAPS4FS SETUP WIZARD"
     
     do {
-        $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        $key = Wait-ForUserInput -PromptText ">> Waiting for your choice (Y/N)"
         $choice = $key.Character.ToString().ToUpper()
         
         if ($choice -eq "Y") {
             return $true
         } elseif ($choice -eq "N") {
             return $false
+        } else {
+            Write-Host "Please press Y or N" -ForegroundColor Red
+            Start-Sleep -Seconds 1
         }
     } while ($true)
 }
@@ -96,13 +124,16 @@ function Show-DockerRequirement {
     Show-Frame -Content $dockerContent -Title "DOCKER INSTALLATION CHECK"
     
     do {
-        $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        $key = Wait-ForUserInput -PromptText ">> Ready to check Docker (Y/N)"
         $choice = $key.Character.ToString().ToUpper()
         
         if ($choice -eq "Y") {
             return $true
         } elseif ($choice -eq "N") {
             return $false
+        } else {
+            Write-Host "Please press Y or N" -ForegroundColor Red
+            Start-Sleep -Seconds 1
         }
     } while ($true)
 }
@@ -177,17 +208,20 @@ function Show-DockerStatus {
     
     if ($DockerResult.Installed) {
         do {
-            $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+            $key = Wait-ForUserInput -PromptText ">> Continue with setup (Y/N)"
             $choice = $key.Character.ToString().ToUpper()
             
             if ($choice -eq "Y") {
                 return $true
             } elseif ($choice -eq "N") {
                 return $false
+            } else {
+                Write-Host "Please press Y or N" -ForegroundColor Red
+                Start-Sleep -Seconds 1
             }
         } while ($true)
     } else {
-        $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") | Out-Null
+        $key = Wait-ForUserInput -PromptText ">> Press any key to exit"
         return $false
     }
 }
