@@ -1,3 +1,5 @@
+name: maps4fs
+
 services:
   maps4fsapi:
     image: iwatkot/maps4fsapi
