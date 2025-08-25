@@ -1275,6 +1275,592 @@ function Show-PortAvailability {
     return $false
 }
 
+# Function to check and create required directories
+function Test-RequiredDirectories {
+    $userProfile = $env:USERPROFILE
+    $requiredDirectories = @(
+        @{
+            Path = "$userProfile\maps4fs\mfsrootdir"
+            Description = "Maps working directory (shared storage for maps and cache)"
+        },
+        @{
+            Path = "$userProfile\maps4fs\templates"
+            Description = "Game templates directory (FS22/FS25 map templates)"
+        }
+    )
+    
+    $results = @()
+    
+    Write-Host ">> Checking required directories..." -ForegroundColor Yellow
+    
+    foreach ($dir in $requiredDirectories) {
+        Write-Host "   Checking: $($dir.Path)" -ForegroundColor Gray
+        
+        if (Test-Path $dir.Path) {
+            Write-Host "   Directory exists" -ForegroundColor Green
+            $results += @{
+                Path = $dir.Path
+                Description = $dir.Description
+                Exists = $true
+                Created = $false
+            }
+        } else {
+            Write-Host "   Directory does not exist" -ForegroundColor Red
+            $results += @{
+                Path = $dir.Path
+                Description = $dir.Description
+                Exists = $false
+                Created = $false
+            }
+        }
+    }
+    
+    $allExist = ($results | Where-Object { -not $_.Exists }).Count -eq 0
+    
+    return @{
+        AllExist = $allExist
+        Directories = $results
+        Message = if ($allExist) { "All required directories exist" } else { "Some directories are missing" }
+    }
+}
+
+# Function to create missing directories
+function New-RequiredDirectories {
+    param(
+        [array]$MissingDirectories
+    )
+    
+    $success = $true
+    $createdDirs = @()
+    
+    foreach ($dir in $MissingDirectories) {
+        try {
+            Write-Host ">> Creating directory: $($dir.Path)" -ForegroundColor Yellow
+            New-Item -ItemType Directory -Path $dir.Path -Force | Out-Null
+            
+            if (Test-Path $dir.Path) {
+                Write-Host "   Successfully created" -ForegroundColor Green
+                $dir.Created = $true
+                $createdDirs += $dir.Path
+            } else {
+                throw "Directory creation failed"
+            }
+        } catch {
+            Write-Host "   Failed to create directory: $($_.Exception.Message)" -ForegroundColor Red
+            $success = $false
+        }
+    }
+    
+    return @{
+        Success = $success
+        CreatedDirectories = $createdDirs
+        Message = if ($success) { "All directories created successfully" } else { "Failed to create some directories" }
+    }
+}
+
+# Function to show directory check results and handle creation
+function Show-DirectoryCheck {
+    param(
+        [object]$DirectoryResult
+    )
+    
+    if ($DirectoryResult.AllExist) {
+        # All directories exist - show success
+        $successContent = @(
+            "",
+            "                        [OK] DIRECTORIES READY",
+            "",
+            "                    All required directories exist:",
+            ""
+        )
+        
+        foreach ($dir in $DirectoryResult.Directories) {
+            $relativePath = $dir.Path.Replace($env:USERPROFILE, "~")
+            $successContent += "                  ✓ $relativePath"
+        }
+        
+        $successContent += @(
+            "",
+            "                         Ready to proceed!",
+            "",
+            "---",
+            "",
+            "                      Press any key to continue",
+            ""
+        )
+        
+        Clear-Host
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        $title = "DIRECTORY CHECK - SUCCESS"
+        $padding = (80 - $title.Length - 2) / 2
+        $leftPadding = [int][Math]::Floor($padding)
+        $rightPadding = [int][Math]::Ceiling($padding)
+        Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor Green
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        foreach ($line in $successContent) {
+            if ($line -eq "---") {
+                Write-Host ("-" * 80) -ForegroundColor Gray
+            } elseif ($line.Contains("[OK] DIRECTORIES READY")) {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+            } elseif ($line.Contains("✓")) {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+            } else {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+            }
+        }
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        $key = Wait-ForUserInput -PromptText ">> Press any key to continue"
+        return $true
+    }
+    
+    # Some directories are missing - show creation prompt
+    $missingDirs = $DirectoryResult.Directories | Where-Object { -not $_.Exists }
+    
+    $createContent = @(
+        "",
+        "                        [!] DIRECTORIES REQUIRED",
+        "",
+        "                   Maps4fs requires the following directories",
+        "                      for Docker volume mounting:",
+        ""
+    )
+    
+    foreach ($dir in $missingDirs) {
+        $relativePath = $dir.Path.Replace($env:USERPROFILE, "~")
+        $createContent += "                  ✗ $relativePath"
+        $createContent += "                    ($($dir.Description))"
+    }
+    
+    $createContent += @(
+        "",
+        "                    These directories will be automatically",
+        "                       mounted by Docker containers.",
+        "",
+        "---",
+        "",
+        "                 Y - Create missing directories",
+        "                 N - Exit setup",
+        ""
+    )
+    
+    Clear-Host
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    $title = "DIRECTORY SETUP REQUIRED"
+    $padding = (80 - $title.Length - 2) / 2
+    $leftPadding = [int][Math]::Floor($padding)
+    $rightPadding = [int][Math]::Ceiling($padding)
+    Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor Yellow
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    
+    foreach ($line in $createContent) {
+        if ($line -eq "---") {
+            Write-Host ("-" * 80) -ForegroundColor Gray
+        } elseif ($line.Contains("[!] DIRECTORIES REQUIRED")) {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
+        } elseif ($line.Contains("✗")) {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Red
+        } elseif ($line.Contains("Y - Create") -or $line.Contains("N - Exit")) {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
+        } else {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+        }
+    }
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    
+    # Wait for user choice
+    do {
+        $key = Wait-ForUserInput -PromptText ">> Create directories (Y/N)"
+        $choice = $key.Character.ToString().ToUpper()
+        
+        if ($choice -eq "Y") {
+            # Create missing directories
+            Write-Host ""
+            Write-Host "Creating missing directories..." -ForegroundColor Yellow
+            
+            $createResult = New-RequiredDirectories -MissingDirectories $missingDirs
+            
+            # Show creation results
+            $resultContent = @("", "                          DIRECTORY CREATION RESULTS", "")
+            
+            if ($createResult.Success) {
+                $resultContent += "                    [OK] All directories created successfully"
+                $resultContent += ""
+                
+                foreach ($dirPath in $createResult.CreatedDirectories) {
+                    $relativePath = $dirPath.Replace($env:USERPROFILE, "~")
+                    $resultContent += "                  ✓ Created: $relativePath"
+                }
+                
+                $resultContent += @(
+                    "",
+                    "                         Ready to proceed!",
+                    "",
+                    "---",
+                    "",
+                    "                      Press any key to continue",
+                    ""
+                )
+                $titleColor = "Green"
+                $titleText = "DIRECTORIES CREATED"
+            } else {
+                $resultContent += @(
+                    "                   [!] Failed to create some directories",
+                    "",
+                    "                     Please create them manually or",
+                    "                      run the wizard as administrator",
+                    "",
+                    "---",
+                    "",
+                    "                 Y - Continue anyway",
+                    "                 N - Exit wizard",
+                    ""
+                )
+                $titleColor = "Yellow"
+                $titleText = "PARTIAL SUCCESS"
+            }
+            
+            Clear-Host
+            Write-Host ("=" * 80) -ForegroundColor Cyan
+            $title = $titleText
+            $padding = (80 - $title.Length - 2) / 2
+            $leftPadding = [int][Math]::Floor($padding)
+            $rightPadding = [int][Math]::Ceiling($padding)
+            Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor $titleColor
+            Write-Host ("=" * 80) -ForegroundColor Cyan
+            
+            foreach ($line in $resultContent) {
+                if ($line -eq "---") {
+                    Write-Host ("-" * 80) -ForegroundColor Gray
+                } elseif ($line.Contains("[OK]")) {
+                    $contentLength = $line.Length
+                    $padding = 80 - $contentLength - 2
+                    Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+                } elseif ($line.Contains("[!]")) {
+                    $contentLength = $line.Length
+                    $padding = 80 - $contentLength - 2
+                    Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
+                } elseif ($line.Contains("✓")) {
+                    $contentLength = $line.Length
+                    $padding = 80 - $contentLength - 2
+                    Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+                } else {
+                    $contentLength = $line.Length
+                    $padding = 80 - $contentLength - 2
+                    Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+                }
+            }
+            Write-Host ("=" * 80) -ForegroundColor Cyan
+            
+            if ($createResult.Success) {
+                $key = Wait-ForUserInput -PromptText ">> Press any key to continue"
+                return $true
+            } else {
+                # Partial success - ask if continue
+                do {
+                    $continueKey = Wait-ForUserInput -PromptText ">> Continue anyway (Y/N)"
+                    $continueChoice = $continueKey.Character.ToString().ToUpper()
+                    
+                    if ($continueChoice -eq "Y") {
+                        return $true
+                    } elseif ($continueChoice -eq "N") {
+                        return $false
+                    } else {
+                        Write-Host "Please press Y or N" -ForegroundColor Red
+                        Start-Sleep -Seconds 1
+                    }
+                } while ($true)
+            }
+            
+        } elseif ($choice -eq "N") {
+            return $false  # Exit
+        } else {
+            Write-Host "Please press Y or N" -ForegroundColor Red
+            Start-Sleep -Seconds 1
+        }
+    } while ($true)
+}
+
+# Function to download docker-compose.yml and start deployment
+function Start-Maps4fsDeployment {
+    try {
+        $deployContent = @(
+            "",
+            "                        STARTING MAPS4FS DEPLOYMENT",
+            "",
+            "                    The wizard will now download the latest",
+            "                      Docker Compose configuration and",
+            "                         launch Maps4fs containers",
+            "",
+            "                           This will:",
+            "                    1. Download docker-compose.yml from GitHub",
+            "                    2. Pull the latest Maps4fs Docker images",
+            "                    3. Start the frontend and backend services",
+            "                    4. Open Maps4fs in your browser",
+            "",
+            "---",
+            "",
+            "                    Press Y to start deployment or N to exit",
+            ""
+        )
+        
+        Show-Frame -Content $deployContent -Title "DEPLOYMENT READY"
+        
+        do {
+            $key = Wait-ForUserInput -PromptText ">> Start deployment (Y/N)"
+            $choice = $key.Character.ToString().ToUpper()
+            
+            if ($choice -eq "Y") {
+                # Download docker-compose.yml
+                $downloadContent = @(
+                    "",
+                    "                        DOWNLOADING CONFIGURATION",
+                    "",
+                    "                     Downloading docker-compose.yml from",
+                    "                     https://github.com/iwatkot/maps4fs",
+                    "",
+                    "                           Please wait...",
+                    ""
+                )
+                Show-Frame -Content $downloadContent -Title "DOWNLOAD IN PROGRESS"
+                
+                Write-Host ""
+                Write-Host ">> Downloading docker-compose.yml..." -ForegroundColor Yellow
+                
+                try {
+                    $composeUrl = "https://raw.githubusercontent.com/iwatkot/maps4fs/main/docker-compose.yml"
+                    $composePath = ".\docker-compose.yml"
+                    
+                    # Download compose file
+                    Invoke-WebRequest -Uri $composeUrl -OutFile $composePath -UseBasicParsing
+                    
+                    if (Test-Path $composePath) {
+                        Write-Host ">> Docker Compose configuration downloaded successfully" -ForegroundColor Green
+                        
+                        # Start deployment
+                        $startContent = @(
+                            "",
+                            "                        STARTING CONTAINERS",
+                            "",
+                            "                     Starting Maps4fs with Docker Compose",
+                            "",
+                            "                    This may take a few minutes as Docker",
+                            "                      downloads the required images...",
+                            "",
+                            "                           Please wait...",
+                            ""
+                        )
+                        Show-Frame -Content $startContent -Title "DEPLOYMENT STARTING"
+                        
+                        Write-Host ""
+                        Write-Host ">> Starting Maps4fs containers with Docker Compose..." -ForegroundColor Yellow
+                        
+                        # Execute docker-compose up -d
+                        $composeOutput = docker-compose up -d 2>&1
+                        
+                        if ($LASTEXITCODE -eq 0) {
+                            Write-Host ">> Maps4fs containers started successfully!" -ForegroundColor Green
+                            
+                            # Wait a moment for containers to fully start
+                            Write-Host ">> Waiting for services to be ready..." -ForegroundColor Yellow
+                            Start-Sleep -Seconds 5
+                            
+                            return @{
+                                Success = $true
+                                Message = "Maps4fs deployment completed successfully"
+                                Output = $composeOutput
+                            }
+                        } else {
+                            return @{
+                                Success = $false
+                                Message = "Failed to start containers"
+                                Output = $composeOutput
+                                Error = "Docker Compose failed with exit code $LASTEXITCODE"
+                            }
+                        }
+                    } else {
+                        throw "Downloaded compose file not found"
+                    }
+                } catch {
+                    return @{
+                        Success = $false
+                        Message = "Failed to download docker-compose.yml"
+                        Output = $null
+                        Error = $_.Exception.Message
+                    }
+                }
+            } elseif ($choice -eq "N") {
+                return @{
+                    Success = $false
+                    Message = "Deployment cancelled by user"
+                    Output = $null
+                    Error = $null
+                }
+            } else {
+                Write-Host "Please press Y or N" -ForegroundColor Red
+                Start-Sleep -Seconds 1
+            }
+        } while ($true)
+        
+    } catch {
+        return @{
+            Success = $false
+            Message = "Error during deployment process"
+            Output = $null
+            Error = $_.Exception.Message
+        }
+    }
+}
+
+# Function to show deployment results and launch browser
+function Show-DeploymentResults {
+    param(
+        [object]$DeploymentResult
+    )
+    
+    if ($DeploymentResult.Success) {
+        # Success - show completion message and launch browser
+        $successContent = @(
+            "",
+            "                        [OK] DEPLOYMENT SUCCESSFUL",
+            "",
+            "                     Maps4fs is now running locally!",
+            "",
+            "                         Service endpoints:",
+            "                      * Frontend: http://localhost:3000",
+            "                      * Backend:  http://localhost:8000",
+            "",
+            "                    Opening Maps4fs in your browser...",
+            "",
+            "---",
+            "",
+            "                    To stop Maps4fs later, run:",
+            "                         docker-compose down",
+            "",
+            "                      Press any key to finish setup",
+            ""
+        )
+        
+        Clear-Host
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        $title = "SETUP COMPLETE"
+        $padding = (80 - $title.Length - 2) / 2
+        $leftPadding = [int][Math]::Floor($padding)
+        $rightPadding = [int][Math]::Ceiling($padding)
+        Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor Green
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        foreach ($line in $successContent) {
+            if ($line -eq "---") {
+                Write-Host ("-" * 80) -ForegroundColor Gray
+            } elseif ($line.Contains("[OK] DEPLOYMENT SUCCESSFUL")) {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+            } elseif ($line.Contains("docker-compose down")) {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
+            } else {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+            }
+        }
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        # Launch browser
+        Write-Host ""
+        Write-Host ">> Opening Maps4fs in your default browser..." -ForegroundColor Yellow
+        
+        try {
+            Start-Process "http://localhost:3000"
+            Write-Host ">> Browser launched successfully!" -ForegroundColor Green
+        } catch {
+            Write-Host ">> Could not automatically open browser" -ForegroundColor Yellow
+            Write-Host "   Please manually open: http://localhost:3000" -ForegroundColor Yellow
+        }
+        
+        # Wait for user to finish
+        $key = Wait-ForUserInput -PromptText ">> Press any key to finish setup"
+        return $true
+        
+    } else {
+        # Failure - show error message
+        $errorContent = @(
+            "",
+            "                        [X] DEPLOYMENT FAILED",
+            "",
+            "                    Failed to start Maps4fs containers",
+            "",
+            "                              Error details:",
+            "                     $($DeploymentResult.Message)",
+            ""
+        )
+        
+        if ($DeploymentResult.Error) {
+            $errorContent += "                     $($DeploymentResult.Error)"
+            $errorContent += ""
+        }
+        
+        $errorContent += @(
+            "                           Troubleshooting:",
+            "",
+            "                   1. Ensure Docker Desktop is running",
+            "                   2. Check internet connection for image downloads",
+            "                   3. Verify ports 3000 and 8000 are available",
+            "                   4. Try running manually: docker-compose up -d",
+            "",
+            "---",
+            "",
+            "                       Press any key to exit",
+            ""
+        )
+        
+        Clear-Host
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        $title = "DEPLOYMENT FAILED"
+        $padding = (80 - $title.Length - 2) / 2
+        $leftPadding = [int][Math]::Floor($padding)
+        $rightPadding = [int][Math]::Ceiling($padding)
+        Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor Red
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        foreach ($line in $errorContent) {
+            if ($line -eq "---") {
+                Write-Host ("-" * 80) -ForegroundColor Gray
+            } elseif ($line.Contains("[X] DEPLOYMENT FAILED")) {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Red
+            } else {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+            }
+        }
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        $key = Wait-ForUserInput -PromptText ">> Press any key to exit"
+        return $false
+    }
+}
+
 # Main execution
 try {
     # Step 1: Welcome screen
@@ -1347,13 +1933,79 @@ try {
         exit 1
     }
     
-    # Step 7: Continue with next steps...
-    Show-Frame -Content @("", "                     Docker is ready and running!", "", "                        ... (More steps to implement)", "") -Title "SETUP IN PROGRESS"
+    # Step 7: Check and create required directories
+    Write-Host "Checking required directories..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 1
     
-    # Placeholder for next steps
-    Write-Host ""
-    Write-Host "Next steps would be implemented here..." -ForegroundColor Yellow
-    Read-Host "Press Enter to exit"
+    $directoryResult = Test-RequiredDirectories
+    $directoryContinue = Show-DirectoryCheck -DirectoryResult $directoryResult
+    
+    if (-not $directoryContinue) {
+        Show-Frame -Content @("", "                         Directory setup cancelled", "", "                      Required directories are needed", "") -Title "GOODBYE"
+        Start-Sleep -Seconds 3
+        exit 1
+    }
+    
+    # Step 8: Deploy Maps4fs with Docker Compose
+    Write-Host "Preparing Maps4fs deployment..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 1
+    
+    $deploymentResult = Start-Maps4fsDeployment
+    $deploymentSuccess = Show-DeploymentResults -DeploymentResult $deploymentResult
+    
+    if ($deploymentSuccess) {
+        # Final success message
+        $finalContent = @(
+            "",
+            "                    MAPS4FS SETUP WIZARD COMPLETED",
+            "",
+            "                     Thank you for using Maps4fs!",
+            "",
+            "                      Maps4fs is now running at:",
+            "                       http://localhost:3000",
+            "",
+            "                         Support the project:",
+            "                    ⭐ Star us on GitHub: github.com/iwatkot/maps4fs",
+            "                    💬 Join our community discussions",
+            "                    🐛 Report issues and suggest features",
+            "",
+            "                        Enjoy creating your maps!",
+            ""
+        )
+        
+        Clear-Host
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        $title = "SETUP WIZARD COMPLETE"
+        $padding = (80 - $title.Length - 2) / 2
+        $leftPadding = [int][Math]::Floor($padding)
+        $rightPadding = [int][Math]::Ceiling($padding)
+        Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor Green
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        foreach ($line in $finalContent) {
+            if ($line.Contains("⭐") -or $line.Contains("💬") -or $line.Contains("🐛")) {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
+            } elseif ($line.Contains("http://localhost:3000")) {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+            } else {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+            }
+        }
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        exit 0
+    } else {
+        # Deployment failed
+        Show-Frame -Content @("", "                        Setup completed with errors", "", "                     Please check the error messages above", "") -Title "SETUP FINISHED"
+        Start-Sleep -Seconds 3
+        exit 1
+    }
     
 } catch {
     Write-Host "An error occurred: $($_.Exception.Message)" -ForegroundColor Red

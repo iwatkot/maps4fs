@@ -23,7 +23,6 @@
   <a href="#Overview">Overview</a> • 
   <a href="docs/step_by_step.md">Create a map in 10 steps</a> •
   <a href="docs/recommendations.md">Practical recommendations</a> •
-  <a href="#How-To-Run">How-To-Run</a><br>
   <a href="docs/my_maps.md">My Maps</a> •
   <a href="docs/FAQ.md">FAQ</a> •
   <a href="docs/map_structure.md">Map Structure</a> •
@@ -120,38 +119,49 @@ There are several ways to use the tool. You obviously need the **first one**, bu
 ### 🚜 For most users
 
 **Option 1:** Open the [maps4fs](https://maps4fs.xyz) and generate a map template in a few clicks.<br>
+🟢 Recommended for all users.  
+🛠️ Don't need to install anything.  
+🗺️ Supported map sizes: 2x2, 4x4, custom sizes not available.  
+✂️ Map scaling: not supported.  
+⚙️ Advanced settings: some settings not available.  
 
 ![Basic WebUI](https://github.com/iwatkot/maps4fs/releases/download/2.0.0/maps4fs_wui.png)
 
 ### 😎 For advanced users
 
-**Option 2:** Run the Docker version in your browser. Launch the following command in your terminal:
+**Option 2:** Run the Docker version in your browser.  
+🟠 Recommended for users who want bigger maps, fast generation, nice-looking textures, and advanced settings.  
+🛠️ Docker installation required, launch with one command.  
+🗺️ Supported map sizes: 2x2, 4x4, 8x8, 16x16 km and any custom size.  
+✂️ Map scaling: supported.  
+⚙️ Advanced settings: all settings available.
 
-```bash
-docker run -d -p 8501:8501 -p 8000:8000 --name maps4fs iwatkot/maps4fs
+Launch the following command in your terminal to use the Setup Wizard:
+
+```powershell
+powershell -ExecutionPolicy Bypass -Command "iex (iwr 'https://raw.githubusercontent.com/iwatkot/maps4fs/main/setup-wizard.ps1' -UseBasicParsing).Content"
 ```
 
-If you want to persist your data, you can mount a directory to the container: 
+ℹ️ Check out detailed instructions about [local deployment](docs/local_deployment.md).
 
-```bash
-docker run -d -p 8501:8501 -p 8000:8000 --name maps4fs -v /c/maps4fs:/usr/src/app/mfsrootdir iwatkot/maps4fs
-```
-
-Learn more in the [My Maps](docs/my_maps.md) documentation.
-
-And open [http://localhost:8501](http://localhost:8501) in your browser.<br>
-If you don't know how to use Docker, navigate to the [Docker version](#option-2-docker-version), it's really simple.<br>
-Check out the [Docker FAQ](docs/FAQ_docker.md) if you have any questions.<br>
 
 ### 🤯 For developers
 
-**Option 3:** Python package. Install the package using the following command:
+**Option 3:** Python package or run from source code.
+🔴 Recommended for developers who want full control over the generation process and fastest performance.
+🛠️ Requires Python, pip, and Git.
+🗺️ Supported map sizes: 2x2, 4x4, 8x8, 16x16 km and any custom size.  
+✂️ Map scaling: supported.  
+⚙️ Advanced settings: all settings available.
+
+Install the package using the following command:
 
 ```bash
 pip install maps4fs
 ```
 
-And refer to the [Python package or run from the source](#option-3-python-package-or-source-code) section to learn how to use it.<br>
+ℹ️ Check out detailed instructions about [Maps4FS Python Package Deployment](docs/local_deployment_source.md).
+
 
 ## Overview
 
@@ -185,134 +195,6 @@ Parameters:
 
 Don't know where to start? Don't worry, just follow this [step-by-step guide](docs/step_by_step.md) to create your first map in 10 simple steps.<br>
 
-## How-To-Run
-
-### Option 1: Public version
-
-🟢 Recommended for all users.  
-🛠️ Don't need to install anything.  
-🗺️ Supported map sizes: 2x2, 4x4.  
-✂️ Map scaling: not supported.  
-⚙️ Advanced settings: partial.  
-🖼️ Texture dissolving: disabled.  
-Using the public version on [maps4fs.xyz](https://maps4fs.xyz) is the easiest way to generate a map template. Just open the link and follow the instructions.
-Note: due to CPU and RAM limitations of the hosting, the generation may take some time. If you need faster processing, use the [Docker version](#option-2-docker-version).<br>
-
-Using it is easy and doesn't require any guides. Enjoy!
-
-### Option 2: Docker version
-
-🟠 Recommended for users who want bigger maps, fast generation, nice-looking textures, and advanced settings.  
-🛠️ Launch with one single command.  
-🗺️ Supported map sizes: 2x2, 4x4, 8x8, 16x16 km and any custom size.  
-✂️ Map scaling: supported.  
-⚙️ Advanced settings: enabled.  
-🖼️ Texture dissolving: enabled.  
-Check out the [Docker FAQ](docs/FAQ_docker.md) if you have any questions.<br>
-
-📹 Check out the [video tutorial](https://www.youtube.com/watch?v=1AHGIxTxSBM) on how to install Docker and use the Docker version.  
-
-You can launch the project with minimalistic UI in your browser using Docker. Follow these steps:
-
-1. Install [Docker](https://docs.docker.com/get-docker/) for your OS.
-2. Run the following command in your terminal:
-
-```bash
-docker run -d -p 8501:8501 -p 8000:8000 --name maps4fs iwatkot/maps4fs
-```
-
-If you want to persist your data, you can mount a directory to the container:
-
-```bash
-docker run -d -p 8501:8501 -p 8000:8000 --name maps4fs -v /c/maps4fs:/usr/src/app/mfsrootdir iwatkot/maps4fs
-```
-
-3. Open your browser and go to [http://localhost:8501](http://localhost:8501).
-4. Fill in the required fields and click on the `Generate` button.
-5. When the map is generated click on the `Download` button to get the map.
-
-### Option 3: Python package or source code
-
-🔴 Recommended for developers.  
-🗺️ Supported map sizes: 2x2, 4x4, 8x8, 16x16 km and any custom size.  
-✂️ Map scaling: supported.  
-⚙️ Advanced settings: enabled.  
-🖼️ Texture dissolving: enabled.  
-You can use the Python package to generate maps. Follow these steps:
-
-1. Install the package from PyPI:
-
-```bash
-pip install maps4fs
-```
-
-Or clone the repository and install the package from the source code:
-
-```bash
-git clone https://github.com/iwatkot/maps4fs.git
-cd maps4fs
-dev/create_venv.ps1 # for Windows
-sh dev/create_venv.sh # for Linux
-
-# Activate the virtual environment.
-./venv/scripts/activate # for Windows
-source venv/bin/activate # for Linux
-
-# Edit the demo.py file to set the parameters.
-python demo.py
-```
-
-2. Import the Game class and create an instance of it:
-
-```python
-import maps4fs as mfs
-
-game_code = "fs25"
-game = mfs.Game.from_code(game_code)
-
-dtm_provider = mfs.dtm.SRTM30Provider
-
-lat, lon = 45.28, 20.23
-coordinates = (lat, lon)
-size = 2048
-rotation = 25
-
-map_directory = "map_directory"
-os.makedirs(map_directory, exist_ok=True)
-
-mp = mfs.Map(
-    game,
-    dtm_provider,
-    None,
-    coordinates,
-    size,
-    rotation,
-    map_directory,
-)
-```
-
-In this case, the library will use the default templates, which should be present in the `data` directory, which should be placed in the current working directory.<br>
-Structure example:<br>
-
-```text
-📁 data
- ┣ 📄 fs22-map-template.zip
- ┗ 📄 fs22-texture-schema.json
-```
-
-So it's recommended to download the `data` directory from the repository and place it in the root of your project.<br>
-
-3. Launch the generation process.  
-   The `generate` method returns a generator, which yields the active component of the map. You can use it to track the progress of the generation process.
-
-```python
-for component_name in mp.generate():
-    print(f"Generating {component_name}...")
-```
-
-The map will be saved in the `map_directory` directory.
-
-➡️ Check out the [demo.py](demo.py) file for a complete example.
 
 ## Schemas Editor
 

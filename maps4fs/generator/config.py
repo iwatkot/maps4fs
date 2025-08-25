@@ -11,7 +11,7 @@ from maps4fs.logger import Logger
 
 logger = Logger()
 
-MFS_TEMPLATES_DIR = os.path.join(os.getcwd(), "data")
+MFS_TEMPLATES_DIR = os.path.join(os.getcwd(), "templates")
 
 
 def ensure_templates():
@@ -102,7 +102,7 @@ ensure_templates()
 
 MFS_ROOT_DIR = os.getenv("MFS_ROOT_DIRECTORY", os.path.join(os.getcwd(), "mfsrootdir"))
 MFS_CACHE_DIR = os.path.join(MFS_ROOT_DIR, "cache")
-MFS_DATA_DIR = os.path.join(MFS_ROOT_DIR, "data")
+MFS_DATA_DIR = os.path.join(MFS_ROOT_DIR, "maps")
 os.makedirs(MFS_CACHE_DIR, exist_ok=True)
 os.makedirs(MFS_DATA_DIR, exist_ok=True)
 logger.info(

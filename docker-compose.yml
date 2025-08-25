@@ -1,0 +1,23 @@
+services:
+  maps4fsapi:
+    image: iwatkot/maps4fsapi
+    container_name: maps4fsapi
+    pull_policy: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - "${USERPROFILE}/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir"
+      - "${USERPROFILE}/maps4fs/templates:/usr/src/app/templates"
+    restart: unless-stopped
+
+  maps4fsui:
+    image: iwatkot/maps4fsui
+    container_name: maps4fsui
+    pull_policy: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - "${USERPROFILE}/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir"
+    restart: unless-stopped
+    depends_on:
+      - maps4fsapi
