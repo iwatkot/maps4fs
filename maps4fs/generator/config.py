@@ -3,6 +3,7 @@
 import os
 import shutil
 import subprocess
+import tempfile
 
 from osmnx import settings as ox_settings
 
@@ -10,34 +11,94 @@ from maps4fs.logger import Logger
 
 logger = Logger()
 
-DEFAULT_TEMPLATES_DIR = os.path.join(os.getcwd(), "data")
-MFS_TEMPLATES_DIR = os.getenv("MFS_TEMPLATES_DIRECTORY")
-if MFS_TEMPLATES_DIR is None:
-    logger.info("MFS_TEMPLATES_DIRECTORY is not set. Using default templates directory.")
-    MFS_TEMPLATES_DIR = DEFAULT_TEMPLATES_DIR
-else:
-    logger.info("MFS_TEMPLATES_DIRECTORY is set to: %s", MFS_TEMPLATES_DIR)
-    if not os.path.isdir(MFS_TEMPLATES_DIR):
-        logger.info("Templates directory %s does not exist. Creating it.", MFS_TEMPLATES_DIR)
-        os.makedirs(MFS_TEMPLATES_DIR, exist_ok=True)
+MFS_TEMPLATES_DIR = os.path.join(os.getcwd(), "data")
 
-    # Check if there any files (directory is empty).
-    if not os.listdir(MFS_TEMPLATES_DIR):
-        logger.info("Templates directory %s is empty. Copying default files.", MFS_TEMPLATES_DIR)
-        for item in os.listdir(DEFAULT_TEMPLATES_DIR):
-            s = os.path.join(DEFAULT_TEMPLATES_DIR, item)
-            d = os.path.join(MFS_TEMPLATES_DIR, item)
-            if os.path.isdir(s):
-                shutil.copytree(s, d, False, None)
+
+def ensure_templates():
+    """Ensure templates directory exists and is populated with data.
+
+    If MFS_TEMPLATES_DIR is empty or doesn't exist, clone the maps4fsdata
+    repository and run the preparation script to populate it.
+    """
+
+    # Check if templates directory exists and has content
+    if os.path.exists(MFS_TEMPLATES_DIR) and os.listdir(MFS_TEMPLATES_DIR):
+        logger.info("Templates directory already exists and contains data: %s", MFS_TEMPLATES_DIR)
+        return
+
+    logger.info("Templates directory is empty or missing, preparing data...")
+
+    # Create templates directory if it doesn't exist
+    os.makedirs(MFS_TEMPLATES_DIR, exist_ok=True)
+
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            clone_dir = os.path.join(temp_dir, "maps4fsdata")
+
+            logger.info("Cloning maps4fsdata repository to temporary directory...")
+            # Clone the repository with depth 1 (shallow clone)
+            subprocess.run(
+                [
+                    "git",
+                    "clone",
+                    "--depth",
+                    "1",
+                    "https://github.com/iwatkot/maps4fsdata.git",
+                    clone_dir,
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            # Make the preparation script executable
+            prep_script = os.path.join(clone_dir, "prepare_data.sh")
+            if os.path.exists(prep_script):
+                os.chmod(prep_script, 0o755)
+
+                logger.info("Running data preparation script...")
+                # Run the preparation script from the cloned directory
+                subprocess.run(
+                    ["./prepare_data.sh"], cwd=clone_dir, check=True, capture_output=True, text=True
+                )
+
+                # Copy the generated data directory to templates directory
+                data_src = os.path.join(clone_dir, "data")
+                if os.path.exists(data_src):
+                    logger.info(
+                        "Copying prepared data to templates directory: %s", MFS_TEMPLATES_DIR
+                    )
+                    # Copy all files from data directory to MFS_TEMPLATES_DIR
+                    for item in os.listdir(data_src):
+                        src_path = os.path.join(data_src, item)
+                        dst_path = os.path.join(MFS_TEMPLATES_DIR, item)
+                        if os.path.isdir(src_path):
+                            shutil.copytree(src_path, dst_path, dirs_exist_ok=True)
+                        else:
+                            shutil.copy2(src_path, dst_path)
+                    logger.info("Templates data prepared successfully")
+                else:
+                    logger.error("Data directory not found after running preparation script")
+                    raise FileNotFoundError(
+                        "Data preparation script did not create expected data directory"
+                    )
             else:
-                shutil.copy2(s, d)
-        logger.info("Default files copied to %s.", MFS_TEMPLATES_DIR)
-    else:
-        logger.warning(
-            "Templates directory %s is not empty. Will not copy default files. "
-            "Ensure that the directory contains the necessary template files.",
-            MFS_TEMPLATES_DIR,
-        )
+                logger.error("Preparation script not found: %s", prep_script)
+                raise FileNotFoundError("prepare_data.sh not found in cloned repository")
+
+    except subprocess.CalledProcessError as e:
+        logger.error("Failed to prepare templates data: %s", str(e))
+        if e.stdout:
+            logger.error("Script stdout: %s", e.stdout)
+        if e.stderr:
+            logger.error("Script stderr: %s", e.stderr)
+        raise
+    except Exception as e:
+        logger.error("Error preparing templates: %s", str(e))
+        raise
+
+
+ensure_templates()
 
 MFS_ROOT_DIR = os.getenv("MFS_ROOT_DIRECTORY", os.path.join(os.getcwd(), "mfsrootdir"))
 MFS_CACHE_DIR = os.path.join(MFS_ROOT_DIR, "cache")

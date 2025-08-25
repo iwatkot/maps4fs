@@ -22,15 +22,13 @@ dependencies = [
     "rasterio",
     "geopy",
     "trimesh",
-    "imageio",
-    "tifffile",
-    "pympler",
     "pydantic",
     "pygmdl",
     "owslib",
     "tqdm",
     "scipy",
     "pydtmdl",
+    "manifold3d",
 ]
 
 [project.urls]

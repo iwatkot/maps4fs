@@ -67,6 +67,8 @@ class Map:
 
         # region custom OSM properties
         self.custom_osm = custom_osm
+        if custom_osm and not os.path.isfile(custom_osm):
+            raise FileNotFoundError(f"Custom OSM file {custom_osm} does not exist.")
         mfsutils.check_and_fix_osm(self.custom_osm, save_directory=self.map_directory)
         # endregion
 

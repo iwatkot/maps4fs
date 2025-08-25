@@ -11,7 +11,6 @@ geopy
 fast-simplification
 pyproj
 trimesh
-pympler
 pydoc-markdown
 pydantic
 pygmdl
@@ -21,5 +20,4 @@ types-tqdm
 scipy
 python-dotenv
 pydtmdl
-mapbox-earcut
 manifold3d
