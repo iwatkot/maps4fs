@@ -7,7 +7,7 @@ services:
       - "8000:8000"
     volumes:
       - "${USERPROFILE}/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir"
-      - "${USERPROFILE}/maps4fs/data:/usr/src/app/data"
+      - "${USERPROFILE}/maps4fs/templates:/usr/src/app/templates"
     restart: unless-stopped
 
   maps4fsui:

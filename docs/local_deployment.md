@@ -68,8 +68,9 @@ This command will:
 - Checks if the Docker daemon is running or launches it if not  
 - Checks for the containers of old versions and removes them if necessary  
 - Checks if required ports are available  
+- Creates necessary directories and files  
 - Deploys the containers with all the necessary configurations  
-- Opens the web interface in your default browser TODO: NOT IMPLEMENTED YET.  
+- Opens the web interface in your default browser
 
 ### Using Docker Compose
 
@@ -99,7 +100,7 @@ If you prefer to set up the containers manually, you can use the following comma
 
 ```powershell
 # Backend API container
-docker run -d --pull=always -p 8000:8000 --name maps4fsapi -v $env:USERPROFILE/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir -v $env:USERPROFILE/maps4fs/data:/usr/src/app/data iwatkot/maps4fsapi
+docker run -d --pull=always -p 8000:8000 --name maps4fsapi -v $env:USERPROFILE/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir -v $env:USERPROFILE/maps4fs/templates:/usr/src/app/templates iwatkot/maps4fsapi
 ```
 
 ```powershell

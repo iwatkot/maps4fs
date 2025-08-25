@@ -1275,6 +1275,327 @@ function Show-PortAvailability {
     return $false
 }
 
+# Function to check and create required directories
+function Test-RequiredDirectories {
+    $userProfile = $env:USERPROFILE
+    $requiredDirectories = @(
+        @{
+            Path = "$userProfile\maps4fs\mfsrootdir"
+            Description = "Maps working directory (shared storage for maps and cache)"
+        },
+        @{
+            Path = "$userProfile\maps4fs\templates"
+            Description = "Game templates directory (FS22/FS25 map templates)"
+        }
+    )
+    
+    $results = @()
+    
+    Write-Host ">> Checking required directories..." -ForegroundColor Yellow
+    
+    foreach ($dir in $requiredDirectories) {
+        Write-Host "   Checking: $($dir.Path)" -ForegroundColor Gray
+        
+        if (Test-Path $dir.Path) {
+            Write-Host "   Directory exists" -ForegroundColor Green
+            $results += @{
+                Path = $dir.Path
+                Description = $dir.Description
+                Exists = $true
+                Created = $false
+            }
+        } else {
+            Write-Host "   Directory does not exist" -ForegroundColor Red
+            $results += @{
+                Path = $dir.Path
+                Description = $dir.Description
+                Exists = $false
+                Created = $false
+            }
+        }
+    }
+    
+    $allExist = ($results | Where-Object { -not $_.Exists }).Count -eq 0
+    
+    return @{
+        AllExist = $allExist
+        Directories = $results
+        Message = if ($allExist) { "All required directories exist" } else { "Some directories are missing" }
+    }
+}
+
+# Function to create missing directories
+function New-RequiredDirectories {
+    param(
+        [array]$MissingDirectories
+    )
+    
+    $success = $true
+    $createdDirs = @()
+    
+    foreach ($dir in $MissingDirectories) {
+        try {
+            Write-Host ">> Creating directory: $($dir.Path)" -ForegroundColor Yellow
+            New-Item -ItemType Directory -Path $dir.Path -Force | Out-Null
+            
+            if (Test-Path $dir.Path) {
+                Write-Host "   Successfully created" -ForegroundColor Green
+                $dir.Created = $true
+                $createdDirs += $dir.Path
+            } else {
+                throw "Directory creation failed"
+            }
+        } catch {
+            Write-Host "   Failed to create directory: $($_.Exception.Message)" -ForegroundColor Red
+            $success = $false
+        }
+    }
+    
+    return @{
+        Success = $success
+        CreatedDirectories = $createdDirs
+        Message = if ($success) { "All directories created successfully" } else { "Failed to create some directories" }
+    }
+}
+
+# Function to show directory check results and handle creation
+function Show-DirectoryCheck {
+    param(
+        [object]$DirectoryResult
+    )
+    
+    if ($DirectoryResult.AllExist) {
+        # All directories exist - show success
+        $successContent = @(
+            "",
+            "                        [OK] DIRECTORIES READY",
+            "",
+            "                    All required directories exist:",
+            ""
+        )
+        
+        foreach ($dir in $DirectoryResult.Directories) {
+            $relativePath = $dir.Path.Replace($env:USERPROFILE, "~")
+            $successContent += "                  ✓ $relativePath"
+        }
+        
+        $successContent += @(
+            "",
+            "                         Ready to proceed!",
+            "",
+            "---",
+            "",
+            "                      Press any key to continue",
+            ""
+        )
+        
+        Clear-Host
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        $title = "DIRECTORY CHECK - SUCCESS"
+        $padding = (80 - $title.Length - 2) / 2
+        $leftPadding = [int][Math]::Floor($padding)
+        $rightPadding = [int][Math]::Ceiling($padding)
+        Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor Green
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        foreach ($line in $successContent) {
+            if ($line -eq "---") {
+                Write-Host ("-" * 80) -ForegroundColor Gray
+            } elseif ($line.Contains("[OK] DIRECTORIES READY")) {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+            } elseif ($line.Contains("✓")) {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+            } else {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+            }
+        }
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        $key = Wait-ForUserInput -PromptText ">> Press any key to continue"
+        return $true
+    }
+    
+    # Some directories are missing - show creation prompt
+    $missingDirs = $DirectoryResult.Directories | Where-Object { -not $_.Exists }
+    
+    $createContent = @(
+        "",
+        "                        [!] DIRECTORIES REQUIRED",
+        "",
+        "                   Maps4fs requires the following directories",
+        "                      for Docker volume mounting:",
+        ""
+    )
+    
+    foreach ($dir in $missingDirs) {
+        $relativePath = $dir.Path.Replace($env:USERPROFILE, "~")
+        $createContent += "                  ✗ $relativePath"
+        $createContent += "                    ($($dir.Description))"
+    }
+    
+    $createContent += @(
+        "",
+        "                    These directories will be automatically",
+        "                       mounted by Docker containers.",
+        "",
+        "---",
+        "",
+        "                 Y - Create missing directories",
+        "                 N - Exit setup",
+        ""
+    )
+    
+    Clear-Host
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    $title = "DIRECTORY SETUP REQUIRED"
+    $padding = (80 - $title.Length - 2) / 2
+    $leftPadding = [int][Math]::Floor($padding)
+    $rightPadding = [int][Math]::Ceiling($padding)
+    Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor Yellow
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    
+    foreach ($line in $createContent) {
+        if ($line -eq "---") {
+            Write-Host ("-" * 80) -ForegroundColor Gray
+        } elseif ($line.Contains("[!] DIRECTORIES REQUIRED")) {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
+        } elseif ($line.Contains("✗")) {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Red
+        } elseif ($line.Contains("Y - Create") -or $line.Contains("N - Exit")) {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
+        } else {
+            $contentLength = $line.Length
+            $padding = 80 - $contentLength - 2
+            Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+        }
+    }
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    
+    # Wait for user choice
+    do {
+        $key = Wait-ForUserInput -PromptText ">> Create directories (Y/N)"
+        $choice = $key.Character.ToString().ToUpper()
+        
+        if ($choice -eq "Y") {
+            # Create missing directories
+            Write-Host ""
+            Write-Host "Creating missing directories..." -ForegroundColor Yellow
+            
+            $createResult = New-RequiredDirectories -MissingDirectories $missingDirs
+            
+            # Show creation results
+            $resultContent = @("", "                          DIRECTORY CREATION RESULTS", "")
+            
+            if ($createResult.Success) {
+                $resultContent += "                    [OK] All directories created successfully"
+                $resultContent += ""
+                
+                foreach ($dirPath in $createResult.CreatedDirectories) {
+                    $relativePath = $dirPath.Replace($env:USERPROFILE, "~")
+                    $resultContent += "                  ✓ Created: $relativePath"
+                }
+                
+                $resultContent += @(
+                    "",
+                    "                         Ready to proceed!",
+                    "",
+                    "---",
+                    "",
+                    "                      Press any key to continue",
+                    ""
+                )
+                $titleColor = "Green"
+                $titleText = "DIRECTORIES CREATED"
+            } else {
+                $resultContent += @(
+                    "                   [!] Failed to create some directories",
+                    "",
+                    "                     Please create them manually or",
+                    "                      run the wizard as administrator",
+                    "",
+                    "---",
+                    "",
+                    "                 Y - Continue anyway",
+                    "                 N - Exit wizard",
+                    ""
+                )
+                $titleColor = "Yellow"
+                $titleText = "PARTIAL SUCCESS"
+            }
+            
+            Clear-Host
+            Write-Host ("=" * 80) -ForegroundColor Cyan
+            $title = $titleText
+            $padding = (80 - $title.Length - 2) / 2
+            $leftPadding = [int][Math]::Floor($padding)
+            $rightPadding = [int][Math]::Ceiling($padding)
+            Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor $titleColor
+            Write-Host ("=" * 80) -ForegroundColor Cyan
+            
+            foreach ($line in $resultContent) {
+                if ($line -eq "---") {
+                    Write-Host ("-" * 80) -ForegroundColor Gray
+                } elseif ($line.Contains("[OK]")) {
+                    $contentLength = $line.Length
+                    $padding = 80 - $contentLength - 2
+                    Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+                } elseif ($line.Contains("[!]")) {
+                    $contentLength = $line.Length
+                    $padding = 80 - $contentLength - 2
+                    Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
+                } elseif ($line.Contains("✓")) {
+                    $contentLength = $line.Length
+                    $padding = 80 - $contentLength - 2
+                    Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+                } else {
+                    $contentLength = $line.Length
+                    $padding = 80 - $contentLength - 2
+                    Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+                }
+            }
+            Write-Host ("=" * 80) -ForegroundColor Cyan
+            
+            if ($createResult.Success) {
+                $key = Wait-ForUserInput -PromptText ">> Press any key to continue"
+                return $true
+            } else {
+                # Partial success - ask if continue
+                do {
+                    $continueKey = Wait-ForUserInput -PromptText ">> Continue anyway (Y/N)"
+                    $continueChoice = $continueKey.Character.ToString().ToUpper()
+                    
+                    if ($continueChoice -eq "Y") {
+                        return $true
+                    } elseif ($continueChoice -eq "N") {
+                        return $false
+                    } else {
+                        Write-Host "Please press Y or N" -ForegroundColor Red
+                        Start-Sleep -Seconds 1
+                    }
+                } while ($true)
+            }
+            
+        } elseif ($choice -eq "N") {
+            return $false  # Exit
+        } else {
+            Write-Host "Please press Y or N" -ForegroundColor Red
+            Start-Sleep -Seconds 1
+        }
+    } while ($true)
+}
+
 # Function to download docker-compose.yml and start deployment
 function Start-Maps4fsDeployment {
     try {
@@ -1612,7 +1933,20 @@ try {
         exit 1
     }
     
-    # Step 7: Deploy Maps4fs with Docker Compose
+    # Step 7: Check and create required directories
+    Write-Host "Checking required directories..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 1
+    
+    $directoryResult = Test-RequiredDirectories
+    $directoryContinue = Show-DirectoryCheck -DirectoryResult $directoryResult
+    
+    if (-not $directoryContinue) {
+        Show-Frame -Content @("", "                         Directory setup cancelled", "", "                      Required directories are needed", "") -Title "GOODBYE"
+        Start-Sleep -Seconds 3
+        exit 1
+    }
+    
+    # Step 8: Deploy Maps4fs with Docker Compose
     Write-Host "Preparing Maps4fs deployment..." -ForegroundColor Yellow
     Start-Sleep -Seconds 1
     
