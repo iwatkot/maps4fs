@@ -7,9 +7,6 @@ import cv2
 import numpy as np
 from pydtmdl import DTMProvider
 
-# import rasterio  # type: ignore
-from pympler import asizeof  # type: ignore
-
 import maps4fs.generator.config as mfscfg
 from maps4fs.generator.component.base.component_image import ImageComponent
 
@@ -296,9 +293,6 @@ class DEM(ImageComponent):
             np.ndarray: Resized DEM data.
         """
         resampled_data = cv2.resize(data, self.output_resolution, interpolation=cv2.INTER_LINEAR)
-
-        size_of_resampled_data = asizeof.asizeof(resampled_data) / 1024 / 1024
-        self.logger.debug("Size of resampled data: %s MB.", size_of_resampled_data)
 
         return resampled_data
 
