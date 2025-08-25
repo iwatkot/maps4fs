@@ -74,7 +74,7 @@ This command will:
 
 ### Using Docker Compose
 
-**Skill level:** 🟡
+**Skill level:** 🟡  
 **Requires:** Docker Compose
 
 If you want better control of the deployment such as mounts to specific directories or whatever, you can use the Docker Compose. Download the latest `docker-compose.yml` file from the repository [here](https://github.com/iwatkot/maps4fs/blob/main/docker-compose.yml) manually or use this command to download it directly from PowerShell:
@@ -95,6 +95,9 @@ powershell -ExecutionPolicy Bypass -Command "iwr 'https://raw.githubusercontent.
 ```
 
 ### Manual Deployment
+
+**Skill level:** 🟡  
+**Requires:** Docker  
 
 If you prefer to set up the containers manually, you can use the following commands:
 
