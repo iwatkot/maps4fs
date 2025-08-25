@@ -1275,6 +1275,271 @@ function Show-PortAvailability {
     return $false
 }
 
+# Function to download docker-compose.yml and start deployment
+function Start-Maps4fsDeployment {
+    try {
+        $deployContent = @(
+            "",
+            "                        STARTING MAPS4FS DEPLOYMENT",
+            "",
+            "                    The wizard will now download the latest",
+            "                      Docker Compose configuration and",
+            "                         launch Maps4fs containers",
+            "",
+            "                           This will:",
+            "                    1. Download docker-compose.yml from GitHub",
+            "                    2. Pull the latest Maps4fs Docker images",
+            "                    3. Start the frontend and backend services",
+            "                    4. Open Maps4fs in your browser",
+            "",
+            "---",
+            "",
+            "                    Press Y to start deployment or N to exit",
+            ""
+        )
+        
+        Show-Frame -Content $deployContent -Title "DEPLOYMENT READY"
+        
+        do {
+            $key = Wait-ForUserInput -PromptText ">> Start deployment (Y/N)"
+            $choice = $key.Character.ToString().ToUpper()
+            
+            if ($choice -eq "Y") {
+                # Download docker-compose.yml
+                $downloadContent = @(
+                    "",
+                    "                        DOWNLOADING CONFIGURATION",
+                    "",
+                    "                     Downloading docker-compose.yml from",
+                    "                     https://github.com/iwatkot/maps4fs",
+                    "",
+                    "                           Please wait...",
+                    ""
+                )
+                Show-Frame -Content $downloadContent -Title "DOWNLOAD IN PROGRESS"
+                
+                Write-Host ""
+                Write-Host ">> Downloading docker-compose.yml..." -ForegroundColor Yellow
+                
+                try {
+                    $composeUrl = "https://raw.githubusercontent.com/iwatkot/maps4fs/main/docker-compose.yml"
+                    $composePath = ".\docker-compose.yml"
+                    
+                    # Download compose file
+                    Invoke-WebRequest -Uri $composeUrl -OutFile $composePath -UseBasicParsing
+                    
+                    if (Test-Path $composePath) {
+                        Write-Host ">> Docker Compose configuration downloaded successfully" -ForegroundColor Green
+                        
+                        # Start deployment
+                        $startContent = @(
+                            "",
+                            "                        STARTING CONTAINERS",
+                            "",
+                            "                     Starting Maps4fs with Docker Compose",
+                            "",
+                            "                    This may take a few minutes as Docker",
+                            "                      downloads the required images...",
+                            "",
+                            "                           Please wait...",
+                            ""
+                        )
+                        Show-Frame -Content $startContent -Title "DEPLOYMENT STARTING"
+                        
+                        Write-Host ""
+                        Write-Host ">> Starting Maps4fs containers with Docker Compose..." -ForegroundColor Yellow
+                        
+                        # Execute docker-compose up -d
+                        $composeOutput = docker-compose up -d 2>&1
+                        
+                        if ($LASTEXITCODE -eq 0) {
+                            Write-Host ">> Maps4fs containers started successfully!" -ForegroundColor Green
+                            
+                            # Wait a moment for containers to fully start
+                            Write-Host ">> Waiting for services to be ready..." -ForegroundColor Yellow
+                            Start-Sleep -Seconds 5
+                            
+                            return @{
+                                Success = $true
+                                Message = "Maps4fs deployment completed successfully"
+                                Output = $composeOutput
+                            }
+                        } else {
+                            return @{
+                                Success = $false
+                                Message = "Failed to start containers"
+                                Output = $composeOutput
+                                Error = "Docker Compose failed with exit code $LASTEXITCODE"
+                            }
+                        }
+                    } else {
+                        throw "Downloaded compose file not found"
+                    }
+                } catch {
+                    return @{
+                        Success = $false
+                        Message = "Failed to download docker-compose.yml"
+                        Output = $null
+                        Error = $_.Exception.Message
+                    }
+                }
+            } elseif ($choice -eq "N") {
+                return @{
+                    Success = $false
+                    Message = "Deployment cancelled by user"
+                    Output = $null
+                    Error = $null
+                }
+            } else {
+                Write-Host "Please press Y or N" -ForegroundColor Red
+                Start-Sleep -Seconds 1
+            }
+        } while ($true)
+        
+    } catch {
+        return @{
+            Success = $false
+            Message = "Error during deployment process"
+            Output = $null
+            Error = $_.Exception.Message
+        }
+    }
+}
+
+# Function to show deployment results and launch browser
+function Show-DeploymentResults {
+    param(
+        [object]$DeploymentResult
+    )
+    
+    if ($DeploymentResult.Success) {
+        # Success - show completion message and launch browser
+        $successContent = @(
+            "",
+            "                        [OK] DEPLOYMENT SUCCESSFUL",
+            "",
+            "                     Maps4fs is now running locally!",
+            "",
+            "                         Service endpoints:",
+            "                      * Frontend: http://localhost:3000",
+            "                      * Backend:  http://localhost:8000",
+            "",
+            "                    Opening Maps4fs in your browser...",
+            "",
+            "---",
+            "",
+            "                    To stop Maps4fs later, run:",
+            "                         docker-compose down",
+            "",
+            "                      Press any key to finish setup",
+            ""
+        )
+        
+        Clear-Host
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        $title = "SETUP COMPLETE"
+        $padding = (80 - $title.Length - 2) / 2
+        $leftPadding = [int][Math]::Floor($padding)
+        $rightPadding = [int][Math]::Ceiling($padding)
+        Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor Green
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        foreach ($line in $successContent) {
+            if ($line -eq "---") {
+                Write-Host ("-" * 80) -ForegroundColor Gray
+            } elseif ($line.Contains("[OK] DEPLOYMENT SUCCESSFUL")) {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+            } elseif ($line.Contains("docker-compose down")) {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
+            } else {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+            }
+        }
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        # Launch browser
+        Write-Host ""
+        Write-Host ">> Opening Maps4fs in your default browser..." -ForegroundColor Yellow
+        
+        try {
+            Start-Process "http://localhost:3000"
+            Write-Host ">> Browser launched successfully!" -ForegroundColor Green
+        } catch {
+            Write-Host ">> Could not automatically open browser" -ForegroundColor Yellow
+            Write-Host "   Please manually open: http://localhost:3000" -ForegroundColor Yellow
+        }
+        
+        # Wait for user to finish
+        $key = Wait-ForUserInput -PromptText ">> Press any key to finish setup"
+        return $true
+        
+    } else {
+        # Failure - show error message
+        $errorContent = @(
+            "",
+            "                        [X] DEPLOYMENT FAILED",
+            "",
+            "                    Failed to start Maps4fs containers",
+            "",
+            "                              Error details:",
+            "                     $($DeploymentResult.Message)",
+            ""
+        )
+        
+        if ($DeploymentResult.Error) {
+            $errorContent += "                     $($DeploymentResult.Error)"
+            $errorContent += ""
+        }
+        
+        $errorContent += @(
+            "                           Troubleshooting:",
+            "",
+            "                   1. Ensure Docker Desktop is running",
+            "                   2. Check internet connection for image downloads",
+            "                   3. Verify ports 3000 and 8000 are available",
+            "                   4. Try running manually: docker-compose up -d",
+            "",
+            "---",
+            "",
+            "                       Press any key to exit",
+            ""
+        )
+        
+        Clear-Host
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        $title = "DEPLOYMENT FAILED"
+        $padding = (80 - $title.Length - 2) / 2
+        $leftPadding = [int][Math]::Floor($padding)
+        $rightPadding = [int][Math]::Ceiling($padding)
+        Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor Red
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        foreach ($line in $errorContent) {
+            if ($line -eq "---") {
+                Write-Host ("-" * 80) -ForegroundColor Gray
+            } elseif ($line.Contains("[X] DEPLOYMENT FAILED")) {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Red
+            } else {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+            }
+        }
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        $key = Wait-ForUserInput -PromptText ">> Press any key to exit"
+        return $false
+    }
+}
+
 # Main execution
 try {
     # Step 1: Welcome screen
@@ -1347,13 +1612,66 @@ try {
         exit 1
     }
     
-    # Step 7: Continue with next steps...
-    Show-Frame -Content @("", "                     Docker is ready and running!", "", "                        ... (More steps to implement)", "") -Title "SETUP IN PROGRESS"
+    # Step 7: Deploy Maps4fs with Docker Compose
+    Write-Host "Preparing Maps4fs deployment..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 1
     
-    # Placeholder for next steps
-    Write-Host ""
-    Write-Host "Next steps would be implemented here..." -ForegroundColor Yellow
-    Read-Host "Press Enter to exit"
+    $deploymentResult = Start-Maps4fsDeployment
+    $deploymentSuccess = Show-DeploymentResults -DeploymentResult $deploymentResult
+    
+    if ($deploymentSuccess) {
+        # Final success message
+        $finalContent = @(
+            "",
+            "                    MAPS4FS SETUP WIZARD COMPLETED",
+            "",
+            "                     Thank you for using Maps4fs!",
+            "",
+            "                      Maps4fs is now running at:",
+            "                       http://localhost:3000",
+            "",
+            "                         Support the project:",
+            "                    ⭐ Star us on GitHub: github.com/iwatkot/maps4fs",
+            "                    💬 Join our community discussions",
+            "                    🐛 Report issues and suggest features",
+            "",
+            "                        Enjoy creating your maps!",
+            ""
+        )
+        
+        Clear-Host
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        $title = "SETUP WIZARD COMPLETE"
+        $padding = (80 - $title.Length - 2) / 2
+        $leftPadding = [int][Math]::Floor($padding)
+        $rightPadding = [int][Math]::Ceiling($padding)
+        Write-Host (("=" * $leftPadding) + " " + $title + " " + ("=" * $rightPadding)) -ForegroundColor Green
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        foreach ($line in $finalContent) {
+            if ($line.Contains("⭐") -or $line.Contains("💬") -or $line.Contains("🐛")) {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
+            } elseif ($line.Contains("http://localhost:3000")) {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
+            } else {
+                $contentLength = $line.Length
+                $padding = 80 - $contentLength - 2
+                Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
+            }
+        }
+        Write-Host ("=" * 80) -ForegroundColor Cyan
+        
+        exit 0
+    } else {
+        # Deployment failed
+        Show-Frame -Content @("", "                        Setup completed with errors", "", "                     Please check the error messages above", "") -Title "SETUP FINISHED"
+        Start-Sleep -Seconds 3
+        exit 1
+    }
     
 } catch {
     Write-Host "An error occurred: $($_.Exception.Message)" -ForegroundColor Red
