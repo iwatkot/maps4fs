@@ -2,6 +2,14 @@
 # Author: https://github.com/iwatkot
 # Repository: https://github.com/iwatkot/maps4fs
 
+function Get-SafePadding {
+    param(
+        [int]$LineLength,
+        [int]$FrameWidth = 80
+    )
+    return [Math]::Max(0, $FrameWidth - $LineLength - 2)
+}
+
 function Show-Frame {
     param(
         [string[]]$Content,
@@ -27,7 +35,7 @@ function Show-Frame {
             Write-Host ("-" * 80) -ForegroundColor Gray
         } else {
             $contentLength = $line.Length
-            $padding = 80 - $contentLength - 2
+            $padding = Get-SafePadding -LineLength $contentLength
             Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
         }
     }
@@ -1281,11 +1289,11 @@ function Test-RequiredDirectories {
     $requiredDirectories = @(
         @{
             Path = "$userProfile\maps4fs\mfsrootdir"
-            Description = "Maps working directory (shared storage for maps and cache)"
+            Description = "For maps and cache"
         },
         @{
             Path = "$userProfile\maps4fs\templates"
-            Description = "Game templates directory (FS22/FS25 map templates)"
+            Description = "For templates and schemas"
         }
     )
     
@@ -1376,7 +1384,7 @@ function Show-DirectoryCheck {
         
         foreach ($dir in $DirectoryResult.Directories) {
             $relativePath = $dir.Path.Replace($env:USERPROFILE, "~")
-            $successContent += "                  ✓ $relativePath"
+            $successContent += "                  [OK] $relativePath"
         }
         
         $successContent += @(
@@ -1403,15 +1411,15 @@ function Show-DirectoryCheck {
                 Write-Host ("-" * 80) -ForegroundColor Gray
             } elseif ($line.Contains("[OK] DIRECTORIES READY")) {
                 $contentLength = $line.Length
-                $padding = 80 - $contentLength - 2
+                $padding = Get-SafePadding -LineLength $contentLength
                 Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
-            } elseif ($line.Contains("✓")) {
+            } elseif ($line.Contains("[OK]") -and -not $line.Contains("DIRECTORIES READY")) {
                 $contentLength = $line.Length
-                $padding = 80 - $contentLength - 2
+                $padding = Get-SafePadding -LineLength $contentLength
                 Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
             } else {
                 $contentLength = $line.Length
-                $padding = 80 - $contentLength - 2
+                $padding = Get-SafePadding -LineLength $contentLength
                 Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
             }
         }
@@ -1435,7 +1443,7 @@ function Show-DirectoryCheck {
     
     foreach ($dir in $missingDirs) {
         $relativePath = $dir.Path.Replace($env:USERPROFILE, "~")
-        $createContent += "                  ✗ $relativePath"
+        $createContent += "                  [X] $relativePath"
         $createContent += "                    ($($dir.Description))"
     }
     
@@ -1465,19 +1473,19 @@ function Show-DirectoryCheck {
             Write-Host ("-" * 80) -ForegroundColor Gray
         } elseif ($line.Contains("[!] DIRECTORIES REQUIRED")) {
             $contentLength = $line.Length
-            $padding = 80 - $contentLength - 2
+            $padding = Get-SafePadding -LineLength $contentLength
             Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
-        } elseif ($line.Contains("✗")) {
+        } elseif ($line.Contains("[X]")) {
             $contentLength = $line.Length
-            $padding = 80 - $contentLength - 2
+            $padding = Get-SafePadding -LineLength $contentLength
             Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Red
         } elseif ($line.Contains("Y - Create") -or $line.Contains("N - Exit")) {
             $contentLength = $line.Length
-            $padding = 80 - $contentLength - 2
+            $padding = Get-SafePadding -LineLength $contentLength
             Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
         } else {
             $contentLength = $line.Length
-            $padding = 80 - $contentLength - 2
+            $padding = Get-SafePadding -LineLength $contentLength
             Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Cyan
         }
     }
@@ -1504,7 +1512,7 @@ function Show-DirectoryCheck {
                 
                 foreach ($dirPath in $createResult.CreatedDirectories) {
                     $relativePath = $dirPath.Replace($env:USERPROFILE, "~")
-                    $resultContent += "                  ✓ Created: $relativePath"
+                    $resultContent += "                  [OK] Created: $relativePath"
                 }
                 
                 $resultContent += @(
@@ -1555,7 +1563,7 @@ function Show-DirectoryCheck {
                     $contentLength = $line.Length
                     $padding = 80 - $contentLength - 2
                     Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Yellow
-                } elseif ($line.Contains("✓")) {
+                } elseif ($line.Contains("[OK]") -and $line.Contains("Created:")) {
                     $contentLength = $line.Length
                     $padding = 80 - $contentLength - 2
                     Write-Host ("|" + $line + (" " * $padding) + "|") -ForegroundColor Green
