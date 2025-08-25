@@ -84,14 +84,14 @@ If you want better control of the deployment such as mounts to specific director
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/iwatkot/maps4fs/main/docker-compose.yml" -OutFile "docker-compose.yml"
 
 # Launch Docker Compose.
-docker-compose up -d
+docker-compose -p maps4fs up -d
 ```
 
 If you don't need to make any changes you can launch the docker compose file directly from the PowerShell:
 
 ```powershell
 # Launch docker-compose directly from GitHub
-powershell -ExecutionPolicy Bypass -Command "iwr 'https://raw.githubusercontent.com/iwatkot/maps4fs/main/docker-compose.yml' -OutFile 'docker-compose.yml'; docker-compose up -d"
+powershell -ExecutionPolicy Bypass -Command "iwr 'https://raw.githubusercontent.com/iwatkot/maps4fs/main/docker-compose.yml' -OutFile 'docker-compose.yml'; docker-compose -p maps4fs up -d"
 ```
 
 ### Manual Deployment
