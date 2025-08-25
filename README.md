@@ -1,7 +1,3 @@
-⚠️ Learn more about the 2.0 changes in the [migration guide](docs/migration.md).  
-⚠️ Some components are deprecated, and there are major changes in the project structure.
-
-
 <p align="center">
 <a href="https://github.com/iwatkot/maps4fs">maps4fs</a> •
 <a href="https://github.com/iwatkot/maps4fsui">maps4fs UI</a> •
