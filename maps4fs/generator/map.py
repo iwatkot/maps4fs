@@ -5,30 +5,16 @@ from __future__ import annotations
 import json
 import os
 import shutil
-from datetime import datetime
 from typing import Any, Generator
-from xml.etree import ElementTree as ET
 
-import osmnx as ox
-from geopy.geocoders import Nominatim
-from osmnx._errors import InsufficientResponseError
 from pydtmdl import DTMProvider
 from pydtmdl.base.dtm import DTMProviderSettings
 
 import maps4fs.generator.config as mfscfg
+import maps4fs.generator.utils as mfsutils
 from maps4fs.generator.component import Background, Component, Layer, Texture
-from maps4fs.generator.game import FS25, Game
-from maps4fs.generator.settings import (
-    BackgroundSettings,
-    DEMSettings,
-    GenerationSettings,
-    GRLESettings,
-    I3DSettings,
-    MainSettings,
-    SatelliteSettings,
-    SharedSettings,
-    TextureSettings,
-)
+from maps4fs.generator.game import Game
+from maps4fs.generator.settings import GenerationSettings, MainSettings, SharedSettings
 from maps4fs.generator.statistics import send_advanced_settings, send_main_settings
 from maps4fs.logger import Logger
 
@@ -55,174 +41,96 @@ class Map:
         map_directory: str | None = None,
         logger: Any = None,
         custom_osm: str | None = None,
-        dem_settings: DEMSettings = DEMSettings(),
-        background_settings: BackgroundSettings = BackgroundSettings(),
-        grle_settings: GRLESettings = GRLESettings(),
-        i3d_settings: I3DSettings = I3DSettings(),
-        texture_settings: TextureSettings = TextureSettings(),
-        satellite_settings: SatelliteSettings = SatelliteSettings(),
+        generation_settings: GenerationSettings = GenerationSettings(),
         **kwargs,
     ):
-        if not logger:
-            logger = Logger()
-        self.logger = logger
-        self.size = size
 
-        if rotation:
-            rotation_multiplier = 1.5
-        else:
-            rotation_multiplier = 1
-
-        self.rotation = rotation
-        self.rotated_size = int(size * rotation_multiplier)
-        self.output_size = kwargs.get("output_size", None)
-        self.size_scale = 1.0
-        if self.output_size:
-            self.size_scale = self.output_size / self.size
-
+        # region main properties
         self.game = game
         self.dtm_provider = dtm_provider
         self.dtm_provider_settings = dtm_provider_settings
-        self.components: list[Component] = []
         self.coordinates = coordinates
         self.map_directory = map_directory or self.suggest_map_directory(
             coordinates=coordinates, game_code=game.code  # type: ignore
         )
+        self.rotation = rotation
+        self.kwargs = kwargs
+        # endregion
 
-        main_settings = MainSettings.from_json(
-            {
-                "game": game.code,  # type: ignore
-                "latitude": coordinates[0],
-                "longitude": coordinates[1],
-                "country": self.get_country_by_coordinates(),
-                "size": size,
-                "output_size": self.output_size,
-                "rotation": rotation,
-                "dtm_provider": dtm_provider.name(),
-                "custom_osm": bool(custom_osm),
-                "is_public": kwargs.get("is_public", False),
-                "api_request": kwargs.get("api_request", False),
-                "date": datetime.now().strftime("%Y-%m-%d"),
-                "time": datetime.now().strftime("%H:%M:%S"),
-                "version": mfscfg.PACKAGE_VERSION,
-                "completed": False,
-                "error": None,
-            }
-        )
+        # region size properties
+        self.size = size
+        rotation_multiplier = 1.5 if rotation else 1
+        self.rotated_size = int(size * rotation_multiplier)
+        self.output_size = kwargs.get("output_size", None)
+        self.size_scale = 1.0 if not self.output_size else self.output_size / size
+        # endregion
+
+        # region custom OSM properties
+        self.custom_osm = custom_osm
+        mfsutils.check_and_fix_osm(self.custom_osm, save_directory=self.map_directory)
+        # endregion
+
+        # region main settings
+        main_settings = MainSettings.from_map(self)
         main_settings_json = main_settings.to_json()
+        self.main_settings_path = os.path.join(self.map_directory, "main_settings.json")
+        self._update_main_settings(main_settings_json)
+        # endregion
+
+        # region generation settings
+        self.dem_settings = generation_settings.dem_settings
+        self.background_settings = generation_settings.background_settings
+        self.grle_settings = generation_settings.grle_settings
+        self.i3d_settings = generation_settings.i3d_settings
+        self.texture_settings = generation_settings.texture_settings
+        self.satellite_settings = generation_settings.satellite_settings
+        self.process_settings()
+
+        self.logger = logger if logger else Logger()
+        generation_settings_json = generation_settings.to_json()
 
         try:
             send_main_settings(main_settings_json)
+            send_advanced_settings(generation_settings_json)
+            self.logger.info("Settings sent successfully.")
         except Exception as e:
-            self.logger.error("Error sending main settings: %s", e)
+            self.logger.warning("Error sending settings: %s", e)
+        # endregion
 
-        self.main_settings_path = os.path.join(self.map_directory, "main_settings.json")
-        with open(self.main_settings_path, "w", encoding="utf-8") as file:
-            json.dump(main_settings_json, file, indent=4)
-
-        log_entry = ""
-        log_entry += f"Map instance created for Game: {game.code}. "
-        log_entry += f"Coordinates: {coordinates}. Size: {size}. Rotation: {rotation}. "
-        if self.output_size:
-            log_entry += f"Output size: {self.output_size}. Scaling: {self.size_scale}. "
-        log_entry += f"DTM provider is {dtm_provider.name()}. "
-
-        self.custom_osm = custom_osm
-        log_entry += f"Custom OSM file: {custom_osm}. "
-
-        if self.custom_osm:
-            osm_is_valid = check_osm_file(self.custom_osm)
-            if not osm_is_valid:
-                self.logger.warning(
-                    "Custom OSM file %s is not valid. Attempting to fix it.", custom_osm
-                )
-                fixed, fixed_errors = fix_osm_file(self.custom_osm)
-                if not fixed:
-                    raise ValueError(
-                        f"Custom OSM file {custom_osm} is not valid and cannot be fixed."
-                    )
-                self.logger.info(
-                    "Custom OSM file %s fixed. Fixed errors: %d", custom_osm, fixed_errors
-                )
-
-        # Make a copy of a custom osm file to the map directory, so it will be
-        # included in the output archive.
-        if custom_osm:
-            copy_path = os.path.join(self.map_directory, "custom_osm.osm")
-            shutil.copyfile(custom_osm, copy_path)
-            self.logger.debug("Custom OSM file copied to %s", copy_path)
-
-        self.dem_settings = dem_settings
-        log_entry += f"DEM settings: {dem_settings}. "
-        if self.dem_settings.water_depth > 0:
-            # Make sure that the plateau value is >= water_depth
-            self.dem_settings.plateau = max(
-                self.dem_settings.plateau, self.dem_settings.water_depth
-            )
-
-        self.background_settings = background_settings
-        log_entry += f"Background settings: {background_settings}. "
-        self.grle_settings = grle_settings
-        log_entry += f"GRLE settings: {grle_settings}. "
-        self.i3d_settings = i3d_settings
-        log_entry += f"I3D settings: {i3d_settings}. "
-        self.texture_settings = texture_settings
-        log_entry += f"Texture settings: {texture_settings}. "
-        self.satellite_settings = satellite_settings
-
-        self.logger.info(log_entry)
+        # region JSON data saving
         os.makedirs(self.map_directory, exist_ok=True)
-        self.logger.debug("Map directory created: %s", self.map_directory)
-
-        settings_json = GenerationSettings(
-            dem_settings=dem_settings,
-            background_settings=background_settings,
-            grle_settings=grle_settings,
-            i3d_settings=i3d_settings,
-            texture_settings=texture_settings,
-            satellite_settings=satellite_settings,
-        ).to_json()
-
-        try:
-            send_advanced_settings(settings_json)
-        except Exception as e:
-            self.logger.error("Error sending advanced settings: %s", e)
-
-        save_path = os.path.join(self.map_directory, "generation_settings.json")
-
-        with open(save_path, "w", encoding="utf-8") as file:
-            json.dump(settings_json, file, indent=4)
-
-        self.shared_settings = SharedSettings()
-
         self.texture_custom_schema = kwargs.get("texture_custom_schema", None)
-        if self.texture_custom_schema:
-            save_path = os.path.join(self.map_directory, "texture_custom_schema.json")
-            with open(save_path, "w", encoding="utf-8") as file:
-                json.dump(self.texture_custom_schema, file, indent=4)
-            self.logger.debug("Texture custom schema saved to %s", save_path)
-
         self.tree_custom_schema = kwargs.get("tree_custom_schema", None)
-        if self.tree_custom_schema:
-            save_path = os.path.join(self.map_directory, "tree_custom_schema.json")
-            with open(save_path, "w", encoding="utf-8") as file:
-                json.dump(self.tree_custom_schema, file, indent=4)
-            self.logger.debug("Tree custom schema saved to %s", save_path)
 
-        self.custom_background_path = kwargs.get("custom_background_path", None)
-        if self.custom_background_path:
-            save_path = os.path.join(self.map_directory, "custom_background.png")
-            shutil.copyfile(self.custom_background_path, save_path)
+        json_data = {
+            "generation_settings.json": generation_settings_json,
+            "texture_custom_schema.json": self.texture_custom_schema,
+            "tree_custom_schema.json": self.tree_custom_schema,
+        }
 
+        for filename, data in json_data.items():
+            mfsutils.dump_json(filename, self.map_directory, data)
+        # endregion
+
+        # region prepare map working directory
         try:
             shutil.unpack_archive(game.template_path, self.map_directory)
             self.logger.debug("Map template unpacked to %s", self.map_directory)
         except Exception as e:
             raise RuntimeError(f"Can not unpack map template due to error: {e}") from e
+        # endregion
 
-        self.logger.debug(
-            "MFS_DATA_DIR: %s. MFS_CACHE_DIR %s", mfscfg.MFS_DATA_DIR, mfscfg.MFS_CACHE_DIR
-        )
+        self.shared_settings = SharedSettings()
+        self.components: list[Component] = []
+        self.custom_background_path = kwargs.get("custom_background_path", None)
+
+    def process_settings(self) -> None:
+        """Checks the settings by predefined rules and updates them accordingly."""
+        if self.dem_settings.water_depth > 0:
+            # Make sure that the plateau value is >= water_depth
+            self.dem_settings.plateau = max(
+                self.dem_settings.plateau, self.dem_settings.water_depth
+            )
 
     @staticmethod
     def suggest_map_directory(coordinates: tuple[float, float], game_code: str) -> str:
@@ -241,30 +149,9 @@ class Map:
             str: Directory name.
         """
         lat, lon = coordinates
-        latr = Map.coordinate_to_string(lat)
-        lonr = Map.coordinate_to_string(lon)
-        return f"{Map.get_timestamp()}_{game_code}_{latr}_{lonr}".lower()
-
-    @staticmethod
-    def get_timestamp() -> str:
-        """Get current underscore-separated timestamp.
-
-        Returns:
-            str: Current timestamp.
-        """
-        return datetime.now().strftime("%Y%m%d_%H%M%S")
-
-    @staticmethod
-    def coordinate_to_string(coordinate: float) -> str:
-        """Convert coordinate to string with 3 decimal places.
-
-        Arguments:
-            coordinate (float): Coordinate value.
-
-        Returns:
-            str: Coordinate as string.
-        """
-        return f"{coordinate:.3f}".replace(".", "_")
+        latr = mfsutils.coordinate_to_string(lat)
+        lonr = mfsutils.coordinate_to_string(lon)
+        return f"{mfsutils.get_timestamp()}_{game_code}_{latr}_{lonr}".lower()
 
     @property
     def texture_schema(self) -> list[dict[str, Any]] | None:
@@ -332,14 +219,19 @@ class Map:
 
     def _update_main_settings(self, data: dict[str, Any]) -> None:
         """Update main settings with provided data.
+        If the main settings file exists, it will be updated with the new data.
+        If it does not exist, a new file will be created.
 
         Arguments:
             data (dict[str, Any]): Data to update main settings.
         """
-        with open(self.main_settings_path, "r", encoding="utf-8") as file:
-            main_settings_json = json.load(file)
+        if os.path.exists(self.main_settings_path):
+            with open(self.main_settings_path, "r", encoding="utf-8") as file:
+                main_settings_json = json.load(file)
 
-        main_settings_json.update(data)
+            main_settings_json.update(data)
+        else:
+            main_settings_json = data
 
         with open(self.main_settings_path, "w", encoding="utf-8") as file:
             json.dump(main_settings_json, file, indent=4)
@@ -452,79 +344,3 @@ class Map:
             except Exception as e:
                 self.logger.debug("Error removing map directory %s: %s", self.map_directory, e)
         return archive_path
-
-    def get_country_by_coordinates(self) -> str:
-        """Get country name by coordinates.
-
-        Returns:
-            str: Country name.
-        """
-        try:
-            geolocator = Nominatim(user_agent="maps4fs")
-            location = geolocator.reverse(self.coordinates, language="en")
-            if location and "country" in location.raw["address"]:
-                return location.raw["address"]["country"]
-        except Exception as e:
-            self.logger.error("Error getting country name by coordinates: %s", e)
-            return "Unknown"
-        return "Unknown"
-
-
-def check_osm_file(file_path: str) -> bool:
-    """Tries to read the OSM file using OSMnx and returns True if the file is valid,
-    False otherwise.
-
-    Arguments:
-        file_path (str): Path to the OSM file.
-
-    Returns:
-        bool: True if the file is valid, False otherwise.
-    """
-    with open(FS25().texture_schema, encoding="utf-8") as f:
-        schema = json.load(f)
-
-    tags = []
-    for element in schema:
-        element_tags = element.get("tags")
-        if element_tags:
-            tags.append(element_tags)
-
-    for tag in tags:
-        try:
-            ox.features_from_xml(file_path, tags=tag)
-        except InsufficientResponseError:
-            continue
-        except Exception:  # pylint: disable=W0718
-            return False
-    return True
-
-
-def fix_osm_file(input_file_path: str, output_file_path: str | None = None) -> tuple[bool, int]:
-    """Fixes the OSM file by removing all the <relation> nodes and all the nodes with
-    action='delete'.
-
-    Arguments:
-        input_file_path (str): Path to the input OSM file.
-        output_file_path (str | None): Path to the output OSM file. If None, the input file
-            will be overwritten.
-
-    Returns:
-        tuple[bool, int]: A tuple containing the result of the check_osm_file function
-            and the number of fixed errors.
-    """
-    broken_entries = ["relation", ".//*[@action='delete']"]
-    output_file_path = output_file_path or input_file_path
-
-    tree = ET.parse(input_file_path)
-    root = tree.getroot()
-
-    fixed_errors = 0
-    for entry in broken_entries:
-        for element in root.findall(entry):
-            root.remove(element)
-            fixed_errors += 1
-
-    tree.write(output_file_path)  # type: ignore
-    result = check_osm_file(output_file_path)  # type: ignore
-
-    return result, fixed_errors

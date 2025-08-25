@@ -6,7 +6,7 @@ from time import time
 
 import cv2
 
-from maps4fs import DTMProvider, Map
+from maps4fs import DTMProvider, GenerationSettings, Map
 from maps4fs.generator.game import Game
 from maps4fs.generator.settings import (
     BackgroundSettings,
@@ -40,6 +40,9 @@ background_settings = BackgroundSettings(
     generate_background=True,
     generate_water=True,
     remove_center=False,
+)
+generation_settings = GenerationSettings(
+    background_settings=background_settings,
 )
 
 
@@ -95,11 +98,11 @@ def test_map():
                 game=game,
                 dtm_provider=dtm_provider,
                 dtm_provider_settings=None,
-                background_settings=background_settings,
                 coordinates=coordinates,
                 size=height,
                 rotation=0,
                 map_directory=directory,
+                generation_settings=generation_settings,
             )
 
             for _ in map.generate():
@@ -158,11 +161,11 @@ def test_map_preview():
         game=game,
         dtm_provider=dtm_provider,
         dtm_provider_settings=None,
-        background_settings=background_settings,
         coordinates=case,
         size=height,
         rotation=0,
         map_directory=directory,
+        generation_settings=generation_settings,
     )
     for _ in map.generate():
         pass
@@ -188,6 +191,12 @@ def test_map_pack():
 
     satellite_settings = SatelliteSettings(download_images=True, zoom_level=14)
 
+    pack_generation_settings = GenerationSettings(
+        dem_settings=dem_settings,
+        background_settings=background_settings,
+        satellite_settings=satellite_settings,
+    )
+
     directory = map_directory(game_code)
     map = Map(
         game=game,
@@ -197,9 +206,7 @@ def test_map_pack():
         size=height,
         rotation=30,
         map_directory=directory,
-        dem_settings=dem_settings,
-        background_settings=background_settings,
-        satellite_settings=satellite_settings,
+        generation_settings=pack_generation_settings,
     )
     for _ in map.generate():
         pass

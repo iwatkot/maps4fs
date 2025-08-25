@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 import re
-from typing import Any, NamedTuple
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from pydantic import BaseModel, ConfigDict
+
+import maps4fs.generator.config as mfscfg
+
+if TYPE_CHECKING:
+    from maps4fs.generator.map import Map
 
 
 class Parameters:
@@ -79,7 +85,7 @@ class SettingsModel(BaseModel):
 
     @classmethod
     def all_settings_from_json(
-        cls, data: dict, flattening: bool = True
+        cls, data: dict, flattening: bool = True, from_snake: bool = False, safe: bool = False
     ) -> dict[str, SettingsModel]:
         """Create settings instances from JSON data.
 
@@ -87,13 +93,19 @@ class SettingsModel(BaseModel):
             data (dict): JSON data.
             flattening (bool): if set to True will flattet iterables to use the first element
                 of it.
+            from_snake (bool): if set to True will convert snake_case keys to camelCase.
 
         Returns:
             dict[str, Type[SettingsModel]]: Dictionary with settings instances.
         """
         settings = {}
         for subclass in cls.__subclasses__():
-            subclass_data = data[subclass.__name__]
+            if from_snake:
+                subclass_key = subclass.__name__.replace("Settings", "_settings").lower()
+            else:
+                subclass_key = subclass.__name__
+
+            subclass_data = data.get(subclass_key, {}) if safe else data[subclass_key]
             if flattening:
                 for key, value in subclass_data.items():
                     if isinstance(value, (list, tuple)):
@@ -257,12 +269,12 @@ class SatelliteSettings(SettingsModel):
 class GenerationSettings(BaseModel):
     """Represents the settings for the map generation process."""
 
-    dem_settings: DEMSettings
-    background_settings: BackgroundSettings
-    grle_settings: GRLESettings
-    i3d_settings: I3DSettings
-    texture_settings: TextureSettings
-    satellite_settings: SatelliteSettings
+    dem_settings: DEMSettings = DEMSettings()
+    background_settings: BackgroundSettings = BackgroundSettings()
+    grle_settings: GRLESettings = GRLESettings()
+    i3d_settings: I3DSettings = I3DSettings()
+    texture_settings: TextureSettings = TextureSettings()
+    satellite_settings: SatelliteSettings = SatelliteSettings()
 
     def to_json(self) -> dict[str, Any]:
         """Convert the GenerationSettings instance to JSON format.
@@ -280,23 +292,23 @@ class GenerationSettings(BaseModel):
         }
 
     @classmethod
-    def from_json(cls, data: dict[str, Any]) -> GenerationSettings:
+    def from_json(
+        cls, data: dict[str, Any], from_snake: bool = False, safe: bool = False
+    ) -> GenerationSettings:
         """Create a GenerationSettings instance from JSON data.
 
         Arguments:
             data (dict[str, Any]): JSON data.
+            from_snake (bool): if set to True will convert snake_case keys to camelCase.
+            safe (bool): if set to True will ignore unknown keys.
 
         Returns:
             GenerationSettings: Instance of GenerationSettings.
         """
-        return cls(
-            dem_settings=DEMSettings(**data["DEMSettings"]),
-            background_settings=BackgroundSettings(**data["BackgroundSettings"]),
-            grle_settings=GRLESettings(**data["GRLESettings"]),
-            i3d_settings=I3DSettings(**data["I3DSettings"]),
-            texture_settings=TextureSettings(**data["TextureSettings"]),
-            satellite_settings=SatelliteSettings(**data["SatelliteSettings"]),
+        all_settings = SettingsModel.all_settings_from_json(
+            data, flattening=False, from_snake=from_snake, safe=safe
         )
+        return cls(**all_settings)  # type: ignore
 
 
 class MainSettings(NamedTuple):
@@ -355,3 +367,34 @@ class MainSettings(NamedTuple):
             "completed": self.completed,
             "error": self.error,
         }
+
+    @classmethod
+    def from_map(cls, map: Map) -> MainSettings:
+        """Create a MainSettings instance from a Map instance.
+
+        Arguments:
+            map (Map): Instance of Map.
+
+        Returns:
+            MainSettings: Instance of MainSettings.
+        """
+        from maps4fs.generator.utils import get_country_by_coordinates
+
+        return cls(
+            game=map.game.code,  # type: ignore
+            latitude=map.coordinates[0],
+            longitude=map.coordinates[1],
+            country=get_country_by_coordinates(map.coordinates),
+            size=map.size,
+            output_size=map.output_size,
+            rotation=map.rotation,
+            dtm_provider=map.dtm_provider.name(),
+            custom_osm=bool(map.custom_osm),
+            is_public=map.kwargs.get("is_public", False),
+            api_request=map.kwargs.get("api_request", False),
+            date=datetime.now().strftime("%Y-%m-%d"),
+            time=datetime.now().strftime("%H:%M:%S"),
+            version=mfscfg.PACKAGE_VERSION,
+            completed=False,
+            error=None,
+        )

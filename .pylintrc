@@ -30,4 +30,5 @@ disable=raw-checker-failed,
         import-outside-toplevel,
         too-many-branches,
         too-many-nested-blocks,
-        global-statement
+        global-statement,
+        cyclic-import
