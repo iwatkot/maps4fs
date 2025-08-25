@@ -147,7 +147,14 @@ powershell -ExecutionPolicy Bypass -Command "iex (iwr 'https://raw.githubusercon
 
 ### 🤯 For developers
 
-**Option 3:** Python package. Install the package using the following command:
+**Option 3:** Python package or run from source code.
+🔴 Recommended for developers who want full control over the generation process and fastest performance.
+🛠️ Requires Python, pip, and Git.
+🗺️ Supported map sizes: 2x2, 4x4, 8x8, 16x16 km and any custom size.  
+✂️ Map scaling: supported.  
+⚙️ Advanced settings: all settings available.
+
+Install the package using the following command:
 
 ```bash
 pip install maps4fs
