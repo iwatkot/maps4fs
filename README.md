@@ -11,7 +11,7 @@
 
 <div align="center" markdown>
 <a href="https://discord.gg/Sj5QKKyE42">
-<img src="https://github.com/iwatkot/maps4fs/releases/download/2.2.0/maps4fs-poster-discord-mymaps.png">
+<img src="https://github.com/user-attachments/assets/37043333-d6ef-4ca3-9f3c-81323d9d0b71">
 </a>
 
 <p align="center">
@@ -19,7 +19,6 @@
   <a href="#Overview">Overview</a> • 
   <a href="docs/step_by_step.md">Create a map in 10 steps</a> •
   <a href="docs/recommendations.md">Practical recommendations</a> •
-  <a href="docs/my_maps.md">My Maps</a> •
   <a href="docs/FAQ.md">FAQ</a> •
   <a href="docs/map_structure.md">Map Structure</a> •
   <a href="#Schemas-Editor">Schemas Editor</a> •
@@ -51,8 +50,6 @@
 
 </div>
 
-🔥🔥🔥🗂️ Track, store and organize all your maps using the [My Maps](docs/my_maps.md) feature. 🔥🔥🔥<br>
-<br>
 🗺️ Supports 2x2, 4x4, 8x8, 16x16 and any custom size maps<br>
 🔗 Generate maps using an [API](https://github.com/iwatkot/maps4fsapi)<br>
 ✂️ Supports map scaling<br>
