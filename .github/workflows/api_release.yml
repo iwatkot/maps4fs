@@ -1,0 +1,30 @@
+name: API Release
+
+# Temporarily disabled - uncomment to re-enable
+# on:
+#   release:
+#     types: [created]
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  relay-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait until PyPI release is ready
+        uses: actions/github-script@v3
+        with:
+          script: |
+            const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+            await wait(300000); // Wait for 5 minutes
+
+      - name: Create release in maps4fsapi
+        env:
+          GH_TOKEN: ${{ secrets.RELAY_RELEASE_TOKEN }}
+        run: |
+          gh release create \
+            "${{ github.event.release.tag_name }}" \
+            --repo iwatkot/maps4fsapi \
+            --title "${{ github.event.release.name }}" \
+            --notes "${{ github.event.release.body }}" \
+            --target master
