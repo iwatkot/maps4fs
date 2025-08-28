@@ -24,4 +24,4 @@ jobs:
             --repo iwatkot/maps4fsapi \
             --title "${{ github.event.release.name }}" \
             --notes "${{ github.event.release.body }}" \
-            --target master
+            --target main
