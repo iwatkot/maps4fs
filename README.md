@@ -15,7 +15,7 @@
 </a>
 
 <p align="center">
-  <a href="#Quick-Start">Quick Start</a> •
+  <a href="#How-To-Run">How to Run</a> •
   <a href="#Overview">Overview</a> • 
   <a href="docs/step_by_step.md">Create a map in 10 steps</a> •
   <a href="docs/recommendations.md">Practical recommendations</a><br>
@@ -105,11 +105,11 @@
 
 <p align="center"><i>Map example generated with maps4fs.</i></p>
 
-## Quick Start
+## How to Run
 
-There are several ways to use the tool. You obviously need the **first one**, but you can choose any of the others depending on your needs.<br>
+There are several ways to use the tool. The easiest one is a public version of the app, if you need more features, faster generation, and advanced settings, you can opt for local deployment or run the tool from source.
 
-### 🚜 For most users
+### Public app
 
 **Option 1:** Open the [maps4fs](https://maps4fs.xyz) and generate a map template in a few clicks.<br>
 🟢 Recommended for all users.  
@@ -120,7 +120,7 @@ There are several ways to use the tool. You obviously need the **first one**, bu
 
 ![Basic WebUI](https://github.com/iwatkot/maps4fs/releases/download/2.0.0/maps4fs_wui.png)
 
-### 😎 For advanced users
+### Local deployment
 
 **Option 2:** Run the Docker version in your browser.  
 🟠 Recommended for users who want bigger maps, fast generation, nice-looking textures, and advanced settings.  
@@ -138,7 +138,7 @@ powershell -ExecutionPolicy Bypass -Command "iex (iwr 'https://raw.githubusercon
 ℹ️ Check out detailed instructions about [local deployment](docs/local_deployment.md).
 
 
-### 🤯 For developers
+### For developers
 
 **Option 3:** Python package or run from source code.
 🔴 Recommended for developers who want full control over the generation process and fastest performance.
