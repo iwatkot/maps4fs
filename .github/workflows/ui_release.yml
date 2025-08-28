@@ -1,11 +1,8 @@
 name: UI Release
 
-# Temporarily disabled - uncomment to re-enable
-# on:
-#   release:
-#     types: [created]
 on:
-  workflow_dispatch:  # Manual trigger only
+  release:
+    types: [created]
 
 jobs:
   relay-release:
