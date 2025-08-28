@@ -13,7 +13,7 @@ jobs:
         with:
           script: |
             const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-            await wait(300000); // Wait for 5 minutes
+            await wait(180000); // Wait for 3 minutes
 
       - name: Create release in maps4fsapi
         env:
