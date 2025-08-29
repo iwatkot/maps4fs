@@ -125,6 +125,22 @@ By default, the following directories are mounted and used:
 
 If you encounter any issues during the deployment or usage of Maps4FS, follow the steps outlined below to understand what's wrong.
 
+### Check Docker
+
+Make sure Docker is installed and running properly on your machine.
+
+```powershell
+docker --version
+```
+
+As a result, you should see the installed version of Docker. Then, launch the sample container that will be removed automatically after a few seconds.
+
+```powershell
+docker run --rm hello-world
+```
+
+*️⃣ If any of the above commands fail, that means you have issues with Docker and need to ensure that is properly installed and configured.
+
 ### Check the containers
 
 You need to ensure that both frontend and backend containers are exist and running properly.  The two containers being used are:
@@ -195,6 +211,20 @@ docker logs maps4fsui > maps4fsui.log
 If the logs do not contain any errors, but simply indicate that the process was terminated, you may be facing a resource limitation issue and it's recommended to check the system resource usage (CPU, RAM) during the container runtime.  
 If the logs contain errors, but they are unclear, it's recommended to ask for help in the [Discord](https://discord.gg/Sj5QKKyE42).
 
+#### Docker events
+
+You can monitor Docker events to get real-time information about container lifecycle changes. Use the following command:
+
+```powershell
+docker events
+```
+
+To save the events for last 24 hours into a file, you can use the following command:
+
+```powershell
+docker events --since 24h > docker_events.log
+```
+
 #### Docker exit code 137
 
 The most common exit code indicating that the container was killed due to out of memory (OOM) issues. For large maps, the generator may be processing gigantic images and/or meshes, which may lead to high RAM usage.  
@@ -226,3 +256,26 @@ Invoke-WebRequest -Uri http://localhost:3000 -UseBasicParsing
 The expected response should be the HTML content of the frontend UI.
 
 *️⃣ If commands fail, that means that the backend API is not accessible or not running properly. Please check the container logs and status as described in the troubleshooting steps above.
+
+
+### If you still have issues
+
+Make sure that you've followed all the steps above, fill-out the following form and ask for help in the [Discord](https://discord.gg/Sj5QKKyE42) server.  
+*️⃣ Requests without sufficient information may be ignored.
+
+#### Checklist before asking for help
+
+- [ ] My machine meets the system requirements.
+- [ ] I am attaching the hardware specifications and information about the OS (including version) with this request.
+- [ ] I have checked the Docker version and run the hello-world container.
+- [ ] I am attaching outputs of both commands with this request.
+- [ ] I have ensured that Docker is properly installed and configured.
+- [ ] I have checked the status of both containers (API and UI) and they are running.
+- [ ] I am attaching outputs of both commands with this request.
+- [ ] I have checked the logs for both containers.
+- [ ] I am attaching both log files with this request.
+- [ ] I have checked the resource usage (CPU, RAM) during the container runtime.
+- [ ] I have checked the Docker events for any relevant information.
+- [ ] I am attaching the Docker events log file with this request.
+- [ ] I have checked accessibility of both containers (API and UI).
+- [ ] I am attaching the outputs of both accessibility checks with this request.
