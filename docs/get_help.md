@@ -169,9 +169,7 @@ For other DTM providers:
 ### ✅ All Confirmed
 **I've checked everything above**
 
-🐛 **[Submit your issue here](https://github.com/iwatkot/maps4fs/issues/new/choose)**
-
-Use the issue template and provide all requested details.
+[� Go to Step 5: Information Checklist](#step-5-information-checklist)
 
 </td>
 <td align="center" width="50%">
@@ -189,13 +187,97 @@ This helps ensure you get the best possible help.
 
 ---
 
+## Step 5: Information Checklist
+
+**Before contacting support, prepare the following information:**
+
+### 📍 Basic Information
+- [ ] **Map coordinates** (latitude, longitude) - *Example: 45.2841, 20.2370*
+- [ ] **Map size** - *Example: 4x4 km*
+- [ ] **Game version** - *FS22 or FS25*
+- [ ] **Maps4FS version** - *Check in app footer or about section*
+
+### 📁 Required Files
+Gather these files from your map generation:
+
+- [ ] **`generation_info.json`** - *Contains technical details about your map*
+- [ ] **`main_settings.json`** - *Main configuration settings*
+- [ ] **`generation_settings.json`** - *Your map generation settings*
+- [ ] **Error logs** (if available) - *Any error messages or crash logs*
+- [ ] **Screenshots** of the issue - *Show what's wrong vs what's expected*
+
+### 📝 Issue Description
+Prepare answers to these questions:
+
+- [ ] **What exactly is wrong?** - *Describe the specific issue*
+- [ ] **What did you expect to happen?** - *What should the correct behavior be*
+- [ ] **Steps to reproduce** - *How can someone else reproduce this issue*
+- [ ] **When did it start happening?** - *Was it working before? What changed?*
+
+### 🔍 Additional Details (if applicable)
+- [ ] **Custom settings used** - *Any non-default settings you applied*
+- [ ] **Custom OSM file** - *If you used a custom OpenStreetMap file*
+- [ ] **Custom texture schema** - *If you modified the texture schema*
+- [ ] **Specific objects missing** - *Which roads/buildings/fields are missing*
+
+### 📞 Choose Your Support Channel
+
+<table>
+<tr>
+<td align="center" width="50%">
+
+### 💬 Discord (Recommended)
+**For most users**
+
+✅ **Pros:**
+- Fast community help
+- Easy to share files
+- No GitHub account needed
+
+[![Join Discord](https://img.shields.io/badge/join-discord-blue)](https://discord.gg/Sj5QKKyE42)
+
+**Post in #support channel with your checklist**
+
+</td>
+<td align="center" width="50%">
+
+### 🐛 GitHub Issues
+**For technical users**
+
+✅ **Pros:**
+- Detailed issue tracking
+- Better for complex bugs
+- Public record for others
+
+**Requirements:**
+- GitHub account
+- Familiar with issue templates
+
+🐛 **[Create GitHub Issue](https://github.com/iwatkot/maps4fs/issues/new/choose)**
+
+</td>
+</tr>
+</table>
+
+### 📋 Final Checklist
+Before contacting support, confirm:
+
+- [ ] ✅ I have ALL the information from the checklists above
+- [ ] 📁 I have prepared all required files
+- [ ] 📝 I can clearly describe my issue
+- [ ] 🎯 I know which support channel to use
+
+**Ready to get help!** 🚀
+
+---
+
 ## 📋 Quick Reference Guide
 
 | 🎯 Scenario | 🔄 Action |
 |-------------|-----------|
 | 🌐 Public app down | ⛔ No support provided |
 | 🏠 Local deployment issues | 📖 Follow [troubleshooting guide](local_deployment.md#troubleshooting) first |
-| 🐛 Tool works but has problems | ✅ FAQ → ✅ SRTM30 → ✅ Checklist → 🐛 Submit issue |
+| 🐛 Tool works but has problems | ✅ FAQ → ✅ SRTM30 → ✅ Checklist → � Gather info → 💬 Discord/🐛 GitHub |
 | 🗺️ Non-SRTM30 DTM issues | 👤 Contact DTM provider author at [PyDTMDL](https://github.com/iwatkot/pydtmdl) |
 
 ---
