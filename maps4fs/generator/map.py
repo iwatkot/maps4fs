@@ -92,6 +92,7 @@ class Map:
         generation_settings_json = generation_settings.to_json()
 
         try:
+            main_settings_json["is_public"] = self.kwargs.get("is_public", False)
             send_main_settings(main_settings_json)
             send_advanced_settings(generation_settings_json)
             self.logger.info("Settings sent successfully.")

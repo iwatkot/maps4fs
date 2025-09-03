@@ -324,7 +324,6 @@ class MainSettings(NamedTuple):
     dtm_provider: str
     custom_osm: bool
     is_public: bool
-    api_request: bool
     date: str
     time: str
     version: str
@@ -360,7 +359,6 @@ class MainSettings(NamedTuple):
             "dtm_provider": self.dtm_provider,
             "custom_osm": self.custom_osm,
             "is_public": self.is_public,
-            "api_request": self.api_request,
             "date": self.date,
             "time": self.time,
             "version": self.version,
@@ -391,7 +389,6 @@ class MainSettings(NamedTuple):
             dtm_provider=map.dtm_provider.name(),
             custom_osm=bool(map.custom_osm),
             is_public=map.kwargs.get("is_public", False),
-            api_request=map.kwargs.get("api_request", False),
             date=datetime.now().strftime("%Y-%m-%d"),
             time=datetime.now().strftime("%H:%M:%S"),
             version=mfscfg.PACKAGE_VERSION,
