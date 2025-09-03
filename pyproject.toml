@@ -29,6 +29,7 @@ dependencies = [
     "scipy",
     "pydtmdl",
     "manifold3d",
+    "fast-simplification",
 ]
 
 [project.urls]
