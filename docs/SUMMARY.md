@@ -5,6 +5,8 @@
 * [Step by Step Guide](002_stepbystep.md)
 * [How to Launch Maps4FS](003_howtolaunch.md)
 * [Workflow Optimizations](009_workflow.md)
+* [Main Settings](010_mainsettings.md)
+* [Generation Settings](011_generationsettings.md)
 * [FAQ](FAQ.md)
 
 ## Setup & Installation

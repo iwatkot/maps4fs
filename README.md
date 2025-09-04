@@ -16,13 +16,12 @@
 
 <p align="center">
   <a href="docs/003_howtolaunch.md">How to Run</a> •
-  <a href="#Overview">Overview</a> • 
   <a href="docs/step_by_step.md">Create a map in 10 steps</a> •
   <a href="docs/009_workflow.md">Workflow Optimization</a><br>
   <a href="docs/FAQ.md">FAQ</a> •
   <a href="docs/get_help.md">Get Help</a> •
   <a href="docs/map_structure.md">Map Structure</a> •
-  <a href="#Main-Settings">Main Settings</a><br>
+  <a href="docs/010_mainsettings.md">Main Settings</a><br>
   <a href="#Supported-objects">Supported objects</a> •
   <a href="#Generation-info">Generation info</a> •
   <a href="#Texture-schema">Texture schema</a> •
@@ -151,69 +150,6 @@ pip install maps4fs
 ```
 
 ℹ️ Check out detailed instructions about [Maps4FS Python Package Deployment](docs/005_localdeploymentsource.md).
-
-
-## Overview
-
-The core idea is coming from the awesome [maps4cim](https://github.com/klamann/maps4cim) project.<br>
-
-The main goal of this project is to generate map templates, based on real-world data, for the Farming Simulator. It's important to mention that **templates are not maps**. They are just a starting point for creating a map. This tool just uses built-in textures to highlight different types of terrain and buildings with correct shapes and scales and to generate a height map. The rest of the work is up to you. So if you thought that you could just run this tool and get a playable map, then I'm sorry to disappoint you. But if you are a map maker, then this tool will save you a lot of time.<br>
-So, if you're new to map making, here's a quick overview of the process:
-
-1. Generate a map template using this tool.
-2. Download the Giants Editor.
-3. Open the map template in the Giants Editor.
-4. Now you can start creating your map (adding roads, fields, buildings, etc.).
-
-### Previews
-
-The generator also creates multiple previews of the map. Here's the list of them:
-
-1. General preview - merging all the layers into one image with different colors.
-2. Grayscale DEM preview - a grayscale image of the height map (as it is).
-3. Colored DEM preview - a colored image of the height map (from blue to red). The blue color represents the lowest point, and the red color represents the highest point.
-
-![16 km map](https://github.com/user-attachments/assets/82543bcc-1289-479e-bd13-85a8890f0485)<br>
-_Preview of a 16 km map with a 500-meter mountain in the middle of it._<br>
-
-Parameters:
-
-- coordinates: 45.15, 19.71
-- size: 16 x 16 km
-
-## Main Settings
-
-### Game Selection
-The tool supports two games: Farming Simulator 22 and Farming Simulator 25. You can select the game you want to generate the map for in the `Game` dropdown list. The default value is `FS25`, but you can change it to `FS22` if you want to generate a map for Farming Simulator 22.<br>
-**NOTE:** Support for Farming Simulator 22 is discontinued. The tool will not be updated for this game anymore. Some features, such as forest generation, fields generation not implemented and not planned to be implemented. The tool will be updated only for Farming Simulator 25.<br>
-
-### Latitude and Longitude
-These are the coordinates of the center of the map. The coordinates should be in decimal format, e.g. `45.28, 20.23`, any other format will not work.
-
-### Map Size
-
-#### Default sizes
-The tool supports all possible sizes of maps, but some of them only available in the [Docker version](#option-2-docker-version). <br>
-The sizes are:
-- 2x2 km
-- 4x4 km
-- 8x8 km
-- 16x16 km
-
-**NOTE:** 16 km maps probably won't work for FS25 due to the limitations of the game engine. The map will be generated, but you may have issues trying to open it in the Giants Editor.
-
-#### Custom size
-You can also specify any custom size of the map. Be aware that Giants Editor supports only square maps, which size is a power of 2 (2048, 4096 and so on). All other sizes will be generated, but if you try to open them in the Giants Editor, it will crash. If you want your map to cover other real-world region, use the [Output size](#output-size) option.
-
-#### Output size
-This setting can be useful if you want add some scaling to your map. For example, you can select a region of 3000 meters in real world and set the output size to 2048 meters. In this case, the map will be generated with a size of 2048x2048 meters, but it will contain the region of 3000x3000 meters in real world.
-
-### DTM Provider
-DTM Provider is a source of the height map data. will find the list of available providers in the [pydtmdl](https://github.com/iwatkot/pydtmdl) repository. The default provider is `SRTM30Provider` which is available all aroung the globe, but the resolution is not very high. If you want to use a different provider, you can select it in the dropdown list. You will only see the providers that are available for the selected region. It's better to use the provider that has the highest resolution for the selected region.
-**NOTE:** Some of the providers are community-developed and may not work properly. I do not provide any support for them. If you have any issues with them, please contact the provider's author.
-
-### Map Rotation
-You can rotate the map by any angle. The rotation is applied to the map and the height map. The rotation is in degrees, so you can use any value from 0 to 360. The default value is `0`, which means that the map will be generated without rotation.
 
 ## Supported objects
 
