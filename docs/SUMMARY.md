@@ -31,4 +31,4 @@
 * [Custom OSM](008_customosm.md)
 * [Background Terrain](006_backgroundterrain.md)
 * [Water Planes](007_waterplanes.md)
-* [Procedural Generation](procedural_generation.md)
+* [Procedural Generation](021_proceduralgeneration.md)

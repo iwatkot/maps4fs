@@ -19,7 +19,7 @@ Recommended reading order:
 12. Read about working with [farmlands](017_farmlands.md) in Giants Editor.
 13. Check out the documentation about [usage of custom OSM files](008_customosm.md) in maps4fs.
 14. Learn how to work with the [splines](019_splines.md) and how to use them.
-15. Learn how to use [Procedural Generation](procedural_generation.md) scripts.
+15. Learn how to use [Procedural Generation](021_proceduralgeneration.md) scripts.
 
 ## For developers
 
