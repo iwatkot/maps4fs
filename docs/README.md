@@ -9,7 +9,7 @@ Recommended reading order:
 2. If you're using local (Docker) version of the app, check out the [Docker FAQ](docker_faq.md).
 3. Learn the short step by step guide in the [Step by step guide](step_by_step.md).
 4. Learn how [DEM](015_dem.md) works and what it is.
-5. Learn how to work with [textures](textures.md) in Giant Editor.
+5. Learn how to work with [textures](018_textures.md) in Giant Editor.
 6. Read the detailed description of the [Map Structure](map_structure.md).
 7. Learn how to [download satellite images](download_satellite_images.md) for your map.
 8. Learn how to [create a background terrain](006_backgroundterrain.md) for your map.

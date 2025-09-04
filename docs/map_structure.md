@@ -62,7 +62,7 @@ Learn more about this file in the [Farmlands](017_farmlands.md) section.
 This is the most important directory in the map structure. It contains all the textures, DEM and InfoLayer images. Basically, if any file is missing here, the map will crash when try opening it in the Giants Editor.  
 
 #### Texture weight files
-Those files represent the textures on the map, read more about them in the [Textures](https://github.com/iwatkot/maps4fs/blob/main/docs/textures.md) section.
+Those files represent the textures on the map, read more about them in the [Textures](018_textures.md) section.
 
 #### InfoLayer images
 Those images represent the InfoLayers on the map, such as fields, farmlands, etc. Actually, you don't need to know anything about the files themvselves, since the generator will handle them for you, but you definetely need to edit those InfoLayers in the Giants Editor at least to create the [FarmLands](017_farmlands.md).
