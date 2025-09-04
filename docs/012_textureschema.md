@@ -55,6 +55,39 @@ Each game version maintains its own optimized schema, reflecting unique engine c
 ]
 ```
 
+## Supported Geographic Features
+
+### OpenStreetMap Foundation
+
+Maps4FS leverages the comprehensive [OpenStreetMap (OSM)](https://www.openstreetmap.org/) database as its primary data source. Every texture in your generated map corresponds to real-world geographic features tagged in OSM.
+
+**Reference Guide**: Consult the [OSM Map Features Wiki](https://wiki.openstreetmap.org/wiki/Map_Features) for the complete catalog of available tags and their meanings.
+
+### Active Schema References
+
+**Current Production Schemas:**
+- **FS25**: [fs25-texture-schema.json](https://github.com/iwatkot/maps4fsdata/blob/main/fs25/fs25-texture-schema.json)
+- **FS22**: [fs22-texture-schema.json](https://github.com/iwatkot/maps4fsdata/blob/main/fs22/fs22-texture-schema.json)
+
+### Common Tag Categories
+
+**Transportation Infrastructure:**
+- `highway`: Roads, paths, tracks (motorway, trunk, primary, secondary, residential, track)
+- `railway`: Train lines, stations, rail infrastructure
+- `waterway`: Rivers, streams, canals, drainage systems
+
+**Land Use & Coverage:**
+- `landuse`: Farmland, forest, residential, industrial, commercial zones
+- `natural`: Water bodies, grassland, woodland, scrubland
+- `building`: Structures, facilities, architectural features
+
+**Agricultural Features:**
+- `landuse=farmland`: Primary agricultural areas → field textures
+- `landuse=meadow`: Grazing areas → grass textures  
+- `landuse=farmyard`: Farm facilities → specialized textures
+
+**Understanding Tag Mapping**: Each texture's `tags` field defines which OSM features trigger that texture. For example, `"tags": { "highway": ["motorway", "trunk"] }` means this texture applies to all OSM features tagged as motorways or trunk roads.
+
 ## Field Reference: Complete Configuration Guide
 
 ### Core Properties

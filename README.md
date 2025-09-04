@@ -23,7 +23,6 @@
   <a href="docs/get_help.md">Get Help</a> •
   <a href="docs/map_structure.md">Map Structure</a> •
   <a href="docs/010_mainsettings.md">Main Settings</a><br>
-  <a href="#Supported-objects">Supported objects</a> •
   <a href="#Generation-info">Generation info</a> •
   <a href="docs/012_textureschema.md">Texture schema</a> •
   <a href="#Overview-image">Overview image</a><br>
@@ -112,17 +111,6 @@ So, if you're new to map making, here's a quick overview of the process:
 2. Download the Giants Editor.
 3. Open the map template in the Giants Editor.
 4. Now you can start creating your map (adding roads, fields, buildings, etc.).
-
-## Supported objects
-
-The project is based on the [OpenStreetMap](https://www.openstreetmap.org/) data. So, refer to [this page](https://wiki.openstreetmap.org/wiki/Map_Features) to understand the list below.
-
-You can find the active schemas here:
-
-- [FS25](/data/fs25-texture-schema.json)
-- [FS22](/data/fs22-texture-schema.json)
-
-Learn more how to work with the schema in the [Texture schema](#texture-schema) section. You can also use your own schema in the [Expert settings](#expert-settings) section.
 
 ## Generation info
 
