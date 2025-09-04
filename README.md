@@ -25,7 +25,7 @@
   <a href="docs/010_mainsettings.md">Main Settings</a><br>
   <a href="#Supported-objects">Supported objects</a> •
   <a href="#Generation-info">Generation info</a> •
-  <a href="#Texture-schema">Texture schema</a> •
+  <a href="docs/012_textureschema.md">Texture schema</a> •
   <a href="#Overview-image">Overview image</a><br>
   <a href="#DDS-conversion">DDS conversion</a> •
   <a href="docs/011_generationsettings.md">Generation settings</a> •
@@ -237,65 +237,7 @@ And here's the list of the fields:
 - `"east"` - the eastern border of the tile,<br>
 - `"west"` - the western border of the tile,<br>
 
-## Texture schema
 
-maps4fs uses a simple JSON file to define the texture schema. For each ofthe supported games, this file has unique entries, but the structure is the same. Here's an example of the schema for Farming Simulator 25:
-
-```json
-[
-  {
-    "name": "forestRockRoots",
-    "count": 2,
-    "exclude_weight": true
-  },
-  {
-    "name": "grass",
-    "count": 2,
-    "tags": { "natural": "grassland" },
-    "color": [34, 255, 34],
-    "priority": 0
-  },
-  {
-    "name": "grassClovers",
-    "count": 2
-  },
-  {
-    "name": "grassCut",
-    "count": 2
-  },
-  {
-    "name": "grassDirtPatchy",
-    "count": 2,
-    "tags": { "natural": ["wood", "tree_row"] },
-    "width": 2,
-    "color": [0, 252, 124]
-  }
-]
-```
-
-Let's have a closer look at the fields:
-
-- `name` - the name of the texture. Just the way the file will be named.
-- `count` - the number of textures of this type. For example, for the **dirtMedium** texture there will be two textures: **dirtMedium01_weight.png** and **dirtMedium02_weight.png**.
-  ℹ️ There's one texture that has count `0`, it's the waterPuddle texture from FS22, which is not present in FS25.
-- `tags` - the tags from the OpenStreetMap data. Refer to the section [Supported objects](#supported-objects) to see the list of supported tags. If there are no tags, the texture file will be generated empty and no objects will be placed on it.
-- `width` - the width of the texture in meters. Some of the objects from OSM (roads, for example) are lines, not areas. So, to draw them correctly, the tool needs to know the width of the line.
-- `color` - the color of the texture. It's used only in the preview images and has no effect on the map itself. But remember that previews are crucial for the map-making process, so it's better to set the color to something that represents the texture.
-- `priority` - the priority of the texture for overlapping. Textures with higher priorities will be drawn over the textures with lower priorities.
-  ℹ️ The texture with 0 priority considers the base layer, which means that all empty areas will be filled with this texture.
-- `exclude_weight` - this is only used for the forestRockRoots texture from FS25. It just means that this texture has no `weight` postfix, that's all.
-- `usage` - the usage of the texture. Mainly used to group different textures by the purpose. For example, the `grass`, `forest`, `drain`.
-- `background` - set it to True for the textures, which should have impact on the Background Terrain, by default it's used to subtract the water depth from the DEM and background terrain.
-- `info_layer` - if the layer is saving some data in JSON format, this section will describe it's name in the JSON file. Used to find the needed JSON data, for example for fields it will be `fields` and as a value - list of polygon coordinates.
-- `invisible` - set it to True for the textures, which should not be drawn in the files, but only to save the data in the JSON file (related to the previous field).
-- `procedural` - is a list of corresponding files, that will be used for a procedural generation. For example: `"procedural": ["PG_meadow", "PG_acres"]` - means that the texture will be used for two procedural generation files: `masks/PG_meadow.png` and `masks/PG_acres.png`. Note, that the one procuderal name can be applied to multiple textures, in this case they will be merged into one mask.
-- `border` - this value defines the border between the texture and the edge of the map. It's used to prevent the texture from being drawn on the edge of the map. The value is in pixels.
-- `precise_tags` - can be used for more specific tags, for example instead of `"natural": "wood"` you can use `"leaf_type": "broadleaved"` to draw only broadleaved trees.
-- `precise_usage` - the same as `usage`, but being used with `precise_tags`.
-- `area_type` - one of the supported by Giants Editor area types, such as: "open_land", "city", "village", "harbor", "industrial", "open_water". It will be reflected in the environment info layer file.  
-- `area_water` - whenever this field is set to true, the area will be considered as water, and it will be changed in the environment info layer file.
-- `indoor` - whenever this field is set to true, the area will be considered as indoor, and it will be reflected in the indoorMask info layer.
-- `merge_into` - if specified, the layer with this parameter will be merged into the target layer and the content of the layer will be transferred to the target layer.
 
 ## Overview image
 
