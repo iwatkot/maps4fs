@@ -1,7 +1,7 @@
 # Table of Contents
 
 ## Getting Started
-* 🗺️ [What is Maps4FS?](001_whatismaps4fs.md)
+* [🗺️ What is Maps4FS?](001_whatismaps4fs.md)
 * [Step by Step Guide](step_by_step.md)
 * [FAQ](FAQ.md)
 
