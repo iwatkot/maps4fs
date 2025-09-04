@@ -71,16 +71,10 @@
 🌿 Automatically generates decorative foliage.<br><br>
 <img src="https://github.com/user-attachments/assets/27a5e541-a9f5-4504-b8d2-64aae9fb3e52"><br>
 🌲 Automatically generates forests.<br><br>
-<img src="https://github.com/user-attachments/assets/891911d7-081d-431e-a677-b4ae96870286"><br>
-🌲 Allows to select trees for generation.<br><br>
 <img src="https://github.com/user-attachments/assets/cce7d4e0-cba2-4dd2-b22d-03137fb2e860"><br>
 🌊 Automatically generates water planes.<br><br>
 <img src="https://github.com/user-attachments/assets/0b05b511-a595-48e7-a353-8298081314a4"><br>
 📈 Automatically generates splines.<br><br>
-<img src="https://github.com/user-attachments/assets/0957db9e-7b95-4951-969c-9d1edd9f073b"><br>
-🖌️ Allows customization of the texture schema.<br><br>
-<img src="https://github.com/user-attachments/assets/80e5923c-22c7-4dc0-8906-680902511f3a"><br>
-🗒️ True-to-life blueprints for fast and precise modding.<br><br>
 <img width="480" src="https://github.com/user-attachments/assets/1a8802d2-6a3b-4bfa-af2b-7c09478e199b"><br>
 🌾 Field generation with one click.<br><br>
 <img width="480" src="https://github.com/user-attachments/assets/4d1fa879-5d60-438b-a84e-16883bcef0ec"><br>
