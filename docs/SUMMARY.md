@@ -18,7 +18,6 @@
 ## 💻 Setup & Installation
 * [Local Deployment](local_deployment.md)
 * [Python Package Deployment](python_package_deployment.md)
-* [Docker FAQ](FAQ_docker.md)
 * [Getting Help](get_help.md)
 
 ## 🗺️ Map Components
