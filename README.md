@@ -411,11 +411,7 @@ If you don't want to work with separate tiles, the tool also generates the `FULL
 
 If you're willing to create a background terrain, you will need Blender, the Blender Exporter Plugins, and the QGIS. You'll find the download links in the [Resources](#resources) section.<br>
 
-If you're afraid of this task, please don't be. It's really simple and I've prepared detailed step-by-step instructions for you, you'll find them in the separate README files. Here are the steps you need to follow:
-
-1. [Download high-resolution satellite images](docs/download_satellite_images.md).
-2. [Prepare the i3d files](docs/create_background_terrain.md).
-3. [Import the i3d files to Giants Editor](docs/import_to_giants_editor.md).
+If you're afraid of this task, please don't be. It's really simple and I've prepared detailed step-by-step instructions for you, you'll find them [here](docs/006_backgroundterrain.md).<br>
 
 ## Overview image
 

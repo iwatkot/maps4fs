@@ -41,7 +41,7 @@ The tool can automatically download satellite images for the background terrain 
 
 ### 6. ⛰️ Create a background terrain
 Once you obtained aligned satellite images, you can create a background terrain using the *.obj files that are included in the map archive.  
-ℹ️ Learn how to do it in the [How to create a background terrain](https://github.com/iwatkot/maps4fs/blob/main/docs/create_background_terrain.md) document.
+ℹ️ Learn how to do it in the [How to create a background terrain](006_backgroundterrain.md) document.
 
 ### 7. ⬇️ Import the background terrain to the Giants Editor
 After you create the background terrain, textured it, and export it as a *.i3d file, you can import it to the Giants Editor.  

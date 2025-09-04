@@ -115,7 +115,7 @@ For enhanced background terrain:
 Transform your map from floating island to realistic landscape:
 1. Use included `.obj` files with Blender
 2. Apply satellite textures for photorealistic backgrounds
-3. Follow the [Background Terrain Tutorial](create_background_terrain.md) TODO!!!
+3. Follow the [Background Terrain Tutorial](006_backgroundterrain.md)
 
 ### Step 8: 🌊 Create Water Planes (Optional)
 Add realistic water bodies to your map:

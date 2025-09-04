@@ -9,7 +9,7 @@ The name of the archive (folder) but default contains the following information:
 
 ### Background
 This directory contains components for creating the background terrain of the map. PNG images are just DEM files and the OBJ files were generated based on these DEM files. You can safely remove the PNG files if you don't need them.  
-You can use the `FULL.obj` file for the whole background terrain. You need to cut out the center for the actual terrain using this [tutorial](https://github.com/iwatkot/maps4fs/blob/main/docs/create_background_terrain.md#cutting-out-the-center-of-the-map).
+You can use the `FULL.obj` file for the whole background terrain. Learn more in this [tutorial](006_backgroundterrain.md).
 
 ### Info Layers
 This directory mostly for internal use to store some data between different components. At the moment only one component - `Texture` stores here the generation data in JSON format.  

@@ -27,7 +27,7 @@ You can find the detailed tutorial [here](https://github.com/iwatkot/maps4fs/blo
 
 ### How can I texture object and export it in the *.i3d format?
 
-You can find the detailed tutorial [here](https://github.com/iwatkot/maps4fs/blob/main/docs/create_background_terrain.md).
+You can find the detailed tutorial [here](006_backgroundterrain.md).
 
 ### How can I import the *.i3d file to the map?
 

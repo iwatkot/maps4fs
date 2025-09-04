@@ -19,11 +19,9 @@
 * [Generation Settings](generation_settings.md)
 
 ## Advanced Topics
-* [Custom DEM](custom_dem.md)
 * [Custom OSM](custom_osm.md)
-* [Background Terrain](create_background_terrain.md)
+* [Background Terrain](006_backgroundterrain.md)
 * [Water Planes](create_water_planes.md)
-* [Satellite Images](download_satellite_images.md)
 
 ## Development
 * [Map Structure](map_structure.md)

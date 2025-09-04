@@ -30,7 +30,7 @@ DO NOT TOUCH SCALE AND DIMENSIONS!
 
 ![Black emission](https://github.com/user-attachments/assets/5687df82-6fe2-405d-af02-106d8c5e554b)
 
-7. Apply the **Decimate** modifier to the object and **Shade Smooth**. You can find the example of this in the tutorial about [Background Terrain](https://github.com/iwatkot/maps4fs/blob/main/docs/create_background_terrain.md).
+7. Apply the **Decimate** modifier to the object and **Shade Smooth**. You can find the example of this in the tutorial about [Background Terrain](006_backgroundterrain.md).
 
 8. Open the **Giants Editor I3D Exporter** and set the path to the directory where the game is installed.
 

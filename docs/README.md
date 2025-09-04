@@ -12,7 +12,7 @@ Recommended reading order:
 5. Learn how to work with [textures](textures.md) in Giant Editor.
 6. Read the detailed description of the [Map Structure](map_structure.md).
 7. Learn how to [download satellite images](download_satellite_images.md) for your map.
-8. Learn how to [create a background terrain](create_background_terrain.md) for your map.
+8. Learn how to [create a background terrain](006_backgroundterrain.md) for your map.
 9. Get familiar with [importing i3d files](import_to_giants_editor.md) into Giants Editor.
 10. Learn how to [create water planes](create_water_planes.md) for Giants Editor.
 11. Read about working with [fields](fields.md) in Giants Editor.
