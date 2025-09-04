@@ -25,6 +25,7 @@
 * [Farmlands](017_farmlands.md)
 * [Textures](018_textures.md)
 * [Overview Image](014_overviewimage.md)
+* [Splines](019_splines.md)
 
 ## Advanced Topics
 * [Custom OSM](008_customosm.md)
