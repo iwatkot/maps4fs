@@ -20,8 +20,8 @@
   <a href="docs/step_by_step.md">Create a map in 10 steps</a> •
   <a href="docs/recommendations.md">Practical recommendations</a><br>
   <a href="docs/FAQ.md">FAQ</a> •
+  <a href="docs/get_help.md">Get Help</a> •
   <a href="docs/map_structure.md">Map Structure</a> •
-  <a href="#Schemas-Editor">Schemas Editor</a> •
   <a href="#Main-Settings">Main Settings</a><br>
   <a href="#Supported-objects">Supported objects</a> •
   <a href="#Generation-info">Generation info</a> •
@@ -29,8 +29,7 @@
   <a href="#Background-terrain">Background terrain</a> •
   <a href="#Overview-image">Overview image</a><br>
   <a href="#DDS-conversion">DDS conversion</a> •
-  <a href="#Advanced-settings">Advanced settings</a> •
-  <a href="#Expert-settings">Expert settings</a> •
+  <a href="docs/generation_settings.md">Generation settings</a> •
   <a href="#Resources">Resources</a> •
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a><br>
   <a href="docs/procedural_generation.md">Procedural Generation</a> •
@@ -98,8 +97,6 @@
 🌽 Automatic farmlands generation based on the fields.<br><br>
 
 📹 Check out the complete playlist of video turorials on [YouTube](https://www.youtube.com/watch?v=hPbJZ0HoiDE&list=PLug0g7UYHX8D1Jik6NkJjQhdxqS-NOtB9). 🆕<br>
-
-<p align="center"><i>How to Generate a Map for Farming Simulator 25 and 22 from a real place using maps4FS.</i></p>
 
 ![Map example](https://github.com/user-attachments/assets/c46a3581-dd17-462f-b815-e36d4f724947)
 
@@ -183,17 +180,6 @@ Parameters:
 
 - coordinates: 45.15, 19.71
 - size: 16 x 16 km
-
-## Step by step
-
-Don't know where to start? Don't worry, just follow this [step-by-step guide](docs/step_by_step.md) to create your first map in 10 simple steps.<br>
-
-
-## Schemas Editor
-
-- **Tree Schema Editor** - allows you to view all the supported trees models and select the ones you need on your map. After it, you should click the Show updated schema button and copy the JSON schema to the clipboard. Then you can use it in the Expert settings to generate the map with the selected trees.
-
-- **Texture Schema Editor** - allows you to view all the supported textures and edit their parameters, such as priority, OSM tags and so on. After editing, you should click the Show updated schema button and copy the JSON schema to the clipboard. Then you can use it in the Expert settings to generate the map with the updated textures.
 
 ## Main Settings
 
@@ -459,107 +445,7 @@ List of the important DDS files:
 
 - `icon.dds` - 256x256 pixels, the icon of the map,
 - `preview.dds` - 2048x2048 pixels, the preview image of the map on the loading screen,
-- `mapsUS/overview.dds` - 4096x4096 pixels, the overview image of the map (in-game map)
-
-## Advanced settings
-
-You can also apply some advanced settings to the map generation process.<br>
-
-### DEM Advanced settings
-
-- Adjust terrain to ground level: Enabling this setting (default) will raise or lower the terrain so that it's lowest point is at ground level (taking into account the plateau and water depth settings).
-
-- Multiplier: DEM multiplier can be used to make the terrain more pronounced. By default the DEM file will be exact copy of the real terrain. If you want to make it more steep, you can increase this value. The recommended value of the multiplier is 1.
-
-- Minimum height scale: This value is used as the heightScale in your map i3d. It will automatically be set higher if the elevation in your map (plus plateau, ceiling and water depth) is higher than this value.
-
-- Plateau: DEM plateau value (in meters) is used to make the whole map higher or lower. This value will be added to each pixel of the DEM image, making it higher. It can be useful if you're working on a plain area and need to add some negative height (to make rivers, for example).
-
-- Ceiling: DEM ceiling value (in meters) is used to add padding in the DEM above the highest elevation in your map area. It can be useful if you plan to manually add some height to the map by sculpting the terrain in GE.
-
-- Water depth: Water depth value (in meters) will be subtracted from the DEM image, making the water deeper. The pixel value used for this is calculated based on the heightScale value for your map.
-
-- Add foundations: If enabled the terrain under the buildings will be flattened to the average height of the building.
-
-### Background terrain Advanced settings
-
-- Generate background - if enabled, the obj files for the background terrain will be generated. You can turn it off if you already have those files or don't need them. By default, it's set to True.
-
-- Generate water - if enabled, the water planes obj files will be generated. You can turn it off if you already have those files or don't need them. By default, it's set to True.
-
-- Water blurriness - used to make the water surface smoother. The higher the value, the more flat surface of the water planes will be. However, too high values can lead to the water planes mesh not matching the terrain.
-
-- Remove center - if enabled, the playable region (map terrain) will be removed from the background terrain. By default, it's set to True.
-
-
-### GRLE Advanced settings
-
-- Farmlands margin - this value (in meters) will be applied to each farmland, making it bigger. You can use the value to adjust how much the farmland should be bigger than the actual field. By default, it's set to 3.
-
-- Add grass - if enabled, the tool will add grass to all the empty areas (without roads, fields, buildings, etc.). By default, it's set to True.
-
-- Random plants - when adding decorative foliage, enabling this option will add different species of plants to the map. If unchecked only basic grass (smallDenseMix) will be added. Defaults to True.
-
-- Add Farmyards - if enabled, the tool will create farmlands from the regions that are marked as farmyards in the OSM data. Those farmlands will not have fields and also will not be drawn on textures. By default, it's turned off.
-
-- Base price - the base price of the farmland. It's used to calculate the price of the farmland in the game. In default in-game maps this value equals to 60000.
-
-- Price scale - is a value in percent which will be applied to all farmnlands. The price per Ha will be calculated as `base_price * price_scale / 100`. By default, it's set to 100%.
-
-- Base grass - you can select which plant will be used as a base grass on the map.
-
-- Fill empty farmlands - if enabled, the empty (zero value) pixels of the farmlands image will be replaces with the value of 255.
-
-### I3D Advanced settings
-
-- Add trees - if enabled, the tool will add trees to the map on the areas, that defined as forests in the OSM data. By default, it's set to True.
-
-- Forest density - the density of the forest in meters. The lower the value, the lower the distance between the trees, which makes the forest denser. Note, that low values will lead to enormous number of trees, which may cause the Giants Editor to crash or lead to performance issues. By default, it's set to 10.
-
-- Tree limit - this value will be used to adjust the forest density value. For example, if it's possible to place 100000 trees from OSM data, and the forest density is set to 10, the expected number of trees on map will be 10000. At the same time, if you set the tree limit to 5000, the forest density will be adjusted to 20, which means that the distance between the trees will be doubled. This value is useful to prevent the Giants Editor from crashing due to too many trees on the map. By default, it's set to 0, which means that it's disabled and will use the forest density value as is. Note, that it will not lead to the exact number of trees, but will adjust the forest density value to fit the tree limit so the resulting number of trees will be more or less equal to the tree limit value.
-
-- Trees relative shift - represents the maximum possible shift of the tree from it's original position in percents of the forest density value. The higher the value, the more the trees will be shifted from their original positions. Warning: higher values can lead to overlapping trees.
-
-- Splines density - number of points, which will be added (interpolate) between each pair of existing points. The higher the value, the denser the spline will be. It can smooth the splines, but high values can in opposite make the splines look unnatural.
-- Add reversed splines - if enabled, the tool will add the reversed copies of the splines. It can be useful if you want to have the splines on both directions. By default, it's set to False.
-- Field splines - if enabled, the tool will generate the splines around the fields. It may not work if the field appears on the map only partially, e.g., when the part of the field is outside the map area. By default, it's set to False.
-
-### Texture Advanced settings
-
-- Dissolve - if enabled, the values from one layer will be splitted between different layers of texture, making it look more natural. Warning: it's a time-consuming process, recommended to enable it, when you generating the final version of the map, not some test versions.
-
-- Fields padding - this value (in meters) will be applied to each field, making it smaller. It's useful when the fields are too close to each other and you want to make them smaller. By default, it's set to 0.
-
-- Skip drains - if enabled, the tool will not generate the drains and ditches on the map. By default, it's set to False. Use this if you don't need the drains on the map.
-
-- Use cache - if enabled, the tool will use the cached OSM data for generating the map. It's useful when you're generating the same map multiple times and don't want to download the OSM data each time. But if you've made some changes to the OSM data, you should disable this option to get the updated data. By default, it's set to True. This option has no effect when you're using the custom OSM file.
-
-- Use precise tags - if enabled, the tool will use the precise tags from the texture schema and will ignore basic tags specified for the texture. In the default schema being used for specific types of forests: broadleaved, needleleaved, mixed, and so on. Note, that if it's enabled and the object does not have the precise tag, it will not be drawn on the map. By default, it's set to False.
-
-
-### Satellite Advanced settings
-
-- Download images - if enabled, the tool will download the satellite images for the background terrain and the overview image. If you already have the images, you can turn it off.
-- Satellite margin - the margin around the map in meters. It's useful when you want to have some space around the map on the satellite images. By default, it's set to 100.
-- Zoom level - the zoom level of the satellite images. The higher the value, the more detailed the images will be. By default, it's set to 14 and this option is disabled on a public version of the app.
-
-## Expert Settings
-
-The tool also supports the expert settings. Do not use them until you read the documentation and understand what they do. Here's the list of the expert settings:
-
-- Enable debug logs - if enabled, the tool will print the debug logs to the console. It can be useful if you're using with a custom OSM map, have some issues with it and want to know what's wrong.
-
-- Upload custom OSM file - you'll be able to upload your own OSM file. Before using it, carefully read the [Custom OSM](docs/custom_osm.md) documentation, otherwise, the tool will not work as expected.
-
-- Show raw configuration - you'll be able to change all the settings in a single JSON file. It's useful if you want to save the configuration and use it later, without changing the settings in the UI. Be extremely careful with this setting, because you can break the tool with incorrect settings.
-
-- Show schemas - you'll be able to edit or define your own texture or tree schemas. It's useful if you want to add some custom textures or trees to the map. Refer to the [Texture schema](#texture-schema) section to learn more about the schema structure. Any incorrect value here will lead to the completely broken map.
-
-- Upload custom background image - if you have an image, which represents the map and background terrain you can use it for generation. Note, that the image should meet the following requirements: 1:1 aspect ratio, size = map size + 2048 \* 2, it should be uint16 (unsigned 16-bit integer) grayscale (single channel) image. The image should be in the PNG format. If any of the requirements are not met, the tool raises an error. If you're using rotation, the image should already be rotated.
-
-- Upload custom map template - you can use your own map template for generation. Note, that is must have the same structure as built-in templates. It's recommended to use the built-in templates and edit them as you need, instead of creating the new ones from scratch.
-
-- Manage cache - allows you to clean the cache of the tool. It's useful when you're generating the map multiple times and the tool uses the cached data. By cleaning the cache you'll force the tool to download the fresh data. It's not recommended to clean the cache unless you have some issues with it.
+- `overview.dds` - 4096x4096 pixels, the overview image of the map (in-game map)
 
 ## Resources
 
@@ -575,8 +461,7 @@ To create a basic map, you only need the Giants Editor. But if you want to creat
 
 ## Bugs and feature requests
 
-➡️ Please, before creating an issue or asking some questions, check the [FAQ](docs/FAQ.md) section.<br>
-If you find a bug or have an idea for a new feature, please create an issue [here](https://github.com/iwatkot/maps4fs/issues) or contact me directly on [Telegram](https://t.me/iwatkot) or on Discord: `iwatkot`.
+➡️ Please, before creating an issue or asking some questions, check the [FAQ](docs/FAQ.md) section and the follow the [docs/get_help.md](Get Help) instructions.
 
 ## Special thanks
 
