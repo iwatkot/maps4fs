@@ -24,7 +24,6 @@
   <a href="docs/010_mainsettings.md">Main Settings</a><br>
   <a href="docs/013_generationinfo.md">Generation info</a> •
   <a href="docs/012_textureschema.md">Texture schema</a><br>
-  <a href="#DDS-conversion">DDS conversion</a> •
   <a href="docs/011_generationsettings.md">Generation settings</a> •
   <a href="#Resources">Resources</a> •
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a><br>
@@ -108,17 +107,6 @@ So, if you're new to map making, here's a quick overview of the process:
 2. Download the Giants Editor.
 3. Open the map template in the Giants Editor.
 4. Now you can start creating your map (adding roads, fields, buildings, etc.).
-
-
-## DDS conversion
-
-The `.dds` format is the format used in the Farming Simulator for the textures, icons, overview, and preview images. There a plenty of options to convert the images to the `.dds` format, you can just google something like `png to dds`, and the first link probably will help you with it.<br>
-
-List of the important DDS files:
-
-- `icon.dds` - 256x256 pixels, the icon of the map,
-- `preview.dds` - 2048x2048 pixels, the preview image of the map on the loading screen,
-- `overview.dds` - 4096x4096 pixels, the overview image of the map (in-game map)
 
 ## Resources
 

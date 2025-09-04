@@ -17,6 +17,7 @@
 * [Local Deployment](004_localdeployment.md)
 * [Python Package Deployment](005_localdeploymentsource.md)
 * [Docker FAQ](FAQ_docker.md)
+* [Getting Help](022_gethelp.md)
 
 ## Map Components
 * [Map Structure](020_mapstructure.md)
@@ -32,3 +33,4 @@
 * [Background Terrain](006_backgroundterrain.md)
 * [Water Planes](007_waterplanes.md)
 * [Procedural Generation](021_proceduralgeneration.md)
+* [DDS Conversion](023_ddsconversion.md)
