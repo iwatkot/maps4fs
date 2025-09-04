@@ -16,15 +16,11 @@
 
 <p align="center">
   <a href="#overview">Overview</a> •
-  <a href="docs/003_howtolaunch.md">How to Run</a> •
-  <a href="docs/002_stepbystep.md">Step-by-Step Guide</a> •
-  <a href="docs/009_workflow.md">Workflow Optimization</a><br>
-  <a href="docs/FAQ.md">FAQ</a> •
-  <a href="docs/022_gethelp.md">Get Help</a> •
-  <a href="docs/010_mainsettings.md">Main Settings</a><br>
-  <a href="docs/013_generationinfo.md">Generation info</a> •
-  <a href="docs/012_textureschema.md">Texture schema</a><br>
-  <a href="docs/011_generationsettings.md">Generation settings</a> •
+  <a href="https://maps4fs.gitbook.io/docs/getting-started/how_to_launch">How to Launch</a> •
+  <a href="https://maps4fs.gitbook.io/docs/getting-started/step_by_step_guide">Step-by-Step Guide</a> •
+  <a href="https://maps4fs.gitbook.io/docs/getting-started/workflow_optimizations">Workflow Optimizations</a><br>
+  <a href="https://maps4fs.gitbook.io/docs/getting-started/faq">FAQ</a> •
+  <a href="https://maps4fs.gitbook.io/docs/setup-and-installation/get_help">Get Help</a> •
   <a href="#Resources">Resources</a> •
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a><br>
   <a href="#Special-thanks">Special thanks</a>
