@@ -2,7 +2,7 @@
 
 ## Getting Started
 * [🗺️ What is Maps4FS?](001_whatismaps4fs.md)
-* [Step by Step Guide](step_by_step.md)
+* [Step by Step Guide](002_stepbystep.md)
 * [FAQ](FAQ.md)
 
 ## Setup & Installation
