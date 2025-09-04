@@ -139,7 +139,7 @@ Add realistic water bodies to your map:
 1. **Pre-configured farmlands**: Generated automatically around fields
 2. **Ownership zones**: Set up buyable land areas
 3. **Price configuration**: Adjust land values in farmlands.xml
-4. **Detailed guide**: [Farmlands Documentation](farmlands.md) TODO!!!
+4. **Detailed guide**: [Farmlands Documentation](017_farmlands.md)
 
 ### Step 12: 🗺️ Create Overview Map
 1. Use satellite imagery for overview.dds

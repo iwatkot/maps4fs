@@ -56,7 +56,7 @@ You MUST fill out this file with data corresponding to the `farmlands` InfoLayer
 ```
 
 So, the keys here are kinda obvious, if you want to change the global price for the lands, you can do it in the `pricePerHa` attribute. The `farmland` tag contains the information about the lands. The `id` attribute is the ID of the land, the `priceScale` is the multiplier for the price of the land, and the `npcName` is the name of the NPC who owns the land.  
-Learn more about this file in the [Farmlands](ttps://github.com/iwatkot/maps4fs/blob/main/docs/farmlands.md) section.
+Learn more about this file in the [Farmlands](017_farmlands.md) section.
 
 ### Data
 This is the most important directory in the map structure. It contains all the textures, DEM and InfoLayer images. Basically, if any file is missing here, the map will crash when try opening it in the Giants Editor.  
@@ -65,7 +65,7 @@ This is the most important directory in the map structure. It contains all the t
 Those files represent the textures on the map, read more about them in the [Textures](https://github.com/iwatkot/maps4fs/blob/main/docs/textures.md) section.
 
 #### InfoLayer images
-Those images represent the InfoLayers on the map, such as fields, farmlands, etc. Actually, you don't need to know anything about the files themvselves, since the generator will handle them for you, but you definetely need to edit those InfoLayers in the Giants Editor at least to create the [FarmLands](https://github.com/iwatkot/maps4fs/blob/main/docs/farmlands.md).
+Those images represent the InfoLayers on the map, such as fields, farmlands, etc. Actually, you don't need to know anything about the files themvselves, since the generator will handle them for you, but you definetely need to edit those InfoLayers in the Giants Editor at least to create the [FarmLands](017_farmlands.md).
 
 #### DEM
 In this directory you will find two (for FS25) images, that are related to the DEM of the map: the `dem.png` and the `unprocessedHeightMap.png`. The first one is the actual data that is used for terrain in Giants Editor (and the game itself), and the second one is just this data in the initial state (before any changes were made). So you don't even need to know about the second file, but the first one is crucial for the map.  
