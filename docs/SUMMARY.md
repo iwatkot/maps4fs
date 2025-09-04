@@ -19,7 +19,6 @@
 * [Fields](fields.md)
 * [Farmlands](farmlands.md)
 * [Textures](textures.md)
-* [Generation Settings](generation_settings.md)
 
 ## Advanced Topics
 * [Custom OSM](008_customosm.md)

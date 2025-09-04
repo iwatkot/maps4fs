@@ -91,7 +91,7 @@ Configure key settings for your needs:
 - **Random Plants**: Enable for natural-looking vegetation
 - **Download Satellite Images**: Enable for background terrain
 
-📖 **Learn More**: Check [Generation Settings](generation_settings.md) for detailed explanations.
+📖 **Learn More**: Check [Generation Settings](011_generationsettings.md) for detailed explanations.
 
 ### Step 4: 🚀 Generate Your Map
 1. Review all settings one final time
@@ -184,7 +184,7 @@ Your map is now playable but needs finishing touches:
 
 ### Documentation
 - 📖 [FAQ](FAQ.md) - Common questions and troubleshooting
-- 🔧 [Generation Settings](generation_settings.md) - Detailed setting explanations TODO!!!
+- 🔧 [Generation Settings](011_generationsettings.md) - Detailed setting explanations TODO!!!
 - 🗺️ [Map Structure](map_structure.md) - Understanding generated files TODO!!!
 - 💡 [Workflow Optimization](009_workflow.md) - Best practices and tips
 

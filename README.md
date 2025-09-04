@@ -26,10 +26,9 @@
   <a href="#Supported-objects">Supported objects</a> •
   <a href="#Generation-info">Generation info</a> •
   <a href="#Texture-schema">Texture schema</a> •
-  <a href="#Background-terrain">Background terrain</a> •
   <a href="#Overview-image">Overview image</a><br>
   <a href="#DDS-conversion">DDS conversion</a> •
-  <a href="docs/generation_settings.md">Generation settings</a> •
+  <a href="docs/011_generationsettings.md">Generation settings</a> •
   <a href="#Resources">Resources</a> •
   <a href="#Bugs-and-feature-requests">Bugs and feature requests</a><br>
   <a href="docs/procedural_generation.md">Procedural Generation</a> •
@@ -297,20 +296,6 @@ Let's have a closer look at the fields:
 - `area_water` - whenever this field is set to true, the area will be considered as water, and it will be changed in the environment info layer file.
 - `indoor` - whenever this field is set to true, the area will be considered as indoor, and it will be reflected in the indoorMask info layer.
 - `merge_into` - if specified, the layer with this parameter will be merged into the target layer and the content of the layer will be transferred to the target layer.
-
-## Background terrain
-
-The tool now supports the generation of the background terrain. If you don't know what it is, here's a brief explanation. The background terrain is the world around the map. It's important to create it because if you don't, the map will look like it's floating in the void. The background terrain is a simple plane that can (and should) be textured to look fine.<br>
-So, the tool generates the background terrain in the form of the 8 tiles, which surround the map. The tiles are named as the cardinal points, e.g. "N", "NE", "E" and so on. All those tiles will be saved in the `background` directory with corresponding names: `N.obj`, `NE.obj`, `E.obj`, and so on.<br>
-If you don't want to work with separate tiles, the tool also generates the `FULL.obj` file, which includes everything around the map and the map itself. It may be a convenient approach to work with one file, one texture, and then just cut the map from it.<br>
-
-![Complete background terrain in Blender](https://github.com/user-attachments/assets/7266b8f1-bfa2-4c14-a740-1c84b1030a66)
-
-➡️ _No matter which approach you choose, you still need to adjust the background terrain to connect it to the map without any gaps. But with a single file, it's much easier to do._
-
-If you're willing to create a background terrain, you will need Blender, the Blender Exporter Plugins, and the QGIS. You'll find the download links in the [Resources](#resources) section.<br>
-
-If you're afraid of this task, please don't be. It's really simple and I've prepared detailed step-by-step instructions for you, you'll find them [here](docs/006_backgroundterrain.md).<br>
 
 ## Overview image
 
