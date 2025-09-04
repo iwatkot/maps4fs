@@ -74,7 +74,7 @@ I do not accept any reports or questions related to the public app when it's not
 📋 **REQUIRED: Follow troubleshooting first**
 
 **Before asking for help, you MUST:**
-1. ✅ Read the [Local Deployment Troubleshooting](local_deployment.md#troubleshooting)
+1. ✅ Read the [Local Deployment Troubleshooting](004_localdeployment.md#troubleshooting)
 2. ✅ Complete ALL troubleshooting steps
 3. ✅ Include ALL outputs in your help request
 
@@ -276,7 +276,7 @@ Before contacting support, confirm:
 | 🎯 Scenario | 🔄 Action |
 |-------------|-----------|
 | 🌐 Public app down | ⛔ No support provided |
-| 🏠 Local deployment issues | 📖 Follow [troubleshooting guide](local_deployment.md#troubleshooting) first |
+| 🏠 Local deployment issues | 📖 Follow [troubleshooting guide](004_localdeployment.md#troubleshooting) first |
 | 🐛 Tool works but has problems | ✅ FAQ → ✅ SRTM30 → ✅ Checklist → � Gather info → 💬 Discord/🐛 GitHub |
 | 🗺️ Non-SRTM30 DTM issues | 👤 Contact DTM provider author at [PyDTMDL](https://github.com/iwatkot/pydtmdl) |
 

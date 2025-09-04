@@ -1,12 +1,14 @@
 # Table of Contents
 
 ## Getting Started
-* [🗺️ What is Maps4FS?](001_whatismaps4fs.md)
+* [What is Maps4FS?](001_whatismaps4fs.md)
 * [Step by Step Guide](002_stepbystep.md)
+* [How to Launch Maps4FS](003_howtolaunch.md)
 * [FAQ](FAQ.md)
 
 ## Setup & Installation
-* [Local Deployment](local_deployment.md)
+* [Local Deployment](004_localdeployment.md)
+* [Python Package Deployment](005_localdeploymentsource.md)
 * [Docker FAQ](FAQ_docker.md)
 
 ## Map Components

@@ -15,7 +15,7 @@
 </a>
 
 <p align="center">
-  <a href="#How-To-Run">How to Run</a> •
+  <a href="docs/003_howtolaunch.md">How to Run</a> •
   <a href="#Overview">Overview</a> • 
   <a href="docs/step_by_step.md">Create a map in 10 steps</a> •
   <a href="docs/recommendations.md">Practical recommendations</a><br>
@@ -132,7 +132,7 @@ Launch the following command in your terminal to use the Setup Wizard:
 powershell -ExecutionPolicy Bypass -Command "iex (iwr 'https://raw.githubusercontent.com/iwatkot/maps4fs/main/setup-wizard.ps1' -UseBasicParsing).Content"
 ```
 
-ℹ️ Check out detailed instructions about [local deployment](docs/local_deployment.md).
+ℹ️ Check out detailed instructions about [local deployment](docs/004_localdeployment.md).
 
 
 ### For developers
@@ -150,7 +150,7 @@ Install the package using the following command:
 pip install maps4fs
 ```
 
-ℹ️ Check out detailed instructions about [Maps4FS Python Package Deployment](docs/local_deployment_source.md).
+ℹ️ Check out detailed instructions about [Maps4FS Python Package Deployment](docs/005_localdeploymentsource.md).
 
 
 ## Overview

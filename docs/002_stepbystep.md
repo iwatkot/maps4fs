@@ -10,7 +10,7 @@ Before you begin, ensure you have the necessary tools and system requirements:
 - **Giants Editor** ([Download here](https://gdn.giants-software.com/downloads.php))
   - For **Farming Simulator 25**: Use Giants Editor 10.0 or later
   - For **Farming Simulator 22**: Use Giants Editor 9.0 series
-- **Maps4FS** - Either [web version](https://maps4fs.xyz) or [local installation](local_deployment.md)
+- **Maps4FS** - Either [web version](https://maps4fs.xyz) or [local installation](004_localdeployment.md)
 
 ### Optional Tools (for Advanced Features)
 - **Blender** with Giants Exporter Plugin (for background terrain)
