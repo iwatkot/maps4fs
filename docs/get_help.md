@@ -25,8 +25,6 @@ This guide will help you get the right support for your Maps4FS issue. Please fo
 </tr>
 </table>
 
----
-
 ## Step 2A: Public App - Is the tool working?
 
 <table>
@@ -51,8 +49,6 @@ I do not accept any reports or questions related to the public app when it's not
 </td>
 </tr>
 </table>
-
----
 
 ## Step 2B: Local Deployment - Is the tool working?
 
@@ -81,8 +77,6 @@ I do not accept any reports or questions related to the public app when it's not
 </td>
 </tr>
 </table>
-
----
 
 ## Step 3: Tool works but has issues
 
@@ -147,8 +141,6 @@ For other DTM providers:
 </tr>
 </table>
 
----
-
 ## Step 4: Pre-submission Checklist
 
 **Before submitting your issue, you MUST confirm ALL of the following:**
@@ -184,8 +176,6 @@ This helps ensure you get the best possible help.
 </td>
 </tr>
 </table>
-
----
 
 ## Step 5: Information Checklist
 
@@ -269,8 +259,6 @@ Before contacting support, confirm:
 
 **Ready to get help!** 🚀
 
----
-
 ## 📋 Quick Reference Guide
 
 | 🎯 Scenario | 🔄 Action |
@@ -281,21 +269,3 @@ Before contacting support, confirm:
 | 🗺️ Non-SRTM30 DTM issues | 👤 Contact DTM provider author at [PyDTMDL](https://github.com/iwatkot/pydtmdl) |
 
 ---
-
-## 💬 Community Support
-
-<div align="center">
-
-**Need immediate help? Join our community!**
-
-[![Join Discord](https://img.shields.io/badge/join-discord-blue)](https://discord.gg/Sj5QKKyE42)
-
-*Please follow this guide before asking questions in Discord*
-
-</div>
-
----
-
-<div align="center">
-<i>📝 Following this guide helps everyone get better, faster support!</i>
-</div>

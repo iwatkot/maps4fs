@@ -4,6 +4,7 @@
 * [What is Maps4FS?](001_whatismaps4fs.md)
 * [Step by Step Guide](002_stepbystep.md)
 * [How to Launch Maps4FS](003_howtolaunch.md)
+* [Workflow Optimizations](009_workflow.md)
 * [FAQ](FAQ.md)
 
 ## Setup & Installation
@@ -25,5 +26,4 @@
 
 ## Development
 * [Map Structure](map_structure.md)
-* [Import to Giants Editor](import_to_giants_editor.md)
 * [Procedural Generation](procedural_generation.md)
