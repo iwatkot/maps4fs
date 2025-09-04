@@ -1,102 +1,170 @@
-## Map Structure
-In this section, we will discuss the structure of the map files and directories after using the generator.  
-The name of the archive (folder) but default contains the following information:
-- FS25: Game name (Farming Simulator 25 or Farming Simulator 22)
-- Latitude: Latitude of the center of the map (45.28571)
-- Longitude: Longitude of the center of the map (20.23743)
-- Date: Date of the map creation (2024-12-10)
-- Time: Time of the map creation (23-43-55)
+# Map Structure
 
-### Background
-This directory contains components for creating the background terrain of the map. PNG images are just DEM files and the OBJ files were generated based on these DEM files. You can safely remove the PNG files if you don't need them.  
-You can use the `FULL.obj` file for the whole background terrain. You need to cut out the center for the actual terrain using this [tutorial](https://github.com/iwatkot/maps4fs/blob/main/docs/create_background_terrain.md#cutting-out-the-center-of-the-map).
+This documentation explains the complete structure of generated map files and directories. Understanding this organization will help you navigate and customize your maps effectively.
 
-### Info Layers
-This directory mostly for internal use to store some data between different components. At the moment only one component - `Texture` stores here the generation data in JSON format.  
-At the moment, it's completely safe to remove this directory if you don't need to store any generation data.
+## Archive Naming Convention
 
-#### textures.json file
-This file contains a list of textures which associated with InfoLayers, so at the moment it's only for fields. It's a simple lists of coordinates of Polygons which represents the field on maps. This list is being used by the `I3d` component to generate the actual fields in the map.
+Generated map archives follow a standardized naming pattern that includes essential metadata:
 
+**Format:** `[Date]_[Time]_[Latitude]_[Longitude]_[GameVersion]`
+
+**Components:**
+- **Game Version**: FS25 (Farming Simulator 25) or FS22 (Farming Simulator 22)
+- **Latitude**: Center point latitude (e.g., 45.28571)
+- **Longitude**: Center point longitude (e.g., 20.23743)  
+- **Date**: Generation date (e.g., 2024-12-10)
+- **Time**: Generation time (e.g., 23-43-55)
+
+## Directory Structure Overview
+
+## Directory Structure Overview
+
+### Background Terrain
+**Location:** `background/`
+
+Contains the essential components for creating realistic background terrain meshes. This directory includes both 2D elevation data and 3D mesh files generated from Digital Elevation Models (DEM).
+
+**Key Files:**
+- **PNG Images**: Raw DEM data files (can be safely removed after mesh generation)
+- **FULL.obj**: Complete 3D mesh file for background terrain rendering
+
+The `FULL.obj` file provides the complete background terrain mesh for your map. For detailed implementation guidance, see the [Background Terrain](background_terrain.md) tutorial.
+
+### Information Layers
+**Location:** `info_layers/`
+
+Internal storage directory for component data exchange and generation metadata. Currently utilized by the Texture component for storing field generation data.
+
+**Safety Note:** This directory can be safely removed if you don't require generation data persistence.
+
+#### Texture Generation Data
+**File:** `textures.json`
+
+Contains coordinate mapping for texture-associated InfoLayers, specifically field polygon data used by the I3D component for field generation.
+
+**Structure Example:**
 ```json
 {
     "fields": [
         [
-            [
-                458,
-                580
-            ],
-            [
-                390,
-                758
-            ],
-        ...
+            [458, 580],
+            [390, 758],
+            // Additional coordinates...
         ]
-    ...
+        // Additional field polygons...
     ]
-...
+    // Additional field data...
 }
 ```
-This file can be safely removed if you don't need to generate fields on the map.
 
-### Map
-This directory contains the actual map files. Let's talk about each component in more details.
+**Note:** This file can be safely removed if field generation is not required for your map.
 
-#### Config
-This directory contains XML files for the map configuration. We won't cover all of them here, but here are the most important one:  
+## Core Map Components
+**Location:** `map/`
 
-`farmLands.xml`: Contains the information about the farm lands on the map.  
-You MUST fill out this file with data corresponding to the `farmlands` InfoLayer in Giants Editor, otherwise you won't be able yo buy the lands in the game.  
+Contains the primary map files and configuration data. This is the heart of your Farming Simulator map.
 
+### Configuration Files
+**Location:** `map/config/`
+
+XML configuration files that define various map behaviors and properties. While most files are auto-generated, some require manual configuration.
+
+#### Critical Configuration: Farmlands
+**File:** `farmLands.xml`
+
+**⚠️ IMPORTANT:** This file requires manual configuration to match the `farmlands` InfoLayer in Giants Editor. Without proper configuration, land purchasing will not function in-game.  
+
+**Configuration Example:**
 ```xml
-    <farmlands infoLayer="farmlands" pricePerHa="60000">
-        <farmland id="1" priceScale="1" npcName="FORESTER" />
-        <farmland id="2" priceScale="1" npcName="GRANDPA" />
-    </farmlands>
+<farmlands infoLayer="farmlands" pricePerHa="60000">
+    <farmland id="1" priceScale="1" npcName="FORESTER" />
+    <farmland id="2" priceScale="1" npcName="GRANDPA" />
+</farmlands>
 ```
 
-So, the keys here are kinda obvious, if you want to change the global price for the lands, you can do it in the `pricePerHa` attribute. The `farmland` tag contains the information about the lands. The `id` attribute is the ID of the land, the `priceScale` is the multiplier for the price of the land, and the `npcName` is the name of the NPC who owns the land.  
-Learn more about this file in the [Farmlands](ttps://github.com/iwatkot/maps4fs/blob/main/docs/farmlands.md) section.
+**Key Attributes:**
+- **`pricePerHa`**: Global land price per hectare
+- **`id`**: Unique farmland identifier
+- **`priceScale`**: Price multiplier for individual plots
+- **`npcName`**: Owner NPC designation
 
-### Data
-This is the most important directory in the map structure. It contains all the textures, DEM and InfoLayer images. Basically, if any file is missing here, the map will crash when try opening it in the Giants Editor.  
+For comprehensive farmland configuration guidance, see the [Farmlands](farmlands.md) documentation.
 
-#### Texture weight files
-Those files represent the textures on the map, read more about them in the [Textures](https://github.com/iwatkot/maps4fs/blob/main/docs/textures.md) section.
+### Map Data Directory
+**Location:** `map/data/`
 
-#### InfoLayer images
-Those images represent the InfoLayers on the map, such as fields, farmlands, etc. Actually, you don't need to know anything about the files themvselves, since the generator will handle them for you, but you definetely need to edit those InfoLayers in the Giants Editor at least to create the [FarmLands](https://github.com/iwatkot/maps4fs/blob/main/docs/farmlands.md).
+**⚠️ CRITICAL:** This directory contains all essential map assets. Missing files will cause Giants Editor crashes.
 
-#### DEM
-In this directory you will find two (for FS25) images, that are related to the DEM of the map: the `dem.png` and the `unprocessedHeightMap.png`. The first one is the actual data that is used for terrain in Giants Editor (and the game itself), and the second one is just this data in the initial state (before any changes were made). So you don't even need to know about the second file, but the first one is crucial for the map.  
-NOTE: In Farming Simulator 22 the second file (`unprocessedHeightMap.png`) does not exist, it's only available in Farming Simulator 25.  
-This component of the map is very important, so it's better to learn more about it in the [DEM](https://github.com/iwatkot/maps4fs/blob/main/docs/dem.md) section.
+#### Texture Weight Files
+Defines texture distribution across the map surface. Each weight file corresponds to a specific terrain texture.
 
-### map.i3d file
-This is the main file of your map, actually, it's the map itself. But usually you don't need to edit it manually, since the generator will prepare everything for you and later you can just use the Giants Editor to edit the map.  
-But, if you need to edit it, remember that it's just an XML file, so you can open it with any text editor, even with the ordinary Notepad.
+For detailed texture management, see the [Textures](textures.md) documentation.
 
-### map.xml file
-This file contains paths to different components of the actual map and again, usually, you don't need to edit it manually. And if you need, it's supposed that you know what you're doing.
+#### InfoLayer Images
+Specialized images that define various map properties including fields, farmlands, and collision data. While you don't need to manually edit these files, they're essential for map functionality.
 
-### Overview.dds file
-This file will be used as a in-game map, you can find a detailed explanation in the [Overview](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#Overview-image) section of README.
+**Note:** InfoLayers require editing in Giants Editor, particularly for [Farmlands](farmlands.md) setup.
 
-### Previews
-This directory contains different files that were generated just for preview purposes. You can safely remove them if you don't need them or maybe you can use them for some other tasks.  
+#### Digital Elevation Model (DEM)
+**Location:** `map/data/`
 
-### Scripts
-In this directory you'll find a bunch of Python scripts that can be used in QGIS to download images for your ROI (region of interest). Detailed tutorial for this task you can find in the [Download satellite images](https://github.com/iwatkot/maps4fs/blob/main/docs/download_satellite_images.md) section.
+Essential terrain elevation data that defines your map's topography.
 
-### Generation_info.json
-In this file the generator stores all the information about the map generation process. It can be very helpful if you have access to different sources of data (e.g. DEM or Satellite imagery) and you want to download this data for specific ROI and so on. You'll find the detailed explanation of all the fields in the [Generation Info](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#Generation-info) section of README.
+**Key Files:**
+- **`dem.png`**: Primary elevation data used by Giants Editor and in-game
+- **`unprocessedHeightMap.png`**: Original elevation data before processing *(FS25 only)*
 
-### Icon.dds and preview.dds files
-We would not call Captain Obvious here for the rescue.  
-The first one is mod icon, with size of 256x256 (for FS22) or 512x512 (for FS25) pixels, and the second one is the preview image of the map, with size of 2048x2048 pixels. Both of them are in *.dds format, so it may be helpful for you to check out the [Resources](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#Resources) section of README, you'll find link to free converter there.
+**Version Note:** The unprocessed height map is only available in Farming Simulator 25.
 
-### modDesc.xml file
-Yes, it's a description of your mod, something like name, description, author and so on. You'll find a lot of information about this file in Google.
+For comprehensive terrain elevation guidance, see the [DEM](dem.md) documentation.
+
+## Map Definition Files
+
+### Primary Map File
+**File:** `map.i3d`
+
+The core map definition file containing all 3D geometry, lighting, and object placement data. While this XML-based file can be edited manually, it's recommended to use Giants Editor for modifications.
+
+### Map Configuration
+**File:** `map.xml`
+
+Contains references and paths to various map components. Manual editing should only be performed by experienced users who understand the file structure.
+
+## Visual Assets
+
+### In-Game Map Display
+**File:** `overview.dds`
+
+The minimap image displayed in-game. For detailed creation and optimization guidance, see the [Overview](overview_image.md) documentation.
+
+### Preview Assets
+**Location:** `previews/`
+
+Contains development and preview files generated during the map creation process. These files are safe to remove if not needed for future reference or debugging.
+
+### Generation Metadata
+**File:** `generation_info.json`
+
+Comprehensive metadata about the map generation process, including data sources, coordinates, and processing parameters. Valuable for recreating maps or accessing original data sources.
+
+For complete metadata documentation, see the [Generation Info](generation_info.md) documentation.
+
+## Mod Package Files
+
+### Visual Identity
+- **`icon.dds`**: Mod icon (256×256 for FS22, 512×512 for FS25)
+- **`preview.dds`**: Map preview image (2048×2048 pixels)
+
+Both files use the DDS format. For conversion tools and optimization, see the [Getting Help](get_help.md) documentation.
+
+### Mod Descriptor
+**File:** `modDesc.xml`
+
+Standard mod metadata including name, description, author information, and version details. This follows standard Farming Simulator modding conventions.
+
+## Complete Directory Tree
+
+Below is the complete file structure of a generated map package:
 
 ```text
 📦FS25_45_28571_20_23743_2024-12-10_23-43-55
@@ -249,14 +317,7 @@ Yes, it's a description of your mod, something like name, description, author an
  ┃ ┣ 📄dem_colored.png
  ┃ ┣ 📄dem_grayscale.png
  ┃ ┗ 📄textures_osm.png
- ┣ 📂scripts
- ┃ ┣ 📄background_bbox.py
- ┃ ┣ 📄background_point.py
- ┃ ┣ 📄background_rasterize.py
- ┃ ┣ 📄config_bbox.py
- ┃ ┣ 📄config_point.py
- ┃ ┗ 📄config_rasterize.py
- ┣ 📄generation_info.json
+ ┣ generation_info.json
  ┣ 📄icon.dds
  ┣ 📄modDesc.xml
  ┗ 📄preview.dds

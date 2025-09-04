@@ -1,198 +1,187 @@
-## Frequently Asked Questions
+# Frequently Asked Questions
 
-📹 Learn where the map data come from in this video.  
+📹 **Video Tutorial**: Learn where map data comes from in our comprehensive guide.
 
 [![YouTube tutorial](https://github.com/user-attachments/assets/4e3e1e1a-7882-4673-87c4-f913775d178e)](https://www.youtube.com/watch?v=hPbJZ0HoiDE)
 
+Welcome to the Maps4FS FAQ! Before asking questions or opening issues, please check if your answer is already here. This will help you get solutions faster and keeps our community focused on helping with unique challenges.
 
-In this section, you will find anwers to the most frequently asked questions about the project. Please, before asking a question, or opening an issue, check if the answer is already here. Thank you!
+## 🗺️ Map Data & Objects
 
-### Some objects are not appear on the map, why?
+### Some objects don't appear on my map, why?
 
-First of all, you need to understand, that the project uses the data from the [OpenStreetMap](https://www.openstreetmap.org/) project. So, if some object exists in the real world, it doesn't mean that it was added to the OpenStreetMap database. Then, you need to go and check if that something is already there. If it's there but still doesn't appear on the map, check the second question. And if it's not, check the third one.
+Maps4FS uses data from [OpenStreetMap](https://www.openstreetmap.org/), so if something exists in real life but isn't in OSM's database, it won't appear on your map. Here's how to troubleshoot:
 
-### I can see the object on OSM, but it doesn't appear on the map, why?
+1. **Check if the object exists on OSM** - Visit OpenStreetMap and search your area
+2. **If it's on OSM but missing from your map** - See the next question about whitelisted objects
+3. **If it's not on OSM** - See the question about adding missing objects
 
-The `maps4fs` tool DOES NOT add everything from OSM to the map. Instead of projecting everything, it works with a whitelist of objects that are allowed to be displayed. And you, actually, can check this list in the [Supported Objects](../README.md#supported-objects) section of the main README file.  
-It's really easy to add a new object to the whitelist, so if you think that something should be displayed, contact me in [Discord](https://discord.gg/Sj5QKKyE42) or open an issue on GitHub. I will check the object and add it to the whitelist if it's correct.
+### I can see the object on OSM, but it doesn't appear on my map, why?
+
+Maps4FS uses a curated whitelist of supported objects rather than importing everything from OSM. You can check which objects are supported in our [Texture Schema](texture_schema.md) documentation.
+
+**Need a new object type added?** Contact us on [Discord](https://discord.gg/Sj5QKKyE42) or open a GitHub issue. We'll review and add appropriate objects to the whitelist.
 
 ### There's no needed objects on OSM, what should I do?
 
-The good news is that you can add them by yourself! The OpenStreetMap project is open for everyone, and you can add any object you want. Just go to the [OpenStreetMap](https://www.openstreetmap.org/) website, create an account, and start mapping. Ensure, that you're adding the correct objects with corresponding tags, and they will appear on the map, usually it taskes from 5 to 30 minutes.  
-Please, while editing OSM, follow the [OSM Wiki](https://wiki.openstreetmap.org/wiki/Main_Page) and the [OSM Tags](https://wiki.openstreetmap.org/wiki/Map_Features) to add the correct objects. And also, respect the [OSM Guidelines](https://wiki.openstreetmap.org/wiki/Good_practice) and the community of this incredible project. Don't mess up with the data, and don't add anything that doesn't exist in the real world. It's just not cool.
+You have two main options:
 
-### How can I download satellite images for the map?
+#### Option 1: Add to OpenStreetMap (Recommended for permanent additions)
+You can contribute to OSM by adding missing objects yourself:
+1. Visit [OpenStreetMap](https://www.openstreetmap.org/) and create an account
+2. Add objects with correct tags following [OSM Wiki guidelines](https://wiki.openstreetmap.org/wiki/Main_Page)
+3. Changes typically appear in Maps4FS within 5-30 minutes
+4. **Important**: Only add real-world objects and follow [OSM Guidelines](https://wiki.openstreetmap.org/wiki/Good_practice)
 
-You can find the detailed tutorial [here](https://github.com/iwatkot/maps4fs/blob/main/docs/download_satellite_images.md).
+#### Option 2: Use Custom OSM (Recommended for testing/personal use)
+For complete control over your map data, use our [Custom OSM](custom_osm.md) approach:
+- Create and edit your own OSM data
+- Perfect for testing, iterations, or personal modifications
+- No community approval needed
+- Full creative control over your map content
 
-### How can I texture object and export it in the *.i3d format?
+## 🎮 Giants Editor Issues
 
-You can find the detailed tutorial [here](https://github.com/iwatkot/maps4fs/blob/main/docs/create_background_terrain.md).
+### Purple terrain glitches in Giants Editor
 
-### How can I import the *.i3d file to the map?
+**Issue**: Terrain appears purple at certain viewing angles.
 
-You can find the detailed tutorial [here](https://github.com/iwatkot/maps4fs/blob/main/docs/import_to_giants_editor.md).
+**Solution**: Select the **terrain** object, open the **Terrain** tab in **Attributes**, scroll to the bottom and click **Reload material**.
 
+### Black screen flickering in Giants Editor
 
-### I have some graphic glitches in Giants Editor: the terrain become purple at some angles, what should I do?
+**Issue**: Screen keeps flickering black during editing.
 
-To fix this issue, select the **terrain** object, open the **Terrain** tab in the **Attributes** window, scroll down to the end and press the **Reload material** button. It should help.
+**Solution**: 
+1. Go to **Scripts** → **Create new script**
+2. Name your script and paste this code:
 
-### I have some graphic glitches in Giants Editor: the screen keeps flickering black, what should I do?
-
-To fix this issue, in the Giants Editor click on **Scripts** -> **Create new script**, give it a name and paste the code below:
-
-```
+```lua
 setAudioCullingWorldProperties(-8192, -100, -8192, 8192, 500, 8192, 16, 0, 9000)
 setLightCullingWorldProperties(-8192, -100, -8192, 8192, 500, 8192, 16, 0, 9000)
 setShapeCullingWorldProperties(-8192, -100, -8192, 8192, 500, 8192, 16, 0, 9000)
 ```
 
-Make sure that **Always loaded** checkbox is checked, then save it and execute. It should help.
+3. Check **Always loaded** and execute the script
 
+## 🚜 Game Loading & Installation
 
-### I launched the script to download satellite images from QGIS, but it's taking too long, what should I do?
+### Map loading hangs after installation
 
-The script is downloading a huge GeoTIFF image, so it can take a while depending on the region size and hardware. Some guys reported that on old CPUs it can take up to 30 minutes. Just wait, and it will finish eventually.
+**Issue**: Placed the archive in mods directory but map won't load.
 
-### I put the archive from the generator to the mods directory, but the map loading hangs, what should I do?
+**Critical Steps**:
+1. **Unpack the downloaded archive**
+2. **Open in Giants Editor**
+3. **Save the map**
+4. **Repack as a new mod**
 
-After downloading the archive from the generator it is a **mandatory** to unpack it, open in the Giants Editor, save and pack it back. Otherwise it won't work.  
-Pay attention to the fact, that the archive name should be simple, like **FS25_MyMap.zip**. Avoid using special characters, spaces, and non-ASCII symbols in the archive name, or it won't work.
+**Archive Naming**: Use simple names like `FS25_MyMap.zip`. Avoid special characters, spaces, or non-ASCII symbols.
 
-### I opened the map in the game, it works, but crops destruction is not work and also I see some glitches with the terrain, what's wrong?
+### Crops destruction doesn't work / terrain glitches in-game
 
-At the end of the map creation process, you need to create a ground collision map. It's a very important step and without it you'll face a variety of issues in the game.
-To do it, in Giants Editor go to **Scripts** -> **Shared scripts** -> **Map** -> **Create Ground Collision Map**. If you don't do this, you'll face some issues in the game.  
-➡️ Any time you edit the map, you need to do it again.
+**Issue**: Gameplay problems with terrain interaction.
 
-### I opened the map and see that the trees (or any other object) are floating above the terrain, what should I do?
+**Required Fix**: Create a ground collision map:
+1. In Giants Editor: **Scripts** → **Shared scripts** → **Map** → **Create Ground Collision Map**
+2. **Important**: Repeat this process every time you edit the map
 
-After generation, the trees (or any other object) may be floating above the terrain. To fix this, you need to put them on the terrain.  
-1. Select the objects in the **Scenegraph**.
-2. DO NOT ❌ Select the groups of objects, you need to select EACH OBJECT. Otherwise, it won't work. To make it easier, you can select and first one, scroll down to the last one, hold **Shift** and click on the last one.
+## 🔧 Object Placement Issues
+
+### Objects floating above terrain
+
+**Issue**: Trees or other objects appear to hover above the ground.
+
+**Solution**:
+1. Select objects in **Scenegraph** (select each individual object, NOT groups)
+2. **Pro tip**: Select first object, scroll to last, hold **Shift** and click last object
+3. **Scripts** → **Shared scripts** → **Map** → **Terrain** → **Place objects on terrain**
 
 ![Select objects](https://github.com/user-attachments/assets/2afbea4e-6d0c-4ee5-a3c1-ce021926c9fd)
 
-3. Click **Scripts** -> **Shared scripts** -> **Map** -> **Terrain** -> **Place objects on terrain**.
+## 🐛 Troubleshooting Crashes
 
-### Giants Editor crashes when I try to open the map, what should I do?
+### Giants Editor crashes when opening map
 
-First of all, if it happens not on the loading, check out the **Console** tab if it contains any errors. If it does, try to fix them.
+**Troubleshooting Steps**:
 
-If it crahes on the loading and you can't use **Console** because of that, find the log file here:
+1. **Check Console tab** for error messages if Editor loads partially
+2. **If crashes on startup**, find the log file:
+   ```
+   C:/Users/<username>/AppData/Local/GIANTS Editor 64bit 10.0.3/editor_log.txt
+   ```
+   *Note: Folder name varies by Giants Editor version*
 
-```text
-C:/Users/<username>/AppData/Local/GIANTS Editor 64bit 10.0.3/editor_log.txt
+3. **Review latest log entries** for error patterns
+4. **Need help?** Share relevant log sections in our [Discord](https://discord.gg/Sj5QKKyE42)
+
+### Game crashes or hangs when loading map
+
+#### Enable Debug Mode
+1. **Locate game.xml**:
+   ```
+   C:/Users/<username>/OneDrive/Documents/My Games/FarmingSimulator2025/game.xml
+   ```
+   *Note: OneDrive path may vary by system*
+
+2. **Modify development section**:
+   ```xml
+   <development>
+       <controls>true</controls>  <!-- Change false to true -->
+       <openDevConsole onWarnings="false" onErrors="false"/>
+   </development>
+   ```
+
+3. **In-game**: Press **~** to open console and check for errors
+
+#### Check Game Logs
+If game crashes before console access:
 ```
-
-Pay attention that the folder name can be different, depending on the version of the Giants Editor.
-
-Open the log file and check it for errors and pay attention to the latest lines. If you can't understand what's wrong, ask for help in our Discord server.
-
-### Game is crashing or hangs when I try to load the map, what should I do?
-
-#### Debug mode
-
-First of all, enable the debug mode in the game. To do it, open the **game.xml** file in the following path:
-
-```text
-C:/Users/<username>/OneDrive/Documents/My Games/FarmingSimulator2025/game.xml
-```
-
-Pay attention that you may have or have not the **OneDrive** folder in the path depending on your system settings.
-
-In this file, scroll down to the end and find the line:
-
-```xml
-<development>
-    <controls>false</controls>
-    <openDevConsole onWarnings="false" onErrors="false"/>
-</development>
-```
-
-You need to change the **false** to **true** in the <controls> tag.
-
-Now in the game you can use the **~** key to open the console. Check if there any errors or warnings in the console. If you can't understand what's wrong, ask for help in our Discord server.
-
-#### Game log
-
-If the game is crashing and you can't see the console, you can find the log file here:
-
-```text
 C:/Users/<username>/OneDrive/Documents/My Games/FarmingSimulator2025/log.txt
 ```
 
-Pay attention that you may have or have not the **OneDrive** folder in the path depending on your system settings.
+Focus on the latest entries and share relevant sections in [Discord](https://discord.gg/Sj5QKKyE42) if needed.
 
-Open the log file and check it for errors and pay attention to the latest lines. If you can't understand what's wrong, ask for help in our Discord server.
+## 📦 Mod Installation Issues
 
-### The game can't see the map mod, what should I do?
+### Game can't see the map mod
 
-Ensure, that:
+**Common Issues & Solutions**:
 
-1. The archive with the map is named correctly.  
-For example:
-
-```text
-FS25_Titelski_breg.zip ⬅️ This is a correct name.
-FS25_mod name _ kgjdfg.zip ⬅️ This is an incorrect name.
+#### ✅ Correct Archive Naming
+```
+FS25_Titelski_breg.zip           ← Correct
+FS25_mod name _ kgjdfg.zip       ← Incorrect (spaces/special chars)
 ```
 
-2. The archive has a correct stucture inside of it.
-For example, this is correct structure:
-
-```text
+#### ✅ Proper Archive Structure
+**Correct structure** (files at root level):
+```
 📦FS25_Titelski_breg.zip
- ┣ 📂map
- ┃ ┣ 📂config
- ┃ ┃ ┣ 📄aiSystem.xml
- ┃ ┃ ┣ 📄... ⬅️ Other XML files there.
- ┃ ┃ ┗ 📄weed.xml
- ┃ ┣ 📂data
- ┃ ┃ ┣ 📄asphalt01_weight.png
- ┃ ┃ ┣ 📄... ⬅️ Other weights, infolayers and DEM files there.
- ┃ ┃ ┗ 📄unprocessedHeightMap.png
- ┃ ┣ 📄map.i3d
- ┃ ┣ 📄map.i3d.shapes
- ┃ ┣ 📄map.i3d.terrain.lod.type.cache
- ┃ ┣ 📄map.i3d.terrain.nmap.cache
- ┃ ┣ 📄map.i3d.terrain.occluders.cache
- ┃ ┣ 📄map.xml
- ┃ ┣ 📄overview.dds
- ┃ ┗ 📄splines.i3d
- ┣ 📄icon.dds
- ┣ 📄modDesc.xml
- ┗ 📄preview.dds
+ ┣ 📂 map
+ ┃ ┣ 📂 config
+ ┃ ┃ ┣ 📄 aiSystem.xml
+ ┃ ┃ ┗ 📄 [other XML files]
+ ┃ ┣ 📂 data
+ ┃ ┃ ┣ 📄 dem.png
+ ┃ ┃ ┗ 📄 [weight & info files]
+ ┃ ┣ 📄 map.i3d
+ ┃ ┣ 📄 map.xml
+ ┃ ┗ 📄 overview.dds
+ ┣ 📄 icon.dds
+ ┣ 📄 modDesc.xml
+ ┗ 📄 preview.dds
 ```
 
-And this is incorrect structure:
-
-```text
-📦FS25_Titelski_breg
- ┗ 📂extra_folder
- ┃ ┣ 📂map
- ┃ ┃ ┣ 📂config
- ┃ ┃ ┃ ┣ 📜aiSystem.xml
- ┃ ┃ ┃ ┣ 📜⬅️ Other XML files there.
- ┃ ┃ ┃ ┗ 📜weed.xml
- ┃ ┃ ┣ 📂data
- ┃ ┃ ┃ ┣ 📜asphalt01_weight.png
- ┃ ┃ ┃ ┣ 📜 ⬅️ Other weights, infolayers and DEM files there.
- ┃ ┃ ┃ ┗ 📜unprocessedHeightMap.png
- ┃ ┃ ┣ 📜map.i3d
- ┃ ┃ ┣ 📜map.i3d.shapes
- ┃ ┃ ┣ 📜map.i3d.terrain.lod.type.cache
- ┃ ┃ ┣ 📜map.i3d.terrain.nmap.cache
- ┃ ┃ ┣ 📜map.i3d.terrain.occluders.cache
- ┃ ┃ ┣ 📜map.xml
- ┃ ┃ ┣ 📜overview.dds
- ┃ ┃ ┗ 📜splines.i3d
- ┃ ┣ 📜icon.dds
- ┃ ┣ 📜modDesc.xml
- ┃ ┗ 📜preview.dds
+**❌ Incorrect structure** (extra folder level):
+```
+📦FS25_Titelski_breg.zip
+ ┗ 📂 extra_folder          ← This breaks everything!
+   ┣ 📂 map
+   ┣ 📄 icon.dds
+   ┗ 📄 modDesc.xml
 ```
 
-In the incorrect example above, pay attention that the files were placed in the **extra_folder** instead of the root of the archive.
+---
 
-If you think that some question should be added here, please, contact me in [Discord](https://discord.gg/Sj5QKKyE42) or open an issue on GitHub. Thank you! 
+**Need more help?** Join our [Discord community](https://discord.gg/Sj5QKKyE42) for real-time support and troubleshooting assistance!

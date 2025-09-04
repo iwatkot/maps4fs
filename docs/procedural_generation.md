@@ -1,132 +1,183 @@
-# GE Procedural Generator + Maps4FS + PG Scripts
-By combining Maps4FS with the Giants Editor Procedural Generator tools we can generate textures/foliage/trees and other i3d objects in our map based on publicly available info maps of the area. 
+# Procedural Generation Integration
 
-## Installation
-1. Download the PG scripts from [gitlab](https://gitlab.com/fs25_guides/fs25_proceduralgeneration/-/tree/main/PG_Scripts)
-2. `Code Button` / download this directory / `zip`
+This guide demonstrates how to combine Maps4FS with Giants Editor's Procedural Generator to create realistic terrain features including textures, foliage, trees, and other 3D objects based on real-world geographic data.
+
+## Overview
+
+The procedural generation workflow leverages publicly available geographic information to automatically place and distribute map elements, creating more authentic and detailed environments with minimal manual effort.
+
+**Key Benefits:**
+- Automated texture placement based on real terrain data
+- Realistic foliage and tree distribution
+- Reduced manual editing time
+- Geographic accuracy in object placement
+
+## Prerequisites & Installation
+
+### Step 1: Download PG Scripts
+1. Navigate to the [FS25 Procedural Generation GitLab repository](https://gitlab.com/fs25_guides/fs25_proceduralgeneration/-/tree/main/PG_Scripts)
+2. Click the **Code Button** → **Download ZIP**
 
 ![Download Scripts](https://github.com/user-attachments/assets/b698eb06-cdbf-484f-b458-10cfd0297ea0)
 
-3. Unzip the PG_Scripts into the `Farming Simulator 25\data\maps\proceduralPlacements` folder 
-   
-   The .lua files need to be directly in the `proceduralPlacements` folder.
+### Step 2: Install Scripts
+1. Extract the downloaded ZIP file
+2. Navigate to your Farming Simulator 25 installation directory
+3. Copy the `.lua` files to: `Farming Simulator 25\data\maps\proceduralPlacements\`
+
+**⚠️ Important:** The `.lua` files must be placed directly in the `proceduralPlacements` folder, not in a subfolder.
 
 ![Unzip Scripts](https://github.com/user-attachments/assets/74246b9d-a871-4ea6-aca3-67d50bdfbec0)
 
-4. Generate your map with Maps4FS as usual. 
-5. Open the map in the Giants Editor
-6. Remove the Trees group object
- 
+## Implementation Workflow
+
+### Step 3: Prepare Your Map
+1. **Generate your map** using Maps4FS following standard procedures
+2. **Open the map** in Giants Editor
+3. **Remove the Trees group object** to prevent conflicts with procedural generation
+
 ![Remove Trees](https://github.com/user-attachments/assets/96ffa017-f32a-49ac-aa9d-ea89cc3397f3)
 
-7. Open `Window/Procedural Placement...` and go to the `Rule` tab.
-8. Before proceding, click back on your main window and save your map.
-9. Press `Place Objects`
+### Step 4: Configure Procedural Placement
+1. Open **Window → Procedural Placement...**
+2. Navigate to the **Rule** tab
+3. **Save your map** before proceeding (critical step to prevent data loss)
+4. Click **Place Objects** to begin generation
 
 ![Place Objects](https://github.com/user-attachments/assets/6754cc83-1af2-4df0-a0f7-0494d80c1e7d)
 
-When running bigger rulesets this can take several minutes.
+**⚠️ Processing Note:** Large rulesets may take several minutes to complete. The editor will appear unresponsive during generation - this is normal behavior.
 
-The editor will completly "hang" during this generation. Don't worry, just let it do it's thing.
-
-10. You can tweak the ruleset and masks and rerun the generation. Or use this as a base to start detailing your map from.
+### Step 5: Review and Iterate
+After generation completes, you can:
+- **Fine-tune rulesets** and masks for optimal results
+- **Re-run generation** with modified parameters
+- **Use results as a foundation** for detailed manual editing
 
 ![Result](https://github.com/user-attachments/assets/04274220-42de-442a-b218-4792804948ca)
 
-## Changing a texture rule
-1. Open `Window/Procedural Placement...` and go to the `Rule` tab.
-2. Select the rule you want to edit. ex. `T_Forests`
-3. Add or remove layers with the `X` buttons and the `Add Object` button.
-4. Finally press `Place Objects` to see your changes.
+## Advanced Customization
+
+### Modifying Texture Rules
+**Purpose:** Adjust which textures are applied to specific terrain areas
+
+1. Open **Window → Procedural Placement...** → **Rule** tab
+2. Select the target rule (e.g., `T_Forests`)
+3. **Add layers:** Use the **Add Object** button
+4. **Remove layers:** Click the **X** buttons next to unwanted layers
+5. Apply changes with **Place Objects**
 
 ![Change Texture](https://github.com/user-attachments/assets/a447c080-6950-432a-aaab-91fc40c46124)
 
-## Changing padding on fields
-1. Open `Window/Procedural Placement...` and go to the `Rule` tab.
-2. Select the rule you want to edit. ex. `F_Acres`
-3. Make the borderIn value bigger to shrink the field. To increase the field increase the borderOut value.
-4. Often times multiple rules will need to be adjusted. ex. also update the `T_Acres` rule.
-5. Finally press `Place Objects` to see your changes.
+### Adjusting Field Boundaries
+**Purpose:** Control field size and padding for realistic agricultural layouts
+
+1. Open **Window → Procedural Placement...** → **Rule** tab
+2. Select the field rule (e.g., `F_Acres`)
+3. **Adjust boundaries:**
+   - **Increase `borderIn`**: Shrinks field area (more padding)
+   - **Increase `borderOut`**: Expands field area (less padding)
+4. **Update related rules:** Modify corresponding texture rules (e.g., `T_Acres`)
+5. Apply changes with **Place Objects**
 
 ![Change Padding](https://github.com/user-attachments/assets/2b9206ab-cf03-432a-a2c2-65892f2ba851)
 
-## Adding new I3D reference objects
-1. Open `Window/Procedural Placement...` and go to the `Objects` tab.
-2. Press `Add i3d reference`
-3. Select the object you want to add.
+### Creating Custom I3D Object References
+**Purpose:** Add custom objects (trees, buildings, decorations) to procedural generation
 
-    In the default game folder you can find the basegame tree objects: `Farming Simulator 25\data\maps\trees`
-4. Give it a name. 
+#### Step 1: Register New Objects
+1. Open **Window → Procedural Placement...** → **Objects** tab
+2. Click **Add i3d reference**
+3. **Browse and select** your target object
+
+**Resource Location:** Default game trees are located in `Farming Simulator 25\data\maps\trees`
+
+4. **Assign a descriptive name** for easy identification
 
 ![Create Object](https://github.com/user-attachments/assets/84ad0106-94a0-48f9-b94d-9687070ae504)
 
-5. Go to the Rules tab and press `Add Rule`
-6. Enter a name for the rule. ex. R_Grasslands
-7. Select the PG_Mask_Fill.lua script from the dropdown
+#### Step 2: Create Placement Rules
+1. Navigate to the **Rules** tab
+2. Click **Add Rule**
+3. Enter a descriptive rule name (e.g., `R_Grasslands`)
+4. Select **PG_Mask_Fill.lua** from the script dropdown
+
 ![Select Script](https://github.com/user-attachments/assets/30ef7c41-3606-4ed5-a73a-4f9ba29b973c)
 
-8. Fill in a distance between the objects in `Object Min Distance`
-8. Fill in the name of the mask you want to scatter the object in `genMaskName`. ex. Grasslands
-8. Click `Add Object` and select your previously created object
-9. Press `Apply`
-10. Press `Place Objects`
+#### Step 3: Configure Rule Parameters
+1. **Object Min Distance:** Set minimum spacing between objects
+2. **genMaskName:** Specify the target mask (e.g., `Grasslands`)
+3. **Add Object:** Select your previously created object reference
+4. Click **Apply** to save configuration
+5. Click **Place Objects** to execute the rule
+
 ![Create Object Rule](https://github.com/user-attachments/assets/20f989f1-e4ee-4453-9752-ce43dd4f00ee)
 
+## Ruleset Architecture
 
+### Rule Naming Conventions
+Understanding the default ruleset structure helps optimize your procedural generation workflow:
 
-## Default RuleSet
-Rules starting with:
-* MaskName -> Loads and links a Mask with a genMaskName
-* T_ => Fill a mask with a texture
-* F_ => Fill a mask with foliage
-* Clear_ => Clears selected objects in a mask
-* R_ => I3D reference objects (trees)
-* Substract_ => Removes a layer from another layer
+**Prefix Classifications:**
+- **MaskName** → Loads and links masks with `genMaskName` parameters
+- **T_** → Texture filling operations for terrain surfaces
+- **F_** → Foliage placement and distribution
+- **Clear_** → Object removal operations within specified masks
+- **R_** → I3D reference object placement (trees, structures)
+- **Subtract_** → Layer subtraction operations for mask refinement
 
-### Rules are processed top down. 
-1. Loading masks
-2. Mask operations
-3. Texturing
-4. Foliage
-5. References
+### Processing Order
+**Rules execute in hierarchical order:**
+1. **Mask Loading** → Initialize geographic data layers
+2. **Mask Operations** → Process and refine data layers
+3. **Texturing** → Apply surface materials
+4. **Foliage** → Place vegetation elements
+5. **References** → Position 3D objects
 
-## Performance
-A big rule-set can become slow very fast. 
+## Performance Optimization
 
-### Tip 1: Disable Main Rules
-If you want to repeatedly generate things to see how it looks it is adviced to disable all the main rules and only activate the rules you want to run. 
-1. `Disable Main Rules`
-2. Select each rule you want to run and press `Apply` to activate it
-3. Press `Place Objects`
+### Strategy 1: Selective Rule Execution
+**For iterative development and testing:**
 
-Restarting the editor or pressing the `Enable Main Rules` button will reactivate everything.
+1. Click **Disable Main Rules** to deactivate all rules
+2. **Manually activate** only the rules you want to test
+3. Press **Apply** for each selected rule
+4. Execute with **Place Objects**
 
-### Tip 2: 
-The default ruleset includes a ClearAll rule at the start. 
+**Restoration:** Use **Enable Main Rules** or restart Giants Editor to reactivate all rules.
 
-This rule is a hard-resets for all the objects and takes a longer time to run. 
-It can be disabled while working, and reenabled when generating the final result. 
+### Strategy 2: Manage Reset Operations
+**The default `ClearAll` rule provides a complete reset but significantly impacts performance.**
 
+- **During development:** Disable for faster iteration
+- **For final generation:** Re-enable for complete clean slate
 
-## Configuration Options
-### Generating masks from info-maps
-Generate a new mask `data/masks/PG_buildings.png` based on info-maps tagged with `building` when running the generator. 
+## Configuration Integration
+
+### Generating Custom Masks
+**Create procedural masks directly from Maps4FS geographic data:**
+
+```json
+{
+  "name": "concrete",
+  "count": 2,
+  "tags": { "building": true },
+  "procedural": ["PG_buildings"]
+}
 ```
-  {
-    "name": "concrete",
-    "count": 2,
-    "tags": { "building": true },
-    "procedural": ["PG_buildings"]
-  },
+
+This configuration generates `data/masks/PG_buildings.png` based on geographic areas tagged as buildings.
+
+### Multi-Mask Generation
+**Generate multiple mask variations from single geographic data:**
+
+```json
+{
+  "name": "grassDirtPatchy",
+  "count": 2,
+  "tags": { "landuse": "meadow" },
+  "procedural": ["PG_meadows", "PG_grasslands"]
+}
 ```
 
-### Creating multiple masks
-Adding multiple PG_names to the `procedural` parameter generates a mask for each PG_name.
-```
-  {
-    "name": "grassDirtPatchy",
-    "count": 2,
-    "tags": { "landuse": "meadow" },
-    "procedural": ["PG_meadows", "PG_grasslands"]
-  },
-```
+This creates both `PG_meadows` and `PG_grasslands` masks from meadow-tagged areas, enabling varied terrain treatment options.
