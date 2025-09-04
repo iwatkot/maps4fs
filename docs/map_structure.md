@@ -28,7 +28,7 @@ Contains the essential components for creating realistic background terrain mesh
 - **PNG Images**: Raw DEM data files (can be safely removed after mesh generation)
 - **FULL.obj**: Complete 3D mesh file for background terrain rendering
 
-The `FULL.obj` file provides the complete background terrain mesh for your map. For detailed implementation guidance, see the [Background Terrain](006_backgroundterrain.md) tutorial.
+The `FULL.obj` file provides the complete background terrain mesh for your map. For detailed implementation guidance, see the [Background Terrain](background_terrain.md) tutorial.
 
 ### Information Layers
 **Location:** `info_layers/`
@@ -135,7 +135,7 @@ Contains references and paths to various map components. Manual editing should o
 ### In-Game Map Display
 **File:** `overview.dds`
 
-The minimap image displayed in-game. For detailed creation and optimization guidance, see the [Overview](014_overviewimage.md) documentation.
+The minimap image displayed in-game. For detailed creation and optimization guidance, see the [Overview](overview_image.md) documentation.
 
 ### Preview Assets
 **Location:** `previews/`
@@ -147,7 +147,7 @@ Contains development and preview files generated during the map creation process
 
 Comprehensive metadata about the map generation process, including data sources, coordinates, and processing parameters. Valuable for recreating maps or accessing original data sources.
 
-For complete metadata documentation, see the [Generation Info](013_generationinfo.md) documentation.
+For complete metadata documentation, see the [Generation Info](generation_info.md) documentation.
 
 ## Mod Package Files
 
@@ -155,7 +155,7 @@ For complete metadata documentation, see the [Generation Info](013_generationinf
 - **`icon.dds`**: Mod icon (256×256 for FS22, 512×512 for FS25)
 - **`preview.dds`**: Map preview image (2048×2048 pixels)
 
-Both files use the DDS format. For conversion tools and optimization, see the [Getting Help](022_gethelp.md) documentation.
+Both files use the DDS format. For conversion tools and optimization, see the [Getting Help](get_help.md) documentation.
 
 ### Mod Descriptor
 **File:** `modDesc.xml`

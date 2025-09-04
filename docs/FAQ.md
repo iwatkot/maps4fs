@@ -13,7 +13,7 @@ First of all, you need to understand, that the project uses the data from the [O
 
 ### I can see the object on OSM, but it doesn't appear on the map, why?
 
-The `maps4fs` tool DOES NOT add everything from OSM to the map. Instead of projecting everything, it works with a whitelist of objects that are allowed to be displayed. And you, actually, can check this list in the [Supported Objects](../README.md#supported-objects) section of the main README file.  
+The `maps4fs` tool DOES NOT add everything from OSM to the map. Instead of projecting everything, it works with a whitelist of objects that are allowed to be displayed. And you, actually, can check this list in the [Texture Schema](texture_schema.md) documentation.  
 It's really easy to add a new object to the whitelist, so if you think that something should be displayed, contact me in [Discord](https://discord.gg/Sj5QKKyE42) or open an issue on GitHub. I will check the object and add it to the whitelist if it's correct.
 
 ### There's no needed objects on OSM, what should I do?

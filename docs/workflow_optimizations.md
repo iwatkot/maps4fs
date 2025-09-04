@@ -14,7 +14,7 @@ Maps4FS revolutionizes map creation by automating tedious, time-consuming tasks 
 
 Your map's quality is fundamentally limited by the underlying OpenStreetMap (OSM) data quality. If your target region has incomplete or inaccurate OSM data, address this **before** beginning generation.
 
-**Critical Recommendation**: Use the [custom OSM approach](008_customosm.md) rather than relying on public OSM data. This gives you complete control over your data without navigating OSM's community guidelines and approval processes. You can iterate freely, make region-specific adjustments, and maintain consistency across multiple generation cycles.
+**Critical Recommendation**: Use the [custom OSM approach](custom_osm.md) rather than relying on public OSM data. This gives you complete control over your data without navigating OSM's community guidelines and approval processes. You can iterate freely, make region-specific adjustments, and maintain consistency across multiple generation cycles.
 
 ### Preserving Generation Parameters
 
@@ -25,7 +25,7 @@ Expect to generate your map multiple times before achieving optimal results. To 
 - Preserve compatibility with existing custom assets when regenerating specific components
 - Quickly revert to previous successful configurations
 
-Learn more in the [Generation Info documentation](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#generation-info).
+Learn more in the [Generation Info documentation](generation_info.md).
 
 ## Phase 1: Automated Asset Validation
 

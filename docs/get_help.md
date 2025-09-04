@@ -70,7 +70,7 @@ I do not accept any reports or questions related to the public app when it's not
 📋 **REQUIRED: Follow troubleshooting first**
 
 **Before asking for help, you MUST:**
-1. ✅ Read the [Local Deployment Troubleshooting](004_localdeployment.md#troubleshooting)
+1. ✅ Read the [Local Deployment Troubleshooting](local_deployment.md#troubleshooting)
 2. ✅ Complete ALL troubleshooting steps
 3. ✅ Include ALL outputs in your help request
 
@@ -149,7 +149,7 @@ For other DTM providers:
 - [ ] 📚 I have read the [FAQ](FAQ.md)
 - [ ] 🗺️ I understand that map data comes from [OpenStreetMap](https://www.openstreetmap.org/)
 - [ ] 🔍 I have verified that the required data exists on OpenStreetMap for my area
-- [ ] 🎨 I understand what a [texture schema](../README.md#texture-schema) is
+- [ ] 🎨 I understand what a [texture schema](texture_schema.md) is
 - [ ] 🏷️ I have verified that my texture schema contains the OSM tags for the objects I'm missing *(if texture-related)*
 
 ### 🎯 Ready to Submit?
@@ -264,7 +264,7 @@ Before contacting support, confirm:
 | 🎯 Scenario | 🔄 Action |
 |-------------|-----------|
 | 🌐 Public app down | ⛔ No support provided |
-| 🏠 Local deployment issues | 📖 Follow [troubleshooting guide](004_localdeployment.md#troubleshooting) first |
+| 🏠 Local deployment issues | 📖 Follow [troubleshooting guide](local_deployment.md#troubleshooting) first |
 | 🐛 Tool works but has problems | ✅ FAQ → ✅ SRTM30 → ✅ Checklist → � Gather info → 💬 Discord/🐛 GitHub |
 | 🗺️ Non-SRTM30 DTM issues | 👤 Contact DTM provider author at [PyDTMDL](https://github.com/iwatkot/pydtmdl) |
 

@@ -19,7 +19,7 @@ Fields represent the **active cultivation areas** where players grow, manage, an
 
 **Data Quality Impact**: Field generation quality directly correlates with OSM data completeness and accuracy in your target region. Incomplete or outdated OSM agricultural data will result in missing or incorrectly positioned fields.
 
-**Recommended Practice**: Review and enhance OSM agricultural data for your region before generation. See our [Custom OSM guide](008_customosm.md) for detailed data improvement workflows.
+**Recommended Practice**: Review and enhance OSM agricultural data for your region before generation. See our [Custom OSM guide](custom_osm.md) for detailed data improvement workflows.
 
 ## Automated Field Generation
 
@@ -34,7 +34,7 @@ Maps4FS automatically analyzes OSM agricultural areas and generates correspondin
 
 ### Generation Statistics
 
-The [generation info file](013_generationinfo.md) provides detailed field creation metrics:
+The [generation info file](generation_info.md) provides detailed field creation metrics:
 ```json
 "Fields": {
     "added_fields": 56,

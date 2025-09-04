@@ -1,7 +1,7 @@
 # Core Generat## Map Dimensions
 
 ### Standard Sizes
-Choose from professionally optimized map sizes. Larger maps require [Local deployment](004_localdeployment.md) for sufficient processing power.
+Choose from professionally optimized map sizes. Larger maps require [Local deployment](local_deployment.md) for sufficient processing power.
 
 **Available Sizes:**
 - **2×2 km** - Perfect for detailed farming operations
@@ -24,7 +24,7 @@ Choose your target Farming Simulator version from the dropdown menu. Default: **
 ### Map Size
 
 #### Default sizes
-The tool supports all possible sizes of maps, but some of them only available in the [Local deployment](004_localdeployment.md). <br>
+The tool supports all possible sizes of maps, but some of them only available in the [Local deployment](local_deployment.md). <br>
 The sizes are:
 - 2x2 km
 - 4x4 km

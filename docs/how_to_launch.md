@@ -63,7 +63,7 @@ powershell -ExecutionPolicy Bypass -Command "iex (iwr 'https://raw.githubusercon
 
 ### 📖 Detailed Instructions
 For complete setup guides including Docker installation:
-- 📚 [Local Deployment Guide](004_localdeployment.md)
+- 📚 [Local Deployment Guide](local_deployment.md)
 - 🐳 [Docker FAQ](FAQ_docker.md)
 
 ---
@@ -104,7 +104,7 @@ pip install -e .
 ```
 
 ### 📖 Developer Resources
-- 📚 [Python Package Deployment](005_localdeploymentsource.md)
+- 📚 [Python Package Deployment](python_package_deployment.md)
 - 🐙 [GitHub Repository](https://github.com/iwatkot/maps4fs)
 - 📝 [API Documentation](https://github.com/iwatkot/maps4fsapi)
 

@@ -10,7 +10,7 @@ Before you begin, ensure you have the necessary tools and system requirements:
 - **Giants Editor** ([Download here](https://gdn.giants-software.com/downloads.php))
   - For **Farming Simulator 25**: Use Giants Editor 10.0 or later
   - For **Farming Simulator 22**: Use Giants Editor 9.0 series
-- **Maps4FS** - Either [web version](https://maps4fs.xyz) or [local installation](004_localdeployment.md)
+- **Maps4FS** - Either [web version](https://maps4fs.xyz) or [local installation](local_deployment.md)
 
 ### Optional Tools (for Advanced Features)
 - **Blender** with Giants Exporter Plugin (for background terrain)
@@ -91,7 +91,7 @@ Configure key settings for your needs:
 - **Random Plants**: Enable for natural-looking vegetation
 - **Download Satellite Images**: Enable for background terrain
 
-📖 **Learn More**: Check [Generation Settings](011_generationsettings.md) for detailed explanations.
+📖 **Learn More**: Check [Generation Settings](generation_settings.md) for detailed explanations.
 
 ### Step 4: 🚀 Generate Your Map
 1. Review all settings one final time
@@ -103,7 +103,7 @@ Configure key settings for your needs:
 1. Download the generated `.zip` file
 2. Create a dedicated project folder on your computer
 3. Extract all contents to this folder
-4. **Map Structure**: Learn about included files in [Map Structure](020_mapstructure.md)
+4. **Map Structure**: Learn about included files in [Map Structure](map_structure.md)
 
 ### Step 6: 🌎 Download Satellite Images (Optional)
 For enhanced background terrain:
@@ -115,13 +115,13 @@ For enhanced background terrain:
 Transform your map from floating island to realistic landscape:
 1. Use included `.obj` files with Blender
 2. Apply satellite textures for photorealistic backgrounds
-3. Follow the [Background Terrain Tutorial](006_backgroundterrain.md)
+3. Follow the [Background Terrain Tutorial](background_terrain.md)
 
 ### Step 8: 🌊 Create Water Planes (Optional)
 Add realistic water bodies to your map:
 1. Make sure "Generate Water" is enabled in generation settings
 2. Use one of the `obj` files provided to create water planes in Blender
-3. Follow the [Water Planes Tutorial](007_waterplanes.md)
+3. Follow the [Water Planes Tutorial](water_planes.md)
 
 ### Step 9: 📂 Open in Giants Editor
 1. Launch Giants Editor (correct version for your target game)
@@ -133,13 +133,13 @@ Add realistic water bodies to your map:
 1. **Auto-generated fields**: Already placed based on real agricultural data
 2. **One-click painting**: Use field info layer to paint terrain textures
 3. **Adjust boundaries**: Modify field shapes if needed
-4. **Learn more**: [Fields Documentation](016_fields.md)
+4. **Learn more**: [Fields Documentation](fields.md)
 
 ### Step 11: 🏠 Add Farmlands
 1. **Pre-configured farmlands**: Generated automatically around fields
 2. **Ownership zones**: Set up buyable land areas
 3. **Price configuration**: Adjust land values in farmlands.xml
-4. **Detailed guide**: [Farmlands Documentation](017_farmlands.md)
+4. **Detailed guide**: [Farmlands Documentation](farmlands.md)
 
 ### Step 12: 🗺️ Create Overview Map
 1. Use satellite imagery for overview.dds
@@ -184,9 +184,9 @@ Your map is now playable but needs finishing touches:
 
 ### Documentation
 - 📖 [FAQ](FAQ.md) - Common questions and troubleshooting
-- 🔧 [Generation Settings](011_generationsettings.md) - Detailed setting explanations
-- 🗺️ [Map Structure](020_mapstructure.md) - Understanding generated files
-- 💡 [Workflow Optimization](009_workflow.md) - Best practices and tips
+- 🔧 [Generation Settings](generation_settings.md) - Detailed setting explanations
+- 🗺️ [Map Structure](map_structure.md) - Understanding generated files
+- 💡 [Workflow Optimization](workflow_optimizations.md) - Best practices and tips
 
 ### Community Support
 - 💬 [Discord Server](https://discord.gg/Sj5QKKyE42) - Get help and share your progress
