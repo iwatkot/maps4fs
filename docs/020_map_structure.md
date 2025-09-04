@@ -155,7 +155,7 @@ For complete metadata documentation, see the [Generation Info](013_generationinf
 - **`icon.dds`**: Mod icon (256×256 for FS22, 512×512 for FS25)
 - **`preview.dds`**: Map preview image (2048×2048 pixels)
 
-Both files use the DDS format. For conversion tools and optimization, see the [Getting Help](get_help.md) documentation.
+Both files use the DDS format. For conversion tools and optimization, see the [Getting Help](022_gethelp.md) documentation.
 
 ### Mod Descriptor
 **File:** `modDesc.xml`
