@@ -23,7 +23,7 @@
   <a href="docs/get_help.md">Get Help</a> •
   <a href="docs/map_structure.md">Map Structure</a> •
   <a href="docs/010_mainsettings.md">Main Settings</a><br>
-  <a href="#Generation-info">Generation info</a> •
+  <a href="docs/013_generationinfo.md">Generation info</a> •
   <a href="docs/012_textureschema.md">Texture schema</a> •
   <a href="#Overview-image">Overview image</a><br>
   <a href="#DDS-conversion">DDS conversion</a> •
@@ -111,121 +111,6 @@ So, if you're new to map making, here's a quick overview of the process:
 2. Download the Giants Editor.
 3. Open the map template in the Giants Editor.
 4. Now you can start creating your map (adding roads, fields, buildings, etc.).
-
-## Generation info
-
-The script will generate the `generation_info.json` file in the `output` folder. It is split into different sections, which represent the components of the map generator. You may need this information to use some other tools and services to obtain additional data for your map.<br>
-
-List of components:
-
-- `Config` - this component handles the `map.xml` file, where the basic description of the map is stored.
-- `Texture` - this component describes the textures, that were used to generate the map.
-- `DEM` - this component describes the Digital Elevation Model (the one which creates terrain on your map), which was used to generate the height map and related to the `dem.png` file.
-- `I3d` - this component describes the i3d file, where some specific attributes properties, and paths to the files are stored.
-- `Background` - this component describes the 8 tiles, that surround the map.
-
-Below you'll find descriptions of the components and the fields that they contain.<br>
-ℹ️ If there's no information about the component, it means that at the moment it does not store any data in the `generation_info.json` file.
-
-### Config
-
-Example of the `Config` component:
-
-```json
-"Config": {
-    "Overview": {
-        "epsg3857_string": "2249906.6679576184,2255734.9033189337,5663700.389039194,5669528.6247056825 [EPSG:3857]",
-        "south": 45.304132173367165,
-        "west": 45.267296012425376,
-        "north": 20.263611405732693,
-        "east": 20.211255476687537,
-        "height": 4096,
-        "width": 4096
-    }
-},
-```
-
-The `Overview` section contains information to create an overview image, which represents the in-game map. You can use the `epsg3857_string` to obtain the satellite images in the QGIS. So this section describes the region of the map plus the borders. Usually, it's exactly 2X the size of the map.<br>
-And here's the list of the fields:
-
-- `"epsg3857_string"` - the string representation of the bounding box in the EPSG:3857 projection, it is required to obtain the satellite images in the QGIS,<br>
-- `"south"` - the southern border of overview region,<br>
-- `"west"` - the western border of overview region,<br>
-- `"north"` - the northern border of overview region,<br>
-- `"east"` - the eastern border of overview region,<br>
-- `"height"` - the height of the overview region in meters (2X the size of the map),<br>
-- `"width"` - the width of the overview region in meters,<br>
-
-### Texture
-
-Example of the `Texture` component:
-
-```json
-"Texture": {
-    "coordinates": [
-        45.28571409289627,
-        20.237433441210115
-    ],
-    "bbox": [
-        45.29492313313172,
-        45.27650505266082,
-        20.250522423471406,
-        20.224344458948824
-    ],
-    "map_height": 2048,
-    "map_width": 2048,
-    "minimum_x": 439161.2439774908,
-    "minimum_y": 5013940.540089059,
-    "maximum_x": 441233.5397821935,
-    "maximum_y": 5016006.074349126,
-},
-```
-
-And here's the list of the fields:
-
-- `"coordinates"` - the coordinates of the map center which you entered,<br>
-- `"bbox"` - the bounding box of the map in lat and lon,<br>
-- `"map_height"` - the height of the map in meters (this one is from the user input, e.g. 2048 and so on),<br>
-- `"map_width"` - the width of the map in meters (same as above),<br>
-- `"minimum_x"` - the minimum x coordinate of the map (UTM projection),<br>
-- `"minimum_y"` - the minimum y coordinate of the map (UTM projection),<br>
-- `"maximum_x"` - the maximum x coordinate of the map (UTM projection),<br>
-- `"maximum_y"` - the maximum y coordinate of the map (UTM projection),
-
-### Background
-
-The background component consists of the 8 tiles, each one representing the tile, that surrounds the map. The tiles are named as the cardinal points, e.g. "N", "NE", "E" and so on.<br>
-Example of the `Background` component:
-
-```json
-"Background": {
-"N": {
-    "center_latitude": 45.30414170952092,
-    "center_longitude": 20.237433441210115,
-    "epsg3857_string": "2251363.25324853,2254278.318028022,5668072.719985372,5670987.784803056 [EPSG:3857]",
-    "height": 2048,
-    "width": 2048,
-    "north": 45.31335074975637,
-    "south": 45.29493266928547,
-    "east": 20.250526677438195,
-    "west": 20.224340204982035
-},
-}
-```
-
-And here's the list of the fields:
-
-- `"center_latitude"` - the latitude of the center of the tile,<br>
-- `"center_longitude"` - the longitude of the center of the tile,<br>
-- `"epsg3857_string"` - the string representation of the bounding box in the EPSG:3857 projection, it is required to obtain the satellite images in the QGIS,<br>
-- `"height"` - the height of the tile in meters,<br>
-- `"width"` - the width of the tile in meters,<br>
-- `"north"` - the northern border of the tile,<br>
-- `"south"` - the southern border of the tile,<br>
-- `"east"` - the eastern border of the tile,<br>
-- `"west"` - the western border of the tile,<br>
-
-
 
 ## Overview image
 

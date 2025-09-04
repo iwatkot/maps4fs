@@ -164,3 +164,36 @@ If enabled, the tool will download satellite images for the background terrain a
 **Units:** Integer value (maximum recommended: 18)  
 The zoom level of satellite images. The higher the value, the more detailed the images will be. By default, it's set to 14. Be careful with high values, as they may result in very large images and extremely long download times. This option is disabled in the public version of the app.
 
+## Settings Export & Reference
+
+### Generation Settings JSON File
+
+Maps4FS can export your complete settings configuration as `generation_settings.json` for documentation and replication purposes.
+
+**Recommended Practice**: Save your settings JSON file after successful map generations to:
+- **Document Successful Configurations**: Record which parameter combinations work best for specific terrain types
+- **Enable Reproduction**: Recreate identical generation parameters for iterative map development
+- **Share Configurations**: Distribute proven settings for similar geographic regions or map styles
+- **Track Optimization**: Maintain a library of optimized settings for different use cases
+
+**File Structure Example**:
+```json
+{
+    "DEMSettings": {
+        "blur_radius": 40,
+        "plateau": 15,
+        "water_depth": 10
+    },
+    "BackgroundSettings": {
+        "generate_background": true,
+        "water_blurriness": 20
+    },
+    "I3DSettings": {
+        "forest_density": 8,
+        "tree_limit": 50000
+    }
+}
+```
+
+**Usage Note**: The JSON file serves as a reference of your chosen parameters. For authoritative information about available settings and their current functionality, always refer to this documentation rather than the JSON structure.
+
