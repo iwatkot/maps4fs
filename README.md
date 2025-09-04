@@ -15,8 +15,9 @@
 </a>
 
 <p align="center">
+  <a href="#overview">Overview</a> •
   <a href="docs/003_howtolaunch.md">How to Run</a> •
-  <a href="docs/step_by_step.md">Create a map in 10 steps</a> •
+  <a href="docs/002_stepbystep.md">Step-by-Step Guide</a> •
   <a href="docs/009_workflow.md">Workflow Optimization</a><br>
   <a href="docs/FAQ.md">FAQ</a> •
   <a href="docs/get_help.md">Get Help</a> •
@@ -101,55 +102,17 @@
 
 <p align="center"><i>Map example generated with maps4fs.</i></p>
 
-## How to Run
+## Overview
 
-There are several ways to use the tool. The easiest one is a public version of the app, if you need more features, faster generation, and advanced settings, you can opt for local deployment or run the tool from source.
+The core idea is coming from the awesome [maps4cim](https://github.com/klamann/maps4cim) project.<br>
 
-### Public app
+The main goal of this project is to generate map templates, based on real-world data, for the Farming Simulator. It's important to mention that **templates are not maps**. They are just a starting point for creating a map. This tool just uses built-in textures to highlight different types of terrain and buildings with correct shapes and scales and to generate a height map. The rest of the work is up to you. So if you thought that you could just run this tool and get a playable map, then I'm sorry to disappoint you. But if you are a map maker, then this tool will save you a lot of time.<br>
+So, if you're new to map making, here's a quick overview of the process:
 
-**Option 1:** Open the [maps4fs](https://maps4fs.xyz) and generate a map template in a few clicks.<br>
-🟢 Recommended for all users.  
-🛠️ Don't need to install anything.  
-🗺️ Supported map sizes: 2x2, 4x4, custom sizes not available.  
-✂️ Map scaling: not supported.  
-⚙️ Advanced settings: some settings not available.  
-
-![Basic WebUI](https://github.com/iwatkot/maps4fs/releases/download/2.0.0/maps4fs_wui.png)
-
-### Local deployment
-
-**Option 2:** Run the Docker version in your browser.  
-🟠 Recommended for users who want bigger maps, fast generation, nice-looking textures, and advanced settings.  
-🛠️ Docker installation required, launch with one command.  
-🗺️ Supported map sizes: 2x2, 4x4, 8x8, 16x16 km and any custom size.  
-✂️ Map scaling: supported.  
-⚙️ Advanced settings: all settings available.
-
-Launch the following command in your terminal to use the Setup Wizard:
-
-```powershell
-powershell -ExecutionPolicy Bypass -Command "iex (iwr 'https://raw.githubusercontent.com/iwatkot/maps4fs/main/setup-wizard.ps1' -UseBasicParsing).Content"
-```
-
-ℹ️ Check out detailed instructions about [local deployment](docs/004_localdeployment.md).
-
-
-### For developers
-
-**Option 3:** Python package or run from source code.
-🔴 Recommended for developers who want full control over the generation process and fastest performance.
-🛠️ Requires Python, pip, and Git.
-🗺️ Supported map sizes: 2x2, 4x4, 8x8, 16x16 km and any custom size.  
-✂️ Map scaling: supported.  
-⚙️ Advanced settings: all settings available.
-
-Install the package using the following command:
-
-```bash
-pip install maps4fs
-```
-
-ℹ️ Check out detailed instructions about [Maps4FS Python Package Deployment](docs/005_localdeploymentsource.md).
+1. Generate a map template using this tool.
+2. Download the Giants Editor.
+3. Open the map template in the Giants Editor.
+4. Now you can start creating your map (adding roads, fields, buildings, etc.).
 
 ## Supported objects
 
