@@ -21,7 +21,7 @@
 ## Advanced Topics
 * [Custom OSM](custom_osm.md)
 * [Background Terrain](006_backgroundterrain.md)
-* [Water Planes](create_water_planes.md)
+* [Water Planes](007_waterplanes.md)
 
 ## Development
 * [Map Structure](map_structure.md)

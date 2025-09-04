@@ -121,7 +121,7 @@ Transform your map from floating island to realistic landscape:
 Add realistic water bodies to your map:
 1. Make sure "Generate Water" is enabled in generation settings
 2. Use one of the `obj` files provided to create water planes in Blender
-3. Follow the [Water Planes Tutorial](create_water_planes.md) TODO!!!
+3. Follow the [Water Planes Tutorial](007_waterplanes.md)
 
 ### Step 9: 📂 Open in Giants Editor
 1. Launch Giants Editor (correct version for your target game)
