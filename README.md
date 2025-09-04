@@ -18,7 +18,7 @@
   <a href="docs/003_howtolaunch.md">How to Run</a> •
   <a href="#Overview">Overview</a> • 
   <a href="docs/step_by_step.md">Create a map in 10 steps</a> •
-  <a href="docs/recommendations.md">Practical recommendations</a><br>
+  <a href="docs/009_workflow.md">Workflow Optimization</a><br>
   <a href="docs/FAQ.md">FAQ</a> •
   <a href="docs/get_help.md">Get Help</a> •
   <a href="docs/map_structure.md">Map Structure</a> •

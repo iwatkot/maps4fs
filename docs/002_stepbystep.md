@@ -186,7 +186,7 @@ Your map is now playable but needs finishing touches:
 - 📖 [FAQ](FAQ.md) - Common questions and troubleshooting
 - 🔧 [Generation Settings](generation_settings.md) - Detailed setting explanations TODO!!!
 - 🗺️ [Map Structure](map_structure.md) - Understanding generated files TODO!!!
-- 💡 [Recommendations](recommendations.md) - Best practices and tips TODO!!!
+- 💡 [Workflow Optimization](009_workflow.md) - Best practices and tips
 
 ### Community Support
 - 💬 [Discord Server](https://discord.gg/Sj5QKKyE42) - Get help and share your progress
