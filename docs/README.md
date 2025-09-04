@@ -17,7 +17,7 @@ Recommended reading order:
 10. Learn how to [create water planes](007_waterplanes.md) for Giants Editor.
 11. Read about working with [fields](fields.md) in Giants Editor.
 12. Read about working with [farmlands](farmlands.md) in Giants Editor.
-13. Check out the documentation about [usage of custom OSM files](custom_osm.md) in maps4fs.
+13. Check out the documentation about [usage of custom OSM files](008_customosm.md) in maps4fs.
 14. Learn how to work with the [splines](splines.md) and how to use them.
 15. Check out the documentation about [creating your own DEM file](custom_dem.md).
 16. Learn how to use [Procedural Generation](procedural_generation.md) scripts.

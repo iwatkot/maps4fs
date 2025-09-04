@@ -19,7 +19,7 @@
 * [Generation Settings](generation_settings.md)
 
 ## Advanced Topics
-* [Custom OSM](custom_osm.md)
+* [Custom OSM](008_customosm.md)
 * [Background Terrain](006_backgroundterrain.md)
 * [Water Planes](007_waterplanes.md)
 

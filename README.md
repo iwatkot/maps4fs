@@ -62,7 +62,7 @@
 📈 Automatically generates splines<br>
 🛰️ Automatically downloads high resolution satellite images<br>
 🌍 Based on real-world data from OpenStreetMap<br>
-🗺️ Supports [custom OSM maps](/docs/custom_osm.md)<br>
+🗺️ Supports [custom OSM maps](/docs/008_customosm.md)<br>
 🏞️ Generates height map using SRTM dataset<br>
 📦 Provides a ready-to-use map template for the Giants Editor<br>
 🚜 Supports Farming Simulator 22 and 25<br>

@@ -7,7 +7,7 @@ So, the main advice is simple: do not do anything manually until you are complet
 ## Preparation
 
 ### OSM Data
-First of all, you need to understand that the data comes from the OpenStreetMap (OSM), so if in your region of interest the OSM data is not sufficient or not precise enough, you will need to improve it. While you can work with a public version of the OSM data right in the browser, I strongly recommend using the [custom OSM](https://github.com/iwatkot/maps4fs/blob/main/docs/custom_osm.md) approach. In this case, you can edit the data in any way you want, and it will always be available for you without dealing with the guidelines and restrictions of the OSM.
+First of all, you need to understand that the data comes from the OpenStreetMap (OSM), so if in your region of interest the OSM data is not sufficient or not precise enough, you will need to improve it. While you can work with a public version of the OSM data right in the browser, I strongly recommend using the [custom OSM](008_customosm.md) approach. In this case, you can edit the data in any way you want, and it will always be available for you without dealing with the guidelines and restrictions of the OSM.
 
 ### Generation info
 You will probably generate your map a lot of times before you are satisfied with the results. So, to ensure that you will always generate the map for the same place, size, and rotation, remember to save the `generation_info.json` file, which contains all the required parameters to reproduce the same results (excluding the changes you made). Learn more about the generation info in the [Generation Info](https://github.com/iwatkot/maps4fs?tab=readme-ov-file#generation-info) section of the README.  
