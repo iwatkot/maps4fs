@@ -19,7 +19,8 @@
 * [Docker FAQ](FAQ_docker.md)
 
 ## Map Components
-* [DEM (Elevation)](dem.md)
+* [Map Structure](map_structure.md)
+* [DEM (Elevation)](015_dem.md)
 * [Fields](fields.md)
 * [Farmlands](farmlands.md)
 * [Textures](textures.md)
@@ -29,7 +30,4 @@
 * [Custom OSM](008_customosm.md)
 * [Background Terrain](006_backgroundterrain.md)
 * [Water Planes](007_waterplanes.md)
-
-## Development
-* [Map Structure](map_structure.md)
 * [Procedural Generation](procedural_generation.md)

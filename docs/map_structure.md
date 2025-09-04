@@ -70,7 +70,7 @@ Those images represent the InfoLayers on the map, such as fields, farmlands, etc
 #### DEM
 In this directory you will find two (for FS25) images, that are related to the DEM of the map: the `dem.png` and the `unprocessedHeightMap.png`. The first one is the actual data that is used for terrain in Giants Editor (and the game itself), and the second one is just this data in the initial state (before any changes were made). So you don't even need to know about the second file, but the first one is crucial for the map.  
 NOTE: In Farming Simulator 22 the second file (`unprocessedHeightMap.png`) does not exist, it's only available in Farming Simulator 25.  
-This component of the map is very important, so it's better to learn more about it in the [DEM](https://github.com/iwatkot/maps4fs/blob/main/docs/dem.md) section.
+This component of the map is very important, so it's better to learn more about it in the [DEM](015_dem.md) section.
 
 ### map.i3d file
 This is the main file of your map, actually, it's the map itself. But usually you don't need to edit it manually, since the generator will prepare everything for you and later you can just use the Giants Editor to edit the map.  

@@ -8,7 +8,7 @@ Recommended reading order:
 1. Check out the frequently asked questions (FAQ) in the [FAQ section](FAQ.md).
 2. If you're using local (Docker) version of the app, check out the [Docker FAQ](docker_faq.md).
 3. Learn the short step by step guide in the [Step by step guide](step_by_step.md).
-4. Learn how [DEM](dem.md) works and what it is.
+4. Learn how [DEM](015_dem.md) works and what it is.
 5. Learn how to work with [textures](textures.md) in Giant Editor.
 6. Read the detailed description of the [Map Structure](map_structure.md).
 7. Learn how to [download satellite images](download_satellite_images.md) for your map.
@@ -19,8 +19,7 @@ Recommended reading order:
 12. Read about working with [farmlands](farmlands.md) in Giants Editor.
 13. Check out the documentation about [usage of custom OSM files](008_customosm.md) in maps4fs.
 14. Learn how to work with the [splines](splines.md) and how to use them.
-15. Check out the documentation about [creating your own DEM file](custom_dem.md).
-16. Learn how to use [Procedural Generation](procedural_generation.md) scripts.
+15. Learn how to use [Procedural Generation](procedural_generation.md) scripts.
 
 ## For developers
 
