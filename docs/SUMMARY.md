@@ -19,7 +19,7 @@
 * [Docker FAQ](FAQ_docker.md)
 
 ## Map Components
-* [Map Structure](map_structure.md)
+* [Map Structure](020_mapstructure.md)
 * [DEM (Elevation)](015_dem.md)
 * [Fields](016_fields.md)
 * [Farmlands](017_farmlands.md)

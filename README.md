@@ -21,7 +21,6 @@
   <a href="docs/009_workflow.md">Workflow Optimization</a><br>
   <a href="docs/FAQ.md">FAQ</a> •
   <a href="docs/get_help.md">Get Help</a> •
-  <a href="docs/map_structure.md">Map Structure</a> •
   <a href="docs/010_mainsettings.md">Main Settings</a><br>
   <a href="docs/013_generationinfo.md">Generation info</a> •
   <a href="docs/012_textureschema.md">Texture schema</a><br>

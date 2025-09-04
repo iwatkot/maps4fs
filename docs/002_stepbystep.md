@@ -103,7 +103,7 @@ Configure key settings for your needs:
 1. Download the generated `.zip` file
 2. Create a dedicated project folder on your computer
 3. Extract all contents to this folder
-4. **Map Structure**: Learn about included files in [Map Structure](map_structure.md) TODO!!!
+4. **Map Structure**: Learn about included files in [Map Structure](020_mapstructure.md)
 
 ### Step 6: 🌎 Download Satellite Images (Optional)
 For enhanced background terrain:
@@ -184,8 +184,8 @@ Your map is now playable but needs finishing touches:
 
 ### Documentation
 - 📖 [FAQ](FAQ.md) - Common questions and troubleshooting
-- 🔧 [Generation Settings](011_generationsettings.md) - Detailed setting explanations TODO!!!
-- 🗺️ [Map Structure](map_structure.md) - Understanding generated files TODO!!!
+- 🔧 [Generation Settings](011_generationsettings.md) - Detailed setting explanations
+- 🗺️ [Map Structure](020_mapstructure.md) - Understanding generated files
 - 💡 [Workflow Optimization](009_workflow.md) - Best practices and tips
 
 ### Community Support
