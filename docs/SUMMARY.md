@@ -11,6 +11,7 @@
 * [Main Settings](010_mainsettings.md)
 * [Generation Settings](011_generationsettings.md)
 * [Texture Schema](012_textureschema.md)
+* [Generation Info](013_generationinfo.md)
 
 ## Setup & Installation
 * [Local Deployment](004_localdeployment.md)
@@ -22,6 +23,7 @@
 * [Fields](fields.md)
 * [Farmlands](farmlands.md)
 * [Textures](textures.md)
+* [Overview Image](014_overviewimage.md)
 
 ## Advanced Topics
 * [Custom OSM](008_customosm.md)

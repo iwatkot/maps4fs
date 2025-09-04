@@ -24,8 +24,7 @@
   <a href="docs/map_structure.md">Map Structure</a> •
   <a href="docs/010_mainsettings.md">Main Settings</a><br>
   <a href="docs/013_generationinfo.md">Generation info</a> •
-  <a href="docs/012_textureschema.md">Texture schema</a> •
-  <a href="#Overview-image">Overview image</a><br>
+  <a href="docs/012_textureschema.md">Texture schema</a><br>
   <a href="#DDS-conversion">DDS conversion</a> •
   <a href="docs/011_generationsettings.md">Generation settings</a> •
   <a href="#Resources">Resources</a> •
@@ -112,25 +111,6 @@ So, if you're new to map making, here's a quick overview of the process:
 3. Open the map template in the Giants Editor.
 4. Now you can start creating your map (adding roads, fields, buildings, etc.).
 
-## Overview image
-
-The overview image is an image that is used as an in-game map. No matter what the size of the map, this file is always `4096x4096 pixels`, while the region of your map is `2048x2048 pixels` in the center of this file. The rest of the image is just here for a nice view, but you still may add satellite pictures to this region.<br>
-
-<img width="400" src="https://github.com/user-attachments/assets/ede9ea81-ef97-4914-9dbf-9761ef1eb7ca">
-
-Cool image by [@ZenJakey](https://github.com/ZenJakey).
-
-So, in the same way, you've downloaded the satellite images for the background terrain, you can download them for the overview image. Just use the `epsg3857_string` from the `generation_info.json` file. You'll find the needed string in the `Config` component in the `Overview` section:
-
-```json
-"Config": {
-    "Overview": {
-        "epsg3857_string": "2249906.6679576184,2255734.9033189337,5663700.389039194,5669528.6247056825 [EPSG:3857]",
-    }
-},
-```
-
-After that, you need to resize the image to 4096x4096 pixels and convert it to the `.dds` format.
 
 ## DDS conversion
 
