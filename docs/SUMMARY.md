@@ -21,7 +21,7 @@
 ## Map Components
 * [Map Structure](map_structure.md)
 * [DEM (Elevation)](015_dem.md)
-* [Fields](fields.md)
+* [Fields](016_fields.md)
 * [Farmlands](farmlands.md)
 * [Textures](textures.md)
 * [Overview Image](014_overviewimage.md)

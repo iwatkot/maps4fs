@@ -133,7 +133,7 @@ Add realistic water bodies to your map:
 1. **Auto-generated fields**: Already placed based on real agricultural data
 2. **One-click painting**: Use field info layer to paint terrain textures
 3. **Adjust boundaries**: Modify field shapes if needed
-4. **Learn more**: [Fields Documentation](fields.md) TODO!!!
+4. **Learn more**: [Fields Documentation](016_fields.md)
 
 ### Step 11: 🏠 Add Farmlands
 1. **Pre-configured farmlands**: Generated automatically around fields

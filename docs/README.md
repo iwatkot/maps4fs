@@ -15,7 +15,7 @@ Recommended reading order:
 8. Learn how to [create a background terrain](006_backgroundterrain.md) for your map.
 9. Get familiar with [importing i3d files](import_to_giants_editor.md) into Giants Editor.
 10. Learn how to [create water planes](007_waterplanes.md) for Giants Editor.
-11. Read about working with [fields](fields.md) in Giants Editor.
+11. Read about working with [fields](016_fields.md) in Giants Editor.
 12. Read about working with [farmlands](farmlands.md) in Giants Editor.
 13. Check out the documentation about [usage of custom OSM files](008_customosm.md) in maps4fs.
 14. Learn how to work with the [splines](splines.md) and how to use them.
