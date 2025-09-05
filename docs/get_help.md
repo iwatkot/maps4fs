@@ -161,7 +161,7 @@ For other DTM providers:
 ### ✅ All Confirmed
 **I've checked everything above**
 
-[� Go to Step 5: Information Checklist](#step-5-information-checklist)
+[👉 Go to Step 5: Information Checklist](#step-5-information-checklist)
 
 </td>
 <td align="center" width="50%">
