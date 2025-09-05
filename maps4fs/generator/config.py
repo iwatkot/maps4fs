@@ -12,7 +12,7 @@ from maps4fs.logger import Logger
 logger = Logger()
 
 MFS_TEMPLATES_DIR = os.path.join(os.getcwd(), "templates")
-MFS_DEFAULTS_DIR = os.path.join(MFS_TEMPLATES_DIR, "defaults")
+MFS_DEFAULTS_DIR = os.path.join(os.getcwd(), "defaults")
 MFS_DEM_DEFAULTS_DIR = os.path.join(MFS_TEMPLATES_DIR, "dem")
 MFS_OSM_DEFAULTS_DIR = os.path.join(MFS_TEMPLATES_DIR, "osm")
 os.makedirs(MFS_OSM_DEFAULTS_DIR, exist_ok=True)
