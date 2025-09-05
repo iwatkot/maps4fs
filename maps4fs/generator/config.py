@@ -26,6 +26,23 @@ DEFAULT_DEM = DEFAULT_DEM_PATH if os.path.isfile(DEFAULT_DEM_PATH) else None
 logger.info("Default OSM: %s", DEFAULT_OSM)
 logger.info("Default DEM: %s", DEFAULT_DEM)
 
+# def default_osm() -> str | None:
+#     """Get the path to the default OSM file if it exists.
+
+#     Returns:
+#         str | None: The path to the default OSM file, or None if it doesn't exist.
+#     """
+#     return DEFAULT_OSM_PATH if os.path.isfile(DEFAULT_OSM_PATH) else None
+
+
+# def default_dem() -> str | None:
+#     """Get the path to the default DEM file if it exists.
+
+#     Returns:
+#         str | None: The path to the default DEM file, or None if it doesn't exist.
+#     """
+#     return DEFAULT_DEM_PATH if os.path.isfile(DEFAULT_DEM_PATH) else None
+
 
 def ensure_templates():
     """Ensure templates directory exists and is populated with data.
