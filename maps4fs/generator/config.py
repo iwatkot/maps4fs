@@ -21,27 +21,23 @@ os.makedirs(MFS_DEM_DEFAULTS_DIR, exist_ok=True)
 DEFAULT_OSM_PATH = os.path.join(MFS_OSM_DEFAULTS_DIR, "custom_osm.osm")
 DEFAULT_DEM_PATH = os.path.join(MFS_DEM_DEFAULTS_DIR, "custom_dem.png")
 
-DEFAULT_OSM = DEFAULT_OSM_PATH if os.path.isfile(DEFAULT_OSM_PATH) else None
-DEFAULT_DEM = DEFAULT_DEM_PATH if os.path.isfile(DEFAULT_DEM_PATH) else None
-logger.info("Default OSM: %s", DEFAULT_OSM)
-logger.info("Default DEM: %s", DEFAULT_DEM)
 
-# def default_osm() -> str | None:
-#     """Get the path to the default OSM file if it exists.
+def default_osm() -> str | None:
+    """Get the path to the default OSM file if it exists.
 
-#     Returns:
-#         str | None: The path to the default OSM file, or None if it doesn't exist.
-#     """
-#     return DEFAULT_OSM_PATH if os.path.isfile(DEFAULT_OSM_PATH) else None
+    Returns:
+        str | None: The path to the default OSM file, or None if it doesn't exist.
+    """
+    return DEFAULT_OSM_PATH if os.path.isfile(DEFAULT_OSM_PATH) else None
 
 
-# def default_dem() -> str | None:
-#     """Get the path to the default DEM file if it exists.
+def default_dem() -> str | None:
+    """Get the path to the default DEM file if it exists.
 
-#     Returns:
-#         str | None: The path to the default DEM file, or None if it doesn't exist.
-#     """
-#     return DEFAULT_DEM_PATH if os.path.isfile(DEFAULT_DEM_PATH) else None
+    Returns:
+        str | None: The path to the default DEM file, or None if it doesn't exist.
+    """
+    return DEFAULT_DEM_PATH if os.path.isfile(DEFAULT_DEM_PATH) else None
 
 
 def ensure_templates():
