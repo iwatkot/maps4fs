@@ -39,45 +39,32 @@
 
 </div>
 
-🗺️ Supports 2x2, 4x4, 8x8, 16x16 and any custom size maps<br>
-🔗 Generate maps using an [API](https://github.com/iwatkot/maps4fsapi)<br>
-✂️ Supports map scaling<br>
-🔄 Support map rotation<br>
-🌐 Supports custom [DTM Providers](https://github.com/iwatkot/pydtmdl)<br>
-🌾 Automatically generates fields<br>
-🌽 Automatically generates farmlands<br>
-🌿 Automatically generates decorative foliage<br>
-🌲 Automatically generates forests<br>
-🌊 Automatically generates water planes<br>
-📈 Automatically generates splines<br>
-🛰️ Automatically downloads high resolution satellite images<br>
-🌍 Based on real-world data from OpenStreetMap<br>
-🗺️ Supports [custom OSM maps](https://maps4fs.gitbook.io/docs/advanced-topics/custom_osm)<br>
-🏞️ Generates height map using SRTM dataset<br>
-📦 Provides a ready-to-use map template for the Giants Editor<br>
-🚜 Supports Farming Simulator 22 and 25<br>
-🔷 Generates \*.obj files for background terrain based on the real-world height map<br>
-📕 Detailed [documentation](https://maps4fs.gitbook.io/docs) and tutorials <br>
+🚜 **Farming Simulator 22 & 25** - Generate maps for both game versions<br>
+🗺️ **Flexible Map Sizes** - 2x2, 4x4, 8x8, 16x16 km + custom sizes<br>
+✂️ **Map Scaling & Rotation** - Perfect positioning and sizing control<br>
+
+🌍 **Real-World Foundation** - Built from OpenStreetMap and satellite data<br>
+🏞️ **Accurate Terrain** - SRTM elevation data with custom DTM support<br>
+🛰️ **High-Resolution Imagery** - Automatic satellite texture downloads<br>
+
+🌾 **Smart Field Generation** - Automatic farmable area detection<br>
+🌳 **Intelligent Farmlands** - Property boundaries based on real data<br>
+🌲 **Natural Forests** - Tree placement with customizable density<br>
+🌊 **Water Systems** - Rivers, lakes, and water planes<br>
+🌿 **Decorative Foliage** - Realistic vegetation and grass areas<br>
+
+🚧 **Complete Spline Networks** - Roads and infrastructure<br>
+🔷 **Background Terrain** - 3D *.obj files for surrounding landscape<br>
+📦 **Giants Editor Ready** - Import and start building immediately<br>
+
+🗺️ **Advanced Customization** - [Custom OSM maps](https://maps4fs.gitbook.io/docs/advanced-topics/custom_osm) and elevation data<br>
+🔌 **API Integration** - Generate maps programmatically via [API](https://github.com/iwatkot/maps4fsapi)<br>
+📚 **Complete Documentation** - [Detailed guides](https://maps4fs.gitbook.io/docs) and video tutorials<br>
 
 <p align="center">
-<img src="https://github.com/user-attachments/assets/cf8f5752-9c69-4018-bead-290f59ba6976"><br>
-🌎 Detailed terrain based on real-world data.<br><br>
-<img src="https://github.com/user-attachments/assets/dc40d0bb-c20b-411c-8833-9925d0389452"><br>
-🛰️ Realistic background terrain with satellite images.<br><br>
-<img src="https://github.com/user-attachments/assets/6e3c0e99-2cce-46ac-82db-5cb60bba7a30"><br>
-📐 Perfectly aligned background terrain.<br><br>
-<img src="https://github.com/user-attachments/assets/5764b2ec-e626-426f-9f5d-beb12ba95133"><br>
-🌿 Automatically generates decorative foliage.<br><br>
-<img src="https://github.com/user-attachments/assets/27a5e541-a9f5-4504-b8d2-64aae9fb3e52"><br>
-🌲 Automatically generates forests.<br><br>
-<img src="https://github.com/user-attachments/assets/cce7d4e0-cba2-4dd2-b22d-03137fb2e860"><br>
-🌊 Automatically generates water planes.<br><br>
-<img src="https://github.com/user-attachments/assets/0b05b511-a595-48e7-a353-8298081314a4"><br>
-📈 Automatically generates splines.<br><br>
-<img width="480" src="https://github.com/user-attachments/assets/1a8802d2-6a3b-4bfa-af2b-7c09478e199b"><br>
-🌾 Field generation with one click.<br><br>
-<img width="480" src="https://github.com/user-attachments/assets/4d1fa879-5d60-438b-a84e-16883bcef0ec"><br>
-🌽 Automatic farmlands generation based on the fields.<br><br>
+<img src="https://github.com/iwatkot/maps4fsui/releases/download/0.0.2/mfstr.gif"><br>
+<i>Example of map generated with Maps4FS with no manual edits.</i>
+</p>
 
 ## Overview
 
