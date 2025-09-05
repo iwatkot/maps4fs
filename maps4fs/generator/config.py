@@ -12,6 +12,19 @@ from maps4fs.logger import Logger
 logger = Logger()
 
 MFS_TEMPLATES_DIR = os.path.join(os.getcwd(), "templates")
+MFS_DEFAULTS_DIR = os.path.join(os.getcwd(), "defaults")
+MFS_DEM_DEFAULTS_DIR = os.path.join(MFS_DEFAULTS_DIR, "dem")
+MFS_OSM_DEFAULTS_DIR = os.path.join(MFS_DEFAULTS_DIR, "osm")
+os.makedirs(MFS_OSM_DEFAULTS_DIR, exist_ok=True)
+os.makedirs(MFS_DEM_DEFAULTS_DIR, exist_ok=True)
+
+DEFAULT_OSM_PATH = os.path.join(MFS_OSM_DEFAULTS_DIR, "custom_osm.osm")
+DEFAULT_DEM_PATH = os.path.join(MFS_DEM_DEFAULTS_DIR, "custom_dem.png")
+
+DEFAULT_OSM = DEFAULT_OSM_PATH if os.path.isfile(DEFAULT_OSM_PATH) else None
+DEFAULT_DEM = DEFAULT_DEM_PATH if os.path.isfile(DEFAULT_DEM_PATH) else None
+logger.info("Default OSM: %s", DEFAULT_OSM)
+logger.info("Default DEM: %s", DEFAULT_DEM)
 
 
 def ensure_templates():

@@ -10,6 +10,7 @@ services:
     volumes:
       - "${USERPROFILE}/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir"
       - "${USERPROFILE}/maps4fs/templates:/usr/src/app/templates"
+      - "${USERPROFILE}/maps4fs/mfsrootdir:/usr/src/app/defaults"
     restart: unless-stopped
 
   maps4fsui:
@@ -20,6 +21,8 @@ services:
       - "3000:3000"
     volumes:
       - "${USERPROFILE}/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir"
+      - "${USERPROFILE}/maps4fs/templates:/usr/src/app/templates"
+      - "${USERPROFILE}/maps4fs/templates:/usr/src/app/defaults"
     restart: unless-stopped
     depends_on:
       - maps4fsapi

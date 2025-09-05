@@ -1287,6 +1287,10 @@ function Test-RequiredDirectories {
         @{
             Path = "$userProfile\maps4fs\templates"
             Description = "For templates and schemas"
+        },
+        @{
+            Path = "$userProfile\maps4fs\defaults"
+            Description = "For default OSM and DEM files"
         }
     )
     

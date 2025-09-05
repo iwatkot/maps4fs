@@ -103,12 +103,12 @@ If you prefer to set up the containers manually, you can use the following comma
 
 ```powershell
 # Backend API container
-docker run -d --pull=always -p 8000:8000 --name maps4fsapi -v $env:USERPROFILE/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir -v $env:USERPROFILE/maps4fs/templates:/usr/src/app/templates iwatkot/maps4fsapi
+docker run -d --pull=always -p 8000:8000 --name maps4fsapi -v $env:USERPROFILE/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir -v $env:USERPROFILE/maps4fs/templates:/usr/src/app/templates -v $env:USERPROFILE/maps4fs/defaults:/usr/src/app/defaults iwatkot/maps4fsapi
 ```
 
 ```powershell
 # Frontend UI container
-docker run -d --pull=always -p 3000:3000 --name maps4fsui -v $env:USERPROFILE/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir iwatkot/maps4fsui
+docker run -d --pull=always -p 3000:3000 --name maps4fsui -v $env:USERPROFILE/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir -v $env:USERPROFILE/maps4fs/templates:/usr/src/app/templates -v $env:USERPROFILE/maps4fs/defaults:/usr/src/app/defaults iwatkot/maps4fsui
 ```
 
 *️⃣ Remember that you can set the preferable directory to mount as well as specify the needed port or even deploy the specific version of the container.
@@ -118,8 +118,11 @@ docker run -d --pull=always -p 3000:3000 --name maps4fsui -v $env:USERPROFILE/ma
 After deployment, you can access the web interface of Maps4FS by opening your browser and navigating to `http://localhost:3000`. The backend API will be accessible at `http://localhost:8000`.  
 
 By default, the following directories are mounted and used:  
-- `C:/Users/YourUsername/maps4fs/mfsrootdir` - Shared working directory between backend and frontend (maps and cache).
-- `C:/Users/YourUsername/maps4fs/templates` - Templates and schemas directory for API.
+- `C:/Users/YourUsername/maps4fs/mfsrootdir` - Shared working directory between backend and frontend (maps and cache).  
+- `C:/Users/YourUsername/maps4fs/templates` - Templates and schemas directory for API.  
+- `C:/Users/YourUsername/maps4fs/defaults` - Default OSM and DEM files for API.  
+
+Learn more about the [Data Directory structure](data_directory.md) and [Map Templates](map_templates.md).
 
 ## Troubleshooting
 

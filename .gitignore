@@ -23,3 +23,5 @@ local.env
 dev/utils/grle_to_png/data/
 mfsrootdir/
 data/
+defaults/
+templates/
