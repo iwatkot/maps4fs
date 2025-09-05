@@ -64,7 +64,6 @@ powershell -ExecutionPolicy Bypass -Command "iex (iwr 'https://raw.githubusercon
 ### 📖 Detailed Instructions
 For complete setup guides including Docker installation:
 - 📚 [Local Deployment Guide](local_deployment.md)
-- 🐳 [Docker FAQ](FAQ_docker.md)
 
 ---
 
