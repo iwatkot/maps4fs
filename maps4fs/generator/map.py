@@ -127,6 +127,7 @@ class Map:
         self.components: list[Component] = []
         custom_dem = kwargs.get("custom_background_path", None)
         self.custom_background_path = custom_dem or mfscfg.default_dem()
+        self.logger.info("Custom DEM path: %s", self.custom_background_path)
 
     def process_settings(self) -> None:
         """Checks the settings by predefined rules and updates them accordingly."""

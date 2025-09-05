@@ -17,9 +17,11 @@ MFS_DEM_DEFAULTS_DIR = os.path.join(MFS_DEFAULTS_DIR, "dem")
 MFS_OSM_DEFAULTS_DIR = os.path.join(MFS_DEFAULTS_DIR, "osm")
 os.makedirs(MFS_OSM_DEFAULTS_DIR, exist_ok=True)
 os.makedirs(MFS_DEM_DEFAULTS_DIR, exist_ok=True)
+logger.info("MFS_TEMPLATES_DIR: %s. MFS_DEFAULTS_DIR: %s.", MFS_TEMPLATES_DIR, MFS_DEFAULTS_DIR)
 
 DEFAULT_OSM_PATH = os.path.join(MFS_OSM_DEFAULTS_DIR, "custom_osm.osm")
 DEFAULT_DEM_PATH = os.path.join(MFS_DEM_DEFAULTS_DIR, "custom_dem.png")
+logger.info("DEFAULT_OSM_PATH: %s. DEFAULT_DEM_PATH: %s.", DEFAULT_OSM_PATH, DEFAULT_DEM_PATH)
 
 
 def default_osm() -> str | None:
@@ -28,7 +30,9 @@ def default_osm() -> str | None:
     Returns:
         str | None: The path to the default OSM file, or None if it doesn't exist.
     """
-    return DEFAULT_OSM_PATH if os.path.isfile(DEFAULT_OSM_PATH) else None
+    res = DEFAULT_OSM_PATH if os.path.isfile(DEFAULT_OSM_PATH) else None
+    logger.info("Default OSM in %s, result: %s", DEFAULT_OSM_PATH, res)
+    return res
 
 
 def default_dem() -> str | None:
@@ -37,7 +41,9 @@ def default_dem() -> str | None:
     Returns:
         str | None: The path to the default DEM file, or None if it doesn't exist.
     """
-    return DEFAULT_DEM_PATH if os.path.isfile(DEFAULT_DEM_PATH) else None
+    res = DEFAULT_DEM_PATH if os.path.isfile(DEFAULT_DEM_PATH) else None
+    logger.info("Default DEM in %s, result: %s", DEFAULT_DEM_PATH, res)
+    return res
 
 
 def ensure_templates():
