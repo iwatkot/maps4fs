@@ -22,8 +22,8 @@
   <a href="https://maps4fs.gitbook.io/docs/getting-started/faq">FAQ</a> •
   <a href="https://maps4fs.gitbook.io/docs/setup-and-installation/get_help">Get Help</a> •
   <a href="#Resources">Resources</a> •
-  <a href="#Bugs-and-feature-requests">Bugs and feature requests</a><br>
-  <a href="#Special-thanks">Special thanks</a>
+  <a href="#Special-thanks">Special thanks</a> •
+  <a href="https://www.youtube.com/watch?v=hPbJZ0HoiDE&list=PLug0g7UYHX8D1Jik6NkJjQhdxqS-NOtB9">Video Tutorials</a>
 </p>
 
 [![Join Discord](https://img.shields.io/badge/join-discord-blue)](https://discord.gg/Sj5QKKyE42)
@@ -52,13 +52,12 @@
 📈 Automatically generates splines<br>
 🛰️ Automatically downloads high resolution satellite images<br>
 🌍 Based on real-world data from OpenStreetMap<br>
-🗺️ Supports [custom OSM maps](/docs/008_customosm.md)<br>
+🗺️ Supports [custom OSM maps](https://maps4fs.gitbook.io/docs/advanced-topics/custom_osm)<br>
 🏞️ Generates height map using SRTM dataset<br>
 📦 Provides a ready-to-use map template for the Giants Editor<br>
 🚜 Supports Farming Simulator 22 and 25<br>
 🔷 Generates \*.obj files for background terrain based on the real-world height map<br>
-📄 Generates scripts to download high-resolution satellite images from [QGIS](https://qgis.org/download/) in one click<br>
-📕 Detailed [documentation](/docs) and tutorials <br>
+📕 Detailed [documentation](https://maps4fs.gitbook.io/docs) and tutorials <br>
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/cf8f5752-9c69-4018-bead-290f59ba6976"><br>
@@ -80,51 +79,42 @@
 <img width="480" src="https://github.com/user-attachments/assets/4d1fa879-5d60-438b-a84e-16883bcef0ec"><br>
 🌽 Automatic farmlands generation based on the fields.<br><br>
 
-📹 Check out the complete playlist of video turorials on [YouTube](https://www.youtube.com/watch?v=hPbJZ0HoiDE&list=PLug0g7UYHX8D1Jik6NkJjQhdxqS-NOtB9). 🆕<br>
-
-![Map example](https://github.com/user-attachments/assets/c46a3581-dd17-462f-b815-e36d4f724947)
-
-<p align="center"><i>Map example generated with maps4fs.</i></p>
-
 ## Overview
 
-The core idea is coming from the awesome [maps4cim](https://github.com/klamann/maps4cim) project.<br>
+The core idea originates from the excellent [maps4cim](https://github.com/klamann/maps4cim) project.<br>
 
-The main goal of this project is to generate map templates, based on real-world data, for the Farming Simulator. It's important to mention that **templates are not maps**. They are just a starting point for creating a map. This tool just uses built-in textures to highlight different types of terrain and buildings with correct shapes and scales and to generate a height map. The rest of the work is up to you. So if you thought that you could just run this tool and get a playable map, then I'm sorry to disappoint you. But if you are a map maker, then this tool will save you a lot of time.<br>
-So, if you're new to map making, here's a quick overview of the process:
+The main goal of this project is to generate map templates based on real-world data for Farming Simulator. It's important to understand that **templates are not finished maps**. They serve as a foundation for map creation, using built-in textures to represent different terrain types and structures with accurate shapes and scales, along with generating realistic height maps. The detailed work of creating a complete, playable map remains with you. If you expected to simply run this tool and receive a ready-to-play map, this may not meet those expectations. However, if you're a map creator, this tool will significantly reduce your development time.<br>
+
+For newcomers to map creation, here's the typical workflow:
 
 1. Generate a map template using this tool.
 2. Download the Giants Editor.
-3. Open the map template in the Giants Editor.
-4. Now you can start creating your map (adding roads, fields, buildings, etc.).
+3. Open the generated template in Giants Editor.
+4. Begin detailed map development (adding roads, fields, buildings, etc.).
 
 ## Resources
 
-In this section, you'll find a list of the resources that you need to create a map for the Farming Simulator.<br>
-To create a basic map, you only need the Giants Editor. But if you want to create a background terrain - the world around the map, so it won't look like it's floating in the void - you also need Blender and the Blender Exporter Plugins. To create realistic textures for the background terrain, the QGIS is required to obtain high-resolution satellite images.<br>
+This section lists essential tools required for Farming Simulator map creation.<br>
+For basic map development, you only need Giants Editor. However, creating background terrain—the surrounding world that prevents your map from appearing to float in empty space—requires additional tools: Blender with the official exporter plugins. For realistic background terrain textures, QGIS is needed to obtain high-resolution satellite imagery.<br>
 
-1. [Giants Editor](https://gdn.giants-software.com/downloads.php) - the official tool for creating maps for the Farming Simulator.
-2. [Blender](https://www.blender.org/download/) - the open-source 3D modeling software that you can use to create models for the Farming Simulator.
-3. [Blender Exporter Plugins](https://gdn.giants-software.com/downloads.php) - the official plugins for exporting models from Blender to i3d format (the format used in the Farming Simulator).
-
-## Bugs and feature requests
-
-➡️ Please, before creating an issue or asking some questions, check the [FAQ](docs/FAQ.md) section and the follow the [docs/get_help.md](Get Help) instructions.
+1. [Giants Editor](https://gdn.giants-software.com/downloads.php) - Official map creation tool for Farming Simulator
+2. [Blender](https://www.blender.org/download/) - Open-source 3D modeling software for creating Farming Simulator assets
+3. [Blender Exporter Plugins](https://gdn.giants-software.com/downloads.php) - Official plugins for exporting models from Blender to i3d format (Farming Simulator's native format)
 
 ## Special thanks
 
-Of course, first of all, thanks to the direct [contributors](https://github.com/iwatkot/maps4fs/graphs/contributors) of the project.
+First and foremost, thanks to our direct [contributors](https://github.com/iwatkot/maps4fs/graphs/contributors) who have made code contributions to the project.
 
-But also, I want to thank the people who helped me with the project in some way, even if they didn't contribute directly. Here's the list of them:
+Additionally, we extend gratitude to community members who have supported the project through feedback, testing, and expertise, even without direct code contributions:
 
-- [Ka5tis](https://github.com/Ka5tis) - for investigating the issue with a "spiky terrain" and finding a solution - changing the `DisplacementLayer` size to a higher value.
-- [Kalderone](https://www.youtube.com/@Kalderone_FS22) - for useful feedback, suggestions, expert advice on the map-making process and highlihting some important settings in the Giants Editor.
-- [OneSunnySunday](https://www.artstation.com/onesunnysunday) - for expert advice on Blender, help in processing background terrain, and compiling detailed tutorials on how to prepare the OBJ files for use in Giants Editor.
-- [BFernaesds](https://github.com/BFernaesds) - for the manual tests of the app.
-- [gamerdesigns](https://github.com/gamerdesigns) - for the manual tests of the app.
-- [Tox3](https://github.com/Tox3) - for the manual tests of the app.
-- [Lucandia](https://github.com/Lucandia) - for the awesome StreamLit [widget to preview STL files](https://github.com/Lucandia/streamlit_stl).
-- [H4rdB4se](https://github.com/H4rdB4se) - for investigating the issue with custom OSM files and finding a proper way to work with the files in JOSM.
-- [kbrandwijk](https://github.com/kbrandwijk) - for providing [awesome tool](https://github.com/Paint-a-Farm/satmap_downloader) to download the satellite images from the Google Maps and giving a permission to modify it and create a Python Package.
-- [Maaslandmods](https://github.com/Maaslandmods) - for the awesome idea to edit the tree schema in UI, images and code snippets on how to do it.
-- [StrauntMaunt](https://gitlab.com/StrauntMaunt) - for developing procedural generation scripts, providing with the required updates for maps4fs and preparing the docs on how to use procedural generation.
+- [Ka5tis](https://github.com/Ka5tis) - Investigated the "spiky terrain" issue and discovered the solution: increasing `DisplacementLayer` size values
+- [Kalderone](https://www.youtube.com/@Kalderone_FS22) - Provided valuable feedback, suggestions, and expert guidance on map-making processes, highlighting crucial Giants Editor settings
+- [kirasolda](https://github.com/kirasolda) - Offered expert Blender advice, assisted with background terrain processing, and created detailed tutorials for preparing OBJ files for Giants Editor
+- [BFernaesds](https://github.com/BFernaesds) - Conducted comprehensive manual application testing
+- [gamerdesigns](https://github.com/gamerdesigns) - Performed thorough manual application testing
+- [Tox3](https://github.com/Tox3) - Contributed extensive manual application testing
+- [Lucandia](https://github.com/Lucandia) - Developed the excellent StreamLit [STL file preview widget](https://github.com/Lucandia/streamlit_stl)
+- [H4rdB4se](https://github.com/H4rdB4se) - Investigated custom OSM file compatibility issues and established proper JOSM workflow procedures
+- [kbrandwijk](https://github.com/kbrandwijk) - Created the [satellite image downloader tool](https://github.com/Paint-a-Farm/satmap_downloader) for Google Maps and granted permission for modification and Python package creation
+- [Maaslandmods](https://github.com/Maaslandmods) - Conceived the UI tree schema editing feature and provided implementation images and code examples
+- [StrauntMaunt](https://gitlab.com/StrauntMaunt) - Developed procedural generation scripts, provided essential Maps4FS updates, and authored procedural generation documentation
