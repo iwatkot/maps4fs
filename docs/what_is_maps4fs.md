@@ -79,8 +79,8 @@ Maps4FS works worldwide thanks to:
 
 Ready to create your first map? Check out our guides:
 
-- 📚 TODO!!!!!!!!
-- ⚙️ TODO!!!!!!!!
+- 📚 [Step by Step Guide](step_by_step_guide.md) - Complete walkthrough from start to finish
+- ⚙️ [Main Settings](main_settings.md) - Essential configuration options
 - ❓ [FAQ](FAQ.md) - Common questions and answers
 - 🎓 [Video Tutorials](https://www.youtube.com/watch?v=hPbJZ0HoiDE&list=PLug0g7UYHX8D1Jik6NkJjQhdxqS-NOtB9) - Complete YouTube playlist
 
