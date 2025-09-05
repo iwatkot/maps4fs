@@ -13,12 +13,16 @@
 * [Main Settings](main_settings.md)
 * [Generation Settings](generation_settings.md)
 * [Texture Schema](texture_schema.md)
+* [Tree Schema](tree_schema.md)
+* [GRLE Schema](grle_schema.md)
 * [Generation Info](generation_info.md)
 
 ## 💻 Setup & Installation
 * [Local Deployment](local_deployment.md)
 * [Python Package Deployment](python_package_deployment.md)
 * [Getting Help](get_help.md)
+* [Data Directory](data_directory.md)
+* [Map Templates](map_templates.md)
 
 ## 🗺️ Map Components
 * [Map Structure](map_structure.md)
@@ -31,6 +35,7 @@
 
 ## 🎓 Advanced Topics
 * [Custom OSM](custom_osm.md)
+* [Custom DEM](custom_dem.md)
 * [Background Terrain](background_terrain.md)
 * [Water Planes](water_planes.md)
 * [Procedural Generation](procedural_generation.md)
