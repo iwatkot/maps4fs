@@ -57,7 +57,6 @@ There are different ways to deploy the tool locally, depending on your needs and
 The easiest way to deploy Maps4FS locally is using our automated setup wizard. You can run it directly from PowerShell:
 
 ```powershell
-# Execute setup wizard directly from GitHub
 powershell -ExecutionPolicy Bypass -Command "iex (iwr 'https://raw.githubusercontent.com/iwatkot/maps4fs/main/setup-wizard.ps1' -UseBasicParsing).Content"
 ```
 
