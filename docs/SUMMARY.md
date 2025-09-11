@@ -19,11 +19,15 @@
 
 ## 💻 Setup & Installation
 * [Local Deployment](local_deployment.md)
-* [My Maps](my_maps.md)
 * [Python Package Deployment](python_package_deployment.md)
+* [Legacy Deployment (Deprecated)](legacy.md)
 * [Getting Help](get_help.md)
 * [Data Directory](data_directory.md)
 * [Map Templates](map_templates.md)
+
+## ⚡ Additional Features
+* [My Maps](my_maps.md)
+* [Schemas Editor](schemas_editor.md)
 
 ## 🗺️ Map Components
 * [Map Structure](map_structure.md)
