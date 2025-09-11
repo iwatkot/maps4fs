@@ -72,6 +72,10 @@ The core idea originates from the excellent [maps4cim](https://github.com/klaman
 
 The main goal of this project is to generate map templates based on real-world data for Farming Simulator. It's important to understand that **templates are not finished maps**. They serve as a foundation for map creation, using built-in textures to represent different terrain types and structures with accurate shapes and scales, along with generating realistic height maps. The detailed work of creating a complete, playable map remains with you. If you expected to simply run this tool and receive a ready-to-play map, this may not meet those expectations. However, if you're a map creator, this tool will significantly reduce your development time.<br>
 
+![Maps4FS Interface](https://github.com/iwatkot/maps4fsapi/releases/download/2.6.0/screenshot-localhost-3000-1757595208136.png)
+
+![My Maps Interface](https://github.com/iwatkot/maps4fsui/releases/download/2.6.0.1/screenshot-localhost-3000-1757595594033.png)
+
 For newcomers to map creation, here's the typical workflow:
 
 1. Generate a map template using this tool.

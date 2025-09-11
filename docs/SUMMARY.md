@@ -19,6 +19,7 @@
 
 ## 💻 Setup & Installation
 * [Local Deployment](local_deployment.md)
+* [My Maps](my_maps.md)
 * [Python Package Deployment](python_package_deployment.md)
 * [Getting Help](get_help.md)
 * [Data Directory](data_directory.md)

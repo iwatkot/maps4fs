@@ -16,6 +16,8 @@ Maps4FS automatically generates complete, ready-to-use map templates for **Farmi
 
 ## 🚀 Key Features
 
+![Maps4FS Interface](https://github.com/iwatkot/maps4fsapi/releases/download/2.6.0/screenshot-localhost-3000-1757595208136.png)
+
 ### Automated Generation
 - **Fields & Farmlands**: Automatically detects and creates farmable areas
 - **Forests**: Places trees based on real forest data with customizable density
