@@ -20,7 +20,6 @@
 ## 💻 Setup & Installation
 * [Local Deployment](local_deployment.md)
 * [Python Package Deployment](python_package_deployment.md)
-* [Legacy Deployment (Deprecated)](legacy.md)
 * [Getting Help](get_help.md)
 * [Data Directory](data_directory.md)
 * [Map Templates](map_templates.md)
@@ -45,3 +44,4 @@
 * [Water Planes](water_planes.md)
 * [Procedural Generation](procedural_generation.md)
 * [DDS Conversion](dds_conversion.md)
+* [Legacy](legacy.md)
