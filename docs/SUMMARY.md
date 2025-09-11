@@ -19,11 +19,14 @@
 
 ## 💻 Setup & Installation
 * [Local Deployment](local_deployment.md)
-* [My Maps](my_maps.md)
 * [Python Package Deployment](python_package_deployment.md)
 * [Getting Help](get_help.md)
 * [Data Directory](data_directory.md)
 * [Map Templates](map_templates.md)
+
+## ⚡ Additional Features
+* [My Maps](my_maps.md)
+* [Schemas Editor](schemas_editor.md)
 
 ## 🗺️ Map Components
 * [Map Structure](map_structure.md)
@@ -41,3 +44,4 @@
 * [Water Planes](water_planes.md)
 * [Procedural Generation](procedural_generation.md)
 * [DDS Conversion](dds_conversion.md)
+* [Legacy](legacy.md)
