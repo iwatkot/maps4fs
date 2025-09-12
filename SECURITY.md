@@ -18,7 +18,7 @@ If you discover a security vulnerability in maps4fs, please report it responsibl
 ### How to Report
 
 1. **Do not** create a public GitHub issue for security vulnerabilities
-2. **Do** send an email to [iwatkot@gmail.com](mailto:iwatkot@gmail.com) with the subject line "Security Vulnerability in maps4fs"
+2. **Do** send an email to [contact@iwtk.me](mailto:contact@iwtk.me) with the subject line "Security Vulnerability in maps4fs"
 3. Include the following information in your report:
    - A detailed description of the vulnerability
    - Steps to reproduce the issue
