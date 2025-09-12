@@ -7,6 +7,7 @@
 * [Step by Step Guide](step_by_step_guide.md)
 * [How to Launch Maps4FS](how_to_launch.md)
 * [Workflow Optimizations](workflow_optimizations.md)
+* [Troubleshooting](troubleshooting.md)
 * [FAQ](FAQ.md)
 
 ## 🔧 Understanding the basics
