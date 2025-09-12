@@ -112,6 +112,32 @@ docker run -d --pull=always -p 3000:3000 --name maps4fsui -v $env:USERPROFILE/ma
 
 *️⃣ Remember that you can set the preferable directory to mount as well as specify the needed port or even deploy the specific version of the container.
 
+## Upgrade
+
+To upgrade Maps4FS to the latest version, follow the method that matches your original deployment:
+
+### Using Setup Wizard
+
+The [Setup Wizard](#setup-wizard) automatically handles upgrades. Simply run the same command again:
+
+```powershell
+powershell -ExecutionPolicy Bypass -Command "iex (iwr 'https://raw.githubusercontent.com/iwatkot/maps4fs/main/setup-wizard.ps1' -UseBasicParsing).Content"
+```
+
+The wizard will detect existing containers, remove old versions, and deploy the latest release.
+
+### Docker Compose or Manual Deployment
+
+For [Docker Compose](#using-docker-compose) or [Manual Deployment](#manual-deployment), stop and remove existing containers first:
+
+```powershell
+# Stop and remove existing containers
+docker stop maps4fsapi maps4fsui
+docker rm maps4fsapi maps4fsui
+```
+
+Then follow your original deployment method to install the latest version.
+
 ## Usage
 
 After deployment, you can access the web interface of Maps4FS by opening your browser and navigating to `http://localhost:3000`. The backend API will be accessible at `http://localhost:8000`.  
