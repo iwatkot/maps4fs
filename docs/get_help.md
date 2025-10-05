@@ -1,6 +1,33 @@
 # Getting Help with Maps4FS
 
-This guide will help you get the right support for your Maps4FS issue. Please follow the decision tree below step by step.
+## 🆕 Interactive Help Tool (Recommended)
+
+**The easiest way to get help is using our interactive help page:**
+
+- **Local Deployment:** `http://localhost:3000/help`
+- **Public App:** `http://maps4fs.xyz/help`
+
+This interactive tool will:
+- ✅ Guide## 📋 Quick Reference Guide
+
+| 🎯 Scenario | 🔄 Action |
+|-------------|-----------|
+| 🆕 **Any issue** | 🎯 **Use Interactive Help Tool first** (`/help` page) |
+| 🌐 Public app down | ⛔ No support provided |
+| 🏠 Local deployment issues | 📖 Follow [troubleshooting guide](local_deployment.md#troubleshooting) first |
+| 🐛 Tool works but has problems | ✅ Interactive Help Tool → OR → ✅ FAQ → ✅ SRTM30 → ✅ Manual checklist → 💬 Discord/🐛 GitHub |
+| 🗺️ Non-SRTM30 DTM issues | 👤 Contact DTM provider author at [PyDTMDL](https://github.com/iwatkot/pydtmdl) |ough troubleshooting step-by-step
+- 📋 Help you fill out all required information
+- 📄 Generate a shareable markdown file for support requests
+- 🎯 Ensure you include all necessary details
+
+**If the interactive tool doesn't solve your issue, it will prepare everything you need for manual support below.**
+
+---
+
+## Manual Support Process
+
+If you prefer manual support or the interactive tool isn't available, follow the decision tree below step by step.
 
 ## 🚀 Step 1: Which version are you using?
 
@@ -212,6 +239,8 @@ Prepare answers to these questions:
 
 ### 📞 Choose Your Support Channel
 
+**💡 TIP: If you used the [Interactive Help Tool](#-interactive-help-tool-recommended), you already have a formatted markdown file ready to share!**
+
 <table>
 <tr>
 <td align="center" width="50%">
@@ -226,7 +255,9 @@ Prepare answers to these questions:
 
 [![Join Discord](https://img.shields.io/badge/join-discord-blue)](https://discord.gg/Sj5QKKyE42)
 
-**Post in #support channel with your checklist**
+**Post in #support channel with:**
+- Your interactive help output (if available)
+- Or your manual checklist information
 
 </td>
 <td align="center" width="50%">
@@ -244,6 +275,8 @@ Prepare answers to these questions:
 - Familiar with issue templates
 
 🐛 **[Create GitHub Issue](https://github.com/iwatkot/maps4fs/issues/new/choose)**
+
+**Paste your interactive help output or manual information**
 
 </td>
 </tr>
