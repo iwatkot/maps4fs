@@ -5,7 +5,7 @@
 **The easiest way to get help is using our interactive help page:**
 
 - **Local Deployment:** `http://localhost:3000/help`
-- **Public App:** `http://maps4fs.xyz/help`
+- **Public App:** [http://maps4fs.xyz/help](http://maps4fs.xyz/help)
 
 This interactive tool will:
 - ✅ Guide## 📋 Quick Reference Guide
