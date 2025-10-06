@@ -2,6 +2,8 @@
 
 Custom DEM functionality allows you to use your own elevation data instead of relying on publicly available sources. This gives you complete control over terrain elevation for both the playable map area and surrounding background terrain.
 
+💡 **New Feature**: The [Presets](presets.md) system now supports multiple DEM files, allowing you to maintain libraries of elevation data and switch between different terrain configurations easily.
+
 ## What is Custom DEM?
 
 A Custom DEM is a user-provided elevation map that defines the terrain height data for your entire map region. Unlike standard DEM sources that Maps4FS downloads automatically, custom DEMs let you:
@@ -75,19 +77,22 @@ The extra 4096 pixels provide background terrain data extending beyond the playa
 
 ## File Placement
 
-### **Data Directory Location**
-Place your custom DEM file in the defaults directory:
+### **Presets System (Local Deployment Only)**
+⚠️ **Local Deployment Required**: This method requires [Local Deployment](local_deployment.md) and uses the [Presets](presets.md) feature.
+
+For managing multiple DEM configurations:
 
 ```
 📁 Data Directory/
 └── 📂 defaults/
     └── 📂 dem/
-        └── 📄 custom_dem.png  ← Your DEM file here
+        ├── 📄 alps_mountains_4x4.png     ← Alpine terrain
+        ├── 📄 plains_midwest_8x8.png     ← Flat farmland
+        ├── 📄 coastal_norway_2x2.png     ← Coastal terrain
+        └── 📄 [your_files].png           ← Multiple DEM presets
 ```
 
-### **File Naming**
-- **Required name**: `custom_dem.png`
-- **Case sensitive**: Use exact filename
+**File Naming**: Use descriptive names that help identify the terrain type, region, and map size. Select your DEM preset in the Maps4FS interface during map generation.
 - **Single file**: Only one custom DEM per Data Directory
 
 ## Creation Workflow
@@ -111,7 +116,8 @@ Place your custom DEM file in the defaults directory:
 4. **Test placement** in Data Directory
 
 ### **Step 4: Integration**
-1. Place file in `defaults/dem/custom_dem.png`
+1. Place file with descriptive name in `defaults/dem/[your_filename].png`
+2. Select your DEM preset in the Maps4FS interface during map generation
 2. Run Maps4FS generation
 3. Verify terrain appears correctly in generated map
 
@@ -121,7 +127,8 @@ Place your custom DEM file in the defaults directory:
 **Symptoms**: Maps4FS fails during DEM processing
 
 **Solutions**:
-- Verify exact filename: `custom_dem.png`
+- Verify file appears in presets selection UI
+- Check that file dimensions match your intended map size requirements
 - Check image dimensions using the formula
 - Confirm 16-bit grayscale PNG format
 - Ensure file is not corrupted

@@ -2,6 +2,8 @@
 
 This document describes the advanced settings available in **maps4fs** - a map generator for Farming Simulator. These settings allow you to fine-tune various aspects of the map generation process to achieve the best results for your specific terrain and requirements.
 
+🆕 **Presets Available**: The [Presets](presets.md) system allows you to save and manage multiple Generation Settings configurations. Create presets for different map styles like "Dense Forests", "Realistic Fields", or "Mountain Terrain" and apply them with one click in [Local Deployment](local_deployment.md).
+
 ## DEM (Digital Elevation Model) Settings
 
 These settings control the generation and processing of the DEM map image, which defines the terrain elevation and height data for your map.

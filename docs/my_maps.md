@@ -71,12 +71,14 @@ My Maps stores everything in your Data Directory's mounted storage using this st
     ├── 📂 map_name_1/
     │   ├── 📄 generation_settings.json
     │   ├── 📄 generation_info.json
-    │   ├── 📄 custom_osm.osm (if used)
+    │   ├── 📄 custom_data.osm (if used)
     │   ├── 📄 custom_dem.tif (if used)
     │   └── 📂 previews/
     └── 📂 map_name_2/
         └── ...
 ```
+
+🆕 **Presets Integration**: My Maps now integrates with the [Presets](presets.md) system, allowing you to copy successful configurations from generated maps directly into your presets library for reuse.
 
 This means maps survive container updates, restarts, and system changes. Your library becomes a permanent asset that grows more valuable over time.
 

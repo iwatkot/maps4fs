@@ -323,6 +323,7 @@ class MainSettings(NamedTuple):
     rotation: int
     dtm_provider: str
     custom_osm: bool
+    custom_dem: bool
     is_public: bool
     date: str
     time: str
@@ -358,6 +359,7 @@ class MainSettings(NamedTuple):
             "rotation": self.rotation,
             "dtm_provider": self.dtm_provider,
             "custom_osm": self.custom_osm,
+            "custom_dem": self.custom_dem,
             "is_public": self.is_public,
             "date": self.date,
             "time": self.time,
@@ -388,6 +390,7 @@ class MainSettings(NamedTuple):
             rotation=map.rotation,
             dtm_provider=map.dtm_provider.name(),
             custom_osm=bool(map.custom_osm),
+            custom_dem=bool(map.custom_background_path),
             is_public=map.kwargs.get("is_public", False),
             date=datetime.now().strftime("%Y-%m-%d"),
             time=datetime.now().strftime("%H:%M:%S"),
