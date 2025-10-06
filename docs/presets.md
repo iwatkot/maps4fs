@@ -13,6 +13,8 @@ Presets are pre-configured collections of map generation resources that include:
 
 Each preset acts as a complete "recipe" for generating a specific type or style of map, eliminating repetitive setup and ensuring consistency across your projects.
 
+![Presets Interface](https://github.com/iwatkot/maps4fsui/releases/download/2.6.2.8/presets1.png)
+
 ## Why Use Presets?
 
 ### **Workflow Efficiency**
@@ -91,6 +93,8 @@ Generation Settings control detailed aspects of the map creation process:
 **📋 File Format**: JSON configuration files
 
 📖 **Learn More**: See [Generation Settings](generation_settings.md) for comprehensive parameter documentation.
+
+![Manage Presets](https://github.com/iwatkot/maps4fsui/releases/download/2.6.2.8/presets2.png)
 
 ### 📊 Preset Types Quick Reference
 
@@ -214,6 +218,8 @@ The Presets system integrates seamlessly with the **My Maps** feature, creating 
 - **Preserve Working Settings** - Backup configurations that produced great results
 - **Cross-Project Reuse** - Apply successful settings from one project to new maps
 - **Iterative Improvement** - Save variations and refinements of your best configurations
+
+![My Maps Integration](https://github.com/iwatkot/maps4fsui/releases/download/2.6.2.8/presets3.png)
 
 ## 🔧 Troubleshooting
 
