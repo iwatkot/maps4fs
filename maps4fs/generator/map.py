@@ -82,7 +82,6 @@ class Map:
         if custom_dem:
             save_path = os.path.join(self.map_directory, os.path.basename(custom_dem))
             shutil.copyfile(custom_dem, save_path)
-            self.logger.debug("Custom DEM copied to %s", save_path)
             self.custom_background_path = save_path
         # endregion
 
