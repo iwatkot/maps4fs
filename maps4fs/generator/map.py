@@ -70,7 +70,6 @@ class Map:
             raise FileNotFoundError(f"Custom OSM file {custom_osm} does not exist.")
         mfsutils.check_and_fix_osm(custom_osm, save_directory=self.map_directory)
         self.custom_osm = custom_osm
-        logger.info("Custom OSM path: %s", self.custom_osm)
         # endregion
 
         # region main settings
@@ -130,7 +129,6 @@ class Map:
         if custom_dem and not os.path.isfile(custom_dem):
             raise FileNotFoundError(f"Custom DEM file {custom_dem} does not exist.")
         self.custom_background_path = custom_dem
-        self.logger.info("Custom DEM path: %s", self.custom_background_path)
 
     def process_settings(self) -> None:
         """Checks the settings by predefined rules and updates them accordingly."""
