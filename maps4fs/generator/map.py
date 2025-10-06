@@ -66,10 +66,11 @@ class Map:
         # endregion
 
         # region custom OSM properties
-        self.custom_osm = custom_osm
         if custom_osm and not os.path.isfile(custom_osm):
             raise FileNotFoundError(f"Custom OSM file {custom_osm} does not exist.")
-        mfsutils.check_and_fix_osm(self.custom_osm, save_directory=self.map_directory)
+        mfsutils.check_and_fix_osm(custom_osm, save_directory=self.map_directory)
+        self.custom_osm = custom_osm
+        logger.info("Custom OSM path: %s", self.custom_osm)
         # endregion
 
         # region main settings
@@ -126,9 +127,9 @@ class Map:
         self.shared_settings = SharedSettings()
         self.components: list[Component] = []
         custom_dem = kwargs.get("custom_background_path", None)
-        self.custom_background_path = custom_dem
         if custom_dem and not os.path.isfile(custom_dem):
             raise FileNotFoundError(f"Custom DEM file {custom_dem} does not exist.")
+        self.custom_background_path = custom_dem
         self.logger.info("Custom DEM path: %s", self.custom_background_path)
 
     def process_settings(self) -> None:
