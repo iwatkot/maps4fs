@@ -25,6 +25,8 @@ Expect to generate your map multiple times before achieving optimal results. To 
 - Preserve compatibility with existing custom assets when regenerating specific components
 - Quickly revert to previous successful configurations
 
+🆕 **Presets Integration**: The [Presets](presets.md) system (Local Deployment only) dramatically improves workflow efficiency by allowing you to save and manage multiple configurations. Build libraries of successful settings, OSM data, and DEM files for instant reuse across projects.
+
 Learn more in the [Generation Info documentation](generation_info.md).
 
 ## Phase 1: Automated Asset Validation

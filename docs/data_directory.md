@@ -57,22 +57,53 @@ The Data Directory contains three main components:
 
 **Usage**: Provides the foundation for all map generation. See [Map Templates](map_templates.md) for detailed information.
 
-### **defaults** - Source Data Repository
-**Purpose**: Default geographic and elevation data for map generation
+### **defaults** - Source Data Repository & Presets
+**Purpose**: Default geographic data and the new [Presets](presets.md) system for managing multiple configurations
 
-**Structure:**
+**Presets Structure (Local Deployment)**:
 ```
 📂 defaults/
-├── 📂 osm/                 # OpenStreetMap data files
-│   └── 📄 custom_osm.osm   # Default OSM data source
-└── 📂 dem/                 # Digital Elevation Models  
-    └── 📄 custom_dem.png   # Default elevation data
+├── 📂 osm/                         # OpenStreetMap data files
+│   ├── 📄 germany_rural.osm        # Preset: German rural roads  
+│   ├── 📄 france_vineyards.osm     # Preset: French vineyards
+│   ├── 📄 mountain_roads.osm       # Preset: Mountain terrain
+│   └── 📄 [multiple_osm_files].osm # Multiple OSM presets
+├── 📂 dem/                         # Digital Elevation Models
+│   ├── 📄 alps_mountains.png       # Preset: Alpine terrain
+│   ├── 📄 plains_farmland.png      # Preset: Flat farmland
+│   ├── 📄 coastal_norway.png       # Preset: Coastal terrain
+│   └── 📄 [multiple_dem_files].png # Multiple DEM presets
+├── 📂 main_settings/              # Main Settings presets
+│   ├── 📄 germany_4x4.json         # German coordinates, 4x4km
+│   ├── 📄 france_large.json        # French coordinates, 8x8km  
+│   └── 📄 [settings_presets].json  # Multiple main settings
+└── 📂 generation_settings/        # Generation Settings presets
+    ├── 📄 realistic_fields.json    # Realistic field patterns
+    ├── 📄 dense_forests.json       # Heavy forest coverage
+    └── 📄 [gen_presets].json       # Multiple generation settings
 ```
 
 **Key Features:**
-- **OSM Data** - Default OpenStreetMap data for your region
-- **Elevation Maps** - Digital elevation models covering both playable areas and background terrain
-- **Regional Defaults** - Pre-configured data for consistent generation results
+- **🆕 OSM Presets** - Multiple OpenStreetMap configurations for different regions and road patterns
+- **🏔️ DEM Presets** - Various elevation models for mountains, plains, coastal areas, and custom terrain
+- **⚙️ Settings Presets** - Pre-configured main settings for different map types and regions
+- **🔧 Generation Presets** - Advanced generation settings for specific map styles and requirements
+- **� Selective Application** - Mix and match different preset components as needed
+
+## Presets Integration
+
+🆕 **New Feature**: The Data Directory now supports the [Presets](presets.md) system, enabling:
+
+- **Multiple Configurations** - Store unlimited OSM files, DEM files, and settings
+- **One-Click Switching** - Apply different presets instantly through the UI
+- **Organized Workflow** - Manage complex projects with multiple variations
+- **Template Libraries** - Build collections of proven configurations
+
+**Presets Benefits:**
+- **Efficiency** - No more manual file swapping or renaming
+- **Organization** - Descriptive names instead of generic filenames  
+- **Flexibility** - Mix and match different preset components
+- **Backup Safety** - Multiple versions prevent configuration loss
 
 ## Integration with Local Deployment
 

@@ -1,4 +1,10 @@
-# Core Generat## Map Dimensions
+# Main Settings
+
+Main Settings define the core parameters for map generation including game version, coordinates, map size, rotation, and other fundamental properties that control the overall map structure.
+
+🆕 **Presets Available**: With [Local Deployment](local_deployment.md), you can save and manage multiple Main Settings configurations using the [Presets](presets.md) system. Store different coordinate sets, map sizes, and game versions for quick access.
+
+## Map Dimensions
 
 ### Standard Sizes
 Choose from professionally optimized map sizes. Larger maps require [Local deployment](local_deployment.md) for sufficient processing power.

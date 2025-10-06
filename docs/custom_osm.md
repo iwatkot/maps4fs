@@ -2,6 +2,8 @@
 
 Custom OSM functionality allows you to use your own OpenStreetMap data instead of downloading from public OSM servers. This gives you complete control over map features, road networks, and geographic elements without community approval or modification restrictions.
 
+💡 **New Feature**: With the introduction of [Presets](presets.md), you can now store and manage multiple OSM files in your local deployment, making it easier to switch between different configurations and build libraries of map data.
+
 ## Why Use Custom OSM?
 
 - **Complete Creative Control** - Add, modify, or remove any map features
@@ -22,22 +24,28 @@ The simplest approach for one-time map generation:
 
 **Best For**: Testing, single map projects, quick iterations
 
-### Method 2: Data Directory Defaults (Recommended for Repeated Use)
-For consistent use across multiple generations:
+### Method 2: Presets System (Local Deployment Only)
 
-1. **Create your custom OSM file** (see creation guide below)
-2. **Place file in Data Directory**: `defaults/osm/custom_osm.osm`
-3. **File naming**: Must be exactly `custom_osm.osm`
-4. **Generate maps** - all future generations will use this default data
+⚠️ **Local Deployment Only**: This method requires [Local Deployment](local_deployment.md) and uses the [Presets](presets.md) feature.
 
-**Best For**: Multiple maps from same region, consistent workflow, batch processing
+For flexible management of multiple OSM configurations:
+
+1. **Create your custom OSM files** (see creation guide below)
+2. **Place files in Data Directory**: `defaults/osm/[your_filename].osm`
+3. **File naming**: Use descriptive names (e.g., `germany_rural.osm`, `france_vineyards.osm`)
+4. **Select in UI** - Choose from available presets during map generation
+
+**Best For**: Multiple configurations, A/B testing, organized workflow, preset libraries
 
 **Data Directory Structure**:
 ```
 📁 Data Directory/
 └── 📂 defaults/
     └── 📂 osm/
-        └── 📄 custom_osm.osm  ← Your custom OSM file here
+        ├── 📄 germany_rural.osm      ← Rural German roads
+        ├── 📄 france_vineyards.osm   ← French vineyard region  
+        ├── 📄 mountain_roads.osm     ← Mountain terrain roads
+        └── 📄 [your_files].osm       ← Multiple OSM presets
 ```
 
 ## Creating Custom OSM Files
@@ -94,8 +102,8 @@ For consistent use across multiple generations:
 - Drag into Maps4FS interface when generating
 
 **For Data Directory Method**:
-- Rename file to `custom_osm.osm` 
-- Place in `defaults/osm/` folder
+- Use descriptive filename (e.g., `region_roads.osm`) and place in `defaults/osm/` folder
+- Select your OSM preset in the Maps4FS interface during map generation
 - All future generations use this data automatically
 
 ## File Management Best Practices

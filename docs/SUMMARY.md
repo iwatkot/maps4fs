@@ -27,6 +27,7 @@
 
 ## ⚡ Additional Features
 * [My Maps](my_maps.md)
+* [Presets](presets.md)
 * [Schemas Editor](schemas_editor.md)
 
 ## 🗺️ Map Components
