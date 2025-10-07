@@ -2,6 +2,20 @@
 
 Local version of the tool allows you to use all the features, that may be disabled on the public version due to hosting limitations and large amount of users. If you deploy the tool locally, you can generate maps of any size with the highest speed limited only by your hardware.
 
+## 🆕 **Exclusive Local Features**
+
+### 🎛️ **Presets System** 
+The revolutionary [Presets](presets.md) feature is **exclusively available in local deployment**, allowing you to:
+- 📁 **Store Multiple Configurations** - OSM files, DEM files, Main Settings, and Generation Settings
+- 🚀 **One-Click Apply** - Load complete map setups instantly
+- 💾 **Save from My Maps** - Convert successful generations into reusable presets
+- 🔄 **Build Template Libraries** - Create collections of proven configurations
+
+### 🗂️ **Advanced Data Management**
+- **[My Maps](my_maps.md)** - Complete map library management and organization
+- **[Data Directory](data_directory.md)** - Full control over your map generation assets
+- **Custom Resources** - Unlimited [Custom OSM](custom_osm.md) and [Custom DEM](custom_dem.md) files
+
 ## System Requirements
 
 - CPU with at least 4 cores
@@ -102,12 +116,12 @@ If you prefer to set up the containers manually, you can use the following comma
 
 ```powershell
 # Backend API container
-docker run -d --pull=always -p 8000:8000 --name maps4fsapi -v $env:USERPROFILE/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir -v $env:USERPROFILE/maps4fs/templates:/usr/src/app/templates -v $env:USERPROFILE/maps4fs/defaults:/usr/src/app/defaults iwatkot/maps4fsapi
+docker run -d --pull=always -p 8000:8000 --name maps4fsapi -v $env:USERPROFILE/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir -v $env:USERPROFILE/maps4fs/templates:/usr/src/app/templates -v $env:USERPROFILE/maps4fs/defaults:/usr/src/app/defaults -v /var/run/docker.sock:/var/run/docker.sock iwatkot/maps4fsapi
 ```
 
 ```powershell
-# Frontend UI container
-docker run -d --pull=always -p 3000:3000 --name maps4fsui -v $env:USERPROFILE/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir -v $env:USERPROFILE/maps4fs/templates:/usr/src/app/templates -v $env:USERPROFILE/maps4fs/defaults:/usr/src/app/defaults iwatkot/maps4fsui
+# Frontend UI container  
+docker run -d --pull=always -p 3000:3000 --name maps4fsui -v $env:USERPROFILE/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir -v $env:USERPROFILE/maps4fs/templates:/usr/src/app/templates -v $env:USERPROFILE/maps4fs/defaults:/usr/src/app/defaults -v /var/run/docker.sock:/var/run/docker.sock iwatkot/maps4fsui
 ```
 
 *️⃣ Remember that you can set the preferable directory to mount as well as specify the needed port or even deploy the specific version of the container.
@@ -145,9 +159,15 @@ After deployment, you can access the web interface of Maps4FS by opening your br
 By default, the following directories are mounted and used:  
 - `C:/Users/YourUsername/maps4fs/mfsrootdir` - Shared working directory between backend and frontend (maps and cache).  
 - `C:/Users/YourUsername/maps4fs/templates` - Templates and schemas directory for API.  
-- `C:/Users/YourUsername/maps4fs/defaults` - Default OSM and DEM files for API.  
+- `C:/Users/YourUsername/maps4fs/defaults` - **🆕 Presets system** - Multiple OSM files, DEM files, and settings configurations.  
 
-Learn more about the [Data Directory structure](data_directory.md) and [Map Templates](map_templates.md).
+🎯 **New Presets Structure**: The `defaults` directory now supports the [Presets](presets.md) system with four subdirectories:
+- `defaults/osm/` - Multiple OpenStreetMap data files
+- `defaults/dem/` - Multiple Digital Elevation Model files
+- `defaults/main_settings/` - Core map configuration presets
+- `defaults/generation_settings/` - Advanced generation option presets
+
+Learn more about the [Data Directory structure](data_directory.md), [Presets](presets.md), and [Map Templates](map_templates.md).
 
 ## Troubleshooting
 
