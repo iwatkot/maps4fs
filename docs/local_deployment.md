@@ -128,7 +128,24 @@ docker run -d --pull=always -p 3000:3000 --name maps4fsui -e USERPROFILE="$env:U
 
 ## Upgrade
 
-To upgrade Maps4FS to the latest version, follow the method that matches your original deployment:
+To upgrade Maps4FS to the latest version, you have several options:
+
+### 🆕 One-Click Upgrade (Recommended)
+
+**The easiest way to upgrade!** When a new version is available, an upgrade button will automatically appear in the top-right corner of the Maps4FS interface.
+
+**Requirements for one-click upgrade:**
+- ✅ Docker socket access (`/var/run/docker.sock` mounted)
+- ✅ USERPROFILE environment variable available
+- ✅ Proper container configuration
+
+**How it works:**
+1. 🔍 Maps4FS automatically checks for new versions
+2. 🔔 Upgrade button appears when update is available
+3. 🖱️ Click the button to start automatic upgrade
+4. 🔄 Containers are updated automatically in the background
+
+*This feature is available for [Docker Compose](#using-docker-compose) and [Manual Deployment](#manual-deployment) when properly configured.*
 
 ### Using Setup Wizard
 
@@ -140,7 +157,7 @@ powershell -ExecutionPolicy Bypass -Command "iex (iwr 'https://raw.githubusercon
 
 The wizard will detect existing containers, remove old versions, and deploy the latest release.
 
-### Docker Compose or Manual Deployment
+### Manual Docker Commands
 
 For [Docker Compose](#using-docker-compose) or [Manual Deployment](#manual-deployment), stop and remove existing containers first:
 
