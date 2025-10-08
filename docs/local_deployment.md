@@ -116,12 +116,12 @@ If you prefer to set up the containers manually, you can use the following comma
 
 ```powershell
 # Backend API container
-docker run -d --pull=always -p 8000:8000 --name maps4fsapi -v $env:USERPROFILE/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir -v $env:USERPROFILE/maps4fs/templates:/usr/src/app/templates -v $env:USERPROFILE/maps4fs/defaults:/usr/src/app/defaults -v /var/run/docker.sock:/var/run/docker.sock iwatkot/maps4fsapi
+docker run -d --pull=always -p 8000:8000 --name maps4fsapi -e USERPROFILE="$env:USERPROFILE" -v $env:USERPROFILE/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir -v $env:USERPROFILE/maps4fs/templates:/usr/src/app/templates -v $env:USERPROFILE/maps4fs/defaults:/usr/src/app/defaults -v /var/run/docker.sock:/var/run/docker.sock iwatkot/maps4fsapi
 ```
 
 ```powershell
 # Frontend UI container  
-docker run -d --pull=always -p 3000:3000 --name maps4fsui -v $env:USERPROFILE/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir -v $env:USERPROFILE/maps4fs/templates:/usr/src/app/templates -v $env:USERPROFILE/maps4fs/defaults:/usr/src/app/defaults -v /var/run/docker.sock:/var/run/docker.sock iwatkot/maps4fsui
+docker run -d --pull=always -p 3000:3000 --name maps4fsui -e USERPROFILE="$env:USERPROFILE" -v $env:USERPROFILE/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir -v $env:USERPROFILE/maps4fs/templates:/usr/src/app/templates -v $env:USERPROFILE/maps4fs/defaults:/usr/src/app/defaults -v /var/run/docker.sock:/var/run/docker.sock iwatkot/maps4fsui
 ```
 
 *️⃣ Remember that you can set the preferable directory to mount as well as specify the needed port or even deploy the specific version of the container.

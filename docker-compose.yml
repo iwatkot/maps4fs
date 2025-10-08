@@ -7,6 +7,8 @@ services:
     pull_policy: always
     ports:
       - "8000:8000"
+    environment:
+      - USERPROFILE=${USERPROFILE}
     volumes:
       - "${USERPROFILE}/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir"
       - "${USERPROFILE}/maps4fs/templates:/usr/src/app/templates"
@@ -20,6 +22,8 @@ services:
     pull_policy: always
     ports:
       - "3000:3000"
+    environment:
+      - USERPROFILE=${USERPROFILE}
     volumes:
       - "${USERPROFILE}/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir"
       - "${USERPROFILE}/maps4fs/templates:/usr/src/app/templates"
