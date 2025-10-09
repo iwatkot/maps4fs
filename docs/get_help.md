@@ -8,13 +8,23 @@
 - **Public App:** [http://maps4fs.xyz/help](http://maps4fs.xyz/help)
 
 This interactive tool will:
-- ✅ Guide## 📋 Quick Reference Guide
+- 🔍 **Diagnose local deployment issues** - Docker, containers, port conflicts, etc.
+- 🛠️ **Guide through troubleshooting** step-by-step
+- 📋 **Help you fill out** all required information  
+- 📄 **Generate a shareable markdown file** for support requests
+- 🎯 **Ensure you include** all necessary details
+
+**The interactive tool now covers all local deployment troubleshooting scenarios and provides the same markdown format as the manual process.**
+
+---
+
+## 📋 Quick Reference Guide
 
 | 🎯 Scenario | 🔄 Action |
 |-------------|-----------|
 | 🆕 **Any issue** | 🎯 **Use Interactive Help Tool first** (`/help` page) |
 | 🌐 Public app down | ⛔ No support provided |
-| 🏠 Local deployment issues | 📖 Follow [troubleshooting guide](local_deployment.md#troubleshooting) first |
+| 🏠 Local deployment issues | 🎯 **Use Interactive Help Tool first** (`/help` page) → 📖 [Manual troubleshooting](local_deployment.md#troubleshooting) if needed |
 | 🐛 Tool works but has problems | ✅ Interactive Help Tool → OR → ✅ FAQ → ✅ SRTM30 → ✅ Manual checklist → 💬 Discord/🐛 GitHub |
 | 🗺️ Non-SRTM30 DTM issues | 👤 Contact DTM provider author at [PyDTMDL](https://github.com/iwatkot/pydtmdl) |ough troubleshooting step-by-step
 - 📋 Help you fill out all required information
@@ -94,12 +104,22 @@ I do not accept any reports or questions related to the public app when it's not
 ### ❌ NO
 **Tool won't start/deploy**
 
-📋 **REQUIRED: Follow troubleshooting first**
+🎯 **RECOMMENDED: Use Interactive Help Tool**
+
+**Try the Interactive Help Tool first:**
+- **Local:** `http://localhost:3000/help` (if containers are running)
+- **Public:** [maps4fs.xyz/help](https://maps4fs.xyz/help) (if local isn't accessible)
+
+**OR if interactive tool doesn't work:**
+
+📋 **Manual troubleshooting process:**
 
 **Before asking for help, you MUST:**
 1. ✅ Read the [Local Deployment Troubleshooting](local_deployment.md#troubleshooting)
 2. ✅ Complete ALL troubleshooting steps
 3. ✅ Include ALL outputs in your help request
+
+💡 **Note:** The Interactive Help Tool now covers local deployment issues and provides the same markdown format for support requests.
 
 </td>
 </tr>

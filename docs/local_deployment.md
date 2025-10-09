@@ -188,7 +188,25 @@ Learn more about the [Data Directory structure](data_directory.md), [Presets](pr
 
 ## Troubleshooting
 
-If you encounter any issues during the deployment or usage of Maps4FS, follow the steps outlined below to understand what's wrong.
+If you encounter any issues during the deployment or usage of Maps4FS, we recommend using our interactive help tool first.
+
+### 🎯 **Interactive Help Tool (Recommended)**
+
+**Try the Interactive Help Tool first:** `http://localhost:3000/help`
+
+This tool will:
+- 🔍 **Diagnose local deployment issues** - Docker problems, container issues, port conflicts
+- 🛠️ **Guide you through solutions** step-by-step
+- 📋 **Generate complete reports** in markdown format for support requests
+- 🎯 **Save time** with automated troubleshooting
+
+💡 **Note:** If you can't access the local help tool (because containers aren't running), you can use the public version at [maps4fs.xyz/help](https://maps4fs.xyz/help) or follow the manual steps below.
+
+---
+
+### Manual Troubleshooting Steps
+
+If the interactive help tool isn't accessible, follow the steps outlined below to understand what's wrong.
 
 ### Check Docker
 
@@ -325,8 +343,16 @@ The expected response should be the HTML content of the frontend UI.
 
 ### If you still have issues
 
-Make sure that you've followed all the steps above, fill-out the following form and ask for help in the [Discord](https://discord.gg/Sj5QKKyE42) server.  
-*️⃣ Requests without sufficient information may be ignored.
+**Recommended approach:**
+1. 🎯 **Try the Interactive Help Tool** at `http://localhost:3000/help` (if containers are running)
+2. 📋 **Use the generated markdown** from the tool for your support request
+3. 💬 **Ask for help** in the [Discord](https://discord.gg/Sj5QKKyE42) server or see [Getting Help](get_help.md) guide
+
+**Manual approach:**
+- Make sure you've followed all the troubleshooting steps above
+- Include all relevant logs and outputs in your request
+
+*️⃣ Requests without sufficient information may be ignored. The Interactive Help Tool ensures you provide all necessary details.
 
 #### Checklist before asking for help
 
