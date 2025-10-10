@@ -86,7 +86,7 @@ For newcomers to map creation, here's the typical workflow:
 ## Resources
 
 This section lists essential tools required for Farming Simulator map creation.<br>
-For basic map development, you only need Giants Editor. However, creating background terrain—the surrounding world that prevents your map from appearing to float in empty space—requires additional tools: Blender with the official exporter plugins. For realistic background terrain textures, QGIS is needed to obtain high-resolution satellite imagery.<br>
+For basic map development, you only need Giants Editor. However, creating background terrain—the surrounding world that prevents your map from appearing to float in empty space—requires additional tools: Blender with the official exporter plugins.<br>
 
 1. [Giants Editor](https://gdn.giants-software.com/downloads.php) - Official map creation tool for Farming Simulator
 2. [Blender](https://www.blender.org/download/) - Open-source 3D modeling software for creating Farming Simulator assets
