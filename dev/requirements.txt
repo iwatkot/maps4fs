@@ -10,7 +10,7 @@ pytest-cov
 geopy
 fast-simplification
 pyproj
-trimesh
+trimesh<=4.8.2
 pydoc-markdown
 pydantic
 pygmdl
