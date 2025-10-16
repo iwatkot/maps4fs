@@ -21,7 +21,7 @@ dependencies = [
     "osmnx>=2.0.0",
     "rasterio",
     "geopy",
-    "trimesh",
+    "trimesh<=4.8.2",
     "pydantic",
     "pygmdl",
     "owslib",
