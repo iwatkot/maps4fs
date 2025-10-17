@@ -129,8 +129,22 @@ class Map:
         # endregion
 
         # region prepare map working directory
+        custom_template_path = kwargs.get("custom_template_path", None)
+        if custom_template_path:
+            self.logger.info("Using custom map template: %s", custom_template_path)
+            if not os.path.isfile(custom_template_path):
+                self.logger.error(
+                    "Custom map template file %s does not exist.", custom_template_path
+                )
+                raise FileNotFoundError(
+                    f"Custom map template file {custom_template_path} does not exist."
+                )
+            template_path = custom_template_path
+        else:
+            self.logger.info("Using default map template: %s", game.template_path)
+            template_path = game.template_path
         try:
-            shutil.unpack_archive(game.template_path, self.map_directory)
+            shutil.unpack_archive(template_path, self.map_directory)
             self.logger.debug("Map template unpacked to %s", self.map_directory)
         except Exception as e:
             raise RuntimeError(f"Can not unpack map template due to error: {e}") from e
