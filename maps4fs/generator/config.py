@@ -37,6 +37,11 @@ logger.info(
     MFS_GSETTINGS_DEFAULTS_DIR,
 )
 
+TEMPLATES_STRUCTURE = {
+    "fs25": ["texture_schemas", "tree_schemas", "map_templates"],
+    "fs22": ["texture_schemas", "map_templates"],
+}
+
 
 def ensure_templates():
     """Ensure templates directory exists and is populated with data.
@@ -122,7 +127,19 @@ def ensure_templates():
         raise
 
 
+def ensure_template_subdirs() -> None:
+    """Ensure that all expected subdirectories exist in the templates directory."""
+    for game_version, subdirs in TEMPLATES_STRUCTURE.items():
+        for subdir in subdirs:
+            dir_path = os.path.join(MFS_TEMPLATES_DIR, game_version, subdir)
+            if not os.path.exists(dir_path):
+                logger.debug("Expected template subdirectory missing: %s", dir_path)
+                os.makedirs(dir_path, exist_ok=True)
+    logger.info("Templates directory is ready at: %s", MFS_TEMPLATES_DIR)
+
+
 ensure_templates()
+ensure_template_subdirs()
 
 MFS_ROOT_DIR = os.getenv("MFS_ROOT_DIRECTORY", os.path.join(os.getcwd(), "mfsrootdir"))
 MFS_CACHE_DIR = os.path.join(MFS_ROOT_DIR, "cache")
