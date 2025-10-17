@@ -155,6 +155,12 @@ Click any map to view comprehensive details:
 - Field parameters (size, padding, farmland margins)
 - Visual quality options (texture resolution, satellite imagery)
 
+**Schema Viewing & Settings Integration** - Access and manage schemas used:
+- **View Schemas** - Examine texture and tree schemas used for generation
+- **Save to Settings** - Export successful schemas directly to [Settings](settings.md) management
+- **Schema Analysis** - Understand which configurations produced specific results
+- **Configuration Capture** - Turn proven map schemas into reusable Settings
+
 **Generation Info** - Performance and technical data:
 - Processing time and performance metrics
 - Data sources used (elevation providers, satellite sources)
@@ -232,6 +238,14 @@ Develop systems that scale with your growing library:
 - **Project grouping** - Consider naming conventions for related maps (e.g., "ClientName_Location_v1")
 - **Badge utilization** - Leverage filters to organize by content type and features
 - **Regular cleanup** - Remove experimental maps that didn't meet expectations
+
+### **Settings Integration Workflow** 
+Leverage My Maps for building your [Settings](settings.md) library:
+- **Schema Discovery** - View texture and tree schemas from successful maps
+- **Save Proven Configurations** - Export working schemas directly to Settings management  
+- **Configuration Analysis** - Understand which schema combinations produce desired results
+- **Template Building** - Turn one-time successful maps into reusable Settings configurations
+- **Quality Assurance** - Test schema variations, then save the best performers to Settings
 
 ### **Experimentation Workflow**
 Transform trial-and-error into systematic improvement:

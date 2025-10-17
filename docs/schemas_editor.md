@@ -83,7 +83,17 @@ Tailor forest rendering:
 
 1. **Open Schemas Editor**: Navigate to the "Schemas Editor" tab in Maps4FS
 2. **Select Textures**: Choose "Textures Schema Editor" from the available options
-3. **Start Editing**: Browse textures and begin customization
+3. **Choose Game Version**: Select FS22 or FS25 schema to edit
+4. **Start Editing**: Browse textures and begin customization
+5. **Save to Settings**: Use "Save to Settings" to add your schema directly to [Settings](settings.md) management
+
+### 🔗 Settings Integration
+
+The Schemas Editor seamlessly integrates with the [Settings](settings.md) system:
+- **Direct Save** - Save edited schemas directly to Settings with custom names
+- **Organized Storage** - Schemas are automatically organized by game version in Settings
+- **Default Assignment** - Set newly created schemas as default through Settings
+- **Library Building** - Create multiple variations and organize them in Settings
 
 ---
 
@@ -187,7 +197,7 @@ Control tree maturity distribution:
 3. **Browse Gallery**: Explore available tree species and growth stages
 4. **Make Selections**: Choose trees that fit your map's theme and requirements
 5. **Validate**: Ensure selected trees are available in your map template
-6. **Save Schema**: Export your customized tree configuration
+6. **Save to Settings**: Use "Save to Settings" to add your schema directly to [Settings](settings.md) management
 
 ### Template Integration
 
@@ -197,6 +207,14 @@ Control tree maturity distribution:
 - **Warning indicators**: Trees missing from template
 - **Validation messages**: Clear feedback on potential issues
 - **Template suggestions**: Recommendations for compatible templates
+
+### 🔗 Settings Integration
+
+The Tree Schema Editor integrates seamlessly with the [Settings](settings.md) system:
+- **Direct Save** - Save tree selections directly to Settings with descriptive names
+- **FS25 Organization** - Tree schemas are automatically organized under FS25 in Settings
+- **Default Management** - Set your preferred tree schemas as default through Settings
+- **Configuration Library** - Build collections of tree configurations for different map themes
 
 ---
 

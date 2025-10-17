@@ -180,11 +180,19 @@ Settings are part of the [Data Directory](data_directory.md) structure:
 - **File System Access** - Direct file manipulation when needed
 - **Backup Inclusion** - Settings are included in data directory backups
 
-### 🎨 **Schemas Editor Integration**
-The [Schemas Editor](schemas_editor.md) complements Settings management:
-- **Visual Editing** - Create and modify schemas through visual interface
-- **Settings Export** - Export edited schemas to Settings for organization
+### 🔗 **Schemas Editor Integration**
+The [Schemas Editor](schemas_editor.md) directly integrates with Settings management:
+- **Direct Save** - Save edited schemas directly to Settings from the editor
+- **Visual Creation** - Create new configurations through visual interface and save to Settings
 - **Template Creation** - Develop new configurations for Settings library
+- **Seamless Workflow** - Edit schemas visually, then organize them in Settings
+
+### 🗂️ **My Maps Integration**
+The [My Maps](my_maps.md) feature provides schema access and Settings integration:
+- **Schema Viewing** - View schemas from previously generated maps
+- **Save to Settings** - Export schemas from successful maps directly to Settings
+- **Configuration Discovery** - Find proven configurations from your map history
+- **Best Practice Capture** - Save working schemas for future use
 
 ## Future Enhancements
 
