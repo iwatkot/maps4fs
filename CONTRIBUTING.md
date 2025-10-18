@@ -15,8 +15,10 @@ Thank you for your interest in contributing to the Maps4FS!
 It's important to note that the Maps4FS project consists of multiple repositories, each with its own specific focus.  
 Here's a brief overview of the repositories and their purposes:
 - [Maps4FS](https://github.com/iwatkot/maps4fs): The main repository that contains the core functionality and Python package for Maps4FS.
-- [Maps4FSUI](https://github.com/iwatkot/maps4fsui): The repository for the Maps4FS Web UI, currently based on a [Streamlit](https://streamlit.io/) app. If you adding some new features to the main repository, you **must** test it with the UI as well, and, if necessary, update the UI code too.
+- [Maps4FSUI](https://github.com/iwatkot/maps4fsui): The repository for the Maps4FS Web UI, built with [Next.js](https://nextjs.org/) and React. If you're adding new features to the main repository, you **must** test it with the UI as well, and, if necessary, update the UI code too.
 - [Maps4FSAPI](https://github.com/iwatkot/maps4fsapi): The repository for the Maps4FS API, which provides a RESTful interface to interact with the Maps4FS. When adding new features to the main repository, ensure the backward compatibility with the API. If necessary, update the API code to reflect any changes made in the main repository.
+- [Maps4FSData](https://github.com/iwatkot/maps4fsdata): The repository contains data files (templates and schemas) for the Maps4FS map generator, including map templates, texture schemas, GRLE schemas, and tree schemas for different game versions.
+- [Maps4FSUpgrader](https://github.com/iwatkot/maps4fsupgrader): A containerized tool designed to simplify the upgrade process of Maps4FS deployment by automatically managing Docker containers, pulling latest images, and redeploying with updated configurations.
 - 🔒 [Maps4FSStats](https://github.com/iwatkot/maps4fsstats): The repository contains CI/CD API for deployment in production, collecting user statistics and all other 3rd party services integration: Nginx, MetaBase, MongoDB, Portainer.
 - [Maps4FSBot](https://github.com/iwatkot/maps4fsbot): The repository contains the Discord bot for Maps4FS, which mostly used to avoid spamming in the Discord server and also provides API keys for the Public API.
 
@@ -63,13 +65,7 @@ dev\create_venv.ps1 # For Windows
 
 Dependencies will be installed from the `dev/requirements.txt` file.
 
-ℹ️ When working with the Maps4FSUI repository, you'll need to put the `data` and the `docs` directories from the main Maps4FS repository into the root `maps4fsui` directory. You can do this by running the following command:
-
-```bash
-git clone https://github.com/iwatkot/maps4fs.git
-mv maps4fs/data maps4fsui/data
-mv maps4fs/docs maps4fsui/docs
-```
+ℹ️ When working with the Maps4FSUI repository (Next.js app), follow the installation instructions in its README. The UI has its own dependency management with Node.js and npm.
 
 5. **Make Your Changes**: Now, you can make your changes in the codebase. Ensure that your code follows the project's coding standards and conventions.
 
@@ -85,7 +81,7 @@ python demo.py
    Before submitting a pull request, ensure that your code passes MyPy checks. You can run MyPy with the following command:
 
 ```bash
-mypy maps4fs # Or othjer corresponding directory (maps4fsui, maps4fsapi, etc.)
+mypy maps4fs # Or other corresponding directory (maps4fsapi, maps4fsupgrader, etc.)
 ```
 
 ℹ️ The automatic checks will also be performed by the CI/CD pipeline, but it's a good practice to run them locally before submitting a pull request.
@@ -94,8 +90,10 @@ mypy maps4fs # Or othjer corresponding directory (maps4fsui, maps4fsapi, etc.)
    Before submitting a pull request, ensure that your code passes Pylint checks. You can run Pylint with the following command:
 
 ```bash
-pylint maps4fs # Or other corresponding directory (maps4fsui, maps4fsapi, etc.)
+pylint maps4fs # Or other corresponding directory (maps4fsapi, maps4fsupgrader, etc.)
 ```
+
+ℹ️ For the Maps4FSUI (Next.js) repository, use `npm run lint` instead to run ESLint checks.
 
 ℹ️ The automatic checks will also be performed by the CI/CD pipeline, but it's a good practice to run them locally before submitting a pull request.
 
@@ -103,16 +101,20 @@ pylint maps4fs # Or other corresponding directory (maps4fsui, maps4fsapi, etc.)
    Before submitting a pull request, ensure that your code passes all tests. You can run the tests with the following command:
 
 ```bash
-pytest maps4fs # Or other corresponding directory (maps4fsui, maps4fsapi, etc.)
+pytest maps4fs # Or other corresponding directory (maps4fsapi, maps4fsupgrader, etc.)
 ```
+
+ℹ️ For the Maps4FSUI (Next.js) repository, use `npm test` to run the test suite.
 
 ℹ️ The automatic tests will also be performed by the CI/CD pipeline, but it's a good practice to run them locally before submitting a pull request.
 
-10. **Optional: Use a symlink**: If you're working with the Maps4FSUI or Maps4fSAPI repositories and in the same time you may need to make changes in the main Maps4FS repository, you can use a symlink to avoid additional steps and make your development process smoother.  
+10. **Optional: Use a symlink**: If you're working with the Maps4FSAPI repository and at the same time you may need to make changes in the main Maps4FS repository, you can use a symlink to avoid additional steps and make your development process smoother.  
 
 You'll find the [`dev/create_symlink.sh`](https://github.com/iwatkot/maps4fsapi/blob/main/dev/create_symlink.sh) script in the `dev` directory of the Maps4FSAPI repository.  
 
 This script creates a symlink to the main Maps4FS repository in the `maps4fsapi` directory, allowing you to work with both repositories simultaneously without needing to copy files back and forth.
+
+ℹ️ For the Maps4FSUI (Next.js) repository, symlinks are not required as it communicates with the backend via API calls.
 
 ## Code style
 The Maps4FS project follows the [PEP 8](https://www.python.org/dev/peps/pep-0008/) style guide for Python code.  
