@@ -1,13 +1,16 @@
-<p align="center">
-<a href="https://github.com/iwatkot/maps4fs">maps4fs</a> •
-<a href="https://github.com/iwatkot/maps4fsui">maps4fs UI</a> •
-<a href="https://github.com/iwatkot/maps4fsdata">maps4fs Data</a> •
-<a href="https://github.com/iwatkot/maps4fsapi">maps4fs API</a> •
-<a href="https://github.com/iwatkot/maps4fsstats">maps4fs Stats</a> •
-<a href="https://github.com/iwatkot/maps4fsbot">maps4fs Bot</a><br>
-<a href="https://github.com/iwatkot/pygmdl">pygmdl</a> •
-<a href="https://github.com/iwatkot/pydtmdl">pydtmdl</a>
-</p>
+<div align="center" markdown>
+
+[![Maps4FS](https://img.shields.io/badge/maps4fs-gray?style=for-the-badge)](https://github.com/iwatkot/maps4fs)
+[![Maps4FS API](https://img.shields.io/badge/maps4fs-api-green?style=for-the-badge)](https://github.com/iwatkot/maps4fsapi)
+[![Maps4FS UI](https://img.shields.io/badge/maps4fs-ui-blue?style=for-the-badge)](https://github.com/iwatkot/maps4fsui)
+[![Maps4FS Data](https://img.shields.io/badge/maps4fs-data-orange?style=for-the-badge)](https://github.com/iwatkot/maps4fsdata)
+[![Maps4FS Upgrader](https://img.shields.io/badge/maps4fs-upgrader-yellow?style=for-the-badge)](https://github.com/iwatkot/maps4fsupgrader)
+[![Maps4FS Stats](https://img.shields.io/badge/maps4fs-stats-red?style=for-the-badge)](https://github.com/iwatkot/maps4fsstats)
+[![Maps4FS Bot](https://img.shields.io/badge/maps4fs-bot-teal?style=for-the-badge)](https://github.com/iwatkot/maps4fsbot)  
+[![PYDTMDL](https://img.shields.io/badge/pydtmdl-blue?style=for-the-badge)](https://github.com/iwatkot/pydtmdl)
+[![PYGDMDL](https://img.shields.io/badge/pygmdl-teal?style=for-the-badge)](https://github.com/iwatkot/pydmdl)
+
+</div>
 
 <div align="center" markdown>
 <a href="https://discord.gg/Sj5QKKyE42">
