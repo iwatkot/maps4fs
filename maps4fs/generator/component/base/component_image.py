@@ -4,6 +4,7 @@ import os
 
 import cv2
 import numpy as np
+from PIL import Image, ImageFile
 
 from maps4fs.generator.component.base.component import Component
 from maps4fs.generator.settings import Parameters
@@ -237,3 +238,35 @@ class ImageComponent(Component):
         edge_mask = cv2.subtract(bigger_mask, smaller_mask)
 
         return self.blur_by_mask(data, edge_mask)
+
+    @staticmethod
+    def convert_png_to_dds(input_png_path: str, output_dds_path: str):
+        """Convert a PNG file to DDS format using PIL
+
+        Arguments:
+            input_png_path (str): Path to input PNG file
+            output_dds_path (str): Path for output DDS file
+
+        Raises:
+            FileNotFoundError: If the input PNG file does not exist.
+            RuntimeError: If the DDS conversion fails.
+        """
+        if not os.path.exists(input_png_path):
+            raise FileNotFoundError(f"Input PNG file not found: {input_png_path}")
+
+        try:
+            ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+            with Image.open(input_png_path) as img:
+                # Convert to RGB if needed (DDS works better with RGB)
+                if img.mode == "RGBA":
+                    # Create RGB version on white background
+                    rgb_img = Image.new("RGB", img.size, (255, 255, 255))
+                    rgb_img.paste(img, mask=img.split()[-1])  # Use alpha as mask
+                    img = rgb_img
+                elif img.mode != "RGB":
+                    img = img.convert("RGB")
+
+                img.save(output_dds_path, format="DDS")
+        except Exception as e:
+            raise RuntimeError(f"DDS conversion failed: {e}")
