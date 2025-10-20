@@ -1,10 +1,13 @@
 """Base class for all components that primarily used to work with meshes."""
 
 import os
+import shutil
 
 import cv2
 import numpy as np
+import open3d as o3d
 import trimesh
+from PIL import Image
 from tqdm import tqdm
 
 from maps4fs.generator.component.base.component import Component
@@ -269,3 +272,148 @@ class MeshComponent(Component):
         mesh_copy = mesh.copy()
         mesh_copy.faces = mesh_copy.faces[:, ::-1]  # type: ignore
         return mesh_copy
+
+    @staticmethod
+    def decimate_mesh(mesh: trimesh.Trimesh, reduction_factor: float) -> trimesh.Trimesh:
+        """Decimate mesh using Open3D's quadric decimation (similar to Blender's approach)
+
+        Arguments:
+            mesh (trimesh.Trimesh): Input trimesh mesh
+            reduction_factor (float): Reduce to this fraction of original triangles (0.5 = 50%)
+
+        Returns:
+            trimesh.Trimesh: Decimated trimesh mesh
+        """
+        # 1. Convert trimesh to Open3D format.
+        vertices = mesh.vertices
+        faces = mesh.faces
+
+        o3d_mesh = o3d.geometry.TriangleMesh()
+        o3d_mesh.vertices = o3d.utility.Vector3dVector(vertices)
+        o3d_mesh.triangles = o3d.utility.Vector3iVector(faces)
+
+        # 2. Calculate target number of triangles.
+        target_triangles = int(len(faces) * reduction_factor)
+
+        # 3. Apply quadric decimation.
+        decimated_o3d = o3d_mesh.simplify_quadric_decimation(target_triangles)
+
+        # 4. Convert back to trimesh.
+        decimated_vertices = np.asarray(decimated_o3d.vertices)
+        decimated_faces = np.asarray(decimated_o3d.triangles)
+        decimated_mesh = trimesh.Trimesh(vertices=decimated_vertices, faces=decimated_faces)
+
+        return decimated_mesh
+
+    @staticmethod
+    def texture_mesh(
+        mesh: trimesh.Trimesh,
+        resized_texture_path: str,
+        output_directory: str,
+        output_name: str,
+    ) -> tuple[str, str]:
+        """Apply texture to mesh with UV mapping based on X and Z coordinates (ground plane).
+
+        Arguments:
+            mesh (trimesh.Trimesh): The mesh to texture
+            resized_texture_path (str): Path to resized texture image
+            output_directory (str): Directory to save textured OBJ and MTL files and texture.
+            output_name (str): Base name for output files (without extension)
+
+        Returns:
+            tuple[str, str]: Paths to the saved OBJ and MTL files
+        """
+        # 1. Copy texture to output directory.
+        texture_filename = os.path.basename(resized_texture_path)
+        texture_output_path = os.path.join(output_directory, texture_filename)
+        shutil.copy2(resized_texture_path, texture_output_path)
+
+        # 2. Apply rotation to fix 90-degree X-axis rotation.
+        rotation_matrix = trimesh.transformations.rotation_matrix(-np.pi / 2, [1, 0, 0])
+        mesh.apply_transform(rotation_matrix)
+
+        # 3. Get mesh bounds: using X and Z for ground plane.
+        vertices = mesh.vertices
+
+        # 4. Ground plane coordinates (X, Z)
+        min_x = np.min(vertices[:, 0])  # X coordinate
+        max_x = np.max(vertices[:, 0])
+        min_z = np.min(vertices[:, 2])  # Z coordinate
+        max_z = np.max(vertices[:, 2])
+
+        width = max_x - min_x  # X dimension
+        depth = max_z - min_z  # Z dimension
+
+        # 5. Load texture.
+        texture_image = Image.open(texture_output_path)
+
+        # 6. Calculate UV coordinates based on X and Z positions.
+        uv_coords = np.zeros((len(vertices), 2), dtype=np.float32)
+        for i in tqdm(range(len(vertices)), desc="Calculating UVs", unit="vertex"):
+            vertex = vertices[i]
+
+            # Map X coordinate to U
+            u = (vertex[0] - min_x) / width if width > 0 else 0.5
+
+            # Map Z coordinate to V (NOT Y!)
+            v = (vertex[2] - min_z) / depth if depth > 0 else 0.5
+
+            # Flip V coordinate for correct orientation
+            v = 1.0 - v
+
+            # Clamp to valid range
+            u = np.clip(u, 0.0, 1.0)
+            v = np.clip(v, 0.0, 1.0)
+
+            uv_coords[i] = [u, v]
+
+        # 7. Create material.
+        material = trimesh.visual.material.PBRMaterial(
+            baseColorTexture=texture_image,
+            metallicFactor=0.0,
+            roughnessFactor=1.0,
+            emissiveFactor=[0.0, 0.0, 0.0],
+        )
+
+        # 8. Apply UV and material to mesh.
+        visual = trimesh.visual.TextureVisuals(uv=uv_coords, material=material)
+        mesh.visual = visual
+
+        mtl_filename = f"{output_name}.mtl"
+        obj_filename = f"{output_name}.obj"
+        mtl_filepath = os.path.join(output_directory, mtl_filename)
+        obj_filepath = os.path.join(output_directory, obj_filename)
+
+        faces = mesh.faces
+
+        # 9. Write OBJ file with correct UV mapping.
+        with open(obj_filepath, "w") as f:  # pylint: disable=unspecified-encoding
+            f.write("# Corrected UV mapping using X,Z coordinates (ground plane)\n")
+            f.write("# Y coordinate represents elevation\n")
+            f.write(f"mtllib {os.path.basename(mtl_filename)}\n")
+
+            # Write vertices
+            for vertex in vertices:
+                f.write(f"v {vertex[0]:.6f} {vertex[1]:.6f} {vertex[2]:.6f}\n")
+
+            # Write UV coordinates
+            for uv in uv_coords:
+                f.write(f"vt {uv[0]:.6f} {uv[1]:.6f}\n")
+
+            # Write faces
+            f.write("usemtl TerrainMaterial_XZ\n")
+            for face in faces:
+                v1, v2, v3 = face[0] + 1, face[1] + 1, face[2] + 1
+                f.write(f"f {v1}/{v1} {v2}/{v2} {v3}/{v3}\n")
+
+        # 10. Write MTL file.
+        with open(mtl_filepath, "w") as f:  # pylint: disable=unspecified-encoding
+            f.write("# Material with X,Z UV mapping\n")
+            f.write("newmtl TerrainMaterial_XZ\n")
+            f.write("Ka 1.0 1.0 1.0\n")
+            f.write("Kd 1.0 1.0 1.0\n")
+            f.write("Ks 0.0 0.0 0.0\n")
+            f.write("illum 1\n")
+            f.write(f"map_Kd {texture_filename}\n")
+
+        return obj_filepath, mtl_filepath

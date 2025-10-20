@@ -22,3 +22,4 @@ python-dotenv
 pydtmdl
 manifold3d
 fast-simplification
+open3d
