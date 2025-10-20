@@ -2,6 +2,8 @@
 
 import os
 import shutil
+import xml.etree.ElementTree as ET
+from datetime import datetime
 
 import cv2
 import numpy as np
@@ -417,3 +419,257 @@ class MeshComponent(Component):
             f.write(f"map_Kd {texture_filename}\n")
 
         return obj_filepath, mtl_filepath
+
+    @staticmethod
+    def mesh_to_i3d(
+        mesh: trimesh.Trimesh,
+        output_dir: str,
+        name: str,
+        texture_path: str | None = None,
+        water_mesh: bool = False,
+    ) -> str:
+        """Convert a trimesh to i3d format with optional water shader support.
+
+        Arguments:
+            mesh (trimesh.Trimesh): trimesh.Trimesh object to convert
+            output_dir (str): Directory to save i3d and copy textures to
+            name (str): Base name for output files (e.g., "terrain_mesh")
+            texture_path (str | None): Optional path to texture file (will be copied to output_dir)
+            water_mesh (bool): If True, adds ocean shader material for water rendering
+
+        Returns:
+            str: Full path to the generated i3d file
+        """
+
+        # Ensure output directory exists
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        # Apply transformations (only for water meshes)
+        if water_mesh:
+            # 1. Apply rotation fix (90-degree X-axis correction) - water only
+            rotation_matrix = trimesh.transformations.rotation_matrix(-np.pi / 2, [1, 0, 0])
+            mesh.apply_transform(rotation_matrix)
+
+            # 2. Center mesh at origin - water only
+            vertices = mesh.vertices
+            center = vertices.mean(axis=0)
+            mesh.vertices = vertices - center
+
+        # 3. Handle texture copying if provided
+        texture_file = None
+        if texture_path and os.path.exists(texture_path):
+            texture_filename = os.path.basename(texture_path)
+            texture_dest = os.path.join(output_dir, texture_filename)
+
+            # Copy texture if it's not already in output_dir
+            if os.path.abspath(texture_path) != os.path.abspath(texture_dest):
+                shutil.copy2(texture_path, texture_dest)
+
+            texture_file = texture_filename
+
+        # 4. Generate i3d file
+        output_path = os.path.join(output_dir, f"{name}.i3d")
+        MeshComponent._write_i3d_file(mesh, output_path, name, texture_file, water_mesh)
+
+        return output_path
+
+    @staticmethod
+    def _write_i3d_file(
+        mesh: trimesh.Trimesh,
+        output_path: str,
+        name: str,
+        texture_file: str | None,
+        is_water: bool,
+    ) -> None:
+        """Write the actual i3d XML file.
+
+        Arguments:
+            mesh  (trimesh.Trimesh): object containing the geometry
+            output_path (str): Full path where to save the i3d file
+            name (str): Name for the mesh in i3d file
+            texture_file (str | None): Optional texture filename (if copied to output dir)
+            is_water (bool): If True, generates water mesh with ocean shader
+        """
+
+        # Root element
+        i3d = ET.Element(
+            "i3D",
+            attrib={
+                "name": name,
+                "version": "1.6",
+                "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                "xsi:noNamespaceSchemaLocation": "http://i3d.giants.ch/schema/i3d-1.6.xsd",
+            },
+        )
+
+        # Asset section
+        asset = ET.SubElement(i3d, "Asset")
+        exp = ET.SubElement(asset, "Export")
+        exp.set("program", "maps4fs")
+        exp.set("version", "1.0")
+        exp.set("date", datetime.now().strftime("%Y-%m-%d"))
+
+        vertices = mesh.vertices
+        faces = mesh.faces
+
+        has_normals = mesh.vertex_normals is not None and len(mesh.vertex_normals) == len(vertices)
+        has_uv = (
+            hasattr(mesh.visual, "uv")
+            and mesh.visual.uv is not None
+            and len(mesh.visual.uv) == len(vertices)
+        )
+
+        # Files section
+        files_section = None
+        if is_water:
+            # Water mesh: add ocean shader
+            files_section = ET.SubElement(i3d, "Files")
+            shader_file = ET.SubElement(files_section, "File")
+            shader_file.set("fileId", "4")
+            shader_file.set("filename", "$data/shaders/oceanShader.xml")
+        elif texture_file:
+            # Terrain mesh: add texture file
+            files_section = ET.SubElement(i3d, "Files")
+            file_entry = ET.SubElement(files_section, "File")
+            file_entry.set("fileId", "1")
+            file_entry.set("filename", texture_file)
+            file_entry.set("relativePath", "true")
+
+        # Materials section
+        materials_section = ET.SubElement(i3d, "Materials")
+        material = ET.SubElement(materials_section, "Material")
+
+        if is_water:
+            # Water material with ocean shader
+            material.set("name", "OceanShader")
+            material.set("materialId", "1")
+            material.set("diffuseColor", "0.8 0.8 0.8 1")
+            material.set("specularColor", "0.501961 1 0")
+            material.set("customShaderId", "4")
+            material.set("customShaderVariation", "simple")
+
+            # Required for ocean shader
+            normalmap = ET.SubElement(material, "Normalmap")
+            normalmap.set("fileId", "2")
+
+            refractionmap = ET.SubElement(material, "Refractionmap")
+            refractionmap.set("coeff", "1")
+            refractionmap.set("bumpScale", "0.01")
+            refractionmap.set("withSSRData", "true")
+        else:
+            # Standard terrain material
+            material.set("name", f"{name}_material")
+            material.set("materialId", "1")
+            material.set("diffuseColor", "1 1 1 1")
+            material.set("specularColor", "0.5 0.5 0.5")
+
+            if texture_file:
+                texture = ET.SubElement(material, "Texture")
+                texture.set("fileId", "1")
+
+        # Shapes section
+        shapes = ET.SubElement(i3d, "Shapes")
+        shape = ET.SubElement(shapes, "IndexedTriangleSet")
+        shape.set("name", name)
+        shape.set("shapeId", "1")
+
+        # Calculate bounding sphere
+        if len(vertices) > 0:
+            center = vertices.mean(axis=0)
+            max_dist = ((vertices - center) ** 2).sum(axis=1).max() ** 0.5
+            shape.set("bvCenter", f"{center[0]:.6f} {center[1]:.6f} {center[2]:.6f}")
+            shape.set("bvRadius", f"{max_dist:.6f}")
+
+        # Vertices block
+        xml_vertices = ET.SubElement(shape, "Vertices")
+        xml_vertices.set("count", str(len(vertices)))
+
+        if has_normals:
+            xml_vertices.set("normal", "true")
+        if has_uv:
+            xml_vertices.set("uv0", "true")
+
+        # Write vertex data
+        for idx in tqdm(range(len(vertices)), desc="Writing vertices", unit="vertex"):
+            v = vertices[idx]
+            v_el = ET.SubElement(xml_vertices, "v")
+            v_el.set("p", f"{v[0]:.6f} {v[1]:.6f} {v[2]:.6f}")
+
+            if has_normals:
+                n = mesh.vertex_normals[idx]
+                v_el.set("n", f"{n[0]:.6f} {n[1]:.6f} {n[2]:.6f}")
+
+            if has_uv:
+                uv = mesh.visual.uv[idx]
+                v_el.set("t0", f"{uv[0]:.6f} {uv[1]:.6f}")
+
+        # Triangles block
+        xml_tris = ET.SubElement(shape, "Triangles")
+        xml_tris.set("count", str(len(faces)))
+        for f in tqdm(faces, desc="Writing triangles", unit="triangle"):
+            t = ET.SubElement(xml_tris, "t")
+            t.set("vi", f"{f[0]} {f[1]} {f[2]}")
+
+        # Subsets block
+        xml_subs = ET.SubElement(shape, "Subsets")
+        xml_subs.set("count", "1")
+        subset = ET.SubElement(xml_subs, "Subset")
+        subset.set("firstVertex", "0")
+        subset.set("numVertices", str(len(vertices)))
+        subset.set("firstIndex", "0")
+        subset.set("numIndices", str(len(faces) * 3))
+
+        # Scene section
+        scene = ET.SubElement(i3d, "Scene")
+
+        if is_water:
+            # Water: direct shape node
+            shape_node = ET.SubElement(scene, "Shape")
+            shape_node.set("name", name)
+            shape_node.set("shapeId", "1")
+            shape_node.set("nodeId", "4")
+            shape_node.set("castsShadows", "true")
+            shape_node.set("receiveShadows", "true")
+            shape_node.set("materialIds", "1")
+        else:
+            # Terrain: transform group with shape
+            transform_group = ET.SubElement(scene, "TransformGroup")
+            transform_group.set("name", name)
+            transform_group.set("nodeId", "1")
+
+            shape_node = ET.SubElement(transform_group, "Shape")
+            shape_node.set("name", f"{name}_shape")
+            shape_node.set("nodeId", "2")
+            shape_node.set("shapeId", "1")
+            shape_node.set("static", "true")
+            shape_node.set("compound", "false")
+            shape_node.set("collision", "true")
+            shape_node.set("materialIds", "1")
+
+        # Pretty print and write
+        MeshComponent._indent(i3d)
+        tree = ET.ElementTree(i3d)
+        tree.write(output_path, encoding="iso-8859-1", xml_declaration=True)
+
+    @staticmethod
+    def _indent(elem: ET.Element, level: int = 0) -> None:
+        """Pretty print XML formatting. Modifies the element in place.
+
+        Arguments:
+            elem (ET.Element): The XML element to indent
+            level (int): Current indentation level
+        """
+        i = "\n" + level * "  "
+        if len(elem):
+            if not elem.text or not elem.text.strip():
+                elem.text = i + "  "
+            if not elem.tail or not elem.tail.strip():
+                elem.tail = i
+            for e in elem:
+                MeshComponent._indent(e, level + 1)
+            if not elem.tail or not elem.tail.strip():
+                elem.tail = i
+        else:
+            if level and (not elem.tail or not elem.tail.strip()):
+                elem.tail = i
