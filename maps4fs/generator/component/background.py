@@ -312,7 +312,7 @@ class Background(MeshComponent, ImageComponent):
             return
 
         try:
-            mesh = trimesh.load(self.assets.background_mesh, force="mesh")
+            mesh = trimesh.load_mesh(self.assets.background_mesh, force="mesh")
         except Exception as e:
             self.logger.error("Could not load background mesh: %s", e)
             return
@@ -340,6 +340,7 @@ class Background(MeshComponent, ImageComponent):
         self.assets.decimated_background_mesh = decimated_save_path
 
     def texture_background_mesh(self) -> None:
+        """Textures the background mesh using satellite imagery."""
         satellite_component = self.map.get_satellite_component()
         if not satellite_component:
             self.logger.warning("Satellite component not found, cannot texture background mesh.")
@@ -361,21 +362,27 @@ class Background(MeshComponent, ImageComponent):
         background_texture_resolution = self.get_background_texture_resolution(self.map_size)
         non_resized_texture_image = cv2.imread(background_texture_path, cv2.IMREAD_UNCHANGED)
 
+        if non_resized_texture_image is None:
+            self.logger.error(
+                "Failed to read background texture image: %s", background_texture_path
+            )
+            return
+
         resized_texture_image = cv2.resize(
-            non_resized_texture_image,
+            non_resized_texture_image,  # type: ignore
             (background_texture_resolution, background_texture_resolution),
             interpolation=cv2.INTER_AREA,
         )
 
         resized_texture_save_path = os.path.join(
             self.textured_mesh_directory,
-            "background_texture.png",  # TODO: Try to play with JPG to reduce size.
+            "background_texture.png",
         )
 
         cv2.imwrite(resized_texture_save_path, resized_texture_image)
         self.logger.debug("Resized background texture saved: %s", resized_texture_save_path)
 
-        decimated_mesh = trimesh.load(decimated_background_mesh_path, force="mesh")
+        decimated_mesh = trimesh.load_mesh(decimated_background_mesh_path, force="mesh")
 
         if decimated_mesh is None:
             self.logger.error("Failed to load decimated mesh after all retry attempts")
