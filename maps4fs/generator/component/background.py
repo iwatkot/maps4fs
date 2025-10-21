@@ -60,6 +60,11 @@ class Background(MeshComponent, ImageComponent):
         self.textured_mesh_directory = os.path.join(self.background_directory, "textured_mesh")
         os.makedirs(self.textured_mesh_directory, exist_ok=True)
 
+        self.assets_background_directory = os.path.join(self.map.assets_directory, "background")
+        self.assets_water_directory = os.path.join(self.map.assets_directory, "water")
+        os.makedirs(self.assets_background_directory, exist_ok=True)
+        os.makedirs(self.assets_water_directory, exist_ok=True)
+
         self.water_resources_path = os.path.join(self.water_directory, "water_resources.png")
 
         self.output_path = os.path.join(self.background_directory, f"{Parameters.FULL}.png")
@@ -115,6 +120,7 @@ class Background(MeshComponent, ImageComponent):
             self.generate_obj_files()
             self.decimate_background_mesh()
             self.texture_background_mesh()
+            self.convert_background_mesh_to_i3d()
         if self.map.background_settings.generate_water:
             self.generate_water_resources_obj()
 
@@ -376,7 +382,7 @@ class Background(MeshComponent, ImageComponent):
 
         resized_texture_save_path = os.path.join(
             self.textured_mesh_directory,
-            "background_texture.png",
+            "background_texture.jpg",
         )
 
         cv2.imwrite(resized_texture_save_path, resized_texture_image)
@@ -398,9 +404,46 @@ class Background(MeshComponent, ImageComponent):
 
             self.assets.textured_background_mesh = obj_save_path
             self.assets.textured_background_mtl = mtl_save_path
+            self.assets.resized_background_texture = resized_texture_save_path
             self.logger.debug("Textured background mesh saved: %s", obj_save_path)
         except Exception as e:
             self.logger.error("Could not texture background mesh: %s", e)
+            return
+
+    def convert_background_mesh_to_i3d(self) -> None:
+        """Converts the textured background mesh to i3d format."""
+        if not self.assets.textured_background_mesh or not os.path.isfile(
+            self.assets.textured_background_mesh
+        ):
+            self.logger.warning("Textured background mesh not found, cannot convert to i3d.")
+            return
+
+        if not self.assets.resized_background_texture or not os.path.isfile(
+            self.assets.resized_background_texture
+        ):
+            self.logger.warning("Resized background texture not found, cannot convert to i3d.")
+            return
+
+        try:
+            mesh = trimesh.load_mesh(self.assets.textured_background_mesh, force="mesh")
+        except Exception as e:
+            self.logger.error("Could not load textured background mesh: %s", e)
+            return
+
+        try:
+            i3d_background_terrain = self.mesh_to_i3d(
+                mesh,
+                output_dir=self.assets_background_directory,
+                name=Parameters.BACKGROUND_TERRAIN,
+                texture_path=self.assets.resized_background_texture,
+                water_mesh=False,
+            )
+            self.logger.debug(
+                "Background mesh converted to i3d successfully: %s", i3d_background_terrain
+            )
+            self.assets.background_terrain_i3d = i3d_background_terrain
+        except Exception as e:
+            self.logger.error("Could not convert background mesh to i3d: %s", e)
             return
 
     def save_map_dem(self, dem_path: str, save_path: str | None = None) -> str:

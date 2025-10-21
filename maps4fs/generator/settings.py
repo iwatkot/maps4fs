@@ -37,6 +37,7 @@ class Parameters:
     PREVIEW = "PREVIEW"
 
     DECIMATED_BACKGROUND = "decimated_background"
+    BACKGROUND_TERRAIN = "background_terrain"
 
     RESIZE_FACTOR = 8
 

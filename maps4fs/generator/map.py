@@ -150,6 +150,9 @@ class Map:
             raise RuntimeError(f"Can not unpack map template due to error: {e}") from e
         # endregion
 
+        self.assets_directory = os.path.join(self.map_directory, "assets")
+        os.makedirs(self.assets_directory, exist_ok=True)
+
         self.shared_settings = SharedSettings()
         self.components: list[Component] = []
 
