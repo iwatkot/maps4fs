@@ -118,9 +118,15 @@ class Background(MeshComponent, ImageComponent):
 
         if self.map.background_settings.generate_background:
             self.generate_obj_files()
-            self.decimate_background_mesh()
-            self.texture_background_mesh()
-            self.convert_background_mesh_to_i3d()
+            if self.game.mesh_processing:
+                self.logger.debug("Mesh processing is enabled, will decimate, texture and convert.")
+                self.decimate_background_mesh()
+                self.texture_background_mesh()
+                self.convert_background_mesh_to_i3d()
+            else:
+                self.logger.warning(
+                    "Mesh processing is disabled for the game, skipping background mesh processing."
+                )
         if self.map.background_settings.generate_water:
             self.generate_water_resources_obj()
 
