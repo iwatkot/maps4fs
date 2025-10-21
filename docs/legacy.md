@@ -1,53 +1,30 @@
-# Legacy Deployment (Deprecated)
+# Legacy & Outdated Documentation
 
-⚠️ **This deployment method is deprecated and no longer supported.**
+This section contains documentation for features, methods, and approaches that are **no longer actively maintained or recommended** but are still available for reference.
 
-## What is Legacy Deployment?
+## Why Keep Legacy Documentation?
 
-The legacy version was a monolith application where both backend and frontend (using Streamlit) were bundled together in a single Docker container. This caused confusion for users and made the application harder to maintain.
+While Maps4FS continues to evolve with automated features and improved workflows, some users may prefer manual approaches or need to reference older methods for specific use cases.
 
-## Legacy Docker Command
+## What You'll Find Here
 
-```bash
-docker run -d -p 8501:8501 -p 8000:8000 --name maps4fs -v /c/maps4fs:/usr/src/app/mfsrootdir iwatkot/maps4fs:2.2.7
-```
+- **Deprecated deployment methods** that still work but aren't supported
+- **Manual workflows** that have been automated but some users prefer to do manually
+- **Old configuration approaches** that have been superseded by newer methods
+- **Historical features** that may be useful for understanding the evolution of Maps4FS
 
-### Command Breakdown
+## ⚠️ Important Notice
 
-- `-d` - Run container in detached mode (background)
-- `-p 8501:8501` - Streamlit frontend port
-- `-p 8000:8000` - Backend API port
-- `--name maps4fs` - Container name
-- `-v /c/maps4fs:/usr/src/app/mfsrootdir` - Volume mount for data directory
+Documentation in this section:
+- ❌ **Not actively maintained** - May become outdated over time
+- ❌ **Limited support** - Community support only, no official assistance
+- ❌ **No new features** - These methods won't receive updates or improvements
+- ✅ **Still functional** - Should work as documented, but use at your own discretion
 
-### Volume Mount Details
+## Recommended Approach
 
-**Important:** Replace `/c/maps4fs` with your own local directory path where you want to store:
-- Generated maps
-- Cache data
-- Configuration files
-- Custom DEM and OSM files
+For the best experience with latest features, security updates, and official support, always prefer the current documentation over legacy methods. Only use legacy approaches if you have specific requirements that aren't met by current methods.
 
-**Examples for different operating systems:**
-- **Windows:** `-v C:\your\maps\folder:/usr/src/app/mfsrootdir`
-- **Linux/macOS:** `-v /home/user/maps4fs:/usr/src/app/mfsrootdir`
+---
 
-**What gets stored in the mounted folder:**
-- `maps/` - Your generated maps
-- `cache/` - Downloaded elevation and OSM data
-- Custom files you want to use for map generation
-
-**Latest available legacy tag:** `2.2.7`
-
-Docker Hub: https://hub.docker.com/r/iwatkot/maps4fs
-
-## Important Notice
-
-- ❌ **No updates, new features, or support**
-- ❌ **Deprecated architecture**
-- ❌ **May have unresolved issues**
-- ✅ **Still functional if you prefer it**
-
-## Recommended Alternative
-
-For the best experience with latest features and support, please use the **[Local Deployment](local_deployment.md)** method instead.
+Browse the legacy documentation below, but remember to check if there's a modern equivalent in the main documentation first!

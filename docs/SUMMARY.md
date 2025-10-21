@@ -47,4 +47,5 @@
 * [Water Planes](water_planes.md)
 * [Procedural Generation](procedural_generation.md)
 * [DDS Conversion](dds_conversion.md)
-* [Legacy](legacy.md)
+* [Legacy & Outdated Documentation](legacy.md)
+  * [Legacy Deployment](legacy_deployment.md)
