@@ -254,6 +254,16 @@ class Game:
             str: The path to the i3d file."""
         raise NotImplementedError
 
+    def overview_file_path(self, map_directory: str) -> str:
+        """Returns the path to the overview image file.
+
+        Arguments:
+            map_directory (str): The path to the map directory.
+
+        Returns:
+            str: The path to the overview image file."""
+        raise NotImplementedError
+
     @property
     def i3d_processing(self) -> bool:
         """Returns whether the i3d file should be processed.
@@ -437,3 +447,13 @@ class FS25(Game):
         Returns:
             str: The path to the environment xml file."""
         return os.path.join(map_directory, "map", "config", "environment.xml")
+
+    def overview_file_path(self, map_directory: str) -> str:
+        """Returns the path to the overview image file.
+
+        Arguments:
+            map_directory (str): The path to the map directory.
+
+        Returns:
+            str: The path to the overview image file."""
+        return os.path.join(map_directory, "map", "overview.dds")

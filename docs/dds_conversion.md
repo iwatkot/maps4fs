@@ -2,6 +2,8 @@
 
 DDS (DirectDraw Surface) is the native texture format used throughout Farming Simulator for all visual assets including textures, icons, previews, and in-game maps. Understanding DDS conversion is essential for creating professional-quality map mods.
 
+> 🎉 **NEW for FS25**: Maps4FS now automatically generates `overview.dds` files when **Download Satellite Images** is enabled! Manual conversion is only needed for custom overview maps or FS22.
+
 ## Why DDS Format?
 
 **Performance Benefits:**
@@ -14,11 +16,13 @@ DDS (DirectDraw Surface) is the native texture format used throughout Farming Si
 
 ### Map Identity Files
 
-| File | Dimensions | Purpose | Usage |
-|------|------------|---------|--------|
-| `icon.dds` | 256×256 (FS22)<br>512×512 (FS25) | Mod icon | Displayed in mod browser |
-| `preview.dds` | 2048×2048 | Loading screen preview | Shows during map loading |
-| `overview.dds` | 4096×4096 | In-game minimap | Interactive map display |
+| File | Dimensions | Purpose | Usage | FS25 Status |
+|------|------------|---------|--------|-------------|
+| `icon.dds` | 256×256 (FS22)<br>512×512 (FS25) | Mod icon | Displayed in mod browser | Manual conversion required |
+| `preview.dds` | 2048×2048 | Loading screen preview | Shows during map loading | Manual conversion required |
+| `overview.dds` | 4096×4096 | In-game minimap | Interactive map display | ✅ **Auto-generated** with satellite images |
+
+> **FS25 Automation**: When **Download Satellite Images** is enabled, Maps4FS automatically creates `overview.dds` using satellite imagery - no manual conversion needed!
 
 ### Quality Requirements
 
@@ -26,6 +30,28 @@ DDS (DirectDraw Surface) is the native texture format used throughout Farming Si
 - **Icon**: Use DXT1 or DXT5 compression for optimal file size
 - **Preview**: DXT1 compression for photographic content
 - **Overview**: DXT5 with alpha channel for transparency support
+
+## Automated Overview Generation (FS25)
+
+**Maps4FS now automatically handles overview.dds creation for Farming Simulator 25!**
+
+### How It Works
+When you enable **Download Satellite Images** in Maps4FS settings:
+1. 🛰️ High-resolution satellite imagery is downloaded for your map area
+2. 🎯 The image is automatically processed and optimized for in-game use
+3. 📁 `overview.dds` is generated and saved in the correct format and dimensions
+4. ✅ Ready to use immediately - no manual conversion required!
+
+### Benefits
+- **Perfect Quality**: Uses actual satellite imagery for photorealistic minimap
+- **Correct Dimensions**: Automatically sized to 4096×4096 pixels
+- **Optimal Compression**: Pre-configured with proper DXT5 settings
+- **Time Saving**: Eliminates manual image editing and conversion steps
+
+### When Manual Conversion is Still Needed
+- **FS22 maps**: Automation only available for FS25
+- **Custom overview designs**: If you prefer artistic or stylized minimaps
+- **Icon and preview images**: These still require manual creation and conversion
 
 ## Conversion Tools & Methods
 

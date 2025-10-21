@@ -55,6 +55,9 @@ class Parameters:
 
     HEIGHT_SCALE = "heightScale"
 
+    OVERVIEW_IMAGE_SIZE = 4096
+    OVERVIEW_IMAGE_FILENAME = "overview"
+
 
 class SharedSettings(BaseModel):
     """Represents the shared settings for all components."""

@@ -6,11 +6,13 @@ import os
 
 import cv2
 
+from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_xml import XMLComponent
+from maps4fs.generator.settings import Parameters
 
 
 # pylint: disable=R0903
-class Config(XMLComponent):
+class Config(XMLComponent, ImageComponent):
     """Component for map settings and configuration.
 
     Arguments:
@@ -35,6 +37,8 @@ class Config(XMLComponent):
 
         if self.game.fog_processing:
             self._adjust_fog()
+
+        self._set_overview()
 
     def _set_map_size(self) -> None:
         """Edits map.xml file to set correct map size."""
@@ -213,3 +217,62 @@ class Config(XMLComponent):
         )
 
         return dem_maximum_meter, dem_minimum_meter
+
+    def _set_overview(self) -> None:
+        """Generates and sets the overview image for the map."""
+        try:
+            overview_image_path = self.game.overview_file_path(self.map_directory)
+        except NotImplementedError:
+            self.logger.warning(
+                "Game does not support overview image file, overview generation will be skipped."
+            )
+            return
+
+        satellite_component = self.map.get_satellite_component()
+        if not satellite_component:
+            self.logger.warning(
+                "Satellite component not found, overview generation will be skipped."
+            )
+            return
+
+        if not satellite_component.assets.overview or not os.path.isfile(
+            satellite_component.assets.overview
+        ):
+            self.logger.warning(
+                "Satellite overview image not found, overview generation will be skipped."
+            )
+            return
+
+        satellite_images_directory = os.path.dirname(satellite_component.assets.overview)
+        overview_image = cv2.imread(satellite_component.assets.overview, cv2.IMREAD_UNCHANGED)
+
+        if overview_image is None:
+            self.logger.warning(
+                "Failed to read satellite overview image, overview generation will be skipped."
+            )
+            return
+
+        resized_overview_image = cv2.resize(
+            overview_image,
+            (Parameters.OVERVIEW_IMAGE_SIZE, Parameters.OVERVIEW_IMAGE_SIZE),
+            interpolation=cv2.INTER_LINEAR,
+        )
+
+        resized_overview_path = os.path.join(
+            satellite_images_directory,
+            f"{Parameters.OVERVIEW_IMAGE_FILENAME}.png",
+        )
+
+        cv2.imwrite(resized_overview_path, resized_overview_image)
+        self.logger.info("Overview image saved to: %s", resized_overview_path)
+
+        if os.path.isfile(overview_image_path):
+            try:
+                os.remove(overview_image_path)
+                self.logger.debug("Old overview image removed: %s", overview_image_path)
+            except Exception as e:
+                self.logger.warning("Failed to remove old overview image: %s", e)
+                return
+
+        self.convert_png_to_dds(resized_overview_path, overview_image_path)
+        self.logger.info("Overview image converted and saved to: %s", overview_image_path)

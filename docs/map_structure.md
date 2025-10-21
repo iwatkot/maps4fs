@@ -165,7 +165,11 @@ Contains references and paths to various map components. Manual editing should o
 ### In-Game Map Display
 **File:** `overview.dds`
 
-The minimap image displayed in-game. For detailed creation and optimization guidance, see the [Overview](overview_image.md) documentation.
+The minimap image displayed in-game.
+
+**NEW for FS25**: Automatically generated when **Download Satellite Images** is enabled - no manual creation required!
+
+**Manual Creation**: Required for FS22 or custom designs. For detailed creation and optimization guidance, see the [Overview Image](overview_image.md) documentation.
 
 ### Preview Assets
 **Location:** `previews/`
