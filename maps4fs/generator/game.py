@@ -43,6 +43,7 @@ class Game:
     _fog_processing: bool = True
     _dissolve: bool = True
     _mesh_processing: bool = True
+    _license_plates_processing: bool = True
 
     # Order matters! Some components depend on others.
     components = [Satellite, Texture, Background, GRLE, I3d, Config]
@@ -331,6 +332,14 @@ class Game:
             bool: True if the mesh should be processed, False otherwise."""
         return self._mesh_processing
 
+    @property
+    def license_plates_processing(self) -> bool:
+        """Returns whether the license plates should be processed.
+
+        Returns:
+            bool: True if the license plates should be processed, False otherwise."""
+        return self._license_plates_processing
+
 
 class FS22(Game):
     """Class used to define the game version FS22."""
@@ -344,6 +353,7 @@ class FS22(Game):
     _plants_processing = False
     _dissolve = False
     _mesh_processing = False
+    _license_plates_processing = False
 
     def dem_file_path(self, map_directory: str) -> str:
         """Returns the path to the DEM file.

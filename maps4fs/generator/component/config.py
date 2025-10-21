@@ -39,6 +39,7 @@ class Config(XMLComponent, ImageComponent):
             self._adjust_fog()
 
         self._set_overview()
+        self.update_license_plates()
 
     def _set_map_size(self) -> None:
         """Edits map.xml file to set correct map size."""
@@ -276,3 +277,51 @@ class Config(XMLComponent, ImageComponent):
 
         self.convert_png_to_dds(resized_overview_path, overview_image_path)
         self.logger.info("Overview image converted and saved to: %s", overview_image_path)
+
+    def update_license_plates(self):
+        if not self.game.license_plates_processing:
+            self.logger.warning("License plates processing is not supported for this game.")
+            return
+
+        # region production constants
+        COUNTRY_CODE_TOP = 169
+        COUNTRY_CODE_BOTTOM = 252
+        COUNTRY_CODE_LEFT = 74
+        COUNTRY_CODE_RIGHT = 140
+
+        # region debug values
+        country_code = "SRB"
+        eu_format = False
+        # endregion
+
+        # 1. open map.xml file
+        # 2. find the <licensePlates> element
+        # 3. update to use the PL license plates file
+        # <licensePlates filename="map/licensePlates/licensePlatesPL.xml" />
+        # 4. Find the licensePlatesPL.xml file in the map/licensePlates/ directory
+        # 5. Find the following line:
+        # <licensePlate filename="map/licensePlates/licensePlatesPL.i3d" node="0" />
+        # WARNING: USE NODE="0" BECAUSE THERE ARE OTHER ENTRIES WITH licensePlate TAG!
+        # 6. Inside the element find the <variations> element
+        # 7. Inside the <variations> element, find the FIRST <variation> element
+        # WARNING: THERE ARE MULTIPLE variation TAGS, USE THE FIRST ONE!
+        # 8. Having the 1-3 letters as input of this method, find and update the following lines:
+        # <value node="0|0" character="M" posX="-0.1712" numerical="false" alphabetical="true" />
+        # <value node="0|1" character="F" posX="-0.1172" numerical="false" alphabetical="true" />
+        # <value node="0|2" character="S" posX="-0.0632" numerical="false" alphabetical="true" />
+        # We need character here, by default it's MFS, set to provided letters.
+        # 9. Find the licensePlatesPL.i3d file in the map/licensePlates/ directory
+        # 10. Find the <Files> section
+        # 11. Find the following line:
+        # <File fileId="12" filename="licensePlates_diffuse.png" />
+        # 12. Having a boolean parameter in the fuction, update the filename (if needed) to:
+        # <File fileId="12" filename="licensePlates_diffuseEU.png" />
+        # or leave it as is for non-EU plates.
+        # 13. Having country code parameter, and knowing exact coordinates of place in the
+        # diffuse texture
+        # 14. Calculate the pixel size of the box using hardcoded constants
+        # 15. Knowing number of letters and box size, calculate the font size
+        # 16. and the position where to insert the image with letters
+        # 17. Insert the letters into the image and save file
+        # WARNING: THIS TEXT IS ROTATED 90 DEGREES IN CLOCKWISE DIRECTION IN THE TEXTURE!
+        pass
