@@ -241,7 +241,9 @@ class MeshComponent(Component):
         cube_mesh = trimesh.creation.box([remove_size, remove_size, z_size * 4])
 
         return trimesh.boolean.difference(
-            [mesh_copy, cube_mesh], check_volume=False, engine="blender", use_exact=False
+            [mesh_copy, cube_mesh],
+            check_volume=False,
+            engine="blender",
         )
 
     @staticmethod
