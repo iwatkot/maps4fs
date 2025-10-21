@@ -32,7 +32,7 @@ dtm_provider = mfs.dtm.SRTM30Provider
 lat, lon = 45.2858, 20.219
 coordinates = (lat, lon)
 size = 4096
-rotation = 25
+rotation = 0
 
 # 4️⃣ Define the output directory.
 map_directory = "map_directory"
@@ -49,20 +49,20 @@ dem_settings = mfs.settings.DEMSettings(
     multiplier=1, blur_radius=40, plateau=15, water_depth=10, add_foundations=True
 )
 background_settings = mfs.settings.BackgroundSettings(
-    # generate_background=True,
-    # generate_water=True,
+    generate_background=True,
+    generate_water=True,
     # remove_center=True,
     # flatten_roads=True,
     flatten_water=True,
 )
 grle_settings = mfs.settings.GRLESettings(
-    add_grass=True, farmland_margin=8, random_plants=True, add_farmyards=True
+    add_grass=False, farmland_margin=8, random_plants=False, add_farmyards=False
 )
 i3d_settings = mfs.settings.I3DSettings(
-    forest_density=8, add_trees=True, tree_limit=50000, trees_relative_shift=20
+    forest_density=8, add_trees=False, tree_limit=50000, trees_relative_shift=20
 )
 texture_settings = mfs.settings.TextureSettings(
-    dissolve=True,
+    # dissolve=True,
     fields_padding=8,
     skip_drains=True,
 )
@@ -94,10 +94,10 @@ mp = mfs.Map(
     size,
     rotation,
     map_directory,
-    custom_osm=osm_file,
+    # custom_osm=osm_file,
     generation_settings=generation_settings,
-    texture_custom_schema=texture_custom_schema,
-    tree_custom_schema=tree_custom_schema,
+    # texture_custom_schema=texture_custom_schema,
+    # tree_custom_schema=tree_custom_schema,
 )
 
 # 9️⃣ Launch the generation process.

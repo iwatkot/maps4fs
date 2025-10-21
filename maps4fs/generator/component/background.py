@@ -6,7 +6,7 @@ from __future__ import annotations
 import os
 import shutil
 from copy import deepcopy
-from typing import Any
+from typing import Any, Literal
 
 import cv2
 import numpy as np
@@ -122,7 +122,9 @@ class Background(MeshComponent, ImageComponent):
                 self.logger.debug("Mesh processing is enabled, will decimate, texture and convert.")
                 self.decimate_background_mesh()
                 self.texture_background_mesh()
-                self.convert_background_mesh_to_i3d()
+                background_conversion_result = self.convert_background_mesh_to_i3d()
+                if background_conversion_result:
+                    self.add_note_file(asset="background")
             else:
                 self.logger.warning(
                     "Mesh processing is disabled for the game, skipping background mesh processing."
@@ -131,7 +133,9 @@ class Background(MeshComponent, ImageComponent):
             self.generate_water_resources_obj()
             if self.game.mesh_processing:
                 self.logger.debug("Mesh processing is enabled, will convert water mesh to i3d.")
-                self.convert_water_mesh_to_i3d()
+                water_conversion_result = self.convert_water_mesh_to_i3d()
+                if water_conversion_result:
+                    self.add_note_file(asset="water")
             else:
                 self.logger.warning(
                     "Mesh processing is disabled for the game, skipping water mesh processing."
@@ -423,25 +427,29 @@ class Background(MeshComponent, ImageComponent):
             self.logger.error("Could not texture background mesh: %s", e)
             return
 
-    def convert_background_mesh_to_i3d(self) -> None:
-        """Converts the textured background mesh to i3d format."""
+    def convert_background_mesh_to_i3d(self) -> bool:
+        """Converts the textured background mesh to i3d format.
+
+        Returns:
+            bool -- True if the conversion was successful, False otherwise.
+        """
         if not self.assets.textured_background_mesh or not os.path.isfile(
             self.assets.textured_background_mesh
         ):
             self.logger.warning("Textured background mesh not found, cannot convert to i3d.")
-            return
+            return False
 
         if not self.assets.resized_background_texture or not os.path.isfile(
             self.assets.resized_background_texture
         ):
             self.logger.warning("Resized background texture not found, cannot convert to i3d.")
-            return
+            return False
 
         try:
             mesh = trimesh.load_mesh(self.assets.textured_background_mesh, force="mesh")
         except Exception as e:
             self.logger.error("Could not load textured background mesh: %s", e)
-            return
+            return False
 
         try:
             i3d_background_terrain = self.mesh_to_i3d(
@@ -455,23 +463,58 @@ class Background(MeshComponent, ImageComponent):
                 "Background mesh converted to i3d successfully: %s", i3d_background_terrain
             )
             self.assets.background_terrain_i3d = i3d_background_terrain
+            return True
         except Exception as e:
             self.logger.error("Could not convert background mesh to i3d: %s", e)
-            return
+            return False
 
-    def convert_water_mesh_to_i3d(self) -> None:
-        """Converts the line-based water mesh to i3d format."""
+    def add_note_file(self, asset: Literal["background", "water"]) -> None:
+        """Adds a note file to the background or water directory.
+
+        Arguments:
+            asset (Literal["background", "water"]): The asset type to add the note file to.
+        """
+        filename = "DO_NOT_USE_THESE_FILES.txt"
+        note_template = (
+            "Please find the ready-to-use {asset} i3d files in the {asset_directory} directory."
+        )
+        directory = {
+            "background": self.background_directory,
+            "water": self.water_directory,
+        }
+
+        content = (
+            "The files in this directory can be used to create the mesh files manually in Blender. "
+            "However, it's recommended to use the ready-to-use i3d files located in the assets "
+            "directory. There you'll find the i3d files, that can be imported directly into the "
+            "Giants Editor without any additional processing."
+        )
+        note = note_template.format(
+            asset=asset,
+            asset_directory=f"assets/{asset}",
+        )
+
+        file_path = os.path.join(directory[asset], filename)
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(content + "\n\n" + note)
+
+    def convert_water_mesh_to_i3d(self) -> bool:
+        """Converts the line-based water mesh to i3d format.
+
+        Returns:
+            bool -- True if the conversion was successful, False otherwise.
+        """
         if not self.assets.line_based_water_mesh or not os.path.isfile(
             self.assets.line_based_water_mesh
         ):
             self.logger.warning("Line-based water mesh not found, cannot convert to i3d.")
-            return
+            return False
 
         try:
             mesh = trimesh.load_mesh(self.assets.line_based_water_mesh, force="mesh")
         except Exception as e:
             self.logger.error("Could not load line-based water mesh: %s", e)
-            return
+            return False
 
         try:
             i3d_water_resources = self.mesh_to_i3d(
@@ -484,9 +527,10 @@ class Background(MeshComponent, ImageComponent):
                 "Water resources mesh converted to i3d successfully: %s", i3d_water_resources
             )
             self.assets.water_resources_i3d = i3d_water_resources
+            return True
         except Exception as e:
             self.logger.error("Could not convert water mesh to i3d: %s", e)
-            return
+            return False
 
     def save_map_dem(self, dem_path: str, save_path: str | None = None) -> str:
         """Cuts out the center of the DEM (the actual map) and saves it as a separate file.
