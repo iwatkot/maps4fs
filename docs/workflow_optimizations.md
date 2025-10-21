@@ -51,7 +51,7 @@ Once your OSM data meets your standards, begin the iterative generation process.
 - ✅ Automated terrain topology is acceptable
 - ✅ Road networks are properly positioned and connected
 - ✅ Field boundaries and farmland divisions are logical
-- ✅ Background terrain and water meshes render correctly
+- ✅ Background terrain and water meshes render correctly *(FS25: Auto-generated i3d files ready to import!)*
 - ✅ Satellite imagery alignment is accurate
 - ✅ Everything seems to be in its place
 

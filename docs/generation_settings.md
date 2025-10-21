@@ -54,7 +54,14 @@ If enabled, the background terrain files will be generated. You can turn it off 
 - `assets/background/textured_mesh/` folder with obj, mtl, and texture files
 
 ### Generate Water
-If enabled, the water planes obj files will be generated. You can turn it off if you already have those files or don't need them. By default, it's set to True.
+**For FS25**: Generates both obj files AND ready-to-use i3d files for direct Giants Editor import.  
+**For FS22**: Generates obj files for manual processing in Blender.
+
+If enabled, the water plane files will be generated. You can turn it off if you already have those files or don't need them. By default, it's set to True.
+
+**Generated files (FS25):**
+- `assets/water/water_resources.i3d` ← **Ready to import!**
+- `water/` folder with obj files for reference
 
 ### Water Blurriness
 **Units:** Integer value  

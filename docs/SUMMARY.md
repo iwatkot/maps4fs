@@ -49,4 +49,5 @@
 * [DDS Conversion](dds_conversion.md)
 * [Legacy & Outdated Documentation](legacy.md)
   * [Legacy Deployment](legacy_deployment.md)
-  * [Legacy Background Terrain (Manual Process)](legacy_background_terrain.md)
+  * [Legacy Background Terrain](legacy_background_terrain.md)
+  * [Legacy Water Planes](legacy_water_planes.md)

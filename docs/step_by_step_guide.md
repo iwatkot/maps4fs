@@ -123,11 +123,15 @@ No Blender needed for FS25!
 4. Select `background_terrain.i3d` and import
 5. Done! The terrain is automatically textured and positioned
 
-### Step 8: 🌊 Create Water Planes (Optional)
-Add realistic water bodies to your map:
-1. Make sure "Generate Water" is enabled in generation settings
-2. Use one of the `obj` files provided to create water planes in Blender
-3. Follow the [Water Planes Tutorial](water_planes.md)
+### Step 8: 🌊 Water Planes (Automated for FS25)
+**For Farming Simulator 25**: Water planes are now fully automated!
+1. ✅ Enable **Generate Water** in background settings
+2. 🎯 Maps4FS automatically creates ready-to-use `water_resources.i3d` files
+3. 📁 Find them in `your_map/assets/water/` after generation
+4. 🚀 Import the `.i3d` file directly into Giants Editor
+5. ⚙️ Configure water properties in Giants Editor (see [Water Planes guide](water_planes.md))
+
+**For Farming Simulator 22**: Use the [Legacy Water Planes](legacy_water_planes.md) manual process.
 
 ### Step 9: 📂 Open in Giants Editor
 1. Launch Giants Editor (correct version for your target game)
