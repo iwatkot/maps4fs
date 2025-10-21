@@ -49,3 +49,4 @@
 * [DDS Conversion](dds_conversion.md)
 * [Legacy & Outdated Documentation](legacy.md)
   * [Legacy Deployment](legacy_deployment.md)
+  * [Legacy Background Terrain (Manual Process)](legacy_background_terrain.md)

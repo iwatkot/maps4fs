@@ -1,134 +1,111 @@
-## How to create a background terrain
+# Background Terrain (Automated)
 
-📹 Check out the video version of this tutorial.  
+Maps4FS now automatically generates ready-to-use i3d background terrain files for **Farming Simulator 25**, eliminating the need for manual Blender workflows!
 
-[![YouTube tutorial](https://github.com/user-attachments/assets/0c0a205d-b41e-4bfb-ac75-27737bd8f1e9)](https://www.youtube.com/watch?v=j0_tmJgfdpw)
+## 🎯 Quick Overview
 
-To create a background terrain for your Farming Simulator map, you need to open the `*.obj` files containing the terrain data, apply the generated satellite images as textures, and export the results to the `*.i3d` format.
+When you generate a map with the following settings enabled:
+- **Download Satellite Images** ✅
+- **Generate Background** ✅
 
-ℹ️ This tutorial assumes that you have already generated your map with satellite images.
+Maps4FS will automatically create optimized i3d files that can be directly imported into Giants Editor.
 
-Let's get straight to work:
+## 📁 Generated Files
 
-1. Download and install [Blender](https://www.blender.org/download/).
-2. Download and install the [Blender Exporter Plugins](https://gdn.giants-software.com/downloads.php) from the official Giants Software website.
-3. Activate the `Blender Exporter Plugins` in Blender.
-4. Now you can import the `*.obj` file. Go to `File` → `Import` → `Wavefront (.obj)` and select your `*.obj` file.
+After generation, you'll find the following files in your map's `assets/background/` directory:
 
-![Import obj](https://github.com/user-attachments/assets/0fea21f6-3f1e-40e1-9d3e-6844fbb9f0de)
+```
+map_directory/
+├── assets/
+│   └── background/
+│       ├── textured_mesh/
+│       │   ├── background_textured_mesh.obj
+│       │   ├── background_textured_mesh.mtl
+│       │   └── background_texture.png
+│       └── background_terrain.i3d  ← Ready to import!
+```
 
-5. Select the imported object, right-click on it, and click `Set Origin` → `Origin to Geometry`.
+## 🚀 How to Use (FS25)
 
-![Origin to geometry](https://github.com/user-attachments/assets/379fd7b3-3b27-4b45-b9cc-e39218fa7a6b)
+### Step 1: Generate Your Map
+1. Enable **Download Satellite Images** in the Satellite component
+2. Enable **Generate Background** in the Background Settings
+3. Generate your map normally
 
-6. Click on the arrow icon or press the `N` key.
+### Step 2: Import into Giants Editor
+1. Open your map in **Giants Editor 10.0.0+** (FS25)
+2. Go to `File` → `Import...`
+3. Navigate to `your_map/assets/background/`
+4. Select `background_terrain.i3d`
+5. Click `Import`
 
-![413003](https://github.com/user-attachments/assets/c3b74d01-624a-4c1f-b5ad-ef620cbb33d4)
+That's it! The background terrain is automatically:
+- ✅ **Properly scaled** and positioned
+- ✅ **Textured** with satellite imagery  
+- ✅ **Decimated** for optimal performance
+- ✅ **UV mapped** correctly
+- ✅ **Center removed** (if enabled in settings)
 
-7. In the `Item` tab, change the `Location` [2] to `0, 0, 0` and the `Rotation` [3] to `0, 0, 0`.  
-Set the `Dimensions` [4] of the background terrain in meters. This is calculated as map size + 2048 × 2. For example, if your map size is 4096×4096, the terrain size should be 8192×8192.
+## ⚙️ Settings Control
 
-![Transformation](https://github.com/user-attachments/assets/bdd0be37-2a38-44e7-bbb8-21e1a0929756)
+You can control the automated generation through these settings:
 
-8. Switch to the `View` tab and change the `End` value to `100000` or similar. This ensures the terrain remains visible and doesn't partially disappear.
+### Background Settings
+- **Generate Background**: Enable/disable background terrain generation
+- **Remove Center**: Automatically cuts out the map center
+- **Background Texture Resolution**: Controls texture quality (auto-calculated based on map size)
 
-![Item end](https://github.com/user-attachments/assets/e838aa9c-09b7-4ede-b666-de83eb82fbbe)
+### Advanced Settings
+- **Decimation Factor**: Automatically calculated based on map size for optimal performance
+- **Z-Scaling**: Matches your main terrain settings
 
-9. Now we need to add a `Modifier` to the terrain. Click on the `Modifiers` tab, then click `Add Modifier`.
+## 🎮 Game Compatibility
 
-![Add modifier](https://github.com/user-attachments/assets/491c0d43-5f16-4a0e-b11c-a8e138107fbe)
+| Game Version | Status | Method |
+|--------------|---------|---------|
+| **Farming Simulator 25** | ✅ **Fully Automated** | Use this guide |
+| **Farming Simulator 22** | ⚠️ **Manual Process** | Use [Legacy Background Terrain](legacy_background_terrain.md) |
 
-10. In the dropdown menu, select the `Decimate` modifier.
+## 📊 Performance Benefits
 
-![Select decimate](https://github.com/user-attachments/assets/1524ec71-a252-491e-8d39-84e7435980cd)
+The automated process includes several optimizations:
 
-11. Now adjust the `Ratio` value. This determines how much the terrain will be simplified. Lower values create more simplified terrain. Depending on your terrain, a good starting point is around `0.05` or lower. Remember, this is background terrain that's barely visible in-game, so quality doesn't matter much. More simplified terrain consumes fewer resources.
+- **Smart Decimation**: Reduces polygon count based on map size
+- **Texture Optimization**: Automatically resizes textures for background use
+- **Memory Efficiency**: Optimized for minimal in-game impact
+- **LOD Ready**: Pre-configured for distance rendering
 
-![Apply decimate](https://github.com/user-attachments/assets/c7111d5d-a32a-4264-9810-bcfd948d8cd3)
+## 🔧 Troubleshooting
 
-12. Select the object, right-click on it, and select `Shade Smooth`. This will automatically smooth the terrain. Note that it may not work perfectly, so you might need to undo (`Ctrl + Z`), adjust the `Decimate` modifier value, and try again. Remember: it's background terrain, so it doesn't need to be perfect.
+### No background_terrain.i3d file generated?
+- Ensure **Download Satellite Images** is enabled
+- Ensure **Generate Background** is enabled
+- Check that satellite images were successfully downloaded
 
-![Shade smooth](https://github.com/user-attachments/assets/b9b8f0ec-fea7-467e-8032-364c0d704efc)
+### Import fails in Giants Editor?
+- Use Giants Editor 10.0.0+ for FS25 maps
+- Make sure the i3d file isn't corrupted
+- Try importing the .obj files manually (see legacy docs)
 
-The object should now look more terrain-like with `Shade Smooth` applied.
+### Terrain appears too high/low?
+- Adjust the terrain position in Giants Editor
+- Check Z-scaling settings match your main terrain
 
-![After shade smooth](https://github.com/user-attachments/assets/2128a862-7a9c-4fdc-ab2f-316eadd9496e)
+## 💡 Tips
 
-13. It's time to add a material to the terrain. Click on the `Material Properties` tab, then click the `New` button.
+- **Quality vs Performance**: The automated process balances quality and performance. For ultra-high quality backgrounds, consider the [legacy manual process](legacy_background_terrain.md)
+- **Custom Textures**: You can replace the generated texture with your own if needed
+- **Multiple Maps**: The automation works with any map size and automatically adjusts parameters
 
-![Material](https://github.com/user-attachments/assets/b4a5ae03-b9ce-441f-925c-70ed7085ed7e)
+## 🔄 Upgrading from Manual Process
 
-14. Go to the `Surface` section, click on the `Base Color` **CIRCLE** (not the color itself), and select the `Image Texture`. Provide the path to the satellite image you want to use as a texture.
+If you've been using the manual Blender workflow:
 
-![Image texture](https://github.com/user-attachments/assets/ecbd8c35-80c9-4bfb-b384-2545aa8f0f63)
+1. **Update your workflow**: Simply enable the automated settings
+2. **No more Blender needed**: The i3d files are ready to import
+3. **Same quality**: The automated process produces equivalent results
+4. **Legacy docs available**: Manual process docs moved to [Legacy section](legacy_background_terrain.md) for reference
 
-15. Go to the `Emission` section, click on the `Color` **THE COLOR ITSELF** (not the circle), and select completely black. Otherwise, you won't be able to see the material in Giants Editor.
+---
 
-![Emission](https://github.com/user-attachments/assets/cd6350cf-e7da-40ef-9e6d-fc6c551ce4d1)
-
-16. Open the `UV Editing` tab, and in the right viewport change the view to `Top` by pressing `7` on the numpad or holding the `Z` key and selecting `Top`.
-
-![UV editing](https://github.com/user-attachments/assets/55694f85-74ea-438a-b7ed-0f6eea7c5655)
-
-17. Ensure the texture has correct orientation relative to the terrain. If not, rotate the texture image before proceeding. After confirming the texture is correctly oriented, switch to the right viewport and select everything by pressing `A`. Everything on the right side should be selected (orange). Press the `U` key and select one of the `Unwrap` options. The recommended option is `Project from View (bounds)`, which projects the texture from your current view. Note: this should be done in `Top` view, otherwise the texture may be projected incorrectly.
-
-![Unwrap](https://github.com/user-attachments/assets/34973898-75fb-4f37-ba47-db26fba965b9)
-
-18. Return to the `Layout` tab, press and hold `Z`, and select `Material Preview`. You should see the terrain with the texture applied. You can now adjust the object scale in the `Transform` tab. Note that you can also do this later in Giants Editor.
-
-![Material preview](https://github.com/user-attachments/assets/30f8434b-0e68-4b67-b39b-cdd91d2a68d1)
-
-### Cutting Out the Map Center
-
-The generator can now remove the center from the mesh automatically. Ensure that **Background Settings** → **Remove center** is enabled.  
-
-### Exporting the Object
-
-19. It's time to export our object as an `*.i3d` file. Open the side panel by pressing `N` and select the `GIANTS I3D Exporter` tab. If you can't see it, you either didn't install the `Blender Exporter Plugins` (step 2) or didn't activate them (step 3).
-
-Ensure the object is selected [1], specify the output file path [3], and click the `Export selected` button [4]. You can also use `Export all`, but make sure you don't have other objects in the scene (Blender adds a camera, light source, and cube by default). 
-
-![Export to i3d](https://github.com/user-attachments/assets/ad3913d7-a16e-47c0-a039-9f792e34ad4c)
-
-## How to Import Background Terrain into Giants Editor
-
-At this point, you should have `*.i3d` files with your background terrain. Now let's import them into Giants Editor.
-
-ℹ️ This tutorial assumes you have already generated your map, downloaded satellite images, and created background terrain as described in the previous steps.
-
-Here's what you need to do:
-
-1. Download and install Giants Editor from the official website: [https://gdn.giants-software.com/downloads.php](https://gdn.giants-software.com/downloads.php). 
-   
-   **Important**: For Farming Simulator 25 maps, use Giants Editor 10.0.0 or later. For Farming Simulator 22 maps, use Giants Editor 9.0.0 or later. Using the wrong editor version will cause crashes.
-
-2. Open your main map file (for Farming Simulator 25, this is the `map/map.i3d` file).
-
-3. Click the `File` menu and select `Import...`, then choose your `*.i3d` file with the background terrain.
-
-![Import](https://github.com/user-attachments/assets/32145805-6583-4147-ac04-4c69d041b554)
-
-4. If you can't see the texture on the terrain after import, you need to add it manually.
-   Open the `Material Editing` panel (if not visible, click `Window` menu and select `Material Editing`) and ensure you've selected the correct object in the `Scenegraph` panel. Find the `Albedo map` and click the `...` button to select the terrain texture. 
-
-![Albedo map](https://github.com/user-attachments/assets/20a197cd-dadf-4e61-8ad2-c6752d60fb17)
-
-5. The new window will appear, click on the `...` button and select the texture for the terrain.
-
-![Select the texture](https://github.com/user-attachments/assets/29940c6d-1c18-4077-a0f0-ce525a9bc503)
-
-6. If you haven't converted the textures to `.dds` format, you'll see a warning message asking `Convert now?`. Click `Yes` to convert the texture to `.dds` format.
-
-![Convert now](https://github.com/user-attachments/assets/1778363a-1701-4c49-9fc7-67a1e67b3257)
-
-7. You should now be able to see the texture on the terrain.
-
-8. If you used the method to cut out the map center from the previous tutorial, you only need to adjust the `Translate Y` and `Scale Y` values, which will differ for each terrain.
-
-ℹ️ These examples were added later, so they contain different untextured terrain - don't be alarmed!  
-
-![Adjust the terrain](https://github.com/user-attachments/assets/d5b6aec2-8e81-47e4-92f1-752a8df7fd69)
-
-And it should be perfectly aligned with the rest of the map.  
-
-![Aligned terrain](https://github.com/user-attachments/assets/e31e8f27-032c-4096-8043-20e94dfed6ac)
+**Need the manual process?** Check out the [Legacy Background Terrain](legacy_background_terrain.md) documentation for the traditional Blender workflow (required for FS22).

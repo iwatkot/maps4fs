@@ -41,8 +41,17 @@ If enabled, the terrain under buildings will be flattened to their average heigh
 
 These settings control the generation of background terrain, water planes, and other 3D elements that surround the playable map area.
 
+> 🎉 **NEW for FS25**: When combined with **Download Satellite Images**, Maps4FS now automatically generates ready-to-use `background_terrain.i3d` files that can be directly imported into Giants Editor - no Blender required!
+
 ### Generate Background
-If enabled, the obj files for the background terrain will be generated. You can turn it off if you already have those files or don't need them. By default, it's set to True.
+**For FS25**: Generates both obj files AND ready-to-use i3d files when satellite images are enabled.  
+**For FS22**: Generates obj files for manual processing in Blender.
+
+If enabled, the background terrain files will be generated. You can turn it off if you already have those files or don't need them. By default, it's set to True.
+
+**Generated files (FS25 with satellite images):**
+- `assets/background/background_terrain.i3d` ← **Ready to import!**
+- `assets/background/textured_mesh/` folder with obj, mtl, and texture files
 
 ### Generate Water
 If enabled, the water planes obj files will be generated. You can turn it off if you already have those files or don't need them. By default, it's set to True.
@@ -160,7 +169,12 @@ However, if this option is enabled, the generator will use the `precise_tags` in
 These settings control the download and processing of satellite imagery used for textures and visual references.
 
 ### Download Images
+**For FS25**: Enables automatic generation of ready-to-use i3d background terrain files when combined with **Generate Background**.  
+**For FS22**: Downloads satellite images for manual background terrain creation.
+
 If enabled, the tool will download satellite images for the background terrain and overview image. If you already have the images, you can turn it off.
+
+> 💡 **Tip**: For FS25 users, enabling both **Download Images** and **Generate Background** provides the complete automated workflow!
 
 ### Zoom Level
 **Units:** Integer value (maximum recommended: 18)  
