@@ -176,12 +176,16 @@ However, if this option is enabled, the generator will use the `precise_tags` in
 These settings control the download and processing of satellite imagery used for textures and visual references.
 
 ### Download Images
-**For FS25**: Enables automatic generation of ready-to-use i3d background terrain files when combined with **Generate Background**.  
-**For FS22**: Downloads satellite images for manual background terrain creation.
+**For FS25**: Enables automatic generation of multiple assets:
+- ✅ Ready-to-use `background_terrain.i3d` files (when combined with **Generate Background**)
+- ✅ Automatic `overview.dds` creation for in-game minimap
+- ✅ Satellite imagery for textures and visual references
+
+**For FS22**: Downloads satellite images for manual background terrain and overview creation.
 
 If enabled, the tool will download satellite images for the background terrain and overview image. If you already have the images, you can turn it off.
 
-> 💡 **Tip**: For FS25 users, enabling both **Download Images** and **Generate Background** provides the complete automated workflow!
+> 💡 **Tip**: For FS25 users, enabling **Download Images** provides the complete automated workflow for background terrain AND overview maps!
 
 ### Zoom Level
 **Units:** Integer value (maximum recommended: 18)  

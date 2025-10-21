@@ -151,10 +151,16 @@ No Blender needed for FS25!
 3. **Price configuration**: Adjust land values in farmlands.xml
 4. **Detailed guide**: [Farmlands Documentation](farmlands.md)
 
-### Step 12: 🗺️ Create Overview Map
-1. Use satellite imagery for overview.dds
-2. Resize and format according to game requirements
-3. Ensure map boundaries match terrain exactly
+### Step 12: 🗺️ Overview Map (Automated for FS25)
+**For Farming Simulator 25**: Overview map is now fully automated!
+- ✅ Automatically generated when **Download Satellite Images** is enabled
+- 📁 Perfect `overview.dds` created with satellite imagery
+- 🎯 Correct dimensions and compression applied automatically
+
+**For Farming Simulator 22**: Manual creation required
+- Use satellite imagery for overview.dds
+- Resize and format according to game requirements  
+- Follow [DDS Conversion Guide](dds_conversion.md) for proper formatting
 
 ### Step 13: ✨ Polish and Customize
 Your map is now playable but needs finishing touches:

@@ -1,5 +1,7 @@
 # Overview Image Configuration
 
+> 🎉 **NEW for FS25**: Overview images are now fully automated! When **Download Satellite Images** is enabled, Maps4FS automatically generates perfect `overview.dds` files - no manual editing required!
+
 ## Purpose: Creating Your In-Game Map Display
 
 The overview image serves as the **in-game map display** that players see when opening the map interface in Farming Simulator. This essential visual element provides context and navigation reference for your entire map area.
@@ -21,10 +23,19 @@ The overview image serves as the **in-game map display** that players see when o
 
 ## Content Options & Strategies
 
-### Option 1: Automated Satellite Integration
-**Recommended for Most Users**
+## Content Options & Strategies
 
-Maps4FS automatically generates an overview image using satellite imagery that covers 2× your map dimensions. This provides:
+### Option 1: Automated Satellite Integration (FS25) ⭐ **RECOMMENDED**
+**Fully Automated for Farming Simulator 25**
+
+When **Download Satellite Images** is enabled in Maps4FS:
+- 🚀 **Completely Automatic**: `overview.dds` generated without any manual work
+- 🎯 **Perfect Dimensions**: Automatically sized to 4096×4096 pixels
+- 🛰️ **High-Quality Satellite Imagery**: Uses actual satellite data for photorealistic results
+- ✅ **Game-Ready Format**: Pre-compressed to DDS with optimal settings
+- 🔄 **Seamless Integration**: Perfect alignment with your generated terrain
+
+**For FS22 or Custom Designs**: Manual satellite integration still available (see below)
 - **Seamless Integration**: Perfect alignment with your generated terrain
 - **Realistic Context**: Actual satellite imagery showing surrounding geographic features  
 - **Professional Results**: Consistent visual quality matching your map's real-world location
