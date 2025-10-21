@@ -129,6 +129,13 @@ class Background(MeshComponent, ImageComponent):
                 )
         if self.map.background_settings.generate_water:
             self.generate_water_resources_obj()
+            if self.game.mesh_processing:
+                self.logger.debug("Mesh processing is enabled, will convert water mesh to i3d.")
+                self.convert_water_mesh_to_i3d()
+            else:
+                self.logger.warning(
+                    "Mesh processing is disabled for the game, skipping water mesh processing."
+                )
 
     def create_foundations(self, dem_image: np.ndarray) -> np.ndarray:
         """Creates foundations for buildings based on the DEM data.
@@ -450,6 +457,35 @@ class Background(MeshComponent, ImageComponent):
             self.assets.background_terrain_i3d = i3d_background_terrain
         except Exception as e:
             self.logger.error("Could not convert background mesh to i3d: %s", e)
+            return
+
+    def convert_water_mesh_to_i3d(self) -> None:
+        """Converts the line-based water mesh to i3d format."""
+        if not self.assets.line_based_water_mesh or not os.path.isfile(
+            self.assets.line_based_water_mesh
+        ):
+            self.logger.warning("Line-based water mesh not found, cannot convert to i3d.")
+            return
+
+        try:
+            mesh = trimesh.load_mesh(self.assets.line_based_water_mesh, force="mesh")
+        except Exception as e:
+            self.logger.error("Could not load line-based water mesh: %s", e)
+            return
+
+        try:
+            i3d_water_resources = self.mesh_to_i3d(
+                mesh,
+                output_dir=self.assets_water_directory,
+                name=Parameters.WATER_RESOURCES,
+                water_mesh=True,
+            )
+            self.logger.debug(
+                "Water resources mesh converted to i3d successfully: %s", i3d_water_resources
+            )
+            self.assets.water_resources_i3d = i3d_water_resources
+        except Exception as e:
+            self.logger.error("Could not convert water mesh to i3d: %s", e)
             return
 
     def save_map_dem(self, dem_path: str, save_path: str | None = None) -> str:
@@ -821,6 +857,8 @@ class Background(MeshComponent, ImageComponent):
         line_based_save_path = os.path.join(self.water_directory, "line_based_water.obj")
         mesh.export(line_based_save_path)
         self.logger.debug("Line-based water mesh saved to %s", line_based_save_path)
+
+        self.assets.line_based_water_mesh = line_based_save_path
 
     def mesh_from_3d_polygons(
         self, polygons: list[shapely.Polygon], single_z_value: int | None = None

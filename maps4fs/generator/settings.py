@@ -39,6 +39,8 @@ class Parameters:
     DECIMATED_BACKGROUND = "decimated_background"
     BACKGROUND_TERRAIN = "background_terrain"
 
+    WATER_RESOURCES = "water_resources"
+
     RESIZE_FACTOR = 8
 
     FARMLAND_ID_LIMIT = 254
