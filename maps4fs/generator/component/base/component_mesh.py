@@ -325,10 +325,13 @@ class MeshComponent(Component):
         Returns:
             tuple[str, str]: Paths to the saved OBJ and MTL files
         """
-        # 1. Copy texture to output directory.
+        # 1. Copy texture to output directory (only if not already there).
         texture_filename = os.path.basename(resized_texture_path)
         texture_output_path = os.path.join(output_directory, texture_filename)
-        shutil.copy2(resized_texture_path, texture_output_path)
+
+        # Check if source and destination are the same file to avoid copy conflicts
+        if os.path.abspath(resized_texture_path) != os.path.abspath(texture_output_path):
+            shutil.copy2(resized_texture_path, texture_output_path)
 
         # 2. Apply rotation to fix 90-degree X-axis rotation.
         rotation_matrix = trimesh.transformations.rotation_matrix(-np.pi / 2, [1, 0, 0])

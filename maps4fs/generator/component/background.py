@@ -57,6 +57,9 @@ class Background(MeshComponent, ImageComponent):
         os.makedirs(self.background_directory, exist_ok=True)
         os.makedirs(self.water_directory, exist_ok=True)
 
+        self.textured_mesh_directory = os.path.join(self.background_directory, "textured_mesh")
+        os.makedirs(self.textured_mesh_directory, exist_ok=True)
+
         self.water_resources_path = os.path.join(self.water_directory, "water_resources.png")
 
         self.output_path = os.path.join(self.background_directory, f"{Parameters.FULL}.png")
@@ -110,6 +113,8 @@ class Background(MeshComponent, ImageComponent):
 
         if self.map.background_settings.generate_background:
             self.generate_obj_files()
+            self.decimate_background_mesh()
+            self.texture_background_mesh()
         if self.map.background_settings.generate_water:
             self.generate_water_resources_obj()
 
@@ -252,6 +257,144 @@ class Background(MeshComponent, ImageComponent):
             create_preview=True,
             remove_center=self.map.background_settings.remove_center,
         )
+
+    @staticmethod
+    def get_decimate_factor(map_size: int) -> float:
+        """Returns the decimation factor based on the map size.
+
+        Arguments:
+            map_size (int): The size of the map in pixels.
+
+        Raises:
+            ValueError: If the map size is too large for decimation.
+
+        Returns:
+            float -- The decimation factor.
+        """
+        thresholds = {
+            2048: 0.1,
+            4096: 0.05,
+            8192: 0.025,
+            16384: 0.0125,
+        }
+        for threshold, factor in thresholds.items():
+            if map_size <= threshold:
+                return factor
+        raise ValueError(
+            "Map size is too large for decimation, perform manual decimation in Blender."
+        )
+
+    @staticmethod
+    def get_background_texture_resolution(map_size: int) -> int:
+        """Returns the background texture resolution based on the map size.
+
+        Arguments:
+            map_size (int): The size of the map in pixels.
+
+        Returns:
+            int -- The background texture resolution.
+        """
+        resolutions = {
+            2048: 2048,
+            4096: Parameters.MAXIMUM_BACKGROUND_TEXTURE_SIZE,
+            8192: Parameters.MAXIMUM_BACKGROUND_TEXTURE_SIZE,
+            16384: Parameters.MAXIMUM_BACKGROUND_TEXTURE_SIZE,
+        }
+        for threshold, resolution in resolutions.items():
+            if map_size <= threshold:
+                return resolution
+        return Parameters.MAXIMUM_BACKGROUND_TEXTURE_SIZE
+
+    def decimate_background_mesh(self) -> None:
+        """ ""Decimates the background mesh based on the map size."""
+        if not self.assets.background_mesh or not os.path.isfile(self.assets.background_mesh):
+            self.logger.warning("Background mesh not found, cannot generate i3d background.")
+            return
+
+        try:
+            mesh = trimesh.load(self.assets.background_mesh, force="mesh")
+        except Exception as e:
+            self.logger.error("Could not load background mesh: %s", e)
+            return
+
+        try:
+            decimate_factor = self.get_decimate_factor(self.map_size)
+        except ValueError as e:
+            self.logger.error("Could not determine decimation factor: %s", e)
+            return
+
+        decimated_save_path = os.path.join(
+            self.background_directory, f"{Parameters.DECIMATED_BACKGROUND}.obj"
+        )
+        try:
+            self.logger.debug("Decimating background mesh with factor %s.", decimate_factor)
+            decimated_mesh = self.decimate_mesh(mesh, decimate_factor)
+            self.logger.debug("Decimation completed.")
+        except Exception as e:
+            self.logger.error("Could not decimate background mesh: %s", e)
+            return
+
+        decimated_mesh.export(decimated_save_path)
+        self.logger.debug("Decimated background mesh saved: %s", decimated_save_path)
+
+        self.assets.decimated_background_mesh = decimated_save_path
+
+    def texture_background_mesh(self) -> None:
+        satellite_component = self.map.get_satellite_component()
+        if not satellite_component:
+            self.logger.warning("Satellite component not found, cannot texture background mesh.")
+            return
+
+        background_texture_path = satellite_component.assets.background
+
+        if not background_texture_path or not os.path.isfile(background_texture_path):
+            self.logger.warning("Background texture not found, cannot texture background mesh.")
+            return
+
+        decimated_background_mesh_path = self.assets.decimated_background_mesh
+        if not decimated_background_mesh_path or not os.path.isfile(decimated_background_mesh_path):
+            self.logger.warning(
+                "Decimated background mesh not found, cannot texture background mesh."
+            )
+            return
+
+        background_texture_resolution = self.get_background_texture_resolution(self.map_size)
+        non_resized_texture_image = cv2.imread(background_texture_path, cv2.IMREAD_UNCHANGED)
+
+        resized_texture_image = cv2.resize(
+            non_resized_texture_image,
+            (background_texture_resolution, background_texture_resolution),
+            interpolation=cv2.INTER_AREA,
+        )
+
+        resized_texture_save_path = os.path.join(
+            self.textured_mesh_directory,
+            "background_texture.png",  # TODO: Try to play with JPG to reduce size.
+        )
+
+        cv2.imwrite(resized_texture_save_path, resized_texture_image)
+        self.logger.debug("Resized background texture saved: %s", resized_texture_save_path)
+
+        decimated_mesh = trimesh.load(decimated_background_mesh_path, force="mesh")
+
+        if decimated_mesh is None:
+            self.logger.error("Failed to load decimated mesh after all retry attempts")
+            return
+
+        try:
+            obj_save_path, mtl_save_path = self.texture_mesh(
+                decimated_mesh,
+                resized_texture_save_path,
+                output_directory=self.textured_mesh_directory,
+                output_name="background_textured_mesh",
+            )
+
+            self.assets.textured_background_mesh = obj_save_path
+            self.assets.textured_background_mtl = mtl_save_path
+            self.logger.debug("Textured background mesh saved: %s", obj_save_path)
+        except Exception as e:
+            self.logger.error("Could not texture background mesh: %s", e)
+            return
 
     def save_map_dem(self, dem_path: str, save_path: str | None = None) -> str:
         """Cuts out the center of the DEM (the actual map) and saves it as a separate file.
