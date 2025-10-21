@@ -37,7 +37,7 @@ map_directory/
 4. Select `water_resources.i3d`
 5. Click `Import`
 
-The water plane will appear black initially - this is normal and expected behavior.
+If the water plane appears black initially - this is normal and expected behavior.
 
 ### Step 3: Configure Water Properties in Giants Editor
 
@@ -50,7 +50,7 @@ Position the water plane in the correct location within your map.
 
 #### Configure Material Properties
 1. Open the **Material Editing** window and select your water plane
-2. Change the **Variation** to **simple** 
+2. Change the **Variation** to **simple** if not already set
 3. Edit the values as shown in the screenshot (these are default values, but you can adjust them):
 
 ![Water plane values](https://github.com/user-attachments/assets/6624878c-818d-4371-bbf9-8bb6ace6589f)
