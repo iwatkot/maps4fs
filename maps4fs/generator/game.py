@@ -42,9 +42,10 @@ class Game:
     _environment_processing: bool = True
     _fog_processing: bool = True
     _dissolve: bool = True
+    _mesh_processing: bool = True
 
     # Order matters! Some components depend on others.
-    components = [Texture, Background, GRLE, I3d, Config, Satellite]
+    components = [Satellite, Texture, Background, GRLE, I3d, Config]
 
     def __init__(self, map_template_path: str | None = None):
         if map_template_path:
@@ -312,6 +313,14 @@ class Game:
             bool: True if the dissolve should be applied, False otherwise."""
         return self._dissolve
 
+    @property
+    def mesh_processing(self) -> bool:
+        """Returns whether the mesh should be processed.
+
+        Returns:
+            bool: True if the mesh should be processed, False otherwise."""
+        return self._mesh_processing
+
 
 class FS22(Game):
     """Class used to define the game version FS22."""
@@ -324,6 +333,7 @@ class FS22(Game):
     _fog_processing = False
     _plants_processing = False
     _dissolve = False
+    _mesh_processing = False
 
     def dem_file_path(self, map_directory: str) -> str:
         """Returns the path to the DEM file.

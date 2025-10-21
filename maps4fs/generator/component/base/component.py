@@ -22,12 +22,31 @@ if TYPE_CHECKING:
 
 
 class AttrDict(dict):
-    """A dictionary that allows attribute-style access to its keys."""
+    """A dictionary that allows attribute-style access to its keys.
+    Allows safe access to non-existing keys, returning None instead of raising KeyError.
+    """
 
-    def __getattr__(self, name):
-        return self[name]
+    def __getattr__(self, name: str) -> Any | None:
+        """Returns the value of the given key or None if the key does not exist.
 
-    def __setattr__(self, name, value):
+        Arguments:
+            name (str): The key to retrieve.
+
+        Returns:
+            Any | None: The value of the key or None if the key does not exist.
+        """
+        try:
+            return self[name]
+        except KeyError:
+            return None
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Sets the value of the given key.
+
+        Arguments:
+            name (str): The key to set.
+            value (Any): The value to set.
+        """
         self[name] = value
 
 

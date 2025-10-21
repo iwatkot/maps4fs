@@ -13,8 +13,8 @@ Before you begin, ensure you have the necessary tools and system requirements:
 - **Maps4FS** - Either [web version](https://maps4fs.xyz) or [local installation](local_deployment.md)
 
 ### Optional Tools (for Advanced Features)
-- **Blender** with Giants Exporter Plugin (for background terrain)
 - **Image editing software** (for texture customization)
+- **Blender** with Giants Exporter Plugin (for FS22 background terrain or advanced customization)
 
 ### System Requirements
 - **RAM**: 8GB minimum, 16GB+ recommended for larger maps
@@ -105,23 +105,33 @@ Configure key settings for your needs:
 3. Extract all contents to this folder
 4. **Map Structure**: Learn about included files in [Map Structure](map_structure.md)
 
-### Step 6: 🌎 Download Satellite Images (Optional)
-For enhanced background terrain:
-1. Use the satellite download settings in Maps4FS
-2. Choose the zoom level (up to 18 for high detail)
-3. Optional: resize and convert the image to DDS format
+### Step 6: 🌎 Background Terrain (Automated for FS25)
+**For Farming Simulator 25**: Background terrain is now fully automated!
+1. ✅ Enable **Download Satellite Images** in satellite settings
+2. ✅ Enable **Generate Background** in background settings  
+3. 🎯 Maps4FS automatically creates ready-to-use `background_terrain.i3d` files
+4. 📁 Find them in `your_map/assets/background/` after generation
+5. 🚀 Simply import the `.i3d` file directly into Giants Editor!
 
-### Step 7: ⛰️ Create Background Terrain (Optional)
-Transform your map from floating island to realistic landscape:
-1. Use included `.obj` files with Blender
-2. Apply satellite textures for photorealistic backgrounds
-3. Follow the [Background Terrain Tutorial](background_terrain.md)
+**For Farming Simulator 22**: Use the [Legacy Background Terrain](legacy_background_terrain.md) manual process.
 
-### Step 8: 🌊 Create Water Planes (Optional)
-Add realistic water bodies to your map:
-1. Make sure "Generate Water" is enabled in generation settings
-2. Use one of the `obj` files provided to create water planes in Blender
-3. Follow the [Water Planes Tutorial](water_planes.md)
+### Step 7: ⛰️ Import Background Terrain (FS25)
+No Blender needed for FS25!
+1. Open your map in Giants Editor 10.0+
+2. Go to `File` → `Import...`
+3. Navigate to `your_map/assets/background/`
+4. Select `background_terrain.i3d` and import
+5. Done! The terrain is automatically textured and positioned
+
+### Step 8: 🌊 Water Planes (Automated for FS25)
+**For Farming Simulator 25**: Water planes are now fully automated!
+1. ✅ Enable **Generate Water** in background settings
+2. 🎯 Maps4FS automatically creates ready-to-use `water_resources.i3d` files
+3. 📁 Find them in `your_map/assets/water/` after generation
+4. 🚀 Import the `.i3d` file directly into Giants Editor
+5. ⚙️ Configure water properties in Giants Editor (see [Water Planes guide](water_planes.md))
+
+**For Farming Simulator 22**: Use the [Legacy Water Planes](legacy_water_planes.md) manual process.
 
 ### Step 9: 📂 Open in Giants Editor
 1. Launch Giants Editor (correct version for your target game)

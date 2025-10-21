@@ -1,126 +1,151 @@
-## How to create water planes
+# Water Planes (Automated)
 
-📹 Check out the video version of this tutorial.  
+Maps4FS now automatically generates ready-to-use i3d water plane files for **Farming Simulator 25**, eliminating the need for manual Blender workflows!
 
-[![YouTube tutorial](https://github.com/iwatkot/maps4fs/releases/download/2.0.2/ep06-play.png)](https://www.youtube.com/watch?v=lZeEZ-ce3cI)  
+## 🎯 Quick Overview
 
-The generator automatically generates the obj files for the water planes, but you need to process them in both Blender and Giants Editor for them to display correctly in the game.
+When you generate a map with the following settings enabled:
+- **Generate Water** ✅
 
-1. Find the obj file in the `water` directory.
-2. Import the obj file into Blender.
+Maps4FS will automatically create optimized i3d files that can be directly imported into Giants Editor.
 
-![Import obj file in Blender](https://github.com/user-attachments/assets/c29c7187-2cd5-45b8-ad32-e6af85430c59)
+## 📁 Generated Files
 
-3. Ensure the imported object is selected, right-click anywhere and select **Set Origin** → **Origin to Geometry**.
+After generation, you'll find the following files in your map's `assets/water/` directory:
 
-![Set origin to geometry](https://github.com/user-attachments/assets/e2cf16af-5d42-449a-935a-524a70643f23)
-
-4. Press the **N** key to open the **Transform** panel and set the **Location** to **0, 0, 0** and **Rotation** to **0, 0, 0**.  
-   **DO NOT TOUCH SCALE AND DIMENSIONS!**
-
-![Set location and rotation](https://github.com/user-attachments/assets/5489c013-2495-47c9-b422-d0d1d5b1ef9d)
-
-5. Add an empty material to the object.
-
-![Add empty material](https://github.com/user-attachments/assets/5923b99f-1483-4b34-98bd-4e32ba6fec5b)
-
-6. Change the emission color to fully black.
-
-![Emission](https://github.com/user-attachments/assets/3e3e028e-a3d8-40ce-8a00-9bc701147fbb)
-
-![Black emission](https://github.com/user-attachments/assets/5687df82-6fe2-405d-af02-106d8c5e554b)
-
-7. Apply the **Decimate** modifier to the object and **Shade Smooth**. You can find an example of this in the tutorial about [Background Terrain](create_background_terrain.md).
-
-8. Open the **Giants Editor I3D Exporter** and set the path to the directory where the game is installed.
-
-![Set path to the game directory](https://github.com/user-attachments/assets/971e1e13-235e-4ff3-83f1-a3f8af977c5f)
-
-9. Go to the **Material** tab and press the **Detect Path** button.
-
-![Detect path](https://github.com/user-attachments/assets/63fb3970-114b-4964-9032-c7ad00c5aa55)
-
-10. Select the **oceanShader.xml** shader.
-
-![Select ocean shader](https://github.com/user-attachments/assets/8c6ddb13-cd0d-4726-96a6-4b3f2657cb57)
-
-11. **SAVE THE BLENDER FILE!** Then press the **Apply** button.
-
-![Apply](https://github.com/user-attachments/assets/4e5c53d8-73b7-4a25-b20a-b40d58477b1d)
-
-12. Go to **Export**, ensure your object is selected, and press the **Export selected** button.
-
-![Export selected](https://github.com/user-attachments/assets/ba592c54-2d33-4e5b-9fe4-d03e49268d7d)
-
-13. Open the i3d file you just exported in any text editor and find the Materials section, which should look like this:
-
-```xml
-  <Materials>
-    <Material name="wtr" materialId="1" diffuseColor="0.8 0.8 0.8 1" specularColor="0.501961 1 0" customShaderId="4">
-      <Normalmap fileId="2"/>
-    </Material>
-  </Materials>
+```
+map_directory/
+├── assets/
+│   └── water/
+│       └── water_resources.i3d  ← Ready to import!
+└── water/
+    ├── elevated_water.obj
+    ├── plane_water.obj
+    └── line_based_water.obj  (if applicable)
 ```
 
-After the line with the `Normalmap` tag, add the following line:
+## 🚀 How to Use (FS25)
 
-```xml
-      <Refractionmap coeff="1" bumpScale="0.01" withSSRData="true"/>
-```
+### Step 1: Generate Your Map
+1. Enable **Generate Water** in the Background Settings
+2. Generate your map normally
 
-The result will look like this:
+### Step 2: Import into Giants Editor
+1. Open your map in **Giants Editor 10.0.0+** (FS25)
+2. Go to `File` → `Import...`
+3. Navigate to `your_map/assets/water/`
+4. Select `water_resources.i3d`
+5. Click `Import`
 
-```xml
-  <Materials>
-    <Material name="wtr" materialId="1" diffuseColor="0.8 0.8 0.8 1" specularColor="0.501961 1 0" customShaderId="4">
-      <Normalmap fileId="2"/>
-      <Refractionmap coeff="1" bumpScale="0.01" withSSRData="true"/>
-    </Material>
-  </Materials>
-```
+If the water plane appears black initially - this is normal and expected behavior.
 
-Save the file and continue with the next steps.
+### Step 3: Configure Water Properties in Giants Editor
 
-**Note**: This is a very important step. Otherwise, the water shader will not work correctly and will have weird-looking lines all over the water plane.
+After importing, you need to configure the water properties to make it display correctly:
 
-14. Open Giants Editor and import the i3d file. It will appear black, but don't worry - this is normal.  
-    After importing, position the water plane in the correct location.
+#### Position the Water Plane
+Position the water plane in the correct location within your map.
 
 ![Position the water plane](https://github.com/user-attachments/assets/c7257060-bd83-498f-a5dc-098e675540df)
 
-15. Open the **Material Editing** window and select your water plane.
-
-16. Change the **Variation** to **simple** and then edit the values as shown in the screenshot.  
-    These are default values for the water plane, but you can adjust them to achieve the desired effect.
+#### Configure Material Properties
+1. Open the **Material Editing** window and select your water plane
+2. Change the **Variation** to **simple** if not already set
+3. Edit the values as shown in the screenshot (these are default values, but you can adjust them):
 
 ![Water plane values](https://github.com/user-attachments/assets/6624878c-818d-4371-bbf9-8bb6ace6589f)
 
-17. Set **Smoothness** and **Metalness** to **1**.
+4. Set **Smoothness** and **Metalness** to **1**
 
-18. Click on the button near the **Normal map**.
+#### Set Normal Map
+1. Click on the button near the **Normal map**
 
 ![Normal map](https://github.com/user-attachments/assets/95adc493-983a-46ae-bd20-7d1f4e998ba7)
 
-19. Click the **...** button and provide the path to the **water_normal.dds** file.  
-    It's located at: `where-the-game-is-installed/data/maps/textures/shared/water_normal.dds`.
+2. Click the **...** button and provide the path to the **water_normal.dds** file  
+   Location: `where-the-game-is-installed/data/maps/textures/shared/water_normal.dds`
 
 ![Water normal map](https://github.com/user-attachments/assets/515de60b-bc1a-4843-b548-2820107435af)
 
-20. You should see the normal map in the window. Press the **OK** button.
+3. You should see the normal map in the window. Press the **OK** button
 
 ![Normal map window](https://github.com/user-attachments/assets/bee7955f-7f6c-4d94-978c-0ab7835b9e2b)
 
-21. Now switch to the **UserAttributes** tab, enter the name `onCreate`, select `Script callback`, and click **Add**.  
-    After that, set the **Attribute** value to `Environment.onCreateWater`.
+#### Configure User Attributes and Physics
+1. Switch to the **UserAttributes** tab
+2. Enter the name `onCreate`, select `Script callback`, and click **Add**
+3. Set the **Attribute** value to `Environment.onCreateWater`
 
-22. On the **Attributes** → **Transform** tab, check the `Rigid body` checkbox.
+4. On the **Attributes** → **Transform** tab, check the `Rigid body` checkbox
 
-23. Switch to the **Rigid body** tab and set the `Preset` to `WATER`.
+5. Switch to the **Rigid body** tab and set the `Preset` to `WATER`
 
-24. Go to the **Shape** tab and uncheck the `Cast shadowmap` checkbox (if it's checked).
+6. Go to the **Shape** tab and uncheck the `Cast shadowmap` checkbox (if it's checked)
 
-25. It should look like this.
+The final result should look like this:
 
 ![Water plane in GE](https://github.com/user-attachments/assets/b246cf85-b044-4ceb-bff4-9b32a753b143)
 
-We're done here!
+## ⚙️ Settings Control
+
+You can control the automated generation through these settings:
+
+### Background Settings
+- **Generate Water**: Enable/disable water plane generation
+- **Water Blurriness**: Controls surface smoothness (higher = flatter)
+- **Flatten Water**: Sets uniform water level across the map
+
+## 🎮 Game Compatibility
+
+| Game Version | Status | Method |
+|--------------|---------|---------|
+| **Farming Simulator 25** | ✅ **Fully Automated** | Use this guide |
+| **Farming Simulator 22** | ⚠️ **Manual Process** | Use [Legacy Water Planes](legacy_water_planes.md) |
+
+## 📊 Performance Benefits
+
+The automated process includes several optimizations:
+
+- **Smart Mesh Generation**: Optimized polygon count for water surfaces
+- **Ocean Shader Ready**: Pre-configured with proper ocean shader materials
+- **Memory Efficient**: Optimized for minimal in-game impact
+- **Multiple Types**: Generates both elevated and plane water meshes
+
+## 🔧 Troubleshooting
+
+### No water_resources.i3d file generated?
+- Ensure **Generate Water** is enabled
+- Check that your map has water areas defined in OSM data
+
+### Import fails in Giants Editor?
+- Use Giants Editor 10.0.0+ for FS25 maps
+- Make sure the i3d file isn't corrupted
+- Try importing the .obj files manually (see legacy docs)
+
+### Water appears black after import?
+- This is normal! Follow the Giants Editor configuration steps above
+- Set the proper normal map and material properties
+
+### Water level too high/low?
+- Adjust water position in Giants Editor
+- Check **Flatten Water** setting for uniform levels
+
+## 💡 Tips
+
+- **Multiple Water Bodies**: The automated process handles multiple separate water areas
+- **Custom Shapes**: Water follows the actual shape from your map data  
+- **Quality Settings**: Use **Water Blurriness** to control surface detail
+- **Performance**: Generated water planes are optimized for in-game performance
+
+## 🔄 Upgrading from Manual Process
+
+If you've been using the manual Blender workflow:
+
+1. **Update your workflow**: Simply enable **Generate Water** setting
+2. **No more Blender needed**: The i3d files are ready to import
+3. **Same quality**: The automated process produces equivalent results
+4. **Legacy docs available**: Manual process docs moved to [Legacy section](legacy_water_planes.md) for reference
+
+---
+
+**Need the manual process?** Check out the [Legacy Water Planes](legacy_water_planes.md) documentation for the traditional Blender workflow (required for FS22).

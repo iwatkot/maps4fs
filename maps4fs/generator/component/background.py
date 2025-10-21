@@ -6,7 +6,7 @@ from __future__ import annotations
 import os
 import shutil
 from copy import deepcopy
-from typing import Any
+from typing import Any, Literal
 
 import cv2
 import numpy as np
@@ -56,6 +56,14 @@ class Background(MeshComponent, ImageComponent):
         self.water_directory = os.path.join(self.map_directory, "water")
         os.makedirs(self.background_directory, exist_ok=True)
         os.makedirs(self.water_directory, exist_ok=True)
+
+        self.textured_mesh_directory = os.path.join(self.background_directory, "textured_mesh")
+        os.makedirs(self.textured_mesh_directory, exist_ok=True)
+
+        self.assets_background_directory = os.path.join(self.map.assets_directory, "background")
+        self.assets_water_directory = os.path.join(self.map.assets_directory, "water")
+        os.makedirs(self.assets_background_directory, exist_ok=True)
+        os.makedirs(self.assets_water_directory, exist_ok=True)
 
         self.water_resources_path = os.path.join(self.water_directory, "water_resources.png")
 
@@ -110,8 +118,28 @@ class Background(MeshComponent, ImageComponent):
 
         if self.map.background_settings.generate_background:
             self.generate_obj_files()
+            if self.game.mesh_processing:
+                self.logger.debug("Mesh processing is enabled, will decimate, texture and convert.")
+                self.decimate_background_mesh()
+                self.texture_background_mesh()
+                background_conversion_result = self.convert_background_mesh_to_i3d()
+                if background_conversion_result:
+                    self.add_note_file(asset="background")
+            else:
+                self.logger.warning(
+                    "Mesh processing is disabled for the game, skipping background mesh processing."
+                )
         if self.map.background_settings.generate_water:
             self.generate_water_resources_obj()
+            if self.game.mesh_processing:
+                self.logger.debug("Mesh processing is enabled, will convert water mesh to i3d.")
+                water_conversion_result = self.convert_water_mesh_to_i3d()
+                if water_conversion_result:
+                    self.add_note_file(asset="water")
+            else:
+                self.logger.warning(
+                    "Mesh processing is disabled for the game, skipping water mesh processing."
+                )
 
     def create_foundations(self, dem_image: np.ndarray) -> np.ndarray:
         """Creates foundations for buildings based on the DEM data.
@@ -252,6 +280,257 @@ class Background(MeshComponent, ImageComponent):
             create_preview=True,
             remove_center=self.map.background_settings.remove_center,
         )
+
+    @staticmethod
+    def get_decimate_factor(map_size: int) -> float:
+        """Returns the decimation factor based on the map size.
+
+        Arguments:
+            map_size (int): The size of the map in pixels.
+
+        Raises:
+            ValueError: If the map size is too large for decimation.
+
+        Returns:
+            float -- The decimation factor.
+        """
+        thresholds = {
+            2048: 0.1,
+            4096: 0.05,
+            8192: 0.025,
+            16384: 0.0125,
+        }
+        for threshold, factor in thresholds.items():
+            if map_size <= threshold:
+                return factor
+        raise ValueError(
+            "Map size is too large for decimation, perform manual decimation in Blender."
+        )
+
+    @staticmethod
+    def get_background_texture_resolution(map_size: int) -> int:
+        """Returns the background texture resolution based on the map size.
+
+        Arguments:
+            map_size (int): The size of the map in pixels.
+
+        Returns:
+            int -- The background texture resolution.
+        """
+        resolutions = {
+            2048: 2048,
+            4096: Parameters.MAXIMUM_BACKGROUND_TEXTURE_SIZE,
+            8192: Parameters.MAXIMUM_BACKGROUND_TEXTURE_SIZE,
+            16384: Parameters.MAXIMUM_BACKGROUND_TEXTURE_SIZE,
+        }
+        for threshold, resolution in resolutions.items():
+            if map_size <= threshold:
+                return resolution
+        return Parameters.MAXIMUM_BACKGROUND_TEXTURE_SIZE
+
+    def decimate_background_mesh(self) -> None:
+        """ ""Decimates the background mesh based on the map size."""
+        if not self.assets.background_mesh or not os.path.isfile(self.assets.background_mesh):
+            self.logger.warning("Background mesh not found, cannot generate i3d background.")
+            return
+
+        try:
+            mesh = trimesh.load_mesh(self.assets.background_mesh, force="mesh")
+        except Exception as e:
+            self.logger.error("Could not load background mesh: %s", e)
+            return
+
+        try:
+            decimate_factor = self.get_decimate_factor(self.map_size)
+        except ValueError as e:
+            self.logger.error("Could not determine decimation factor: %s", e)
+            return
+
+        decimated_save_path = os.path.join(
+            self.background_directory, f"{Parameters.DECIMATED_BACKGROUND}.obj"
+        )
+        try:
+            self.logger.debug("Decimating background mesh with factor %s.", decimate_factor)
+            decimated_mesh = self.decimate_mesh(mesh, decimate_factor)
+            self.logger.debug("Decimation completed.")
+        except Exception as e:
+            self.logger.error("Could not decimate background mesh: %s", e)
+            return
+
+        decimated_mesh.export(decimated_save_path)
+        self.logger.debug("Decimated background mesh saved: %s", decimated_save_path)
+
+        self.assets.decimated_background_mesh = decimated_save_path
+
+    def texture_background_mesh(self) -> None:
+        """Textures the background mesh using satellite imagery."""
+        satellite_component = self.map.get_satellite_component()
+        if not satellite_component:
+            self.logger.warning("Satellite component not found, cannot texture background mesh.")
+            return
+
+        background_texture_path = satellite_component.assets.background
+
+        if not background_texture_path or not os.path.isfile(background_texture_path):
+            self.logger.warning("Background texture not found, cannot texture background mesh.")
+            return
+
+        decimated_background_mesh_path = self.assets.decimated_background_mesh
+        if not decimated_background_mesh_path or not os.path.isfile(decimated_background_mesh_path):
+            self.logger.warning(
+                "Decimated background mesh not found, cannot texture background mesh."
+            )
+            return
+
+        background_texture_resolution = self.get_background_texture_resolution(self.map_size)
+        non_resized_texture_image = cv2.imread(background_texture_path, cv2.IMREAD_UNCHANGED)
+
+        if non_resized_texture_image is None:
+            self.logger.error(
+                "Failed to read background texture image: %s", background_texture_path
+            )
+            return
+
+        resized_texture_image = cv2.resize(
+            non_resized_texture_image,  # type: ignore
+            (background_texture_resolution, background_texture_resolution),
+            interpolation=cv2.INTER_AREA,
+        )
+
+        resized_texture_save_path = os.path.join(
+            self.textured_mesh_directory,
+            "background_texture.jpg",
+        )
+
+        cv2.imwrite(resized_texture_save_path, resized_texture_image)
+        self.logger.debug("Resized background texture saved: %s", resized_texture_save_path)
+
+        decimated_mesh = trimesh.load_mesh(decimated_background_mesh_path, force="mesh")
+
+        if decimated_mesh is None:
+            self.logger.error("Failed to load decimated mesh after all retry attempts")
+            return
+
+        try:
+            obj_save_path, mtl_save_path = self.texture_mesh(
+                decimated_mesh,
+                resized_texture_save_path,
+                output_directory=self.textured_mesh_directory,
+                output_name="background_textured_mesh",
+            )
+
+            self.assets.textured_background_mesh = obj_save_path
+            self.assets.textured_background_mtl = mtl_save_path
+            self.assets.resized_background_texture = resized_texture_save_path
+            self.logger.debug("Textured background mesh saved: %s", obj_save_path)
+        except Exception as e:
+            self.logger.error("Could not texture background mesh: %s", e)
+            return
+
+    def convert_background_mesh_to_i3d(self) -> bool:
+        """Converts the textured background mesh to i3d format.
+
+        Returns:
+            bool -- True if the conversion was successful, False otherwise.
+        """
+        if not self.assets.textured_background_mesh or not os.path.isfile(
+            self.assets.textured_background_mesh
+        ):
+            self.logger.warning("Textured background mesh not found, cannot convert to i3d.")
+            return False
+
+        if not self.assets.resized_background_texture or not os.path.isfile(
+            self.assets.resized_background_texture
+        ):
+            self.logger.warning("Resized background texture not found, cannot convert to i3d.")
+            return False
+
+        try:
+            mesh = trimesh.load_mesh(self.assets.textured_background_mesh, force="mesh")
+        except Exception as e:
+            self.logger.error("Could not load textured background mesh: %s", e)
+            return False
+
+        try:
+            i3d_background_terrain = self.mesh_to_i3d(
+                mesh,
+                output_dir=self.assets_background_directory,
+                name=Parameters.BACKGROUND_TERRAIN,
+                texture_path=self.assets.resized_background_texture,
+                water_mesh=False,
+            )
+            self.logger.debug(
+                "Background mesh converted to i3d successfully: %s", i3d_background_terrain
+            )
+            self.assets.background_terrain_i3d = i3d_background_terrain
+            return True
+        except Exception as e:
+            self.logger.error("Could not convert background mesh to i3d: %s", e)
+            return False
+
+    def add_note_file(self, asset: Literal["background", "water"]) -> None:
+        """Adds a note file to the background or water directory.
+
+        Arguments:
+            asset (Literal["background", "water"]): The asset type to add the note file to.
+        """
+        filename = "DO_NOT_USE_THESE_FILES.txt"
+        note_template = (
+            "Please find the ready-to-use {asset} i3d files in the {asset_directory} directory."
+        )
+        directory = {
+            "background": self.background_directory,
+            "water": self.water_directory,
+        }
+
+        content = (
+            "The files in this directory can be used to create the mesh files manually in Blender. "
+            "However, it's recommended to use the ready-to-use i3d files located in the assets "
+            "directory. There you'll find the i3d files, that can be imported directly into the "
+            "Giants Editor without any additional processing."
+        )
+        note = note_template.format(
+            asset=asset,
+            asset_directory=f"assets/{asset}",
+        )
+
+        file_path = os.path.join(directory[asset], filename)
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(content + "\n\n" + note)
+
+    def convert_water_mesh_to_i3d(self) -> bool:
+        """Converts the line-based water mesh to i3d format.
+
+        Returns:
+            bool -- True if the conversion was successful, False otherwise.
+        """
+        if not self.assets.line_based_water_mesh or not os.path.isfile(
+            self.assets.line_based_water_mesh
+        ):
+            self.logger.warning("Line-based water mesh not found, cannot convert to i3d.")
+            return False
+
+        try:
+            mesh = trimesh.load_mesh(self.assets.line_based_water_mesh, force="mesh")
+        except Exception as e:
+            self.logger.error("Could not load line-based water mesh: %s", e)
+            return False
+
+        try:
+            i3d_water_resources = self.mesh_to_i3d(
+                mesh,
+                output_dir=self.assets_water_directory,
+                name=Parameters.WATER_RESOURCES,
+                water_mesh=True,
+            )
+            self.logger.debug(
+                "Water resources mesh converted to i3d successfully: %s", i3d_water_resources
+            )
+            self.assets.water_resources_i3d = i3d_water_resources
+            return True
+        except Exception as e:
+            self.logger.error("Could not convert water mesh to i3d: %s", e)
+            return False
 
     def save_map_dem(self, dem_path: str, save_path: str | None = None) -> str:
         """Cuts out the center of the DEM (the actual map) and saves it as a separate file.
@@ -622,6 +901,8 @@ class Background(MeshComponent, ImageComponent):
         line_based_save_path = os.path.join(self.water_directory, "line_based_water.obj")
         mesh.export(line_based_save_path)
         self.logger.debug("Line-based water mesh saved to %s", line_based_save_path)
+
+        self.assets.line_based_water_mesh = line_based_save_path
 
     def mesh_from_3d_polygons(
         self, polygons: list[shapely.Polygon], single_z_value: int | None = None

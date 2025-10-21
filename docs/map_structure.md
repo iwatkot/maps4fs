@@ -20,7 +20,7 @@ Generated map archives follow a standardized naming pattern that includes essent
 ## Directory Structure Overview
 
 ### Background Terrain
-**Location:** `background/`
+**Location:** `background/` and `assets/background/`
 
 Contains the essential components for creating realistic background terrain meshes. This directory includes both 2D elevation data and 3D mesh files generated from Digital Elevation Models (DEM).
 
@@ -28,7 +28,37 @@ Contains the essential components for creating realistic background terrain mesh
 - **PNG Images**: Raw DEM data files (can be safely removed after mesh generation)
 - **FULL.obj**: Complete 3D mesh file for background terrain rendering
 
-The `FULL.obj` file provides the complete background terrain mesh for your map. For detailed implementation guidance, see the [Background Terrain](background_terrain.md) tutorial.
+**NEW for FS25 - Automated Assets:**
+When **Download Satellite Images** and **Generate Background** are both enabled, Maps4FS automatically creates:
+- **`assets/background/background_terrain.i3d`**: Ready-to-import Giants Editor file
+- **`assets/background/textured_mesh/`**: Complete textured mesh files (obj, mtl, texture)
+
+**Usage:**
+- **FS25**: Simply import `assets/background/background_terrain.i3d` directly into Giants Editor
+- **FS22**: Use `FULL.obj` with manual Blender workflow (see [Legacy Background Terrain](legacy_background_terrain.md))
+
+For detailed implementation guidance, see the [Background Terrain](background_terrain.md) tutorial.
+
+### Water Planes
+**Location:** `water/` and `assets/water/`
+
+Contains components for creating realistic water body meshes and planes. This directory includes both 2D water resource data and 3D mesh files generated from water areas in your map data.
+
+**Key Files:**
+- **PNG Images**: Water resource data files
+- **elevated_water.obj**: 3D mesh file for elevated water surfaces
+- **plane_water.obj**: 3D mesh file for flat water planes  
+- **line_based_water.obj**: 3D mesh file for linear water features (if applicable)
+
+**NEW for FS25 - Automated Assets:**
+When **Generate Water** is enabled, Maps4FS automatically creates:
+- **`assets/water/water_resources.i3d`**: Ready-to-import Giants Editor file with proper ocean shader configuration
+
+**Usage:**
+- **FS25**: Simply import `assets/water/water_resources.i3d` directly into Giants Editor, then configure water properties
+- **FS22**: Use obj files with manual Blender workflow (see [Legacy Water Planes](legacy_water_planes.md))
+
+For detailed implementation guidance, see the [Water Planes](water_planes.md) tutorial.
 
 ### Information Layers
 **Location:** `info_layers/`

@@ -12,7 +12,7 @@ from pydtmdl.base.dtm import DTMProviderSettings
 
 import maps4fs.generator.config as mfscfg
 import maps4fs.generator.utils as mfsutils
-from maps4fs.generator.component import Background, Component, Layer, Texture
+from maps4fs.generator.component import Background, Component, Layer, Satellite, Texture
 from maps4fs.generator.game import Game
 from maps4fs.generator.settings import GenerationSettings, MainSettings, SharedSettings
 from maps4fs.generator.statistics import send_advanced_settings, send_main_settings
@@ -149,6 +149,9 @@ class Map:
         except Exception as e:
             raise RuntimeError(f"Can not unpack map template due to error: {e}") from e
         # endregion
+
+        self.assets_directory = os.path.join(self.map_directory, "assets")
+        os.makedirs(self.assets_directory, exist_ok=True)
 
         self.shared_settings = SharedSettings()
         self.components: list[Component] = []
@@ -298,6 +301,17 @@ class Map:
         """
         component = self.get_component("Background")
         if not isinstance(component, Background):
+            return None
+        return component
+
+    def get_satellite_component(self) -> Satellite | None:
+        """Get satellite component.
+
+        Returns:
+            Satellite | None: Satellite instance or None if not found.
+        """
+        component = self.get_component("Satellite")
+        if not isinstance(component, Satellite):
             return None
         return component
 

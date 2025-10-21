@@ -28,11 +28,18 @@ class Parameters:
     WATER = "water"
     FARMYARDS = "farmyards"
 
+    MAXIMUM_BACKGROUND_TEXTURE_SIZE = 4096
+
     PREVIEW_MAXIMUM_SIZE = 2048
 
     BACKGROUND_DISTANCE = 2048
     FULL = "FULL"
     PREVIEW = "PREVIEW"
+
+    DECIMATED_BACKGROUND = "decimated_background"
+    BACKGROUND_TERRAIN = "background_terrain"
+
+    WATER_RESOURCES = "water_resources"
 
     RESIZE_FACTOR = 8
 
