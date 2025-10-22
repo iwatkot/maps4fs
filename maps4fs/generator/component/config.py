@@ -387,6 +387,7 @@ class Config(XMLComponent, ImageComponent):
 
             # 3. Generate texture with country code.
             self._generate_license_plate_texture(
+                license_plates_directory,
                 country_code,
                 eu_format,
                 COUNTRY_CODE_LEFT,
@@ -536,38 +537,32 @@ class Config(XMLComponent, ImageComponent):
         self.logger.debug(f"Updated licensePlatesPL.i3d texture reference to: {filename}")
 
     def _generate_license_plate_texture(
-        self, country_code: str, eu_format: bool, left: int, top: int, right: int, bottom: int
+        self,
+        license_plates_directory: str,
+        country_code: str,
+        eu_format: bool,
+        left: int,
+        top: int,
+        right: int,
+        bottom: int,
     ) -> None:
         """Generate license plate texture with country code."""
-        # Get the base texture filename
+        # 1. Define the path to the base texture depending on EU format.
         if eu_format:
             texture_filename = "licensePlates_diffuseEU.png"
         else:
             texture_filename = "licensePlates_diffuse.png"
 
-        # Path to the texture in the map directory
-        texture_dir = os.path.join(self.map_directory, "map", "licensePlates")
-        texture_path = os.path.join(texture_dir, texture_filename)
-
-        # Create directory if it doesn't exist
-        os.makedirs(texture_dir, exist_ok=True)
-
-        # For now, copy from the game's default texture (this would need to be implemented
-        # based on where the game stores its default textures)
-        # TODO: Copy base texture from game files
-
-        # Load or create base texture
-        if os.path.isfile(texture_path):
-            texture = cv2.imread(texture_path, cv2.IMREAD_UNCHANGED)
-        else:
-            # Create a basic texture if none exists (placeholder)
-            texture = cv2.imread(
-                f"$data/shared/licensePlates/{texture_filename}", cv2.IMREAD_UNCHANGED
+        # 2. Check if the base texture file exists.
+        texture_path = os.path.join(license_plates_directory, texture_filename)
+        if not os.path.isfile(texture_path):
+            self.logger.warning(
+                f"Base texture file not found: {texture_path}. A default texture will be used."
             )
-            if texture is None:
-                # Create a blank RGBA texture as fallback
-                texture = np.ones((512, 512, 4), dtype=np.uint8) * 255
+            raise FileNotFoundError(f"Base texture file not found: {texture_path}")
 
+        # 3. Load the base texture.
+        texture = cv2.imread(texture_path, cv2.IMREAD_UNCHANGED)
         if texture is None:
             raise ValueError(f"Could not load base texture: {texture_path}")
 
