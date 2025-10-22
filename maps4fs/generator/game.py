@@ -45,8 +45,7 @@ class Game:
     _mesh_processing: bool = True
 
     # Order matters! Some components depend on others.
-    # components = [Satellite, Texture, Background, GRLE, I3d, Config]
-    components = [Config]
+    components = [Satellite, Texture, Background, GRLE, I3d, Config]
 
     def __init__(self, map_template_path: str | None = None):
         if map_template_path:
