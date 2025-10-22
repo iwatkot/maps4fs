@@ -435,11 +435,11 @@ class Config(XMLComponent, ImageComponent):
         if file_element is None:
             raise ValueError("Could not find File element with fileId='12'")
 
-        # Update filename based on EU format
+        # Update filename to point to local map directory (relative path)
         if eu_format:
-            filename = "$data/shared/licensePlates/licensePlates_diffuseEU.png"
+            filename = "licensePlates_diffuseEU.png"
         else:
-            filename = "$data/shared/licensePlates/licensePlates_diffuse.png"
+            filename = "licensePlates_diffuse.png"
 
         file_element.set("filename", filename)
 
