@@ -1,8 +1,8 @@
 # License Plates
 
-*[Screenshot placeholder showing license plate customization feature]*
-
 Maps4FS automatically generates country-specific license plates for FS25 maps based on the map's geographic location. This feature adds authentic regional licensing to vehicles in your custom maps.
+
+![License Plates Example](https://github.com/iwatkot/maps4fs/releases/download/2.8.1/lp.png)
 
 ## Compatibility
 
