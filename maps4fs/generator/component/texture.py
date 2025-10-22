@@ -7,6 +7,7 @@ import os
 import shutil
 import warnings
 from collections import defaultdict
+from time import perf_counter
 from typing import Any, Callable, Generator, Optional
 
 import cv2
@@ -796,7 +797,13 @@ class Texture(ImageComponent):
                     warnings.simplefilter("ignore", FutureWarning)
                     objects = ox.features_from_xml(self.map.custom_osm, tags=tags)
             else:
+                before_fetch = perf_counter()
                 objects = ox.features_from_bbox(bbox=self.new_bbox, tags=tags)
+                after_fetch = perf_counter()
+                fetched_in = after_fetch - before_fetch
+                self.logger.info(
+                    "Fetched OSMNX objects for tags: %s in %.2f seconds.", tags, fetched_in
+                )
         except Exception as e:
             self.logger.debug("Error fetching objects for tags: %s. Error: %s.", tags, e)
             return
