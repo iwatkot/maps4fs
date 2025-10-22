@@ -107,13 +107,16 @@ Maps4FS generates license plate textures as **PNG files**, which may trigger per
 1. **Convert texture**: Use image editing software or DDS conversion tools
 2. **Replace file**: Update `licensePlates_diffuse.png` with `licensePlates_diffuse.dds`
 3. **Update reference**: Edit `licensePlatesPL.i3d` file:
-   ```xml
-   <!-- Change from: -->
-   <File fileId="12" filename="licensePlates_diffuse.png" />
-   
-   <!-- To: -->
-   <File fileId="12" filename="licensePlates_diffuse.dds" />
-   ```
+
+Change from this:
+```xml
+<File fileId="12" filename="licensePlates_diffuse.png" />
+```
+
+to this:
+```xml
+<File fileId="12" filename="licensePlates_diffuse.dds" />
+```
 
 💡 **Tip**: See [DDS Conversion](dds_conversion.md) for detailed conversion instructions.
 
