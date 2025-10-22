@@ -358,7 +358,7 @@ class Config(XMLComponent, ImageComponent):
         country_name = mfsutils.get_country_by_coordinates(self.map.coordinates).lower()
         if country_name not in self.supported_countries:
             self.logger.warning(
-                f"License plates processing is not supported for country: {country_name}."
+                "License plates processing is not supported for country: %s.", country_name
             )
             return
 
@@ -367,14 +367,14 @@ class Config(XMLComponent, ImageComponent):
         eu_format = country_code in self.eu_countries
 
         self.logger.info(
-            f"Updating license plates for country: {country_code}, EU format: {eu_format}"
+            "Updating license plates for country: %s, EU format: %s",
         )
 
         license_plates_prefix = self.map.i3d_settings.license_plate_prefix
         if len(license_plates_prefix) < 1 or len(license_plates_prefix) > 3:
             self.logger.error(
-                f"Invalid license plate prefix: {license_plates_prefix}. "
-                "It must be 1 to 3 characters long."
+                "Invalid license plate prefix: %s. It must be 1 to 3 characters long.",
+                license_plates_prefix,
             )
             return
 
@@ -398,7 +398,7 @@ class Config(XMLComponent, ImageComponent):
 
             self.logger.info("License plates updated successfully")
         except Exception as e:
-            self.logger.error(f"Failed to update license plates: {e}")
+            self.logger.error("Failed to update license plates: %s", e)
             raise
 
         # Edit the map.xml only if all previous steps succeeded.
@@ -502,7 +502,7 @@ class Config(XMLComponent, ImageComponent):
         # 5. Save the updated XML.
         self.save_tree(tree, xml_path=xml_path)
         self.logger.debug(
-            f"Updated licensePlatesPL.xml with license plate prefix: {license_plate_prefix}"
+            "Updated licensePlatesPL.xml with license plate prefix: %s", license_plate_prefix
         )
 
     def _update_license_plates_i3d(self, license_plates_directory: str, eu_format: bool) -> None:
@@ -547,7 +547,7 @@ class Config(XMLComponent, ImageComponent):
 
         # 4. Save the updated i3d XML.
         self.save_tree(tree, xml_path=i3d_path)
-        self.logger.debug(f"Updated licensePlatesPL.i3d texture reference to: {filename}")
+        self.logger.debug("Updated licensePlatesPL.i3d texture reference to: %s", filename)
 
     def _generate_license_plate_texture(
         self,
@@ -583,9 +583,7 @@ class Config(XMLComponent, ImageComponent):
         # 2. Check if the base texture file exists.
         texture_path = os.path.join(license_plates_directory, texture_filename)
         if not os.path.isfile(texture_path):
-            self.logger.warning(
-                f"Base texture file not found: {texture_path}. A default texture will be used."
-            )
+            self.logger.warning("Base texture file not found: %s.", texture_path)
             raise FileNotFoundError(f"Base texture file not found: {texture_path}")
 
         # 3. Load the base texture.
@@ -700,17 +698,27 @@ class Config(XMLComponent, ImageComponent):
             )
 
             self.logger.debug(
-                f"Text placed at centered position: ({center_x},{center_y}) size: {w}x{h}"
+                "Text placed at centered position: (%s,%s) size: %sx%s",
+                center_x,
+                center_y,
+                w,
+                h,
             )
         else:
             self.logger.warning(
-                f"Centered text position ({center_x},{center_y}) with size {w}x{h} would exceed texture bounds"
+                "Centered text position (%s,%s) with size %sx%s would exceed texture bounds",
+                center_x,
+                center_y,
+                w,
+                h,
             )
 
         # 16. Save the modified texture.
         cv2.imwrite(texture_path, texture)
         self.logger.debug(
-            f"Generated license plate texture with country code '{country_code}' at: {texture_path}"
+            "Generated license plate texture with country code %s at: %s",
+            country_code,
+            texture_path,
         )
 
     def fit_text_in_rotated_box(
@@ -779,8 +787,8 @@ class Config(XMLComponent, ImageComponent):
 
             font_scale *= 0.93  # Reduce by 7% each iteration
 
-        self.logger.debug(f"Final font scale: {font_scale}, Original text size: {text_size}")
+        self.logger.debug("Final font scale: %s, Original text size: %s", font_scale, text_size)
         if len(coords) > 0:
-            self.logger.debug(f"Rotated text dimensions: {rotated_width}x{rotated_height}")
+            self.logger.debug("Rotated text dimensions: %sx%s", rotated_width, rotated_height)
 
         return font_scale, large_canvas_size
