@@ -399,7 +399,7 @@ class Config(XMLComponent, ImageComponent):
             self.logger.info("License plates updated successfully")
         except Exception as e:
             self.logger.error("Failed to update license plates: %s", e)
-            raise
+            return
 
         # Edit the map.xml only if all previous steps succeeded.
         self._update_map_xml_license_plates()

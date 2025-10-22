@@ -123,6 +123,28 @@ If enabled, the tool will add trees to the map in areas defined as forests in th
 
 ![Add Trees Example](https://github.com/user-attachments/assets/50dd8f82-f4f9-411e-a17a-ea10a0b95c20)
 
+### License Plate Prefix
+**Units:** 1-3 letter string  
+**FS25 Only**: Customizes the regional identifier that appears on license plates alongside the automatically detected country code. This represents specific regions, cities, or administrative areas within a country.
+
+**Examples:**
+- `"NS"` for Novi Sad (Serbia) → License plate shows "SRB NS"
+- `"M"` for Munich (Germany) → License plate shows "D M"  
+- `"75"` for Paris (France) → License plate shows "F 75"
+- `"KRK"` for Krakow (Poland) → License plate shows "PL KRK"
+
+**How it works**: 
+1. **Country code** is automatically detected from map coordinates (e.g., Serbia → SRB)
+2. **Regional prefix** is what you specify here (e.g., NS for Novi Sad)
+3. **Final result**: Both appear on the license plate together
+
+**When to use**: 
+- Add regional authenticity to your map
+- Represent specific cities or administrative regions
+- Create custom regional identifiers for fictional areas
+
+⚠️ **Limits**: Maximum 3 characters (letters or numbers). Longer strings will be truncated.
+
 ### Forest Density
 **Units:** Meters between trees  
 The density of the forest in meters. The lower the value, the lower the distance between trees, which makes the forest denser. Note that low values will lead to an enormous number of trees, which may cause Giants Editor to crash or lead to performance issues. By default, it's set to 10.
