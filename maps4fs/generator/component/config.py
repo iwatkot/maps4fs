@@ -481,23 +481,37 @@ class Config(XMLComponent, ImageComponent):
         # 2. Position X values for the letters.
         pos_x_values = ["-0.1712", "-0.1172", "-0.0632"]  # ? DO WE REALLY NEED THEM?
 
-        # 3. Clear existing values and add new ones.
-        for value in variation.findall("value"):
-            variation.remove(value)
-
-        # 4. Add new values for each letter in the prefix.
+        # 3. Update only the first 3 values (prefix letters), leave others intact.
+        # Find and update nodes 0|0, 0|1, 0|2 specifically.
         for i, letter in enumerate(license_plate_prefix):
-            value_elem = root.makeelement(
-                "value",
-                {
-                    "node": f"0|{i}",
-                    "character": letter,
-                    "posX": pos_x_values[i],
-                    "numerical": "false",
-                    "alphabetical": "true",
-                },
-            )
-            variation.append(value_elem)
+            target_node = f"0|{i}"
+            # Find existing value with this node ID.
+            existing_value = None
+            for value in variation.findall("value"):
+                if value.get("node") == target_node:
+                    existing_value = value
+                    break
+
+            if existing_value is not None:
+                # Update existing value.
+                existing_value.set("character", letter)
+                existing_value.set("posX", pos_x_values[i])
+                existing_value.set("numerical", "false")
+                existing_value.set("alphabetical", "true")
+            else:
+                # Create new value if it doesn't exist.
+                value_elem = root.makeelement(
+                    "value",
+                    {
+                        "node": target_node,
+                        "character": letter,
+                        "posX": pos_x_values[i],
+                        "numerical": "false",
+                        "alphabetical": "true",
+                    },
+                )
+                # Insert at the beginning to maintain order.
+                variation.insert(i, value_elem)
 
         # 5. Save the updated XML.
         self.save_tree(tree, xml_path=xml_path)
