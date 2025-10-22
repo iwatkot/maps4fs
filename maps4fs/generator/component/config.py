@@ -502,24 +502,31 @@ class Config(XMLComponent, ImageComponent):
 
         # Iteratively reduce font size until rotated text fits
         for _ in range(15):  # More iterations for better fitting
-            # Test on a large canvas first
-            test_img = np.ones((large_canvas_size, large_canvas_size, 3), dtype=np.uint8) * 255
+            # Test on a large canvas first (black background for white text)
+            test_img = np.zeros((large_canvas_size, large_canvas_size, 3), dtype=np.uint8)
             text_size = cv2.getTextSize(country_code, font, font_scale, thickness)[0]
 
             # Center text on large canvas
             text_x = (large_canvas_size - text_size[0]) // 2
             text_y = (large_canvas_size + text_size[1]) // 2
 
+            # Use white text for testing
             cv2.putText(
-                test_img, country_code, (text_x, text_y), font, font_scale, (0, 0, 0), thickness
+                test_img,
+                country_code,
+                (text_x, text_y),
+                font,
+                font_scale,
+                (255, 255, 255),
+                thickness,
             )
 
             # Rotate the test image
             rotated_test = cv2.rotate(test_img, cv2.ROTATE_90_CLOCKWISE)
 
-            # Find the bounding box of non-white pixels
+            # Find the bounding box of non-black pixels
             gray = cv2.cvtColor(rotated_test, cv2.COLOR_BGR2GRAY)
-            coords = np.column_stack(np.where(gray < 255))
+            coords = np.column_stack(np.where(gray > 0))
 
             if len(coords) > 0:
                 y_min, x_min = coords.min(axis=0)
@@ -540,24 +547,25 @@ class Config(XMLComponent, ImageComponent):
         if len(coords) > 0:
             self.logger.debug(f"Rotated text dimensions: {rotated_width}x{rotated_height}")
 
-        # Create the actual text image
-        text_img = np.ones((large_canvas_size, large_canvas_size, 3), dtype=np.uint8) * 255
+        # Create the actual text image (black background for white text)
+        text_img = np.zeros((large_canvas_size, large_canvas_size, 3), dtype=np.uint8)
         text_size = cv2.getTextSize(country_code, font, font_scale, thickness)[0]
 
         # Center text on canvas
         text_x = (large_canvas_size - text_size[0]) // 2
         text_y = (large_canvas_size + text_size[1]) // 2
 
+        # Use white text on black background
         cv2.putText(
-            text_img, country_code, (text_x, text_y), font, font_scale, (0, 0, 0), thickness
+            text_img, country_code, (text_x, text_y), font, font_scale, (255, 255, 255), thickness
         )
 
         # Rotate the text
         rotated_text_rgb = cv2.rotate(text_img, cv2.ROTATE_90_CLOCKWISE)
 
-        # Find bounding box and crop to content
+        # Find bounding box and crop to content (looking for white pixels)
         gray = cv2.cvtColor(rotated_text_rgb, cv2.COLOR_BGR2GRAY)
-        coords = np.column_stack(np.where(gray < 255))
+        coords = np.column_stack(np.where(gray > 0))
 
         if len(coords) > 0:
             y_min, x_min = coords.min(axis=0)
@@ -577,8 +585,8 @@ class Config(XMLComponent, ImageComponent):
             rotated_text = np.zeros((cropped_height, cropped_width, 4), dtype=np.uint8)
             rotated_text[:, :, :3] = cropped_text_rgb
 
-            # Set alpha: opaque for text (non-white), transparent for background
-            text_mask = np.any(cropped_text_rgb < 255, axis=2)
+            # Set alpha: opaque for text (white pixels), transparent for background
+            text_mask = np.any(cropped_text_rgb > 0, axis=2)
             rotated_text[text_mask, 3] = 255  # Opaque text
             rotated_text[~text_mask, 3] = 0  # Transparent background
         else:
