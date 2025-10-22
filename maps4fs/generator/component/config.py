@@ -405,12 +405,20 @@ class Config(XMLComponent, ImageComponent):
         self._update_map_xml_license_plates()
 
     def _update_map_xml_license_plates(self) -> None:
-        """Update map.xml to reference PL license plates."""
+        """Update map.xml to reference PL license plates.
+
+        Raises:
+            FileNotFoundError: If the map XML file is not found.
+            ValueError: If the map XML root element is None.
+        """
         tree = self.get_tree()
         if not tree:
             raise FileNotFoundError(f"Map XML file not found: {self.xml_path}")
 
         root = tree.getroot()
+
+        if root is None:
+            raise ValueError("Map XML root element is None.")
 
         # Find or create licensePlates element
         license_plates_element = root.find(".//licensePlates")
@@ -418,7 +426,7 @@ class Config(XMLComponent, ImageComponent):
             license_plates_element.set("filename", "map/licensePlates/licensePlatesPL.xml")
         else:
             # Create new licensePlates element if it doesn't exist
-            license_plates_element = tree.getroot().makeelement(
+            license_plates_element = root.makeelement(
                 "licensePlates", {"filename": "map/licensePlates/licensePlatesPL.xml"}
             )
             root.append(license_plates_element)
@@ -445,6 +453,8 @@ class Config(XMLComponent, ImageComponent):
 
         tree = self.get_tree(xml_path=xml_path)
         root = tree.getroot()
+        if root is None:
+            raise ValueError("License plates XML root element is None.")
 
         # Find licensePlate with node="0"
         license_plate = None
@@ -477,7 +487,7 @@ class Config(XMLComponent, ImageComponent):
 
         # 4. Add new values for each letter in the prefix.
         for i, letter in enumerate(license_plate_prefix):
-            value_elem = tree.getroot().makeelement(
+            value_elem = root.makeelement(
                 "value",
                 {
                     "node": f"0|{i}",
@@ -513,6 +523,9 @@ class Config(XMLComponent, ImageComponent):
         # 1. Load the i3d XML.
         tree = self.get_tree(xml_path=i3d_path)
         root = tree.getroot()
+
+        if root is None:
+            raise ValueError("License plates i3d XML root element is None.")
 
         # 2. Find File element with fileId="12"
         file_element = None
