@@ -546,7 +546,21 @@ class Config(XMLComponent, ImageComponent):
         right: int,
         bottom: int,
     ) -> None:
-        """Generate license plate texture with country code."""
+        """Generate license plate texture with country code.
+
+        Arguments:
+            license_plates_directory (str): Directory where license plates textures are located.
+            country_code (str): The country code to render on the license plate.
+            eu_format (bool): Whether to use EU format texture.
+            left (int): Left coordinate of the country code box.
+            top (int): Top coordinate of the country code box.
+            right (int): Right coordinate of the country code box.
+            bottom (int): Bottom coordinate of the country code box.
+
+        Raises:
+            FileNotFoundError: If the base texture file is not found.
+            ValueError: If there is an error generating the texture.
+        """
         # 1. Define the path to the base texture depending on EU format.
         if eu_format:
             texture_filename = "licensePlates_diffuseEU.png"
@@ -566,81 +580,30 @@ class Config(XMLComponent, ImageComponent):
         if texture is None:
             raise ValueError(f"Could not load base texture: {texture_path}")
 
-        # Calculate text box dimensions
+        # 4. Calculate text box dimensions.
         box_width = right - left
         box_height = bottom - top
 
-        # Calculate font size based on box size and number of letters - use most of the space
-        # Make the font much bigger to utilize the available space better
-        # Since we rotate 90 degrees, we need to account for swapped dimensions
-        # Slightly bigger than before but still conservative
-        initial_font_scale = min(box_height / (len(country_code) * 10), box_width / 22)
-
-        # Test the font size and adjust if text fits after rotation
+        # 5. Define font and fit text in rotated box.
         font = cv2.FONT_HERSHEY_SIMPLEX
-        thickness = 3  # Make it bold by increasing thickness
-        font_scale = initial_font_scale
-
-        # Create a large canvas to render text without clipping
-        large_canvas_size = max(box_width, box_height) * 2
-
-        # Iteratively reduce font size until rotated text fits
-        for _ in range(15):  # More iterations for better fitting
-            # Test on a large canvas first (black background for white text)
-            test_img = np.zeros((large_canvas_size, large_canvas_size, 3), dtype=np.uint8)
-            text_size = cv2.getTextSize(country_code, font, font_scale, thickness)[0]
-
-            # Center text on large canvas
-            text_x = (large_canvas_size - text_size[0]) // 2
-            text_y = (large_canvas_size + text_size[1]) // 2
-
-            # Use white text for testing with anti-aliasing
-            cv2.putText(
-                test_img,
-                country_code,
-                (text_x, text_y),
-                font,
-                font_scale,
-                (255, 255, 255),
-                thickness,
-                lineType=cv2.LINE_AA,  # Anti-aliasing for smooth edges
-            )
-
-            # Rotate the test image
-            rotated_test = cv2.rotate(test_img, cv2.ROTATE_90_CLOCKWISE)
-
-            # Find the bounding box of non-black pixels
-            gray = cv2.cvtColor(rotated_test, cv2.COLOR_BGR2GRAY)
-            coords = np.column_stack(np.where(gray > 0))
-
-            if len(coords) > 0:
-                y_min, x_min = coords.min(axis=0)
-                y_max, x_max = coords.max(axis=0)
-                rotated_width = x_max - x_min + 1
-                rotated_height = y_max - y_min + 1
-
-                # Check if the rotated text fits in our target box with good margin
-                if rotated_width <= box_width * 0.90 and rotated_height <= box_height * 0.90:
-                    break
-
-            font_scale *= 0.93  # Reduce by 7% each iteration
-
-        self.logger.debug(
-            f"Box dimensions: {box_width}x{box_height} (from {left},{top} to {right},{bottom})"
+        thickness = 3
+        font_scale, large_canvas_size = self.fit_text_in_rotated_box(
+            country_code,
+            box_width,
+            box_height,
+            font,
+            thickness,
         )
-        self.logger.debug(f"Final font scale: {font_scale}, Original text size: {text_size}")
-        if len(coords) > 0:
-            self.logger.debug(f"Rotated text dimensions: {rotated_width}x{rotated_height}")
 
-        # Create the actual text image (black background for white text)
+        # 6. Create the actual text image (black background for white text).
         text_img = np.zeros((large_canvas_size, large_canvas_size, 3), dtype=np.uint8)
         text_size = cv2.getTextSize(country_code, font, font_scale, thickness)[0]
 
-        # Center text on canvas
+        # 7. Center text on canvas.
         text_x = (large_canvas_size - text_size[0]) // 2
         text_y = (large_canvas_size + text_size[1]) // 2
 
-        # Use white text on black background with anti-aliasing
+        # 8. Use white text on black background with anti-aliasing.
         cv2.putText(
             text_img,
             country_code,
@@ -649,16 +612,17 @@ class Config(XMLComponent, ImageComponent):
             font_scale,
             (255, 255, 255),
             thickness,
-            lineType=cv2.LINE_AA,  # Anti-aliasing for smooth edges
+            lineType=cv2.LINE_AA,
         )
 
-        # Rotate the text
+        # 9. Rotate the text image 90 degrees clockwise.
         rotated_text_rgb = cv2.rotate(text_img, cv2.ROTATE_90_CLOCKWISE)
 
-        # Find bounding box and crop to content (looking for white pixels)
+        # 10. Find bounding box and crop to content (looking for white pixels).
         gray = cv2.cvtColor(rotated_text_rgb, cv2.COLOR_BGR2GRAY)
         coords = np.column_stack(np.where(gray > 0))
 
+        # 11. Crop the rotated text image to the bounding box of the text.
         if len(coords) > 0:
             y_min, x_min = coords.min(axis=0)
             y_max, x_max = coords.max(axis=0)
@@ -682,10 +646,9 @@ class Config(XMLComponent, ImageComponent):
             rotated_text[text_mask, 3] = 255  # Opaque text
             rotated_text[~text_mask, 3] = 0  # Transparent background
         else:
-            # Fallback if no text found
-            rotated_text = np.zeros((box_height, box_width, 4), dtype=np.uint8)
+            raise ValueError("No text found in the generated image.")
 
-        # Ensure the texture is RGBA
+        # 12. Ensure the texture is RGBA.
         if texture.shape[2] == 3:
             # Convert RGB to RGBA
             texture_rgba = np.zeros((texture.shape[0], texture.shape[1], 4), dtype=np.uint8)
@@ -693,14 +656,14 @@ class Config(XMLComponent, ImageComponent):
             texture_rgba[:, :, 3] = 255  # Fully opaque
             texture = texture_rgba
 
-        # Place the rotated text in the texture using alpha blending
+        # 13. Place the rotated text in the texture.
         h, w = rotated_text.shape[:2]
 
-        # Center the text within the target box
+        # 14. Center the text within the target box.
         center_x = left + (box_width - w) // 2
         center_y = top + (box_height - h) // 2
 
-        # Ensure the centered text fits within texture bounds
+        # 15. Ensure the centered text fits within texture bounds.
         if (
             center_y >= 0
             and center_x >= 0
@@ -731,8 +694,80 @@ class Config(XMLComponent, ImageComponent):
                 f"Centered text position ({center_x},{center_y}) with size {w}x{h} would exceed texture bounds"
             )
 
-        # Save the modified texture
+        # 16. Save the modified texture.
         cv2.imwrite(texture_path, texture)
         self.logger.debug(
             f"Generated license plate texture with country code '{country_code}' at: {texture_path}"
         )
+
+    def fit_text_in_rotated_box(
+        self,
+        text: str,
+        box_width: int,
+        box_height: int,
+        font: int,
+        thickness: int,
+    ) -> tuple[float, int]:
+        """Fits text into a rotated box by adjusting font size.
+
+        Arguments:
+            text (str): The text to fit.
+            box_width (int): The width of the box.
+            box_height (int): The height of the box.
+            font (int): The OpenCV font to use.
+            thickness (int): The thickness of the text.
+
+        Returns:
+            tuple[float, int]: The calculated font scale and the size of the large canvas used.
+        """
+        font_scale = min(box_height / (len(text) * 10), box_width / 22)
+
+        # Create a large canvas to render text without clipping
+        large_canvas_size = max(box_width, box_height) * 2
+
+        # Iteratively reduce font size until rotated text fits
+        for _ in range(15):  # More iterations for better fitting
+            # Test on a large canvas first (black background for white text)
+            test_img = np.zeros((large_canvas_size, large_canvas_size, 3), dtype=np.uint8)
+            text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
+
+            # Center text on large canvas
+            text_x = (large_canvas_size - text_size[0]) // 2
+            text_y = (large_canvas_size + text_size[1]) // 2
+
+            # Use white text for testing with anti-aliasing
+            cv2.putText(
+                test_img,
+                text,
+                (text_x, text_y),
+                font,
+                font_scale,
+                (255, 255, 255),
+                thickness,
+                lineType=cv2.LINE_AA,  # Anti-aliasing for smooth edges
+            )
+
+            # Rotate the test image
+            rotated_test = cv2.rotate(test_img, cv2.ROTATE_90_CLOCKWISE)
+
+            # Find the bounding box of non-black pixels
+            gray = cv2.cvtColor(rotated_test, cv2.COLOR_BGR2GRAY)
+            coords = np.column_stack(np.where(gray > 0))
+
+            if len(coords) > 0:
+                y_min, x_min = coords.min(axis=0)
+                y_max, x_max = coords.max(axis=0)
+                rotated_width = x_max - x_min + 1
+                rotated_height = y_max - y_min + 1
+
+                # Check if the rotated text fits in our target box with good margin
+                if rotated_width <= box_width * 0.90 and rotated_height <= box_height * 0.90:
+                    break
+
+            font_scale *= 0.93  # Reduce by 7% each iteration
+
+        self.logger.debug(f"Final font scale: {font_scale}, Original text size: {text_size}")
+        if len(coords) > 0:
+            self.logger.debug(f"Rotated text dimensions: {rotated_width}x{rotated_height}")
+
+        return font_scale, large_canvas_size
