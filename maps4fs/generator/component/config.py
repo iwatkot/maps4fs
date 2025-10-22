@@ -510,7 +510,7 @@ class Config(XMLComponent, ImageComponent):
             text_x = (large_canvas_size - text_size[0]) // 2
             text_y = (large_canvas_size + text_size[1]) // 2
 
-            # Use white text for testing
+            # Use white text for testing with anti-aliasing
             cv2.putText(
                 test_img,
                 country_code,
@@ -519,6 +519,7 @@ class Config(XMLComponent, ImageComponent):
                 font_scale,
                 (255, 255, 255),
                 thickness,
+                lineType=cv2.LINE_AA,  # Anti-aliasing for smooth edges
             )
 
             # Rotate the test image
@@ -555,9 +556,16 @@ class Config(XMLComponent, ImageComponent):
         text_x = (large_canvas_size - text_size[0]) // 2
         text_y = (large_canvas_size + text_size[1]) // 2
 
-        # Use white text on black background
+        # Use white text on black background with anti-aliasing
         cv2.putText(
-            text_img, country_code, (text_x, text_y), font, font_scale, (255, 255, 255), thickness
+            text_img,
+            country_code,
+            (text_x, text_y),
+            font,
+            font_scale,
+            (255, 255, 255),
+            thickness,
+            lineType=cv2.LINE_AA,  # Anti-aliasing for smooth edges
         )
 
         # Rotate the text
