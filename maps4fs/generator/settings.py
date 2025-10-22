@@ -247,6 +247,8 @@ class I3DSettings(SettingsModel):
     add_reversed_splines: bool = False
     field_splines: bool = False
 
+    license_plate_prefix: str = "ABC"
+
 
 class TextureSettings(SettingsModel):
     """Represents the advanced settings for texture component.

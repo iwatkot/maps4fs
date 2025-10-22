@@ -7,9 +7,19 @@ import os
 import cv2
 import numpy as np
 
+import maps4fs.generator.utils as mfsutils
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_xml import XMLComponent
 from maps4fs.generator.settings import Parameters
+
+# Defines coordinates for country block on the license plate texture.
+COUNTRY_CODE_TOP = 169
+COUNTRY_CODE_BOTTOM = 252
+COUNTRY_CODE_LEFT = 74
+COUNTRY_CODE_RIGHT = 140
+
+LICENSE_PLATES_XML_FILENAME = "licensePlatesPL.xml"
+LICENSE_PLATES_I3D_FILENAME = "licensePlatesPL.i3d"
 
 
 # pylint: disable=R0903
@@ -41,8 +51,7 @@ class Config(XMLComponent, ImageComponent):
 
         self._set_overview()
 
-        # Debug values for testing - can be made configurable later
-        self.update_license_plates(country_code="SRB", eu_format=False)
+        self.update_license_plates()
 
     def _set_map_size(self) -> None:
         """Edits map.xml file to set correct map size."""
@@ -281,38 +290,102 @@ class Config(XMLComponent, ImageComponent):
         self.convert_png_to_dds(resized_overview_path, overview_image_path)
         self.logger.info("Overview image converted and saved to: %s", overview_image_path)
 
-    def update_license_plates(self, country_code: str = "SRB", eu_format: bool = False):
-        """Updates license plates for the specified country.
+    @property
+    def supported_countries(self) -> dict[str, str]:
+        """Returns a dictionary of supported countries and their corresponding country codes.
 
-        Args:
-            country_code: 1-3 letter country code to display on plates
-            eu_format: Whether to use EU format texture
+        Returns:
+            dict[str, str]: Supported countries and their country codes.
         """
-        if not self.game.license_plates_processing:
-            self.logger.warning("License plates processing is not supported for this game.")
+        return {
+            "germany": "DE",
+            "austria": "A",
+            "switzerland": "CH",
+            "france": "F",
+            "italy": "I",
+            "spain": "E",
+            "portugal": "P",
+            "netherlands": "NL",
+            "belgium": "B",
+            "luxembourg": "L",
+            "poland": "PL",
+            "czech republic": "CZ",
+            "slovakia": "SK",
+            "hungary": "H",
+            "slovenia": "SLO",
+            "croatia": "HR",
+            "bosnia and herzegovina": "BIH",
+            "serbia": "SRB",
+            "north macedonia": "MKD",
+            "greece": "GR",
+            "turkey": "TR",
+        }
+
+    @property
+    def eu_countries(self) -> set[str]:
+        """Returns a set of country codes that are in the European Union.
+
+        Returns:
+            set[str]: Set of country codes in the EU.
+        """
+        return {
+            "DE",
+            "A",
+            "CH",
+            "F",
+            "I",
+            "E",
+            "P",
+            "NL",
+            "B",
+            "L",
+            "PL",
+            "CZ",
+            "SK",
+            "H",
+            "SLO",
+            "HR",
+        }
+
+    def update_license_plates(self):
+        """Updates license plates for the specified country."""
+        try:
+            license_plates_directory = self.game.license_plates_dir_path(self.map_directory)
+        except NotImplementedError:
+            self.logger.warning("Game does not support license plates processing.")
             return
 
-        # Constants for country code position in texture
-        COUNTRY_CODE_TOP = 169
-        COUNTRY_CODE_BOTTOM = 252
-        COUNTRY_CODE_LEFT = 74
-        COUNTRY_CODE_RIGHT = 140
+        country_name = mfsutils.get_country_by_coordinates(self.map.coordinates).lower()
+        if country_name not in self.supported_countries:
+            self.logger.warning(
+                f"License plates processing is not supported for country: {country_name}."
+            )
+            return
+
+        # Get license plate country code and EU format.
+        country_code = self.supported_countries[country_name]
+        eu_format = country_code in self.eu_countries
 
         self.logger.info(
             f"Updating license plates for country: {country_code}, EU format: {eu_format}"
         )
 
+        license_plates_prefix = self.map.i3d_settings.license_plate_prefix
+        if len(license_plates_prefix) < 1 or len(license_plates_prefix) > 3:
+            self.logger.error(
+                f"Invalid license plate prefix: {license_plates_prefix}. "
+                "It must be 1 to 3 characters long."
+            )
+            return
+
         try:
-            # Step 1-3: Update map.xml to use PL license plates
-            self._update_map_xml_license_plates()
+            # 1. Update licensePlatesPL.xml with license plate prefix.
+            self._update_license_plates_xml(license_plates_directory, license_plates_prefix)
 
-            # Step 4-8: Update licensePlatesPL.xml with country code letters
-            self._update_license_plates_xml(country_code)
+            # 2. Update licensePlatesPL.i3d texture reference depending on EU format.
+            self._update_license_plates_i3d(license_plates_directory, eu_format)
 
-            # Step 9-12: Update licensePlatesPL.i3d texture reference
-            self._update_license_plates_i3d(eu_format)
-
-            # Step 13-17: Generate texture with country code
+            # 3. Generate texture with country code.
             self._generate_license_plate_texture(
                 country_code,
                 eu_format,
@@ -323,22 +396,12 @@ class Config(XMLComponent, ImageComponent):
             )
 
             self.logger.info("License plates updated successfully")
-
         except Exception as e:
             self.logger.error(f"Failed to update license plates: {e}")
             raise
 
-    def _get_license_plates_directory(self) -> str:
-        """Get the license plates directory path."""
-        return os.path.join(self.map_directory, "map", "licensePlates")
-
-    def _get_license_plates_xml_path(self) -> str:
-        """Get the licensePlatesPL.xml file path."""
-        return os.path.join(self._get_license_plates_directory(), "licensePlatesPL.xml")
-
-    def _get_license_plates_i3d_path(self) -> str:
-        """Get the licensePlatesPL.i3d file path."""
-        return os.path.join(self._get_license_plates_directory(), "licensePlatesPL.i3d")
+        # Edit the map.xml only if all previous steps succeeded.
+        self._update_map_xml_license_plates()
 
     def _update_map_xml_license_plates(self) -> None:
         """Update map.xml to reference PL license plates."""
@@ -362,11 +425,22 @@ class Config(XMLComponent, ImageComponent):
         self.save_tree(tree)
         self.logger.debug("Updated map.xml to use PL license plates")
 
-    def _update_license_plates_xml(self, country_code: str) -> None:
-        """Update licensePlatesPL.xml with country code letters."""
-        xml_path = self._get_license_plates_xml_path()
+    def _update_license_plates_xml(
+        self, license_plates_directory: str, license_plate_prefix: str
+    ) -> None:
+        """Update licensePlatesPL.xml with license plate prefix.
+
+        Arguments:
+            license_plates_directory (str): Directory where license plates XML is located.
+            license_plate_prefix (str): The prefix to set on the license plates.
+
+        Raises:
+            FileNotFoundError: If the license plates XML file is not found.
+            ValueError: If required XML elements are not found.
+        """
+        xml_path = os.path.join(license_plates_directory, LICENSE_PLATES_XML_FILENAME)
         if not os.path.isfile(xml_path):
-            raise FileNotFoundError(f"License plates XML file not found: {xml_path}")
+            raise FileNotFoundError(f"License plates XML file not found: {xml_path}.")
 
         tree = self.get_tree(xml_path=xml_path)
         root = tree.getroot()
@@ -390,17 +464,18 @@ class Config(XMLComponent, ImageComponent):
         if variation is None:
             raise ValueError("Could not find first variation element")
 
-        # Update country code letters
-        country_code = country_code.upper()[:3]  # Ensure max 3 letters, uppercase
+        # 1. Update license plate prefix to ensure max 3 letters, uppercase.
+        license_plate_prefix = license_plate_prefix.upper()[:3]
 
-        # Position X values for the letters (from your constants)
-        pos_x_values = ["-0.1712", "-0.1172", "-0.0632"]
+        # 2. Position X values for the letters.
+        pos_x_values = ["-0.1712", "-0.1172", "-0.0632"]  # ? DO WE REALLY NEED THEM?
 
-        # Clear existing values and add new ones
+        # 3. Clear existing values and add new ones.
         for value in variation.findall("value"):
             variation.remove(value)
 
-        for i, letter in enumerate(country_code):
+        # 4. Add new values for each letter in the prefix.
+        for i, letter in enumerate(license_plate_prefix):
             value_elem = tree.getroot().makeelement(
                 "value",
                 {
@@ -413,19 +488,32 @@ class Config(XMLComponent, ImageComponent):
             )
             variation.append(value_elem)
 
+        # 5. Save the updated XML.
         self.save_tree(tree, xml_path=xml_path)
-        self.logger.debug(f"Updated licensePlatesPL.xml with country code: {country_code}")
+        self.logger.debug(
+            f"Updated licensePlatesPL.xml with license plate prefix: {license_plate_prefix}"
+        )
 
-    def _update_license_plates_i3d(self, eu_format: bool) -> None:
-        """Update licensePlatesPL.i3d texture reference."""
-        i3d_path = self._get_license_plates_i3d_path()
+    def _update_license_plates_i3d(self, license_plates_directory: str, eu_format: bool) -> None:
+        """Update licensePlatesPL.i3d texture reference.
+
+        Arguments:
+            license_plates_directory (str): Directory where license plates i3d is located.
+            eu_format (bool): Whether to use EU format texture.
+
+        Raises:
+            FileNotFoundError: If the license plates i3d file is not found.
+            ValueError: If required XML elements are not found.
+        """
+        i3d_path = os.path.join(license_plates_directory, LICENSE_PLATES_I3D_FILENAME)
         if not os.path.isfile(i3d_path):
             raise FileNotFoundError(f"License plates i3d file not found: {i3d_path}")
 
+        # 1. Load the i3d XML.
         tree = self.get_tree(xml_path=i3d_path)
         root = tree.getroot()
 
-        # Find File element with fileId="12"
+        # 2. Find File element with fileId="12"
         file_element = None
         for file_elem in root.findall(".//File"):
             if file_elem.get("fileId") == "12":
@@ -435,7 +523,7 @@ class Config(XMLComponent, ImageComponent):
         if file_element is None:
             raise ValueError("Could not find File element with fileId='12'")
 
-        # Update filename to point to local map directory (relative path)
+        # 3. Update filename to point to local map directory (relative path).
         if eu_format:
             filename = "licensePlates_diffuseEU.png"
         else:
@@ -443,6 +531,7 @@ class Config(XMLComponent, ImageComponent):
 
         file_element.set("filename", filename)
 
+        # 4. Save the updated i3d XML.
         self.save_tree(tree, xml_path=i3d_path)
         self.logger.debug(f"Updated licensePlatesPL.i3d texture reference to: {filename}")
 
