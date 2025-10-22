@@ -39,6 +39,7 @@
 * [Textures](textures.md)
 * [Overview Image](overview_image.md)
 * [Splines](splines.md)
+* [License Plates](license_plates.md)
 
 ## 🎓 Advanced Topics
 * [Custom OSM](custom_osm.md)

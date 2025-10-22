@@ -189,6 +189,7 @@ Your map is now playable but needs finishing touches:
 
 ### Advanced Features
 - **🆕 Presets System** ([Local Deployment](local_deployment.md) only): Save and manage multiple configurations with the [Presets](presets.md) feature
+- **🆕 License Plates** (FS25 only): Automatic country-specific license plates with customizable prefixes - see [License Plates](license_plates.md)
 - **Custom crops**: Add specialty farming options
 - **Production chains**: Create unique economic systems
 - **Seasonal content**: Weather-specific map variants

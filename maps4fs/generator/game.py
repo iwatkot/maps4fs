@@ -180,6 +180,16 @@ class Game:
             str: The path to the weights directory."""
         raise NotImplementedError
 
+    def license_plates_dir_path(self, map_directory: str) -> str:
+        """Returns the path to the license plates directory.
+
+        Arguments:
+            map_directory (str): The path to the map directory.
+
+        Returns:
+            str: The path to the license plates directory."""
+        raise NotImplementedError
+
     def get_density_map_fruits_path(self, map_directory: str) -> str:
         """Returns the path to the density map fruits file.
 
@@ -417,6 +427,16 @@ class FS25(Game):
         Returns:
             str: The path to the weights directory."""
         return os.path.join(map_directory, "map", "data")
+
+    def license_plates_dir_path(self, map_directory: str) -> str:
+        """Returns the path to the license plates directory.
+
+        Arguments:
+            map_directory (str): The path to the map directory.
+
+        Returns:
+            str: The path to the license plates directory."""
+        return os.path.join(map_directory, "map", "licensePlates")
 
     def i3d_file_path(self, map_directory: str) -> str:
         """Returns the path to the i3d file.

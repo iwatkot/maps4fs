@@ -236,6 +236,7 @@ class I3DSettings(SettingsModel):
             existing points.
         add_reversed_splines (bool): if True, reversed splines will be added to the map.
         field_splines (bool): if True, splines will be added to the fields.
+        license_plate_prefix (str): prefix for the license plates.
     """
 
     add_trees: bool = True
@@ -246,6 +247,8 @@ class I3DSettings(SettingsModel):
     spline_density: int = 2
     add_reversed_splines: bool = False
     field_splines: bool = False
+
+    license_plate_prefix: str = "M4S"
 
 
 class TextureSettings(SettingsModel):
