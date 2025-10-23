@@ -49,9 +49,9 @@ dem_settings = mfs.settings.DEMSettings(
     multiplier=1, blur_radius=40, plateau=15, water_depth=10, add_foundations=True
 )
 background_settings = mfs.settings.BackgroundSettings(
-    # generate_background=True,
-    # generate_water=True,
-    # remove_center=True,
+    generate_background=True,
+    generate_water=True,
+    remove_center=True,
     # flatten_roads=True,
     flatten_water=True,
 )
@@ -62,7 +62,7 @@ i3d_settings = mfs.settings.I3DSettings(
     forest_density=8, add_trees=True, tree_limit=50000, trees_relative_shift=20
 )
 texture_settings = mfs.settings.TextureSettings(
-    dissolve=True,
+    # dissolve=True,
     fields_padding=8,
     skip_drains=True,
 )
