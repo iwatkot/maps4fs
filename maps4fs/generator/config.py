@@ -9,6 +9,8 @@ from osmnx import settings as ox_settings
 
 from maps4fs.logger import Logger
 
+TQDM_DISABLE = os.getenv("TQDM_DISABLE", "0") == "1"
+
 logger = Logger()
 
 MFS_TEMPLATES_DIR = os.path.join(os.getcwd(), "templates")
