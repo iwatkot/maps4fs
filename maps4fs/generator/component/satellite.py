@@ -87,6 +87,7 @@ class Satellite(ImageComponent):
                     from_center=True,
                     logger=self.logger,
                     tiles_dir=mfscfg.SAT_CACHE_DIR,
+                    show_progress=not mfscfg.TQDM_DISABLE,
                 )
 
             except Exception as e:
