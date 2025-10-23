@@ -368,6 +368,8 @@ class Config(XMLComponent, ImageComponent):
 
         self.logger.info(
             "Updating license plates for country: %s, EU format: %s",
+            country_name,
+            eu_format,
         )
 
         license_plates_prefix = self.map.i3d_settings.license_plate_prefix
