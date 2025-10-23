@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+from time import perf_counter
 from typing import Any, Generator
 
 from pydtmdl import DTMProvider
@@ -203,13 +204,15 @@ class Map:
         Yields:
             Generator[str, None, None]: Component names.
         """
-        self.logger.debug(
+        self.logger.info(
             "Starting map generation. Game code: %s. Coordinates: %s, size: %s. Rotation: %s.",
             self.game.code,
             self.coordinates,
             self.size,
             self.rotation,
         )
+        generation_start = perf_counter()
+
         for game_component in self.game.components:
             component = game_component(
                 self.game,
@@ -228,7 +231,14 @@ class Map:
             yield component.__class__.__name__
 
             try:
+                component_start = perf_counter()
                 component.process()
+                component_finish = perf_counter()
+                self.logger.info(
+                    "Component %s processed in %.2f seconds.",
+                    component.__class__.__name__,
+                    component_finish - component_start,
+                )
                 component.commit_generation_info()
             except Exception as e:
                 self.logger.error(
@@ -239,9 +249,15 @@ class Map:
                 self._update_main_settings({"error": str(e)})
                 raise e
 
+        generation_finish = perf_counter()
+        self.logger.info(
+            "Map generation completed in %.2f seconds.",
+            generation_finish - generation_start,
+        )
+
         self._update_main_settings({"completed": True})
 
-        self.logger.debug(
+        self.logger.info(
             "Map generation completed. Game code: %s. Coordinates: %s, size: %s. Rotation: %s.",
             self.game.code,
             self.coordinates,
