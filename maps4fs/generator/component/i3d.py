@@ -13,6 +13,7 @@ import numpy as np
 from tqdm import tqdm
 
 from maps4fs.generator.component.base.component_xml import XMLComponent
+from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
 NODE_ID_STARTING_VALUE = 2000
@@ -112,6 +113,7 @@ class I3d(XMLComponent):
 
         self.save_tree(tree)
 
+    @monitor_performance
     def _add_splines(self) -> None:
         """Adds splines to the map I3D file."""
         splines_i3d_path = self.game.splines_file_path(self.map_directory)
@@ -240,6 +242,7 @@ class I3d(XMLComponent):
 
         self.assets.splines = splines_i3d_path
 
+    @monitor_performance
     def _add_fields(self) -> None:
         """Adds fields to the map I3D file."""
         tree = self.get_tree()
@@ -498,6 +501,7 @@ class I3d(XMLComponent):
 
         return choice(trees_by_leaf_type)
 
+    @monitor_performance
     def _add_forests(self) -> None:
         """Adds forests to the map I3D file."""
         tree_schema = self._read_tree_schema()

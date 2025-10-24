@@ -7,10 +7,10 @@ import os
 import shutil
 import warnings
 from collections import defaultdict
-from time import perf_counter
 from typing import Any, Callable, Generator, Optional
 
 import cv2
+import geopandas as gpd
 import numpy as np
 import osmnx as ox
 import pandas as pd
@@ -21,6 +21,7 @@ from tqdm import tqdm
 
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.layer import Layer
+from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
 
@@ -186,6 +187,7 @@ class Texture(ImageComponent):
         for layer in self.layers:
             self.assets[layer.name] = layer.path(self._weights_dir)
 
+    @monitor_performance
     def add_borders(self) -> None:
         """Iterates over all the layers and picks the one which have the border propety defined.
         Borders are distance from the edge of the map on each side (top, right, bottom, left).
@@ -272,6 +274,7 @@ class Texture(ImageComponent):
                 return layer
         return None
 
+    @monitor_performance
     def merge_into(self) -> None:
         """Merges the content of layers into their target layers."""
         for layer in self.layers:
@@ -298,6 +301,7 @@ class Texture(ImageComponent):
                     cv2.imwrite(layer.path(self._weights_dir), np.zeros_like(layer_image))
                     self.logger.debug("Cleared layer %s.", layer.name)
 
+    @monitor_performance
     def rotate_textures(self) -> None:
         """Rotates textures of the layers which have tags."""
         if self.rotation:
@@ -320,6 +324,7 @@ class Texture(ImageComponent):
                         "Skipping rotation of layer %s because it has no tags.", layer.name
                     )
 
+    @monitor_performance
     def scale_textures(self) -> None:
         """Resizes all the textures to the map output size."""
         if not self.map.output_size:
@@ -364,6 +369,7 @@ class Texture(ImageComponent):
         ]
         return {attr: getattr(self, attr, None) for attr in useful_attributes}
 
+    @monitor_performance
     def _prepare_weights(self):
         self.logger.debug("Starting preparing weights from %s layers.", len(self.layers))
 
@@ -428,6 +434,7 @@ class Texture(ImageComponent):
             ),
         )
 
+    @monitor_performance
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
         layers = self.layers_by_priority()
@@ -546,6 +553,7 @@ class Texture(ImageComponent):
                 }
                 info_layer_data[f"{layer.info_layer}_polylines"].append(linestring_entry)  # type: ignore
 
+    @monitor_performance
     def dissolve(self) -> None:
         """Dissolves textures of the layers with tags into sublayers for them to look more
         natural in the game.
@@ -791,35 +799,47 @@ class Texture(ImageComponent):
         ox_settings.use_cache = self.map.texture_settings.use_cache
         ox_settings.requests_timeout = 30
 
-        try:
-            if self.map.custom_osm is not None:
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", FutureWarning)
-                    objects = ox.features_from_xml(self.map.custom_osm, tags=tags)
-            else:
-                before_fetch = perf_counter()
-                objects = ox.features_from_bbox(bbox=self.new_bbox, tags=tags)
-                after_fetch = perf_counter()
-                fetched_in = after_fetch - before_fetch
-                self.logger.info(
-                    "Fetched OSMNX objects for tags: %s in %.2f seconds.", tags, fetched_in
-                )
-        except Exception as e:
-            self.logger.debug("Error fetching objects for tags: %s. Error: %s.", tags, e)
+        objects = self.fetch_osm_data(tags)
+        if objects is None or objects.empty:
+            self.logger.debug("No objects found for tags: %s.", tags)
             return
+
         self.logger.debug("Fetched %s elements for tags: %s.", len(objects), tags)
 
         method = self.linestrings_generator if yield_linestrings else self.polygons_generator
 
         yield from method(objects, width, is_fieds)
 
+    @monitor_performance
+    def fetch_osm_data(self, tags: dict[str, str | list[str] | bool]) -> gpd.GeoDataFrame | None:
+        """Fetches OSM data for given tags.
+
+        Arguments:
+            tags (dict[str, str | list[str] | bool]): Dictionary of tags to search for.
+
+        Returns:
+            gpd.GeoDataFrame | None: GeoDataFrame with OSM objects or None if no objects found.
+        """
+        try:
+            if self.map.custom_osm is not None:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", FutureWarning)
+                    objects = ox.features_from_xml(self.map.custom_osm, tags=tags)
+            else:
+                objects = ox.features_from_bbox(bbox=self.new_bbox, tags=tags)
+        except Exception as e:
+            self.logger.debug("Error fetching objects for tags: %s. Error: %s.", tags, e)
+            return None
+
+        return objects
+
     def linestrings_generator(
-        self, objects: pd.core.frame.DataFrame, *args, **kwargs
+        self, objects: gpd.GeoDataFrame, *args, **kwargs
     ) -> Generator[list[tuple[int, int]], None, None]:
         """Generator which yields lists of point coordinates which represent LineStrings from OSM.
 
         Arguments:
-            objects (pd.core.frame.DataFrame): Dataframe with OSM objects.
+            objects (gpd.GeoDataFrame): GeoDataFrame with OSM objects.
 
         Yields:
             Generator[list[tuple[int, int]], None, None]: List of point coordinates.
@@ -865,6 +885,7 @@ class Texture(ImageComponent):
             polygon_np = self._to_np(polygon)
             yield polygon_np
 
+    @monitor_performance
     def previews(self) -> list[str]:
         """Invokes methods to generate previews. Returns list of paths to previews.
 

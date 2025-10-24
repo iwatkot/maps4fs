@@ -158,3 +158,14 @@ def dump_json(filename: str, directory: str, data: dict[Any, Any] | Any | None) 
     save_path = os.path.join(directory, filename)
     with open(save_path, "w", encoding="utf-8") as file:
         json.dump(data, file, indent=4)
+
+
+class Singleton(type):
+    """A metaclass for creating singleton classes."""
+
+    _instances: dict[Any, Any] = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super().__call__(*args, **kwargs)
+        return cls._instances[cls]

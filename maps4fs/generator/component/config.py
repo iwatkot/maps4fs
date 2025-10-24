@@ -10,6 +10,7 @@ import numpy as np
 import maps4fs.generator.utils as mfsutils
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_xml import XMLComponent
+from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
 # Defines coordinates for country block on the license plate texture.
@@ -120,6 +121,7 @@ class Config(XMLComponent, ImageComponent):
 
         self.create_qgis_scripts(layers)
 
+    @monitor_performance
     def _adjust_fog(self) -> None:
         """Adjusts the fog settings in the environment XML file based on the DEM and height scale."""
         self.logger.debug("Adjusting fog settings based on DEM and height scale...")
@@ -231,6 +233,7 @@ class Config(XMLComponent, ImageComponent):
 
         return dem_maximum_meter, dem_minimum_meter
 
+    @monitor_performance
     def _set_overview(self) -> None:
         """Generates and sets the overview image for the map."""
         try:
@@ -347,6 +350,7 @@ class Config(XMLComponent, ImageComponent):
             "HR",
         }
 
+    @monitor_performance
     def update_license_plates(self):
         """Updates license plates for the specified country."""
         try:
@@ -565,6 +569,7 @@ class Config(XMLComponent, ImageComponent):
         self.save_tree(tree, xml_path=i3d_path)
         self.logger.debug("Updated licensePlatesPL.i3d texture reference to: %s", filename)
 
+    @monitor_performance
     def _generate_license_plate_texture(
         self,
         license_plates_directory: str,

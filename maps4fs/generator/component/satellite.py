@@ -9,6 +9,7 @@ from pygmdl import save_image
 
 import maps4fs.generator.config as mfscfg
 from maps4fs.generator.component.base.component_image import ImageComponent
+from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
 
@@ -49,6 +50,7 @@ class Satellite(ImageComponent):
             info, warning. If not provided, default logging will be used.
     """
 
+    @monitor_performance
     def process(self) -> None:
         """Downloads the satellite images for the map."""
         self.image_paths = []
@@ -126,6 +128,7 @@ class Satellite(ImageComponent):
 
         return tasks
 
+    @monitor_performance
     def previews(self) -> list[str]:
         """Returns the paths to the preview images.
 

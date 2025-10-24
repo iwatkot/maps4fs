@@ -12,6 +12,7 @@ from tqdm import tqdm
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_xml import XMLComponent
 from maps4fs.generator.component.layer import Layer
+from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
 # This value sums up the pixel value of the basic area type to convert it from "No Water" to "Near Water".
@@ -98,6 +99,7 @@ class GRLE(ImageComponent, XMLComponent):
 
         return grle_schema
 
+    @monitor_performance
     def process(self) -> None:
         """Generates InfoLayer PNG files based on the GRLE schema."""
         grle_schema = self._read_grle_schema()
@@ -134,6 +136,7 @@ class GRLE(ImageComponent, XMLComponent):
             self._process_environment()
             self._process_indoor()
 
+    @monitor_performance
     def previews(self) -> list[str]:
         """Returns a list of paths to the preview images (empty list).
         The component does not generate any preview images so it returns an empty list.
@@ -173,6 +176,7 @@ class GRLE(ImageComponent, XMLComponent):
 
         return preview_paths
 
+    @monitor_performance
     def overlay_fields(self, farmlands_np: np.ndarray) -> np.ndarray | None:
         """Overlay fields on the farmlands preview image.
 
@@ -200,6 +204,7 @@ class GRLE(ImageComponent, XMLComponent):
         # use fields_np as base layer and overlay farmlands_np on top of it with 50% alpha blending.
         return cv2.addWeighted(fields_np, 0.5, farmlands_np, 0.5, 0)
 
+    @monitor_performance
     def _add_farmlands(self) -> None:
         """Adds farmlands to the InfoLayer PNG file."""
         farmlands = []
@@ -297,6 +302,7 @@ class GRLE(ImageComponent, XMLComponent):
 
         self.preview_paths["farmlands"] = info_layer_farmlands_path
 
+    @monitor_performance
     def _add_plants(self) -> None:
         """Adds plants to the InfoLayer PNG file."""
         grass_layer = self.map.get_texture_layer(by_usage="grass")
@@ -399,6 +405,7 @@ class GRLE(ImageComponent, XMLComponent):
 
         self.logger.debug("Updated density map for fruits saved in %s.", density_map_fruit_path)
 
+    @monitor_performance
     def create_island_of_plants(self, image: np.ndarray, count: int) -> np.ndarray:
         """Create an island of plants in the image.
 
@@ -495,6 +502,7 @@ class GRLE(ImageComponent, XMLComponent):
         image_np[:, -1] = 0  # Right side
         return image_np
 
+    @monitor_performance
     def _process_environment(self) -> None:
         info_layer_environment_path = self.game.get_environment_path(self.map_directory)
         if not info_layer_environment_path or not os.path.isfile(info_layer_environment_path):
@@ -554,6 +562,7 @@ class GRLE(ImageComponent, XMLComponent):
         self.logger.debug("Environment InfoLayer PNG file saved: %s.", info_layer_environment_path)
         self.preview_paths["environment"] = info_layer_environment_path
 
+    @monitor_performance
     def get_resized_weight(
         self, layer: Layer, resize_to: int, dilations: int = 3
     ) -> np.ndarray | None:

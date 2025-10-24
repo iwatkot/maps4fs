@@ -19,6 +19,7 @@ from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_mesh import MeshComponent
 from maps4fs.generator.component.dem import DEM
 from maps4fs.generator.component.texture import Texture
+from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
 SEGMENT_LENGTH = 2
@@ -38,6 +39,7 @@ class Background(MeshComponent, ImageComponent):
             info, warning. If not provided, default logging will be used.
     """
 
+    @monitor_performance
     def preprocess(self) -> None:
         """Registers the DEMs for the background terrain."""
         self.stl_preview_path = os.path.join(self.previews_directory, "background_dem.stl")
@@ -141,6 +143,7 @@ class Background(MeshComponent, ImageComponent):
                     "Mesh processing is disabled for the game, skipping water mesh processing."
                 )
 
+    @monitor_performance
     def create_foundations(self, dem_image: np.ndarray) -> np.ndarray:
         """Creates foundations for buildings based on the DEM data.
 
@@ -246,6 +249,7 @@ class Background(MeshComponent, ImageComponent):
         )
         self.create_qgis_scripts([qgis_layer, qgis_layer_with_margin])
 
+    @monitor_performance
     def generate_obj_files(self) -> None:
         """Iterates over all dems and generates 3D obj files based on DEM data.
         If at least one DEM file is missing, the generation will be stopped at all.
@@ -328,8 +332,9 @@ class Background(MeshComponent, ImageComponent):
                 return resolution
         return Parameters.MAXIMUM_BACKGROUND_TEXTURE_SIZE
 
+    @monitor_performance
     def decimate_background_mesh(self) -> None:
-        """ ""Decimates the background mesh based on the map size."""
+        """Decimates the background mesh based on the map size."""
         if not self.assets.background_mesh or not os.path.isfile(self.assets.background_mesh):
             self.logger.warning("Background mesh not found, cannot generate i3d background.")
             return
@@ -362,6 +367,7 @@ class Background(MeshComponent, ImageComponent):
 
         self.assets.decimated_background_mesh = decimated_save_path
 
+    @monitor_performance
     def texture_background_mesh(self) -> None:
         """Textures the background mesh using satellite imagery."""
         satellite_component = self.map.get_satellite_component()
@@ -427,6 +433,7 @@ class Background(MeshComponent, ImageComponent):
             self.logger.error("Could not texture background mesh: %s", e)
             return
 
+    @monitor_performance
     def convert_background_mesh_to_i3d(self) -> bool:
         """Converts the textured background mesh to i3d format.
 
@@ -498,6 +505,7 @@ class Background(MeshComponent, ImageComponent):
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(content + "\n\n" + note)
 
+    @monitor_performance
     def convert_water_mesh_to_i3d(self) -> bool:
         """Converts the line-based water mesh to i3d format.
 
@@ -730,6 +738,7 @@ class Background(MeshComponent, ImageComponent):
         cv2.imwrite(colored_dem_path, dem_data_colored)
         return colored_dem_path
 
+    @monitor_performance
     def create_background_textures(self) -> None:
         """Creates background textures for the map."""
         layers_schema = self.map.texture_schema
@@ -782,6 +791,7 @@ class Background(MeshComponent, ImageComponent):
 
         cv2.imwrite(self.water_resources_path, background_image)
 
+    @monitor_performance
     def subtraction(self) -> None:
         """Subtracts the water depth from the DEM data where the water resources are located."""
         if not self.water_resources_path:
@@ -967,6 +977,7 @@ class Background(MeshComponent, ImageComponent):
         mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
         return mesh
 
+    @monitor_performance
     def generate_water_resources_obj(self) -> None:
         """Generates 3D obj files based on water resources data."""
         self.logger.debug("Starting water resources generation...")
@@ -1033,6 +1044,7 @@ class Background(MeshComponent, ImageComponent):
 
         self.plane_from_np(elevated_water, elevated_save_path, include_zeros=False)
 
+    @monitor_performance
     def flatten_roads(self) -> None:
         """Flattens the roads in the DEM data by averaging the height values along the road polylines."""
         if not self.not_resized_path or not os.path.isfile(self.not_resized_path):

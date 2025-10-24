@@ -80,3 +80,13 @@ def send_survey(data: dict[str, Any]) -> None:
     """
     endpoint = f"{STATS_HOST}/receive_survey"
     post(endpoint, data)
+
+
+def send_performance_report(data: dict[str, Any]) -> None:
+    """Send performance report to the statistics server.
+
+    Arguments:
+        data (dict[str, Any]): The performance report data to send.
+    """
+    endpoint = f"{STATS_HOST}/receive_performance_report"
+    post(endpoint, data)

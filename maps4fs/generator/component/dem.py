@@ -9,6 +9,7 @@ from pydtmdl import DTMProvider
 
 import maps4fs.generator.config as mfscfg
 from maps4fs.generator.component.base.component_image import ImageComponent
+from maps4fs.generator.monitor import monitor_performance
 
 
 # pylint: disable=R0903, R0902
@@ -115,6 +116,7 @@ class DEM(ImageComponent):
         except Exception as e:
             self.logger.warning("Failed to update DEM info: %s.", e)
 
+    @monitor_performance
     def process(self) -> None:
         """Reads DTM file, crops it to map size, normalizes and blurs it,
         saves to map directory."""
@@ -190,6 +192,7 @@ class DEM(ImageComponent):
         if self.rotation:
             self.rotate_dem()
 
+    @monitor_performance
     def normalize_data(self, data: np.ndarray, height_scale_value: int) -> np.ndarray:
         """Normalize DEM data to 16-bit unsigned integer range (0 to 65535).
 
@@ -209,6 +212,7 @@ class DEM(ImageComponent):
         )
         return normalized_data
 
+    @monitor_performance
     def determine_height_scale(self, data: np.ndarray) -> int:
         """Determine height scale value using ceiling.
 
@@ -261,6 +265,7 @@ class DEM(ImageComponent):
         )
         return data
 
+    @monitor_performance
     def apply_multiplier(self, data: np.ndarray) -> np.ndarray:
         """Apply multiplier to DEM data.
 
@@ -283,6 +288,7 @@ class DEM(ImageComponent):
         )
         return multiplied_data
 
+    @monitor_performance
     def resize_to_output(self, data: np.ndarray) -> np.ndarray:
         """Resize DEM data to the output resolution.
 
@@ -296,6 +302,7 @@ class DEM(ImageComponent):
 
         return resampled_data
 
+    @monitor_performance
     def rotate_dem(self) -> None:
         """Rotate DEM image."""
         self.logger.debug("Rotating DEM image by %s degrees.", self.rotation)
