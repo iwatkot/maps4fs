@@ -607,9 +607,15 @@ class MeshComponent(Component):
                 [f"{n[0]:.6f} {n[1]:.6f} {n[2]:.6f}" for n in mesh.vertex_normals]
             )
 
+        if normal_strings is None:
+            return
+
         uv_strings = None
         if has_uv:
             uv_strings = np.array([f"{uv[0]:.6f} {uv[1]:.6f}" for uv in mesh.visual.uv])
+
+        if uv_strings is None:
+            return
 
         # Batch process vertices for memory efficiency
         batch_size = 2000
