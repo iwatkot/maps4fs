@@ -595,19 +595,48 @@ class MeshComponent(Component):
         if has_uv:
             xml_vertices.set("uv0", "true")
 
-        # Write vertex data
-        for idx in tqdm(range(len(vertices)), desc="Writing vertices", unit="vertex"):
-            v = vertices[idx]
-            v_el = ET.SubElement(xml_vertices, "v")
-            v_el.set("p", f"{v[0]:.6f} {v[1]:.6f} {v[2]:.6f}")
+        # Write vertex data - optimized for large vertex counts
+        print("Pre-formatting vertex data...")
 
-            if has_normals:
-                n = mesh.vertex_normals[idx]
-                v_el.set("n", f"{n[0]:.6f} {n[1]:.6f} {n[2]:.6f}")
+        # Pre-format ALL strings using vectorized operations
+        pos_strings = np.array([f"{v[0]:.6f} {v[1]:.6f} {v[2]:.6f}" for v in vertices])
 
-            if has_uv:
-                uv = mesh.visual.uv[idx]
-                v_el.set("t0", f"{uv[0]:.6f} {uv[1]:.6f}")
+        normal_strings = None
+        if has_normals:
+            normal_strings = np.array(
+                [f"{n[0]:.6f} {n[1]:.6f} {n[2]:.6f}" for n in mesh.vertex_normals]
+            )
+
+        uv_strings = None
+        if has_uv:
+            uv_strings = np.array([f"{uv[0]:.6f} {uv[1]:.6f}" for uv in mesh.visual.uv])
+
+        # Batch process vertices for memory efficiency
+        batch_size = 2000
+        vertex_elements = []
+
+        for batch_start in tqdm(
+            range(0, len(vertices), batch_size), desc="Writing vertices", unit="batch"
+        ):
+            batch_end = min(batch_start + batch_size, len(vertices))
+            batch_elements = []
+
+            for idx in range(batch_start, batch_end):
+                v_el = ET.Element("v")
+                v_el.set("p", pos_strings[idx])
+
+                if has_normals:
+                    v_el.set("n", normal_strings[idx])
+
+                if has_uv:
+                    v_el.set("t0", uv_strings[idx])
+
+                batch_elements.append(v_el)
+
+            vertex_elements.extend(batch_elements)
+
+        # Add all vertex elements at once
+        xml_vertices.extend(vertex_elements)
 
         # Triangles block
         xml_tris = ET.SubElement(shape, "Triangles")
