@@ -562,46 +562,48 @@ class Texture(ImageComponent):
         files of the corresponding layer and saves the changes to the files.
         """
         for layer in tqdm(self.layers, desc="Dissolving textures", unit="layer"):
-            if not layer.tags:
-                self.logger.debug("Layer %s has no tags, there's nothing to dissolve.", layer.name)
-                continue
-            layer_path = layer.path(self._weights_dir)
-            layer_paths = layer.paths(self._weights_dir)
+            self.dissolve_layer(layer)
 
-            if len(layer_paths) < 2:
-                self.logger.debug("Layer %s has only one texture, skipping.", layer.name)
-                continue
+    def dissolve_layer(self, layer: Layer) -> None:
+        if not layer.tags:
+            self.logger.debug("Layer %s has no tags, there's nothing to dissolve.", layer.name)
+            return
+        layer_path = layer.path(self._weights_dir)
+        layer_paths = layer.paths(self._weights_dir)
 
-            self.logger.debug("Dissolving layer from %s to %s.", layer_path, layer_paths)
+        if len(layer_paths) < 2:
+            self.logger.debug("Layer %s has only one texture, skipping.", layer.name)
+            return
 
-            # Check if the image contains any non-zero values, otherwise continue.
-            layer_image = cv2.imread(layer_path, cv2.IMREAD_UNCHANGED)
+        self.logger.debug("Dissolving layer from %s to %s.", layer_path, layer_paths)
+        # Check if the image contains any non-zero values, otherwise continue.
+        layer_image = cv2.imread(layer_path, cv2.IMREAD_UNCHANGED)
 
-            if not np.any(layer_image):  # type: ignore
-                self.logger.debug(
-                    "Layer %s does not contain any non-zero values, skipping.", layer.name
-                )
-                continue
+        if not np.any(layer_image):  # type: ignore
+            self.logger.debug(
+                "Layer %s does not contain any non-zero values, skipping.", layer.name
+            )
+            return
 
-            # Save the original image to use it for preview later, without combining the sublayers.
-            cv2.imwrite(layer.path_preview(self._weights_dir), layer_image.copy())  # type: ignore
+        # Save the original image to use it for preview later, without combining the sublayers.
+        cv2.imwrite(layer.path_preview(self._weights_dir), layer_image.copy())  # type: ignore
 
-            # Get the coordinates of non-zero values.
-            non_zero_coords = np.column_stack(np.where(layer_image > 0))  # type: ignore
+        # Get the coordinates of non-zero values.
+        non_zero_coords = np.column_stack(np.where(layer_image > 0))  # type: ignore
 
-            # Prepare sublayers.
-            sublayers = [np.zeros_like(layer_image) for _ in range(layer.count)]
+        # Prepare sublayers.
+        sublayers = [np.zeros_like(layer_image) for _ in range(layer.count)]
 
-            # Randomly assign non-zero values to sublayers.
-            for coord in non_zero_coords:
-                sublayers[np.random.randint(0, layer.count)][coord[0], coord[1]] = 255  # type: ignore
+        # Randomly assign non-zero values to sublayers.
+        for coord in non_zero_coords:
+            sublayers[np.random.randint(0, layer.count)][coord[0], coord[1]] = 255  # type: ignore
 
-            # Save the sublayers.
-            for sublayer, sublayer_path in zip(sublayers, layer_paths):
-                cv2.imwrite(sublayer_path, sublayer)
-                self.logger.debug("Sublayer %s saved.", sublayer_path)
+        # Save the sublayers.
+        for sublayer, sublayer_path in zip(sublayers, layer_paths):
+            cv2.imwrite(sublayer_path, sublayer)
+            self.logger.debug("Sublayer %s saved.", sublayer_path)
 
-            self.logger.debug("Dissolved layer %s.", layer.name)
+        self.logger.debug("Dissolved layer %s.", layer.name)
 
     def draw_base_layer(self, cumulative_image: np.ndarray) -> None:
         """Draws base layer and saves it into the png file.

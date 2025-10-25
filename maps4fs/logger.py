@@ -14,8 +14,9 @@ class Logger(logging.Logger):
         self,
         level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO",
         to_stdout: bool = True,
+        **kwargs,
     ):
-        super().__init__(LOGGER_NAME)
+        super().__init__(kwargs.pop("name", LOGGER_NAME))
         self.setLevel(level)
         self.stdout_handler = logging.StreamHandler(sys.stdout)
         formatter = "%(name)s | %(levelname)s | %(asctime)s | %(message)s"
