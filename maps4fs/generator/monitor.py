@@ -9,6 +9,9 @@ from time import perf_counter
 from typing import Callable, Generator
 
 from maps4fs.generator.utils import Singleton
+from maps4fs.logger import Logger
+
+logger = Logger(name="MAPS4FS_MONITOR")
 
 _local = threading.local()
 
@@ -100,6 +103,13 @@ def monitor_performance(func: Callable) -> Callable:
         try:
             if session_name and time_taken > 0.001 and class_name:
                 PerformanceMonitor().add_record(session_name, class_name, function_name, time_taken)
+                logger.info(
+                    "[PERFORMANCE] %s | %s | %s | %s",
+                    session_name,
+                    class_name,
+                    function_name,
+                    time_taken,
+                )
         except Exception:
             pass
 
