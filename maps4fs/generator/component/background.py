@@ -1088,19 +1088,14 @@ class Background(MeshComponent, ImageComponent):
             total_length = polyline.length
             self.logger.debug("Total length of the road polyline: %s", total_length)
 
-            current_distance = 0
-            segments: list[shapely.LineString] = []
-            while current_distance < total_length:
-                start_point = polyline.interpolate(current_distance)
-                end_distance = min(current_distance + SEGMENT_LENGTH, total_length)
-                end_point = polyline.interpolate(end_distance)
+            # Pre-calculate all interpolation points at once (major optimization)
+            num_segments = int(np.ceil(total_length / SEGMENT_LENGTH))
+            distances = np.linspace(0, total_length, num_segments + 1)
 
-                # Create a small segment LineString
-                segment = shapely.LineString([start_point, end_point])
-                segments.append(segment)
-                current_distance += SEGMENT_LENGTH
+            # Get all interpolated points in one vectorized operation
+            interpolated_points = [polyline.interpolate(d) for d in distances]
 
-            self.logger.debug("Number of segments created: %s", len(segments))
+            self.logger.debug("Number of segments created: %s", num_segments)
 
             # Pre-allocate mask once per road for reuse (optimization)
             mask = np.zeros(dem_image.shape, dtype=np.uint8)
@@ -1109,9 +1104,17 @@ class Background(MeshComponent, ImageComponent):
             buffer_distance = width * 2
 
             # Process each segment individually to maintain smooth road gradation
-            for segment in segments:
+            for i in range(num_segments):
+                start_point = interpolated_points[i]
+                end_point = interpolated_points[i + 1]
+
+                # Create segment directly from points (avoid LineString creation)
+                segment_coords = [(start_point.x, start_point.y), (end_point.x, end_point.y)]
+                segment = shapely.LineString(segment_coords)
+
+                # Buffer the segment with minimal resolution for performance
                 polygon = segment.buffer(
-                    buffer_distance, resolution=4, cap_style="flat", join_style="mitre"
+                    buffer_distance, resolution=2, cap_style="flat", join_style="mitre"
                 )
 
                 # Convert polygon to numpy points
@@ -1127,11 +1130,13 @@ class Background(MeshComponent, ImageComponent):
                     self.logger.debug("Could not create mask for road with error: %s", e)
                     continue
 
-                # Calculate mean value for this segment and apply it immediately
+                # Calculate mean value using NumPy (faster than cv2.mean)
                 # This ensures smooth gradation along the road
-                mean_value = cv2.mean(dem_image, mask=mask)[0]  # type: ignore
-                dem_image[mask == 255] = mean_value
-                full_mask[mask == 255] = 255
+                mask_indices = mask == 255
+                if np.any(mask_indices):
+                    mean_value = np.mean(dem_image[mask_indices])
+                    dem_image[mask_indices] = mean_value
+                    full_mask[mask_indices] = 255
 
         main_dem_path = self.game.dem_file_path(self.map_directory)
         dem_image = self.blur_by_mask(dem_image, full_mask, blur_radius=5)
