@@ -1088,55 +1088,80 @@ class Background(MeshComponent, ImageComponent):
             total_length = polyline.length
             self.logger.debug("Total length of the road polyline: %s", total_length)
 
-            # Pre-calculate all interpolation points at once (major optimization)
-            num_segments = int(np.ceil(total_length / SEGMENT_LENGTH))
-            distances = np.linspace(0, total_length, num_segments + 1)
+            # REVOLUTIONARY APPROACH: Smooth gradation with minimal iterations
 
-            # Get all interpolated points in one vectorized operation
-            interpolated_points = [polyline.interpolate(d) for d in distances]
+            # Step 1: Create complete road mask once
+            road_mask = np.zeros(dem_image.shape, dtype=np.uint8)
+            buffer_radius = int(width * 2)
 
-            self.logger.debug("Number of segments created: %s", num_segments)
+            # Get densely sampled points for smooth road
+            dense_sample_distance = min(SEGMENT_LENGTH, total_length / 100)  # At least 100 samples
+            num_dense_points = max(100, int(total_length / dense_sample_distance))
+            dense_distances = np.linspace(0, total_length, num_dense_points)
+            dense_points = [polyline.interpolate(d) for d in dense_distances]
+            dense_coords = np.array([(int(p.x), int(p.y)) for p in dense_points], dtype=np.int32)
 
-            # Pre-allocate mask once per road for reuse (optimization)
-            mask = np.zeros(dem_image.shape, dtype=np.uint8)
+            # Draw entire road at once
+            if len(dense_coords) > 1:
+                cv2.polylines(road_mask, [dense_coords], False, 255, thickness=buffer_radius)
 
-            # Pre-calculate buffer parameters for this road (optimization)
-            buffer_distance = width * 2
+            # Step 2: Get all road pixels that need processing
+            road_pixels = np.where(road_mask == 255)
+            if len(road_pixels[0]) == 0:
+                continue
 
-            # Process each segment individually to maintain smooth road gradation
-            for i in range(num_segments):
-                start_point = interpolated_points[i]
-                end_point = interpolated_points[i + 1]
+            road_y, road_x = road_pixels
+            self.logger.debug("Processing %s road pixels", len(road_y))
 
-                # Create segment directly from points (avoid LineString creation)
-                segment_coords = [(start_point.x, start_point.y), (end_point.x, end_point.y)]
-                segment = shapely.LineString(segment_coords)
+            # Step 3: Efficient distance-based smooth gradation
+            # Use much larger segments (10-20x SEGMENT_LENGTH) but interpolate between them
+            large_segment_length = SEGMENT_LENGTH * 15  # 30 units instead of 2
+            num_large_segments = max(1, int(np.ceil(total_length / large_segment_length)))
+            large_distances = np.linspace(0, total_length, num_large_segments + 1)
 
-                # Buffer the segment with minimal resolution for performance
-                polygon = segment.buffer(
-                    buffer_distance, resolution=2, cap_style="flat", join_style="mitre"
-                )
+            # Calculate elevation values at large segment points
+            segment_elevations = []
+            for dist in large_distances:
+                sample_point = polyline.interpolate(dist)
+                sample_x, sample_y = int(sample_point.x), int(sample_point.y)
 
-                # Convert polygon to numpy points
-                polygon_points = polygon.exterior.coords
-                road_np = self.polygon_points_to_np(polygon_points)
+                # Sample elevation in small area around this point
+                sample_radius = max(5, buffer_radius // 4)
+                y_min = max(0, sample_y - sample_radius)
+                y_max = min(dem_image.shape[0], sample_y + sample_radius)
+                x_min = max(0, sample_x - sample_radius)
+                x_max = min(dem_image.shape[1], sample_x + sample_radius)
 
-                # Clear the mask for reuse (faster than creating new array)
-                mask.fill(0)
+                if y_max > y_min and x_max > x_min:
+                    sample_elevation = np.mean(dem_image[y_min:y_max, x_min:x_max])
+                else:
+                    sample_elevation = (
+                        dem_image[sample_y, sample_x]
+                        if 0 <= sample_y < dem_image.shape[0] and 0 <= sample_x < dem_image.shape[1]
+                        else 0
+                    )
 
-                try:
-                    cv2.fillPoly(mask, [road_np], 255)  # type: ignore
-                except Exception as e:
-                    self.logger.debug("Could not create mask for road with error: %s", e)
-                    continue
+                segment_elevations.append(sample_elevation)
 
-                # Calculate mean value using NumPy (faster than cv2.mean)
-                # This ensures smooth gradation along the road
-                mask_indices = mask == 255
-                if np.any(mask_indices):
-                    mean_value = np.mean(dem_image[mask_indices])
-                    dem_image[mask_indices] = mean_value
-                    full_mask[mask_indices] = 255
+            # Step 4: Interpolate elevations smoothly along entire road
+            road_distances_from_start = []
+            for i in range(len(road_y)):
+                px, py = road_x[i], road_y[i]
+                # Find closest point on polyline (approximation)
+                closest_point = polyline.interpolate(polyline.project(shapely.Point(px, py)))
+                distance_along_road = polyline.project(closest_point)
+                road_distances_from_start.append(distance_along_road)
+
+            road_distances_from_start = np.array(road_distances_from_start)
+
+            # Interpolate elevation values based on distance along road
+            interpolated_elevations = np.interp(
+                road_distances_from_start, large_distances, segment_elevations
+            )
+
+            # Step 5: Apply interpolated elevations to road pixels
+            dem_image[road_y, road_x] = interpolated_elevations
+            full_mask[road_y, road_x] = 255
 
         main_dem_path = self.game.dem_file_path(self.map_directory)
         dem_image = self.blur_by_mask(dem_image, full_mask, blur_radius=5)
