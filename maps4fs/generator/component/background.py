@@ -78,6 +78,9 @@ class Background(MeshComponent, ImageComponent):
             self.background_directory, "not_substracted.png"
         )
         self.not_resized_path: str = os.path.join(self.background_directory, "not_resized.png")
+        self.not_resized_with_foundations_path: str = os.path.join(
+            self.background_directory, "not_resized_with_foundations.png"
+        )
 
         self.flatten_water_to: int | None = None
 
@@ -561,6 +564,10 @@ class Background(MeshComponent, ImageComponent):
 
         if self.map.dem_settings.add_foundations:
             dem_data = self.create_foundations(dem_data)
+            cv2.imwrite(self.not_resized_with_foundations_path, dem_data)
+            self.logger.debug(
+                "Not resized DEM with foundations saved: %s", self.not_resized_with_foundations_path
+            )
 
         output_size = self.scaled_size + 1
 
@@ -1047,11 +1054,21 @@ class Background(MeshComponent, ImageComponent):
     @monitor_performance
     def flatten_roads(self) -> None:
         """Flattens the roads in the DEM data by averaging the height values along the road polylines."""
-        if not self.not_resized_path or not os.path.isfile(self.not_resized_path):
+        supported_files = [self.not_resized_with_foundations_path, self.not_resized_path]
+
+        base_image_path = None
+        for supported_file in supported_files:
+            if not supported_file or not os.path.isfile(supported_file):
+                continue
+
+            base_image_path = supported_file
+            break
+
+        if not base_image_path:
             self.logger.warning("No DEM data found for flattening roads.")
             return
 
-        dem_image = cv2.imread(self.not_resized_path, cv2.IMREAD_UNCHANGED)
+        dem_image = cv2.imread(base_image_path, cv2.IMREAD_UNCHANGED)
         if dem_image is None:
             self.logger.warning("Failed to read DEM data.")
             return
