@@ -1102,17 +1102,24 @@ class Background(MeshComponent, ImageComponent):
 
             self.logger.debug("Number of segments created: %s", len(segments))
 
-            road_polygons: list[shapely.Polygon] = []
+            # Pre-allocate mask once per road for reuse (optimization)
+            mask = np.zeros(dem_image.shape, dtype=np.uint8)
+
+            # Pre-calculate buffer parameters for this road (optimization)
+            buffer_distance = width * 2
+
+            # Process each segment individually to maintain smooth road gradation
             for segment in segments:
                 polygon = segment.buffer(
-                    width * 2, resolution=4, cap_style="flat", join_style="mitre"
+                    buffer_distance, resolution=4, cap_style="flat", join_style="mitre"
                 )
-                road_polygons.append(polygon)
 
-            for polygon in road_polygons:
+                # Convert polygon to numpy points
                 polygon_points = polygon.exterior.coords
                 road_np = self.polygon_points_to_np(polygon_points)
-                mask = np.zeros(dem_image.shape, dtype=np.uint8)
+
+                # Clear the mask for reuse (faster than creating new array)
+                mask.fill(0)
 
                 try:
                     cv2.fillPoly(mask, [road_np], 255)  # type: ignore
@@ -1120,6 +1127,8 @@ class Background(MeshComponent, ImageComponent):
                     self.logger.debug("Could not create mask for road with error: %s", e)
                     continue
 
+                # Calculate mean value for this segment and apply it immediately
+                # This ensures smooth gradation along the road
                 mean_value = cv2.mean(dem_image, mask=mask)[0]  # type: ignore
                 dem_image[mask == 255] = mean_value
                 full_mask[mask == 255] = 255
