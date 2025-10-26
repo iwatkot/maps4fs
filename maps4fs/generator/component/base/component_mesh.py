@@ -1,5 +1,6 @@
 """Base class for all components that primarily used to work with meshes."""
 
+import logging
 import os
 import shutil
 import xml.etree.ElementTree as ET
@@ -14,6 +15,8 @@ from tqdm import tqdm
 
 from maps4fs.generator.component.base.component import Component
 from maps4fs.generator.settings import Parameters
+
+logger = logging.getLogger("maps4fs")
 
 
 class MeshComponent(Component):
@@ -595,9 +598,6 @@ class MeshComponent(Component):
         if has_uv:
             xml_vertices.set("uv0", "true")
 
-        # Write vertex data - optimized for large vertex counts
-        print("Pre-formatting vertex data...")
-
         # Pre-format ALL strings using vectorized operations
         pos_strings = np.array([f"{v[0]:.6f} {v[1]:.6f} {v[2]:.6f}" for v in vertices])
 
@@ -608,6 +608,7 @@ class MeshComponent(Component):
             )
 
         if normal_strings is None:
+            logger.warning("Normals are missing despite has_normals being True. Can't write i3d.")
             return
 
         uv_strings = None
@@ -615,6 +616,7 @@ class MeshComponent(Component):
             uv_strings = np.array([f"{uv[0]:.6f} {uv[1]:.6f}" for uv in mesh.visual.uv])
 
         if uv_strings is None:
+            logger.warning("UV coordinates are missing despite has_uv being True. Can't write i3d.")
             return
 
         # Batch process vertices for memory efficiency
