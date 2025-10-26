@@ -78,6 +78,9 @@ class Background(MeshComponent, ImageComponent):
             self.background_directory, "not_substracted.png"
         )
         self.not_resized_path: str = os.path.join(self.background_directory, "not_resized.png")
+        self.not_resized_with_foundations_path: str = os.path.join(
+            self.background_directory, "not_resized_with_foundations.png"
+        )
 
         self.flatten_water_to: int | None = None
 
@@ -561,6 +564,10 @@ class Background(MeshComponent, ImageComponent):
 
         if self.map.dem_settings.add_foundations:
             dem_data = self.create_foundations(dem_data)
+            cv2.imwrite(self.not_resized_with_foundations_path, dem_data)
+            self.logger.debug(
+                "Not resized DEM with foundations saved: %s", self.not_resized_with_foundations_path
+            )
 
         output_size = self.scaled_size + 1
 
@@ -1047,11 +1054,21 @@ class Background(MeshComponent, ImageComponent):
     @monitor_performance
     def flatten_roads(self) -> None:
         """Flattens the roads in the DEM data by averaging the height values along the road polylines."""
-        if not self.not_resized_path or not os.path.isfile(self.not_resized_path):
+        supported_files = [self.not_resized_with_foundations_path, self.not_resized_path]
+
+        base_image_path = None
+        for supported_file in supported_files:
+            if not supported_file or not os.path.isfile(supported_file):
+                continue
+
+            base_image_path = supported_file
+            break
+
+        if not base_image_path:
             self.logger.warning("No DEM data found for flattening roads.")
             return
 
-        dem_image = cv2.imread(self.not_resized_path, cv2.IMREAD_UNCHANGED)
+        dem_image = cv2.imread(base_image_path, cv2.IMREAD_UNCHANGED)
         if dem_image is None:
             self.logger.warning("Failed to read DEM data.")
             return
@@ -1088,41 +1105,80 @@ class Background(MeshComponent, ImageComponent):
             total_length = polyline.length
             self.logger.debug("Total length of the road polyline: %s", total_length)
 
-            current_distance = 0
-            segments: list[shapely.LineString] = []
-            while current_distance < total_length:
-                start_point = polyline.interpolate(current_distance)
-                end_distance = min(current_distance + SEGMENT_LENGTH, total_length)
-                end_point = polyline.interpolate(end_distance)
+            # Step 1: Create complete road mask once
+            road_mask = np.zeros(dem_image.shape, dtype=np.uint8)
+            # OpenCV thickness is total width, not radius like Shapely buffer
+            # So we need width * 4 to match the old buffer(width * 2) behavior
+            line_thickness = int(width * 4)
 
-                # Create a small segment LineString
-                segment = shapely.LineString([start_point, end_point])
-                segments.append(segment)
-                current_distance += SEGMENT_LENGTH
+            # Get densely sampled points for smooth road
+            dense_sample_distance = min(SEGMENT_LENGTH, total_length / 100)  # At least 100 samples
+            num_dense_points = max(100, int(total_length / dense_sample_distance))
+            dense_distances = np.linspace(0, total_length, num_dense_points)
+            dense_points = [polyline.interpolate(d) for d in dense_distances]
+            dense_coords = np.array([(int(p.x), int(p.y)) for p in dense_points], dtype=np.int32)
 
-            self.logger.debug("Number of segments created: %s", len(segments))
+            # Draw entire road at once
+            if len(dense_coords) > 1:
+                cv2.polylines(road_mask, [dense_coords], False, 255, thickness=line_thickness)
 
-            road_polygons: list[shapely.Polygon] = []
-            for segment in segments:
-                polygon = segment.buffer(
-                    width * 2, resolution=4, cap_style="flat", join_style="mitre"
-                )
-                road_polygons.append(polygon)
+            # Step 2: Get all road pixels that need processing
+            road_pixels = np.where(road_mask == 255)
+            if len(road_pixels[0]) == 0:
+                continue
 
-            for polygon in road_polygons:
-                polygon_points = polygon.exterior.coords
-                road_np = self.polygon_points_to_np(polygon_points)
-                mask = np.zeros(dem_image.shape, dtype=np.uint8)
+            road_y, road_x = road_pixels
+            self.logger.debug("Processing %s road pixels", len(road_y))
 
-                try:
-                    cv2.fillPoly(mask, [road_np], 255)  # type: ignore
-                except Exception as e:
-                    self.logger.debug("Could not create mask for road with error: %s", e)
-                    continue
+            # Step 3: Efficient distance-based smooth gradation
+            # Use much larger segments (10-20x SEGMENT_LENGTH) but interpolate between them
+            large_segment_length = SEGMENT_LENGTH * 15  # 30 units instead of 2
+            num_large_segments = max(1, int(np.ceil(total_length / large_segment_length)))
+            large_distances = np.linspace(0, total_length, num_large_segments + 1)
 
-                mean_value = cv2.mean(dem_image, mask=mask)[0]  # type: ignore
-                dem_image[mask == 255] = mean_value
-                full_mask[mask == 255] = 255
+            # Calculate elevation values at large segment points
+            segment_elevations = []
+            for dist in large_distances:
+                sample_point = polyline.interpolate(dist)
+                sample_x, sample_y = int(sample_point.x), int(sample_point.y)
+
+                # Sample elevation in small area around this point
+                sample_radius = max(5, line_thickness // 4)
+                y_min = max(0, sample_y - sample_radius)
+                y_max = min(dem_image.shape[0], sample_y + sample_radius)
+                x_min = max(0, sample_x - sample_radius)
+                x_max = min(dem_image.shape[1], sample_x + sample_radius)
+
+                if y_max > y_min and x_max > x_min:
+                    sample_elevation = np.mean(dem_image[y_min:y_max, x_min:x_max])  # type: ignore
+                else:
+                    sample_elevation = (
+                        dem_image[sample_y, sample_x]  # type: ignore
+                        if 0 <= sample_y < dem_image.shape[0] and 0 <= sample_x < dem_image.shape[1]
+                        else 0
+                    )
+
+                segment_elevations.append(sample_elevation)
+
+            # Step 4: Interpolate elevations smoothly along entire road
+            road_distances_from_start = []
+            for i in range(len(road_y)):  # pylint: disable=consider-using-enumerate
+                px, py = road_x[i], road_y[i]
+                # Find closest point on polyline (approximation)
+                closest_point = polyline.interpolate(polyline.project(shapely.Point(px, py)))
+                distance_along_road = polyline.project(closest_point)
+                road_distances_from_start.append(distance_along_road)
+
+            road_distances_from_start = np.array(road_distances_from_start)  # type: ignore
+
+            # Interpolate elevation values based on distance along road
+            interpolated_elevations = np.interp(
+                road_distances_from_start, large_distances, segment_elevations
+            )
+
+            # Step 5: Apply interpolated elevations to road pixels
+            dem_image[road_y, road_x] = interpolated_elevations
+            full_mask[road_y, road_x] = 255
 
         main_dem_path = self.game.dem_file_path(self.map_directory)
         dem_image = self.blur_by_mask(dem_image, full_mask, blur_radius=5)
