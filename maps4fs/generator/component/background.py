@@ -1133,10 +1133,10 @@ class Background(MeshComponent, ImageComponent):
                 x_max = min(dem_image.shape[1], sample_x + sample_radius)
 
                 if y_max > y_min and x_max > x_min:
-                    sample_elevation = np.mean(dem_image[y_min:y_max, x_min:x_max])
+                    sample_elevation = np.mean(dem_image[y_min:y_max, x_min:x_max])  # type: ignore
                 else:
                     sample_elevation = (
-                        dem_image[sample_y, sample_x]
+                        dem_image[sample_y, sample_x]  # type: ignore
                         if 0 <= sample_y < dem_image.shape[0] and 0 <= sample_x < dem_image.shape[1]
                         else 0
                     )
@@ -1145,14 +1145,14 @@ class Background(MeshComponent, ImageComponent):
 
             # Step 4: Interpolate elevations smoothly along entire road
             road_distances_from_start = []
-            for i in range(len(road_y)):
+            for i in range(len(road_y)):  # pylint: disable=consider-using-enumerate
                 px, py = road_x[i], road_y[i]
                 # Find closest point on polyline (approximation)
                 closest_point = polyline.interpolate(polyline.project(shapely.Point(px, py)))
                 distance_along_road = polyline.project(closest_point)
                 road_distances_from_start.append(distance_along_road)
 
-            road_distances_from_start = np.array(road_distances_from_start)
+            road_distances_from_start = np.array(road_distances_from_start)  # type: ignore
 
             # Interpolate elevation values based on distance along road
             interpolated_elevations = np.interp(
