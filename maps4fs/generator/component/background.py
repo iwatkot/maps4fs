@@ -1088,11 +1088,11 @@ class Background(MeshComponent, ImageComponent):
             total_length = polyline.length
             self.logger.debug("Total length of the road polyline: %s", total_length)
 
-            # REVOLUTIONARY APPROACH: Smooth gradation with minimal iterations
-
             # Step 1: Create complete road mask once
             road_mask = np.zeros(dem_image.shape, dtype=np.uint8)
-            buffer_radius = int(width * 2)
+            # OpenCV thickness is total width, not radius like Shapely buffer
+            # So we need width * 4 to match the old buffer(width * 2) behavior
+            line_thickness = int(width * 4)
 
             # Get densely sampled points for smooth road
             dense_sample_distance = min(SEGMENT_LENGTH, total_length / 100)  # At least 100 samples
@@ -1103,7 +1103,7 @@ class Background(MeshComponent, ImageComponent):
 
             # Draw entire road at once
             if len(dense_coords) > 1:
-                cv2.polylines(road_mask, [dense_coords], False, 255, thickness=buffer_radius)
+                cv2.polylines(road_mask, [dense_coords], False, 255, thickness=line_thickness)
 
             # Step 2: Get all road pixels that need processing
             road_pixels = np.where(road_mask == 255)
@@ -1126,7 +1126,7 @@ class Background(MeshComponent, ImageComponent):
                 sample_x, sample_y = int(sample_point.x), int(sample_point.y)
 
                 # Sample elevation in small area around this point
-                sample_radius = max(5, buffer_radius // 4)
+                sample_radius = max(5, line_thickness // 4)
                 y_min = max(0, sample_y - sample_radius)
                 y_max = min(dem_image.shape[0], sample_y + sample_radius)
                 x_min = max(0, sample_x - sample_radius)
