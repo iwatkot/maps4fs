@@ -31,8 +31,8 @@ dtm_provider = mfs.dtm.SRTM30Provider
 # 3️⃣ Define the coordinates of the central point of the map, size and rotation.
 lat, lon = 45.2858, 20.219
 coordinates = (lat, lon)
-size = 4096
-rotation = 25
+size = 2048
+rotation = 0
 
 # 4️⃣ Define the output directory.
 map_directory = "map_directory"
@@ -49,11 +49,11 @@ dem_settings = mfs.settings.DEMSettings(
     multiplier=1, blur_radius=40, plateau=15, water_depth=10, add_foundations=True
 )
 background_settings = mfs.settings.BackgroundSettings(
-    # generate_background=True,
-    # generate_water=True,
-    # remove_center=True,
+    generate_background=True,
+    generate_water=True,
+    remove_center=True,
     flatten_roads=True,
-    # flatten_water=True,
+    flatten_water=True,
 )
 grle_settings = mfs.settings.GRLESettings(
     add_grass=True, farmland_margin=8, random_plants=True, add_farmyards=True

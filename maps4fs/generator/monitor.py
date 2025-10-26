@@ -103,7 +103,7 @@ def monitor_performance(func: Callable) -> Callable:
         try:
             if session_name and time_taken > 0.001 and class_name:
                 PerformanceMonitor().add_record(session_name, class_name, function_name, time_taken)
-                logger.info(
+                logger.debug(
                     "[PERFORMANCE] %s | %s | %s | %s",
                     session_name,
                     class_name,
