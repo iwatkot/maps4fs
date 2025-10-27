@@ -30,6 +30,8 @@ PIXEL_TYPES = {v: k for k, v in AREA_TYPES.items()}
 
 
 class BuildingEntry(NamedTuple):
+    """Data structure for a building entry in the buildings schema."""
+
     file: str
     name: str
     width: float
@@ -488,7 +490,7 @@ class Building(I3d):
         rect = cv2.minAreaRect(points)
 
         # rect contains: ((center_x, center_y), (width, height), angle)
-        (center_x, center_y), (width, height), angle = rect
+        (_, _), (width, height), angle = rect
 
         # OpenCV's minAreaRect returns angle in range [-90, 0)
         # We'll normalize it to [0, 360) for consistency
