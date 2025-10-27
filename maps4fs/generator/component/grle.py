@@ -542,6 +542,8 @@ class GRLE(ImageComponent, XMLComponent):
 
         for layer in texture_component.get_area_type_layers():
             pixel_value = area_type_to_pixel_value(layer.area_type)  # type: ignore
+            # * Not enabled for now.
+            # * If the layer is invisible, we need to draw the mask from the info layer.
             # if layer.invisible:
             #     self.logger.debug("Processing invisible area type layer: %s.", layer.name)
             #     if layer.info_layer:
