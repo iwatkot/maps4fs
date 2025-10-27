@@ -39,6 +39,7 @@ class Game:
     _texture_schema_file: str | None = None
     _grle_schema_file: str | None = None
     _tree_schema_file: str | None = None
+    _buildings_schema_file: str | None = None
     _i3d_processing: bool = True
     _plants_processing: bool = True
     _environment_processing: bool = True
@@ -73,6 +74,11 @@ class Game:
             self._tree_schema = None
         else:
             self._tree_schema = os.path.join(mfscfg.MFS_TEMPLATES_DIR, self._tree_schema_file)  # type: ignore
+
+        if not self._buildings_schema_file:
+            self._buildings_schema_file = None
+        else:
+            self._buildings_schema_file = os.path.join(mfscfg.MFS_TEMPLATES_DIR, self._buildings_schema_file)  # type: ignore
 
     def set_components_by_names(self, component_names: list[str]) -> None:
         """Sets the components used for map generation by their names.
@@ -160,6 +166,19 @@ class Game:
         if not self._tree_schema:
             raise ValueError("Tree layers schema path not set.")
         return self._tree_schema
+
+    @property
+    def buildings_schema(self) -> str:
+        """Returns the path to the buildings layers schema file.
+
+        Raises:
+            ValueError: If the buildings layers schema path is not set.
+
+        Returns:
+            str: The path to the buildings layers schema file."""
+        if not self._buildings_schema_file:
+            raise ValueError("Buildings layers schema path not set.")
+        return self._buildings_schema_file
 
     def dem_file_path(self, map_directory: str) -> str:
         """Returns the path to the DEM file.
@@ -436,6 +455,7 @@ class FS25(Game):
     _texture_schema_file = "fs25-texture-schema.json"
     _grle_schema_file = "fs25-grle-schema.json"
     _tree_schema_file = "fs25-tree-schema.json"
+    _buildings_schema_file = "fs25-buildings-schema.json"
 
     def dem_file_path(self, map_directory: str) -> str:
         """Returns the path to the DEM file.

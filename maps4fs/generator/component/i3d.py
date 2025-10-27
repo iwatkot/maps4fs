@@ -12,13 +12,14 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
+from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_xml import XMLComponent
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
 NODE_ID_STARTING_VALUE = 2000
 SPLINES_NODE_ID_STARTING_VALUE = 5000
-TREE_NODE_ID_STARTING_VALUE = 10000
+TREE_NODE_ID_STARTING_VALUE = 30000
 
 FIELDS_ATTRIBUTES = [
     ("angle", "integer", "0"),
@@ -30,7 +31,7 @@ FIELDS_ATTRIBUTES = [
 ]
 
 
-class I3d(XMLComponent):
+class I3d(XMLComponent, ImageComponent):
     """Component for map i3d file settings and configuration.
 
     Arguments:
