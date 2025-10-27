@@ -364,8 +364,8 @@ class Game:
                 continue
             if required_filepath not in all_files:
                 missing_files.append(required_filepath)
-        if len(missing_files) > 0:
-            raise FileNotFoundError(f"The following files are not found:{missing_files}.")
+        if missing_files:
+            raise FileNotFoundError(f"The following files are not found: {missing_files}.")
 
     def required_file_methods(self) -> list[Callable[[str], str]]:
         """Returns a list of methods that return paths to required files for map generation.
