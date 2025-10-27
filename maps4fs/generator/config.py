@@ -82,15 +82,31 @@ def ensure_templates():
                 text=True,
             )
 
-            # Make the preparation script executable
-            prep_script = os.path.join(clone_dir, "prepare_data.sh")
+            if os.name == "nt":
+                logger.info("Detected Windows OS, running PowerShell preparation script...")
+                prep_script = os.path.join(clone_dir, "prepare_data.ps1")
+                for_subprocess = [
+                    "powershell",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    "prepare_data.ps1",
+                ]
+            else:
+                logger.info("Detected non-Windows OS, running bash preparation script...")
+                prep_script = os.path.join(clone_dir, "prepare_data.sh")
+                for_subprocess = ["./prepare_data.sh"]
+
             if os.path.exists(prep_script):
-                os.chmod(prep_script, 0o755)
+                try:
+                    os.chmod(prep_script, 0o755)
+                except Exception as e:
+                    logger.warning("Could not set execute permissions on script: %s", str(e))
 
                 logger.info("Running data preparation script...")
                 # Run the preparation script from the cloned directory
                 subprocess.run(
-                    ["./prepare_data.sh"], cwd=clone_dir, check=True, capture_output=True, text=True
+                    for_subprocess, cwd=clone_dir, check=True, capture_output=True, text=True
                 )
 
                 # Copy the generated data directory to templates directory
