@@ -434,12 +434,24 @@ class Building(I3d):
                     )
                     z = DEFAULT_HEIGHT
 
+                # * Disabled for now, maybe re-enable later.
+                # Calculate scale factors to match the polygon size
+                # scale_width = width / best_match.width
+                # scale_depth = depth / best_match.depth
+                # scale_height = 1.0  # Keep original height for now
+
                 self.logger.info(
                     "World coordinates for building: x=%.3f, y=%.3f, z=%.3f",
                     x_center,
                     y_center,
                     z,
                 )
+                # self.logger.info(
+                #     "Scale factors: width=%.4f, depth=%.4f, height=%.4f",
+                #     scale_width,
+                #     scale_depth,
+                #     scale_height,
+                # )
 
                 # Add building file to Files section if not already present
                 file_id = None
@@ -458,6 +470,9 @@ class Building(I3d):
                 building_node.set("name", f"{best_match.name}_{node_id_counter}")
                 building_node.set("translation", f"{x_center:.3f} {z:.3f} {y_center:.3f}")
                 building_node.set("rotation", f"0 {rotation_angle:.3f} 0")
+                # building_node.set(
+                #     "scale", f"{scale_width:.4f} {scale_height:.4f} {scale_depth:.4f}"
+                # )
                 building_node.set("referenceId", str(file_id))
                 building_node.set("nodeId", str(node_id_counter))
 
