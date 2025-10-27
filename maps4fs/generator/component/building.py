@@ -328,6 +328,13 @@ class Building(I3d):
             )
             return
 
+        # Check if the collection contains any buildings.
+        if not self.buildings_collection.entries:
+            self.logger.warning(
+                "No buildings found in the collection. Buildings generation will be skipped.",
+            )
+            return
+
         buildings_map_image = cv2.imread(self.buildings_map_path, cv2.IMREAD_UNCHANGED)
         if buildings_map_image is None:
             self.logger.warning("Failed to read buildings map image. Skipping process step.")
