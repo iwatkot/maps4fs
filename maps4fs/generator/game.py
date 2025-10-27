@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import os
 
+from typing import Callable
+
 import maps4fs.generator.config as mfscfg
 from maps4fs.generator.component.background import Background
 from maps4fs.generator.component.config import Config
@@ -166,8 +168,7 @@ class Game:
             map_directory (str): The path to the map directory.
 
         Returns:
-            str: The path to the DEM file.
-        """
+            str: The path to the DEM file."""
         raise NotImplementedError
 
     def weights_dir_path(self, map_directory: str) -> str:
@@ -340,6 +341,45 @@ class Game:
         Returns:
             bool: True if the mesh should be processed, False otherwise."""
         return self._mesh_processing
+
+    def validate_template(self, map_directory: str) -> None:
+        """Validates that all required files exist in the map template directory.
+
+        Arguments:
+            map_directory (str): The path to the map directory.
+
+        Raises:
+            FileNotFoundError: If any required files are missing from the template.
+        """
+        all_files = []
+        for root, _, files in os.walk(map_directory):
+            for file in files:
+                all_files.append(os.path.join(root, file))
+
+        missing_files = []
+        for func in self.required_file_methods():
+            try:
+                required_filepath = func(map_directory)
+            except NotImplementedError:
+                continue
+            if required_filepath not in all_files:
+                missing_files.append(required_filepath)
+        if missing_files:
+            raise FileNotFoundError(f"The following files are not found: {missing_files}.")
+
+    def required_file_methods(self) -> list[Callable[[str], str]]:
+        """Returns a list of methods that return paths to required files for map generation.
+
+        Returns:
+            list[Callable[[str], str]]: List of methods that take a map directory path
+                and return file paths that are required for the map template.
+        """
+        return [
+            self.map_xml_path,
+            self.i3d_file_path,
+            self.get_environment_xml_path,
+            self.get_farmlands_xml_path,
+        ]
 
 
 class FS22(Game):
