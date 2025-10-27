@@ -38,8 +38,8 @@ class BuildingEntry(NamedTuple):
     depth: float
     height: float
     type: str
-    category: str
-    region: str
+    categories: list[str]
+    regions: list[str]
 
 
 class BuildingEntryCollection:
@@ -54,7 +54,7 @@ class BuildingEntryCollection:
         """
         self.region = region
         # Filter entries to only include the specified region
-        self.entries = [entry for entry in building_entries if entry.region == region]
+        self.entries = [entry for entry in building_entries if region in entry.regions]
         # Create indices for faster lookup
         self._create_indices()
 
@@ -63,10 +63,11 @@ class BuildingEntryCollection:
         self.by_category: dict[str, list[BuildingEntry]] = {}
 
         for entry in self.entries:
-            # Index by category (all entries are already filtered by region)
-            if entry.category not in self.by_category:
-                self.by_category[entry.category] = []
-            self.by_category[entry.category].append(entry)
+            # Index by each category (all entries are already filtered by region)
+            for category in entry.categories:
+                if category not in self.by_category:
+                    self.by_category[category] = []
+                self.by_category[category].append(entry)
 
     def find_best_match(
         self,
@@ -123,7 +124,7 @@ class BuildingEntryCollection:
         score = 0.0
 
         # Category match (required) - base score
-        if entry.category == category:
+        if category in entry.categories:
             score = 100.0
         else:
             return 0.0  # Category mismatch = no match
@@ -306,7 +307,33 @@ class Building(I3d):
 
         building_entries = []
         for building_entry in self.buildings_schema:
-            building = BuildingEntry(**building_entry)
+            # Handle backward compatibility: convert old property names and strings to lists
+            processed_entry = building_entry.copy()
+
+            # Handle backward compatibility for old property names and convert to lists
+            if "category" in processed_entry:
+                # Convert old singular 'category' to new plural 'categories'
+                if isinstance(processed_entry["category"], str):
+                    processed_entry["categories"] = [processed_entry["category"]]
+                else:
+                    processed_entry["categories"] = processed_entry["category"]
+                del processed_entry["category"]
+            elif isinstance(processed_entry.get("categories"), str):
+                # Convert string to list for new 'categories' property
+                processed_entry["categories"] = [processed_entry["categories"]]
+
+            if "region" in processed_entry:
+                # Convert old singular 'region' to new plural 'regions'
+                if isinstance(processed_entry["region"], str):
+                    processed_entry["regions"] = [processed_entry["region"]]
+                else:
+                    processed_entry["regions"] = processed_entry["region"]
+                del processed_entry["region"]
+            elif isinstance(processed_entry.get("regions"), str):
+                # Convert string to list for new 'regions' property
+                processed_entry["regions"] = [processed_entry["regions"]]
+
+            building = BuildingEntry(**processed_entry)
             building_entries.append(building)
 
         # Get the game region (you might need to adjust this based on your game object structure)
