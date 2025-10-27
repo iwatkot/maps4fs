@@ -4,7 +4,7 @@ import json
 import os
 import shutil
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 from xml.etree import ElementTree as ET
 
 import osmnx as ox
@@ -120,6 +120,20 @@ def get_country_by_coordinates(coordinates: tuple[float, float]) -> str:
     except Exception:
         return "Unknown"
     return "Unknown"
+
+
+def get_region_by_coordinates(coordinates: tuple[float, float]) -> Literal["EU", "US"]:
+    """Get region (EU or US) by coordinates.
+
+    Arguments:
+        coordinates (tuple[float, float]): Latitude and longitude.
+
+    Returns:
+        Literal["EU", "US"]: Region code.
+    """
+    country = get_country_by_coordinates(coordinates)
+    # If country is not US, assume EU for simplicity.
+    return "US" if country == "United States" else "EU"
 
 
 def get_timestamp() -> str:

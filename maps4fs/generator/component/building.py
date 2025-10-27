@@ -11,6 +11,7 @@ from tqdm import tqdm
 
 from maps4fs.generator.component.i3d import I3d
 from maps4fs.generator.settings import Parameters
+from maps4fs.generator.utils import get_region_by_coordinates
 
 BUILDINGS_STARTING_NODE_ID = 10000
 TOLERANCE_FACTOR = 0.3  # 30% size tolerance
@@ -307,37 +308,10 @@ class Building(I3d):
 
         building_entries = []
         for building_entry in self.buildings_schema:
-            # Handle backward compatibility: convert old property names and strings to lists
-            processed_entry = building_entry.copy()
-
-            # Handle backward compatibility for old property names and convert to lists
-            if "category" in processed_entry:
-                # Convert old singular 'category' to new plural 'categories'
-                if isinstance(processed_entry["category"], str):
-                    processed_entry["categories"] = [processed_entry["category"]]
-                else:
-                    processed_entry["categories"] = processed_entry["category"]
-                del processed_entry["category"]
-            elif isinstance(processed_entry.get("categories"), str):
-                # Convert string to list for new 'categories' property
-                processed_entry["categories"] = [processed_entry["categories"]]
-
-            if "region" in processed_entry:
-                # Convert old singular 'region' to new plural 'regions'
-                if isinstance(processed_entry["region"], str):
-                    processed_entry["regions"] = [processed_entry["region"]]
-                else:
-                    processed_entry["regions"] = processed_entry["region"]
-                del processed_entry["region"]
-            elif isinstance(processed_entry.get("regions"), str):
-                # Convert string to list for new 'regions' property
-                processed_entry["regions"] = [processed_entry["regions"]]
-
-            building = BuildingEntry(**processed_entry)
+            building = BuildingEntry(**building_entry)
             building_entries.append(building)
 
-        # Get the game region (you might need to adjust this based on your game object structure)
-        region = getattr(self.game, "region", "EU")  # Default to EU if not specified
+        region = get_region_by_coordinates(self.coordinates)
 
         self.buildings_collection = BuildingEntryCollection(building_entries, region)
         self.logger.info(
