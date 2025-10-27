@@ -691,8 +691,12 @@ class I3d(XMLComponent, ImageComponent):
 
         return recommended_step if not current_step else max(recommended_step, current_step)
 
-    def get_not_resized_dem(self) -> np.ndarray | None:
+    def get_not_resized_dem(self, with_foundations: bool = False) -> np.ndarray | None:
         """Reads the not resized DEM image from the background component.
+
+        Arguments:
+            with_foundations (bool, optional): Whether to get the DEM with foundations.
+                Defaults to False.
 
         Returns:
             np.ndarray | None: The not resized DEM image or None if the image could not be read.
@@ -702,11 +706,17 @@ class I3d(XMLComponent, ImageComponent):
             self.logger.warning("Background component not found.")
             return None
 
-        if not background_component.not_resized_path:
+        dem_path = (
+            background_component.not_resized_with_foundations_path
+            if with_foundations
+            else background_component.not_resized_path
+        )
+
+        if not dem_path:
             self.logger.warning("Not resized DEM path not found.")
             return None
 
-        not_resized_dem = cv2.imread(background_component.not_resized_path, cv2.IMREAD_UNCHANGED)
+        not_resized_dem = cv2.imread(dem_path, cv2.IMREAD_UNCHANGED)
 
         return not_resized_dem
 

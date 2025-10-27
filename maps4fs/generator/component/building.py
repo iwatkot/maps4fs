@@ -12,18 +12,21 @@ from tqdm import tqdm
 from maps4fs.generator.component.i3d import I3d
 from maps4fs.generator.settings import Parameters
 
-# {
-#     "file": "$data/maps/mapEU/textures/buildings/animalTraderGarages/animalTraderGarages.i3d",
-#     "name": "animalTraderGarages",
-#     "width": 12.0,
-#     "depth": 8.0,
-#     "height": 4.0,
-#     "type": "garage",
-#     "category": "commercial",
-#     "region": "EU"
-# },
-
 BUILDINGS_STARTING_NODE_ID = 10000
+TOLERANCE_FACTOR = 0.3  # 30% size tolerance
+DEFAULT_HEIGHT = 200
+
+
+AREA_TYPES = {
+    "residential": 10,
+    "commercial": 20,
+    "industrial": 30,
+    "retail": 40,
+    "farmyard": 50,
+    "religious": 60,
+    "recreation": 70,
+}
+PIXEL_TYPES = {v: k for k, v in AREA_TYPES.items()}
 
 
 class BuildingEntry(NamedTuple):
@@ -177,42 +180,30 @@ class BuildingEntryCollection:
         return self.by_category.get(category, [])
 
 
-def building_category_type_to_pixel_value(
-    building_category: str | None = None, pixel_value: int | None = None
-) -> int | None:
+def building_category_type_to_pixel(building_category: str) -> int | None:
     """Returns the pixel value representation of the building category.
     If not found, returns None.
 
     Arguments:
         building_category (str | None): The building category type as a string.
+
+    Returns:
+        int | None: pixel value of the building category, or None if not found.
+    """
+    return AREA_TYPES.get(building_category)
+
+
+def pixel_value_to_building_category_type(pixel_value: int) -> str:
+    """Returns the building category type representation of the pixel value.
+    If not found, returns "residential".
+
+    Arguments:
         pixel_value (int | None): The pixel value to look up the building category for.
 
     Returns:
-        int | None: pixel value of the building category or None if not found.
+        str: building category of the pixel value, or "residential" if not found.
     """
-    if not building_category and pixel_value is None:
-        raise ValueError("Either building_category or pixel_value must be provided.")
-
-    if building_category and pixel_value is not None:
-        raise ValueError("Only one of building_category or pixel_value should be provided.")
-
-    area_types = {
-        "residential": 10,
-        "commercial": 20,
-        "industrial": 30,
-        "retail": 40,
-        "farmyard": 50,
-        "religious": 60,
-        "recreation": 70,
-    }
-    inverse_area_types = {value: category for category, value in area_types.items()}
-
-    if pixel_value is not None:
-        # Default to "residential" if pixel value not found.
-        return inverse_area_types.get(pixel_value, "residential")
-    elif building_category:
-        return area_types.get(building_category)
-    return None
+    return PIXEL_TYPES.get(pixel_value, "residential")
 
 
 class Building(I3d):
@@ -230,6 +221,7 @@ class Building(I3d):
     """
 
     def preprocess(self) -> None:
+        """Preprocess and prepare buildings schema and buildings map image."""
         try:
             buildings_schema_path = self.game.buildings_schema
         except ValueError as e:
@@ -284,7 +276,7 @@ class Building(I3d):
                 layer.name,
                 layer.building_category,
             )
-            pixel_value = building_category_type_to_pixel_value(building_category=layer.building_category)  # type: ignore
+            pixel_value = building_category_type_to_pixel(layer.building_category)  # type: ignore
             if pixel_value is None:
                 self.logger.warning(
                     "Unknown building category '%s' for layer '%s'. Skipping.",
@@ -326,6 +318,7 @@ class Building(I3d):
         )
 
     def process(self) -> None:
+        """Process and place buildings on the map based on the buildings map image and schema."""
         if not hasattr(self, "buildings_map_path") or not os.path.isfile(self.buildings_map_path):
             self.logger.warning(
                 "Buildings map path is not set or file does not exist. Skipping process step."
@@ -350,6 +343,10 @@ class Building(I3d):
         tree = self.get_tree()
         root = tree.getroot()
 
+        if root is None:
+            self.logger.warning("Failed to get root element from I3D XML tree.")
+            return
+
         # Find the Scene element
         scene_node = root.find(".//Scene")
         if scene_node is None:
@@ -369,6 +366,11 @@ class Building(I3d):
         file_id_counter = BUILDINGS_STARTING_NODE_ID
         node_id_counter = BUILDINGS_STARTING_NODE_ID + 1000
 
+        not_resized_dem = self.get_not_resized_dem(with_foundations=True)
+        if not_resized_dem is None:
+            self.logger.warning("Not resized DEM not found.")
+            return
+
         for building in tqdm(buildings, desc="Placing buildings", unit="building"):
             try:
                 fitted_building = self.fit_object_into_bounds(
@@ -383,20 +385,23 @@ class Building(I3d):
 
             # 1. Identify the center point of the building polygon.
             center_point = np.mean(fitted_building, axis=0).astype(int)
-            print(f"Center point: {center_point}")
+            x, y = center_point
+            self.logger.info("Center point of building polygon: %s", center_point)
 
-            pixel_value = buildings_map_image[center_point[1], center_point[0]]
-            print(f"Pixel value at center point: {pixel_value}")
+            pixel_value = buildings_map_image[y, x]
+            self.logger.info("Pixel value at center point: %s", pixel_value)
 
-            category = building_category_type_to_pixel_value(pixel_value=pixel_value)
-            print(f"Building category at center point: {category}")
+            category = pixel_value_to_building_category_type(pixel_value)
+            self.logger.info("Building category at center point: %s", category)
 
             # 2. Obtain building dimensions and rotation using minimum area bounding rectangle
-            width, depth, rotation_angle = self._get_polygon_dimensions_and_rotation(
-                self.polygon_points_to_np(fitted_building)
-            )
-            print(
-                f"Building dimensions: width={width:.2f}, depth={depth:.2f}, rotation={rotation_angle:.2f}°"
+            polygon_np = self.polygon_points_to_np(fitted_building)
+            width, depth, rotation_angle = self._get_polygon_dimensions_and_rotation(polygon_np)
+            self.logger.info(
+                "Building dimensions: width=%d, depth=%d, rotation=%d°",
+                width,
+                depth,
+                rotation_angle,
             )
 
             # 3. Find the best matching building from the collection (region already filtered)
@@ -404,7 +409,7 @@ class Building(I3d):
                 category=category,
                 width=width,
                 depth=depth,
-                tolerance=0.5,  # 50% size tolerance
+                tolerance=TOLERANCE_FACTOR,
             )
 
             if best_match:
@@ -414,7 +419,24 @@ class Building(I3d):
 
                 # Get world coordinates
                 x_center, y_center = self.top_left_coordinates_to_center(center_point)
-                z = self._get_terrain_height(center_point)  # Get actual terrain height
+                try:
+                    z = self.get_z_coordinate_from_dem(not_resized_dem, x, y)
+                except Exception as e:
+                    self.logger.warning(
+                        "Failed to get Z coordinate from DEM at (%d, %d) with error: %s. Using default height %d.",
+                        x,
+                        y,
+                        e,
+                        DEFAULT_HEIGHT,
+                    )
+                    z = DEFAULT_HEIGHT
+
+                self.logger.info(
+                    "World coordinates for building: x=%.3f, y=%.3f, z=%.3f",
+                    x_center,
+                    y_center,
+                    z,
+                )
 
                 # Add building file to Files section if not already present
                 file_id = None
@@ -447,29 +469,6 @@ class Building(I3d):
         # Save the modified XML tree
         self.save_tree(tree)
         self.logger.info("Buildings placement completed and saved to map.i3d")
-
-        #     building_np = self.polygon_points_to_np(fitted_building)
-
-        #     try:
-        #         cv2.fillPoly(buildings_map_image, [building_np], 255)  # type: ignore
-        #     except Exception as e:
-        #         self.logger.debug("Could not create mask for building with error: %s", e)
-        #         continue
-
-        # cv2.imwrite(self.buildings_map_path, buildings_map_image)
-
-        # 1. Iterate over each building entry.
-        # Building entry are simple polygon points.
-        # 2. Fit polygons into bounds of the map.
-        # 2. Probably we somehow need to convert the polygon to a rotated bounding box.
-        # Or just undestand three parameters: width, depths and rotation angle.
-        # 3. Get the center point of the building polygon.
-        # 4. Get the pixel value from the buildings map at the center point.
-        # 5. Based on the pixel value, determine the building category.
-        # 4. When we have category, and dimenstions, read the buildings scheme that contains the
-        # list of available buildings and try to find the best match.
-        # 5. Finally, place the building in the map at the specified location with correct rotation.
-        # To obtain correct Z value, we read the DEM data at the pixel location.
 
     def _get_polygon_dimensions_and_rotation(
         self, polygon_points: np.ndarray
@@ -529,26 +528,6 @@ class Building(I3d):
 
         scene_node.append(buildings_group)
         return buildings_group
-
-    def _get_terrain_height(self, pixel_coordinates: np.ndarray) -> float:
-        """Get terrain height at specific pixel coordinates.
-
-        Arguments:
-            pixel_coordinates (np.ndarray): Pixel coordinates [x, y]
-
-        Returns:
-            float: Terrain height at the specified location
-        """
-        # Try to get DEM data for accurate height
-        try:
-            dem_component = self.map.get_dem_component()
-            if dem_component and hasattr(dem_component, "get_height_at_pixel"):
-                return dem_component.get_height_at_pixel(pixel_coordinates[0], pixel_coordinates[1])
-        except Exception as e:
-            self.logger.debug(f"Could not get terrain height from DEM: {e}")
-
-        # Fallback to a reasonable default height
-        return 200.0
 
     def info_sequence(self) -> dict[str, dict[str, str | float | int]]:
         return {}
