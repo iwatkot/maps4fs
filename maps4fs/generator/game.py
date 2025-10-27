@@ -5,11 +5,11 @@ template file and specific settings for map generation."""
 from __future__ import annotations
 
 import os
-
 from typing import Callable
 
 import maps4fs.generator.config as mfscfg
 from maps4fs.generator.component.background import Background
+from maps4fs.generator.component.building import Building
 from maps4fs.generator.component.config import Config
 from maps4fs.generator.component.grle import GRLE
 from maps4fs.generator.component.i3d import I3d
@@ -47,7 +47,7 @@ class Game:
     _mesh_processing: bool = True
 
     # Order matters! Some components depend on others.
-    components = [Satellite, Texture, Background, GRLE, I3d, Config]
+    components = [Satellite, Texture, Background, GRLE, I3d, Config, Building]
 
     def __init__(self, map_template_path: str | None = None):
         if map_template_path:

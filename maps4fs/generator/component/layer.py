@@ -30,6 +30,7 @@ class Layer:
         indoor (bool): Flag to determine if the layer is indoor.
         merge_into (str | None): Name of the layer to merge into.
         building_category (str | None): Category of the building.
+        external (bool): External layers not being used by the game directly.
 
     Attributes:
         name (str): Name of the layer.
@@ -60,6 +61,7 @@ class Layer:
         indoor: bool = False,
         merge_into: str | None = None,
         building_category: str | None = None,
+        external: bool = False,
     ):
         self.name = name
         self.count = count
@@ -81,6 +83,7 @@ class Layer:
         self.indoor = indoor
         self.merge_into = merge_into
         self.building_category = building_category
+        self.external = external
 
     def to_json(self) -> dict[str, str | list[str] | bool]:  # type: ignore
         """Returns dictionary with layer data.
@@ -108,6 +111,7 @@ class Layer:
             "indoor": self.indoor,
             "merge_into": self.merge_into,
             "building_category": self.building_category,
+            "external": self.external,
         }
 
         data = {k: v for k, v in data.items() if v is not None}
