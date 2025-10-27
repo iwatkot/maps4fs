@@ -492,15 +492,26 @@ class Building(I3d):
         # rect contains: ((center_x, center_y), (width, height), angle)
         (_, _), (width, height), angle = rect
 
-        # OpenCV's minAreaRect returns angle in range [-90, 0)
-        # We'll normalize it to [0, 360) for consistency
-        rotation_angle = angle if angle >= 0 else angle + 90
+        # OpenCV's minAreaRect returns angle in range [-90, 0) for the longer side
+        # We need to convert this to a proper world rotation angle
 
-        # Make sure width is the longer dimension (length) and height is the shorter (width)
-        # This is a common convention for buildings
+        # First, ensure width is the longer dimension
         if width < height:
+            # Swap dimensions
             width, height = height, width
-            rotation_angle = (rotation_angle + 90) % 180
+            # When we swap dimensions, we need to adjust the angle by 90 degrees
+            angle = angle + 90.0
+
+        # Convert OpenCV angle to world rotation angle
+        # OpenCV angle is measured from the horizontal axis, counter-clockwise
+        # But we want the angle in degrees for Y-axis rotation in 3D space
+        rotation_angle = -angle  # Negative because 3D rotation is clockwise positive
+
+        # Normalize to [0, 360) range
+        while rotation_angle < 0:
+            rotation_angle += 360
+        while rotation_angle >= 360:
+            rotation_angle -= 360
 
         return width, height, rotation_angle
 
