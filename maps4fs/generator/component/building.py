@@ -275,7 +275,7 @@ class Building(I3d):
         buildings_map_image = np.zeros((self.map.size, self.map.size), dtype=np.uint8)
 
         for layer in texture_component.get_building_category_layers():
-            self.logger.info(
+            self.logger.debug(
                 "Processing building category layer: %s (%s)",
                 layer.name,
                 layer.building_category,
@@ -333,7 +333,7 @@ class Building(I3d):
             self.logger.warning("Failed to read buildings map image. Skipping process step.")
             return
 
-        self.logger.info("Buildings map categories file found, processing...")
+        self.logger.debug("Buildings map categories file found, processing...")
 
         buildings = self.get_infolayer_data(Parameters.TEXTURES, Parameters.BUILDINGS)
         if not buildings:
@@ -389,18 +389,18 @@ class Building(I3d):
             # 1. Identify the center point of the building polygon.
             center_point = np.mean(fitted_building, axis=0).astype(int)
             x, y = center_point
-            self.logger.info("Center point of building polygon: %s", center_point)
+            self.logger.debug("Center point of building polygon: %s", center_point)
 
             pixel_value = buildings_map_image[y, x]
-            self.logger.info("Pixel value at center point: %s", pixel_value)
+            self.logger.debug("Pixel value at center point: %s", pixel_value)
 
             category = pixel_value_to_building_category_type(pixel_value)
-            self.logger.info("Building category at center point: %s", category)
+            self.logger.debug("Building category at center point: %s", category)
 
             # 2. Obtain building dimensions and rotation using minimum area bounding rectangle
             polygon_np = self.polygon_points_to_np(fitted_building)
             width, depth, rotation_angle = self._get_polygon_dimensions_and_rotation(polygon_np)
-            self.logger.info(
+            self.logger.debug(
                 "Building dimensions: width=%d, depth=%d, rotation=%d°",
                 width,
                 depth,
@@ -440,13 +440,13 @@ class Building(I3d):
                 # scale_depth = depth / best_match.depth
                 # scale_height = 1.0  # Keep original height for now
 
-                self.logger.info(
+                self.logger.debug(
                     "World coordinates for building: x=%.3f, y=%.3f, z=%.3f",
                     x_center,
                     y_center,
                     z,
                 )
-                # self.logger.info(
+                # self.logger.debug(
                 #     "Scale factors: width=%.4f, depth=%.4f, height=%.4f",
                 #     scale_width,
                 #     scale_depth,
@@ -483,6 +483,9 @@ class Building(I3d):
                     f"No suitable building found for category '{category}' with dimensions {width:.2f}x{depth:.2f}"
                 )
                 continue
+
+        added_buildings_count = node_id_counter - (BUILDINGS_STARTING_NODE_ID + 1000)
+        self.logger.info("Total buildings placed: %d of %d", added_buildings_count, len(buildings))
 
         # Save the modified XML tree
         self.save_tree(tree)
