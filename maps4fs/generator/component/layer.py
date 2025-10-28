@@ -21,6 +21,16 @@ class Layer:
         usage (str | None): Usage of the layer.
         background (bool): Flag to determine if the layer is a background.
         invisible (bool): Flag to determine if the layer is invisible.
+        procedural (list[str] | None): List of procedural textures to apply.
+        border (int | None): Border size in pixels.
+        precise_tags (dict[str, str | list[str]] | None): Dictionary of precise tags to search for.
+        precise_usage (str | None): Precise usage of the layer.
+        area_type (str | None): Type of the area (e.g., residential, commercial).
+        area_water (bool): Flag to determine if the area is water.
+        indoor (bool): Flag to determine if the layer is indoor.
+        merge_into (str | None): Name of the layer to merge into.
+        building_category (str | None): Category of the building.
+        external (bool): External layers not being used by the game directly.
 
     Attributes:
         name (str): Name of the layer.
@@ -50,6 +60,8 @@ class Layer:
         area_water: bool = False,
         indoor: bool = False,
         merge_into: str | None = None,
+        building_category: str | None = None,
+        external: bool = False,
     ):
         self.name = name
         self.count = count
@@ -70,6 +82,8 @@ class Layer:
         self.area_water = area_water
         self.indoor = indoor
         self.merge_into = merge_into
+        self.building_category = building_category
+        self.external = external
 
     def to_json(self) -> dict[str, str | list[str] | bool]:  # type: ignore
         """Returns dictionary with layer data.
@@ -96,6 +110,8 @@ class Layer:
             "area_water": self.area_water,
             "indoor": self.indoor,
             "merge_into": self.merge_into,
+            "building_category": self.building_category,
+            "external": self.external,
         }
 
         data = {k: v for k, v in data.items() if v is not None}

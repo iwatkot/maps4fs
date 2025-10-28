@@ -14,6 +14,7 @@ Ever wondered what it would be like to farm in your hometown? Or recreate that b
 🏔️ **Background Terrain** - Build stunning distant mountain ranges and landscapes  
 💧 **Water Features** - Generate rivers, lakes, and realistic water planes  
 🛤️ **Road Splines** - Create detailed 3D path networks for vehicles  
+🏘️ **Smart Building Placement** - Automatically place buildings in appropriate areas  
 🌲 **Procedural Elements** - Automatically place trees, foliage, and objects  
 🗺️ **Overview Maps** - Generate in-game minimap displays  
 🏡 **Familiar Landscapes** - Bring recognizable locations into the game  

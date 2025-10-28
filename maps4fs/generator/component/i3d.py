@@ -12,13 +12,14 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
+from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_xml import XMLComponent
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
 NODE_ID_STARTING_VALUE = 2000
 SPLINES_NODE_ID_STARTING_VALUE = 5000
-TREE_NODE_ID_STARTING_VALUE = 10000
+TREE_NODE_ID_STARTING_VALUE = 30000
 
 FIELDS_ATTRIBUTES = [
     ("angle", "integer", "0"),
@@ -30,7 +31,7 @@ FIELDS_ATTRIBUTES = [
 ]
 
 
-class I3d(XMLComponent):
+class I3d(XMLComponent, ImageComponent):
     """Component for map i3d file settings and configuration.
 
     Arguments:
@@ -690,8 +691,12 @@ class I3d(XMLComponent):
 
         return recommended_step if not current_step else max(recommended_step, current_step)
 
-    def get_not_resized_dem(self) -> np.ndarray | None:
+    def get_not_resized_dem(self, with_foundations: bool = False) -> np.ndarray | None:
         """Reads the not resized DEM image from the background component.
+
+        Arguments:
+            with_foundations (bool, optional): Whether to get the DEM with foundations.
+                Defaults to False.
 
         Returns:
             np.ndarray | None: The not resized DEM image or None if the image could not be read.
@@ -701,11 +706,17 @@ class I3d(XMLComponent):
             self.logger.warning("Background component not found.")
             return None
 
-        if not background_component.not_resized_path:
+        dem_path = (
+            background_component.not_resized_with_foundations_path
+            if with_foundations
+            else background_component.not_resized_path
+        )
+
+        if not dem_path:
             self.logger.warning("Not resized DEM path not found.")
             return None
 
-        not_resized_dem = cv2.imread(background_component.not_resized_path, cv2.IMREAD_UNCHANGED)
+        not_resized_dem = cv2.imread(dem_path, cv2.IMREAD_UNCHANGED)
 
         return not_resized_dem
 

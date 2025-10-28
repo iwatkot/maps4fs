@@ -45,6 +45,7 @@
 🚜 **Farming Simulator 22 & 25** - Generate maps for both game versions<br>
 🗺️ **Flexible Map Sizes** - 2x2, 4x4, 8x8, 16x16 km + custom sizes<br>
 ✂️ **Map Scaling & Rotation** - Perfect positioning and sizing control<br>
+🏘️ **Adding buildings** - Automatic building placement system<br>
 
 🌍 **Real-World Foundation** - Built from OpenStreetMap and satellite data<br>
 🏞️ **Accurate Terrain** - SRTM elevation data with custom DTM support<br>
@@ -55,6 +56,7 @@
 🌲 **Natural Forests** - Tree placement with customizable density<br>
 🌊 **Water Systems** - Rivers, lakes, and water planes<br>
 🌿 **Decorative Foliage** - Realistic vegetation and grass areas<br>
+🏘️ **Intelligent Building Placement** - Automatic building placement in appropriate areas<br>
 
 🚧 **Complete Spline Networks** - Roads and infrastructure<br>
 🔷 **Background Terrain** - 3D *.obj files for surrounding landscape<br>

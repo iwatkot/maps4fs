@@ -151,7 +151,18 @@ No Blender needed for FS25!
 3. **Price configuration**: Adjust land values in farmlands.xml
 4. **Detailed guide**: [Farmlands Documentation](farmlands.md)
 
-### Step 12: 🗺️ Overview Map (Automated for FS25)
+### Step 12: 🏘️ Buildings (Automated for FS25)
+**For Farming Simulator 25**: Buildings are now fully automated!
+- ✅ Automatically placed in appropriate land use areas (residential, commercial, industrial, etc.)
+- 🎯 Buildings selected based on OSM area categories and building schema
+- 📁 Ready-to-use building placement - no manual work required
+- ⚙️ Customize building types and placement rules via [Buildings Schema](buildings_schema.md)
+
+**For Farming Simulator 22**: Manual building placement required
+- Buildings must be placed manually in Giants Editor
+- No automated building placement system available
+
+### Step 13: 🗺️ Overview Map (Automated for FS25)
 **For Farming Simulator 25**: Overview map is now fully automated!
 - ✅ Automatically generated when **Download Satellite Images** is enabled
 - 📁 Perfect `overview.dds` created with satellite imagery
@@ -162,9 +173,9 @@ No Blender needed for FS25!
 - Resize and format according to game requirements  
 - Follow [DDS Conversion Guide](dds_conversion.md) for proper formatting
 
-### Step 13: ✨ Polish and Customize
+### Step 14: ✨ Polish and Customize
 Your map is now playable but needs finishing touches:
-- **Add buildings**: Place farmhouses, shops, and industrial areas
+- **Enhance buildings**: FS25 maps include automatic building placement; add additional custom farmhouses, shops, and industrial areas as needed
 - **Road network**: Connect fields and improve accessibility
 - **Decorative objects**: Trees, rocks, and environmental details
 - **Lighting**: Set up proper day/night lighting

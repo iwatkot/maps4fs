@@ -168,6 +168,14 @@ class Texture(ImageComponent):
         """
         return [layer for layer in self.layers if layer.indoor]
 
+    def get_building_category_layers(self) -> list[Layer]:
+        """Returns layers which have building category defined.
+
+        Returns:
+            list[Layer]: List of layers which have building category defined.
+        """
+        return [layer for layer in self.layers if layer.building_category is not None]
+
     def process(self) -> None:
         """Processes the data to generate textures."""
         self._prepare_weights()
@@ -469,8 +477,11 @@ class Texture(ImageComponent):
             self._draw_layer(layer, info_layer_data, layer_image)  # type: ignore
             self._add_roads(layer, info_layer_data)
 
-            output_image = cv2.bitwise_and(layer_image, mask)  # type: ignore
-            cumulative_image = cv2.bitwise_or(cumulative_image, output_image)  # type: ignore
+            if not layer.external:
+                output_image = cv2.bitwise_and(layer_image, mask)  # type: ignore
+                cumulative_image = cv2.bitwise_or(cumulative_image, output_image)  # type: ignore
+            else:
+                output_image = layer_image  # type: ignore
 
             cv2.imwrite(layer_path, output_image)
             self.logger.debug("Texture %s saved.", layer_path)
