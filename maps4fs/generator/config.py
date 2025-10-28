@@ -40,7 +40,7 @@ logger.info(
 )
 
 TEMPLATES_STRUCTURE = {
-    "fs25": ["texture_schemas", "tree_schemas", "map_templates"],
+    "fs25": ["texture_schemas", "tree_schemas", "buildings_schemas", "map_templates"],
     "fs22": ["texture_schemas", "map_templates"],
 }
 
