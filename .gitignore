@@ -25,5 +25,3 @@ mfsrootdir/
 data/
 defaults/
 templates/
-OSM_Area_Categories.md
-demo.py
