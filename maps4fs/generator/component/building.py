@@ -231,7 +231,7 @@ class Building(I3d):
             self.logger.warning("The game does not support buildings schema: %s", e)
             return
 
-        custom_buildings_schema = self.kwargs.get("buildings_custom_schema")
+        custom_buildings_schema = self.map.buildings_custom_schema
         if not custom_buildings_schema:
             if not os.path.isfile(buildings_schema_path):
                 self.logger.warning(

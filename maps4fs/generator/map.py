@@ -123,11 +123,13 @@ class Map:
         os.makedirs(self.map_directory, exist_ok=True)
         self.texture_custom_schema = kwargs.get("texture_custom_schema", None)
         self.tree_custom_schema = kwargs.get("tree_custom_schema", None)
+        self.buildings_custom_schema = kwargs.get("buildings_custom_schema", None)
 
         json_data = {
             "generation_settings.json": generation_settings_json,
             "texture_custom_schema.json": self.texture_custom_schema,
             "tree_custom_schema.json": self.tree_custom_schema,
+            "buildings_custom_schema.json": self.buildings_custom_schema,
         }
 
         for filename, data in json_data.items():
