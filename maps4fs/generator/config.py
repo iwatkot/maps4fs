@@ -51,11 +51,19 @@ def ensure_templates():
     If MFS_TEMPLATES_DIR is empty or doesn't exist, clone the maps4fsdata
     repository and run the preparation script to populate it.
     """
-
     # Check if templates directory exists and has content
-    if os.path.exists(MFS_TEMPLATES_DIR) and os.listdir(MFS_TEMPLATES_DIR):
-        logger.info("Templates directory already exists and contains data: %s", MFS_TEMPLATES_DIR)
-        return
+    if os.path.exists(MFS_TEMPLATES_DIR):  # and os.listdir(MFS_TEMPLATES_DIR):
+        logger.info("Templates directory already exists: %s", MFS_TEMPLATES_DIR)
+
+        files = [
+            entry
+            for entry in os.listdir(MFS_TEMPLATES_DIR)
+            if os.path.isfile(os.path.join(MFS_TEMPLATES_DIR, entry))
+        ]
+
+        if files:
+            logger.info("Templates directory contains files and will not be modified.")
+            return
 
     logger.info("Templates directory is empty or missing, preparing data...")
 
@@ -154,6 +162,27 @@ def ensure_template_subdirs() -> None:
                 logger.debug("Expected template subdirectory missing: %s", dir_path)
                 os.makedirs(dir_path, exist_ok=True)
     logger.info("Templates directory is ready at: %s", MFS_TEMPLATES_DIR)
+
+
+def reload_templates() -> None:
+    """Reload templates by removing existing files and re-preparing them.
+    Does not affect nested directories containing user data.
+    If needed, the files should be removed manually.
+    """
+    logger.info("Reloading templates...")
+    # Remove files from the templates directory.
+    # But do not remove nested directories, because they contain user data.
+    # Only remove files in the top-level templates directory.
+    for item in os.listdir(MFS_TEMPLATES_DIR):
+        item_path = os.path.join(MFS_TEMPLATES_DIR, item)
+        if os.path.isfile(item_path):
+            try:
+                os.remove(item_path)
+            except Exception as e:
+                logger.warning("Could not remove file %s: %s", item_path, str(e))
+    ensure_templates()
+    ensure_template_subdirs()
+    logger.info("Templates reloaded successfully.")
 
 
 ensure_templates()
