@@ -23,5 +23,16 @@
         "PYTHONPATH": "${workspaceFolder}"
       }
     },
+        {
+      "name": "I3D Lister",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/dev/utils/i3d_lister/i3d_lister.py",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    },
   ]
 }
