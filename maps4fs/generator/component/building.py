@@ -37,10 +37,9 @@ class BuildingEntry(NamedTuple):
     name: str
     width: float
     depth: float
-    height: float
-    type: str
     categories: list[str]
     regions: list[str]
+    type: str | None = None
 
 
 class BuildingEntryCollection:
@@ -320,6 +319,7 @@ class Building(I3d):
             region,
         )
 
+    # pylint: disable=too-many-return-statements
     def process(self) -> None:
         """Process and place buildings on the map based on the buildings map image and schema."""
         if not hasattr(self, "buildings_map_path") or not os.path.isfile(self.buildings_map_path):
@@ -445,7 +445,6 @@ class Building(I3d):
                 # Calculate scale factors to match the polygon size
                 # scale_width = width / best_match.width
                 # scale_depth = depth / best_match.depth
-                # scale_height = 1.0  # Keep original height for now
 
                 self.logger.debug(
                     "World coordinates for building: x=%.3f, y=%.3f, z=%.3f",
@@ -454,10 +453,9 @@ class Building(I3d):
                     z,
                 )
                 # self.logger.debug(
-                #     "Scale factors: width=%.4f, depth=%.4f, height=%.4f",
+                #     "Scale factors: width=%.4f, depth=%.4f",
                 #     scale_width,
                 #     scale_depth,
-                #     scale_height,
                 # )
 
                 # Add building file to Files section if not already present
@@ -478,7 +476,7 @@ class Building(I3d):
                 building_node.set("translation", f"{x_center:.3f} {z:.3f} {y_center:.3f}")
                 building_node.set("rotation", f"0 {rotation_angle:.3f} 0")
                 # building_node.set(
-                #     "scale", f"{scale_width:.4f} {scale_height:.4f} {scale_depth:.4f}"
+                #     "scale", f"{scale_width:.4f} 1.0 {scale_depth:.4f}"
                 # )
                 building_node.set("referenceId", str(file_id))
                 building_node.set("nodeId", str(node_id_counter))
