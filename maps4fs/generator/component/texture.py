@@ -814,7 +814,7 @@ class Texture(ImageComponent):
         is_fieds = info_layer == "fields"
 
         ox_settings.use_cache = self.map.texture_settings.use_cache
-        ox_settings.requests_timeout = 30
+        ox_settings.requests_timeout = 10
 
         objects = self.fetch_osm_data(tags)
         if objects is None or objects.empty:
@@ -845,7 +845,7 @@ class Texture(ImageComponent):
             else:
                 objects = ox.features_from_bbox(bbox=self.new_bbox, tags=tags)
         except Exception as e:
-            self.logger.debug("Error fetching objects for tags: %s. Error: %s.", tags, e)
+            self.logger.warning("Error fetching objects for tags: %s. Error: %s.", tags, e)
             return None
 
         return objects
