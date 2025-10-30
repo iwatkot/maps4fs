@@ -29,7 +29,7 @@ game = mfs.Game.from_code(game_code)
 dtm_provider = mfs.dtm.SRTM30Provider
 
 # 3️⃣ Define the coordinates of the central point of the map, size and rotation.
-lat, lon = 45.2858, 20.219
+lat, lon = 45.324483045074, 20.061775888001694
 coordinates = (lat, lon)
 size = 2048
 rotation = 0
@@ -41,7 +41,7 @@ if os.path.isdir(map_directory):
 os.makedirs(map_directory, exist_ok=True)
 
 # 5️⃣ Optional: use a custom OSM file.
-osm_file = "C:/Maps/FS25_Titelski_breg/dev/custom_osm.osm"
+osm_file = "C:/Maps/test.osm"
 
 # 6️⃣ Optional: advanced settings. You can use the default settings, but
 # it's recommended to change them according to your needs.
@@ -68,6 +68,10 @@ texture_settings = mfs.settings.TextureSettings(
 )
 satellite_settings = mfs.settings.SatelliteSettings(download_images=True, zoom_level=16)
 
+buildings_settings = mfs.settings.BuildingSettings(
+    generate_buildings=True, region="all", tolerance_factor=0.3
+)
+
 # 7️⃣ Optional: define custom tree and textures schemas.
 # Default schemas can be found in the `data` directory of the repository.
 tree_custom_schema_path = "C:/Maps/tree_schema.json"
@@ -83,6 +87,7 @@ generation_settings = mfs.GenerationSettings(
     i3d_settings=i3d_settings,
     texture_settings=texture_settings,
     satellite_settings=satellite_settings,
+    building_settings=buildings_settings,
 )
 
 # 8️⃣ Create an instance of the Map class with specified settings.

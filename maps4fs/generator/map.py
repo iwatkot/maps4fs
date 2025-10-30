@@ -105,6 +105,7 @@ class Map:
         self.i3d_settings = generation_settings.i3d_settings
         self.texture_settings = generation_settings.texture_settings
         self.satellite_settings = generation_settings.satellite_settings
+        self.building_settings = generation_settings.building_settings
         self.process_settings()
 
         self.logger = logger if logger else Logger()

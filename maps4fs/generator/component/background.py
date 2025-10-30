@@ -823,6 +823,10 @@ class Background(MeshComponent, ImageComponent):
 
         if self.map.background_settings.flatten_water:
             try:
+                # Check if there are any water pixels (255) in the water resources image.
+                if not np.any(water_resources_image == 255):
+                    self.logger.warning("No water pixels found in water resources image.")
+                    return
                 mask = water_resources_image == 255
                 flatten_to = int(np.mean(dem_image[mask]) - subtract_by)  # type: ignore
                 self.flatten_water_to = flatten_to  # type: ignore
@@ -862,12 +866,13 @@ class Background(MeshComponent, ImageComponent):
         """
         self.logger.debug("Starting line-based water generation...")
         water_polygons = self.get_infolayer_data(Parameters.BACKGROUND, Parameters.WATER)
-        self.logger.debug(
-            "Found %s water polygons in background info layer.", len(water_polygons)  # type: ignore
-        )
         if not water_polygons:
             self.logger.warning("No water polygons found in background info layer.")
             return
+
+        self.logger.debug(
+            "Found %s water polygons in background info layer.", len(water_polygons)  # type: ignore
+        )
 
         polygons: list[shapely.Polygon] = []
         for polygon_points in water_polygons:

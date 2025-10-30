@@ -14,8 +14,9 @@ from maps4fs.generator.settings import Parameters
 from maps4fs.generator.utils import get_region_by_coordinates
 
 BUILDINGS_STARTING_NODE_ID = 10000
-TOLERANCE_FACTOR = 0.3  # 30% size tolerance
 DEFAULT_HEIGHT = 200
+AUTO_REGION = "auto"
+ALL_REGIONS = "all"
 
 
 AREA_TYPES = {
@@ -45,16 +46,25 @@ class BuildingEntry(NamedTuple):
 class BuildingEntryCollection:
     """Collection of building entries with efficient lookup capabilities."""
 
-    def __init__(self, building_entries: list[BuildingEntry], region: str):
+    def __init__(
+        self, building_entries: list[BuildingEntry], region: str, ignore_region: bool = False
+    ):
         """Initialize the collection with a list of building entries for a specific region.
 
         Arguments:
             building_entries (list[BuildingEntry]): List of building entries to manage
             region (str): The region for this collection (filters entries to this region only)
+            ignore_region (bool): If True, ignore region filtering and use all entries
         """
         self.region = region
-        # Filter entries to only include the specified region
-        self.entries = [entry for entry in building_entries if region in entry.regions]
+        self.ignore_region = ignore_region
+
+        # Filter entries based on ignore_region flag
+        if ignore_region:
+            self.entries = building_entries  # Use all entries regardless of region
+        else:
+            self.entries = [entry for entry in building_entries if region in entry.regions]
+
         # Create indices for faster lookup
         self._create_indices()
 
@@ -77,7 +87,7 @@ class BuildingEntryCollection:
         tolerance: float = 0.3,
     ) -> BuildingEntry | None:
         """Find the best matching building entry based on criteria.
-        All entries are already filtered by region during initialization.
+        Entries are filtered by region during initialization unless ignore_region is True.
 
         Arguments:
             category (str): Required building category
@@ -88,7 +98,7 @@ class BuildingEntryCollection:
         Returns:
             BuildingEntry | None: Best matching entry or None if no suitable match found
         """
-        # Start with buildings of the required category (already filtered by region)
+        # Start with buildings of the required category (filtered by region unless ignore_region is True)
         candidates = self.by_category.get(category, [])
         if not candidates:
             return None
@@ -107,6 +117,91 @@ class BuildingEntryCollection:
         scored_candidates.sort(key=lambda x: x[0], reverse=True)
         return scored_candidates[0][1]
 
+    def find_best_match_with_orientation(
+        self,
+        category: str,
+        width: float | None = None,
+        depth: float | None = None,
+        tolerance: float = 0.3,
+    ) -> tuple[BuildingEntry | None, bool]:
+        """Find the best matching building entry and determine if rotation is needed.
+
+        Arguments:
+            category (str): Required building category
+            width (float | None): Desired width (optional)
+            depth (float | None): Desired depth (optional)
+            tolerance (float): Size tolerance factor (0.3 = 30% tolerance)
+
+        Returns:
+            tuple[BuildingEntry | None, bool]: Best matching entry and whether it needs 90° rotation
+        """
+        # Start with buildings of the required category
+        candidates = self.by_category.get(category, [])
+        if not candidates:
+            return None, False
+
+        # Score each candidate and track orientation
+        scored_candidates = []
+        for entry in candidates:
+            score, needs_rotation = self._calculate_match_score_with_orientation(
+                entry, category, width, depth, tolerance
+            )
+            if score > 0:  # Only consider viable matches
+                scored_candidates.append((score, entry, needs_rotation))
+
+        if not scored_candidates:
+            return None, False
+
+        # Return the highest scoring match with its orientation info
+        scored_candidates.sort(key=lambda x: x[0], reverse=True)
+        _, best_entry, needs_rotation = scored_candidates[0]
+        return best_entry, needs_rotation
+
+    def _calculate_match_score_with_orientation(
+        self,
+        entry: BuildingEntry,
+        category: str,
+        width: float | None,
+        depth: float | None,
+        tolerance: float,
+    ) -> tuple[float, bool]:
+        """Calculate a match score and determine orientation for a building entry.
+
+        Returns:
+            tuple[float, bool]: Match score and whether 90° rotation is needed
+        """
+        score = 0.0
+
+        # Category match (required) - base score
+        if category in entry.categories:
+            score = 100.0
+        else:
+            return 0.0, False  # Category mismatch = no match
+
+        # Size matching (if dimensions are provided)
+        if width is not None and depth is not None:
+            # Calculate how well the dimensions match (considering both orientations)
+            size_score1 = self._calculate_size_match(
+                entry.width, entry.depth, width, depth, tolerance
+            )
+            size_score2 = self._calculate_size_match(
+                entry.width, entry.depth, depth, width, tolerance
+            )
+
+            # Determine which orientation is better
+            if size_score1 >= size_score2:
+                # Original orientation is better
+                if size_score1 > 0:
+                    score += size_score1 * 80.0
+                    return score, False
+                return 0.0, False
+            if size_score2 > 0:
+                score += size_score2 * 80.0
+                return score, True
+            return 0.0, False
+
+        return score, False
+
     def _calculate_match_score(
         self,
         entry: BuildingEntry,
@@ -116,7 +211,7 @@ class BuildingEntryCollection:
         tolerance: float,
     ) -> float:
         """Calculate a match score for a building entry.
-        Region is already matched during initialization.
+        Region is matched during initialization unless ignore_region is True.
 
         Returns:
             float: Match score (higher is better, 0 means no match)
@@ -175,11 +270,11 @@ class BuildingEntryCollection:
         return (width_ratio + depth_ratio) / 2.0
 
     def get_available_categories(self) -> list[str]:
-        """Get list of available building categories for this region."""
+        """Get list of available building categories for this collection."""
         return list(self.by_category.keys())
 
     def filter_by_category(self, category: str) -> list[BuildingEntry]:
-        """Get all buildings of a specific category (already filtered by region)."""
+        """Get all buildings of a specific category (filtered by region unless ignore_region is True)."""
         return self.by_category.get(category, [])
 
 
@@ -310,17 +405,40 @@ class Building(I3d):
             building = BuildingEntry(**building_entry)
             building_entries.append(building)
 
-        region = get_region_by_coordinates(self.coordinates)
+        ignore_region = False
+        region = ""
 
-        self.buildings_collection = BuildingEntryCollection(building_entries, region)
-        self.logger.info(
-            "Buildings collection created with %d buildings for region '%s'.",
-            len(self.buildings_collection.entries),
-            region,
-        )
+        if self.map.building_settings.region == AUTO_REGION:
+            region = get_region_by_coordinates(self.coordinates)
+        elif self.map.building_settings.region == ALL_REGIONS:
+            ignore_region = True
+            region = "all"  # Set a default region name for logging
+        else:
+            region = self.map.building_settings.region
+
+        self.buildings_collection = BuildingEntryCollection(building_entries, region, ignore_region)
+
+        if ignore_region:
+            self.logger.info(
+                "Buildings collection created with %d buildings ignoring region restrictions.",
+                len(self.buildings_collection.entries),
+            )
+        else:
+            self.logger.info(
+                "Buildings collection created with %d buildings for region '%s'.",
+                len(self.buildings_collection.entries),
+                region,
+            )
+
+    def process(self) -> None:
+        """Process and place buildings on the map."""
+        try:
+            self.add_buildings()
+        except Exception as e:
+            self.logger.warning("An error occurred during buildings processing: %s", e)
 
     # pylint: disable=too-many-return-statements
-    def process(self) -> None:
+    def add_buildings(self) -> None:
         """Process and place buildings on the map based on the buildings map image and schema."""
         if not hasattr(self, "buildings_map_path") or not os.path.isfile(self.buildings_map_path):
             self.logger.warning(
@@ -376,7 +494,7 @@ class Building(I3d):
         file_id_counter = BUILDINGS_STARTING_NODE_ID
         node_id_counter = BUILDINGS_STARTING_NODE_ID + 1000
 
-        not_resized_dem = self.get_not_resized_dem(with_foundations=True)
+        not_resized_dem = self.get_not_resized_dem_with_foundations(allow_fallback=True)
         if not_resized_dem is None:
             self.logger.warning("Not resized DEM not found.")
             return
@@ -414,17 +532,21 @@ class Building(I3d):
                 rotation_angle,
             )
 
-            # 3. Find the best matching building from the collection (region already filtered)
-            best_match = self.buildings_collection.find_best_match(
+            # 3. Find the best matching building from the collection and determine orientation
+            best_match, needs_rotation = self.buildings_collection.find_best_match_with_orientation(
                 category=category,
                 width=width,
                 depth=depth,
-                tolerance=TOLERANCE_FACTOR,
+                tolerance=self.map.building_settings.tolerance_factor,
             )
 
             if best_match:
                 self.logger.debug(
-                    f"Best building match: {best_match.name} ({best_match.width}x{best_match.depth})"
+                    "Best building match: %s: %d x %d, needs_rotation: %s",
+                    best_match.name,
+                    best_match.width,
+                    best_match.depth,
+                    needs_rotation,
                 )
 
                 # Get world coordinates
@@ -470,11 +592,21 @@ class Building(I3d):
                 else:
                     file_id = used_building_files[best_match.file]
 
+                # Adjust rotation if the building needs to be rotated 90 degrees
+                final_rotation = rotation_angle
+                if needs_rotation:
+                    final_rotation = (rotation_angle + 90.0) % 360.0
+                    self.logger.debug(
+                        "Building needs 90° rotation: original=%.1f°, final=%.1f°",
+                        rotation_angle,
+                        final_rotation,
+                    )
+
                 # Create building instance in the buildings group
                 building_node = ET.SubElement(buildings_group, "ReferenceNode")
                 building_node.set("name", f"{best_match.name}_{node_id_counter}")
                 building_node.set("translation", f"{x_center:.3f} {z:.3f} {y_center:.3f}")
-                building_node.set("rotation", f"0 {rotation_angle:.3f} 0")
+                building_node.set("rotation", f"0 {final_rotation:.3f} 0")
                 # building_node.set(
                 #     "scale", f"{scale_width:.4f} 1.0 {scale_depth:.4f}"
                 # )
@@ -485,7 +617,11 @@ class Building(I3d):
 
             else:
                 self.logger.debug(
-                    f"No suitable building found for category '{category}' with dimensions {width:.2f}x{depth:.2f}"
+                    "No suitable building found for category '%s' with dimensions %.2fx%.2f",
+                    category,
+                    width,
+                    depth,
+                    needs_rotation,
                 )
                 continue
 
