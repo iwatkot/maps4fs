@@ -325,6 +325,22 @@ Simply **delete entries** from the schema to prevent placement:
 - **Quality standards**: Follow FS25 modeling and texturing standards
 - **Compatibility testing**: Verify assets work across different scenarios
 
+### ⚠️ Critical Polygon Design Guidelines
+
+**Building Area Shape Design:**
+- **❌ Avoid complex polygonal shapes** - Buildings are automatically transformed to rectangular bounding boxes during placement. Complex shapes (L-shapes, curves, irregular polygons) will result in poor fitting and misaligned buildings
+- **✅ Use simple rectangular areas** - Design building areas as clean rectangles that match the intended building footprint for optimal placement accuracy
+
+**Tolerance Factor Optimization:**
+- **❌ Avoid high tolerance values (>50%)** - While higher tolerance may place more buildings, it often results in significantly mismatched building sizes that look unrealistic
+- **✅ Use moderate tolerance (20-35%)** - Provides good balance between coverage and visual accuracy
+- **✅ Configure in Building Settings** - Adjust tolerance in the [Building Settings](settings.md#-building-settings-fs25-only) section of your generation configuration
+
+**Polygon Spacing Requirements:**
+- **❌ Avoid overlapping building areas** - Overlapping polygons will cause buildings to be placed on top of each other, creating visual conflicts and gameplay issues
+- **✅ Maintain adequate spacing** - Leave clear gaps (minimum 5-10 meters) between building area polygons to ensure proper building separation
+- **✅ Consider building dimensions** - Larger buildings require more spacing buffer to prevent unintentional overlap during placement
+
 ## Troubleshooting
 
 ### Common Issues

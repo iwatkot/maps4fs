@@ -10,8 +10,9 @@ Settings in Maps4FS refer to the configuration files that control various aspect
 
 - **[Texture Schemas](texture_schema.md)** - Define how OpenStreetMap data translates to Farming Simulator textures
 - **[Tree Schemas](tree_schema.md)** - Control which tree species are available for procedural placement
+- **Building Settings** - Control procedural building generation and placement
 - **Map Templates** - Provide the foundational structure for generated maps
-- **General Settings** - Software-wide configurations *(coming soon)*
+- **General Settings** - Software-wide configurations and server management
 
 ![Settings Interface](https://github.com/iwatkot/maps4fsui/releases/download/2.7.7/settingstab01.png)
 
@@ -23,12 +24,14 @@ Settings are organized by Farming Simulator version with different capabilities:
 **Farming Simulator 25:**
 - ✅ Texture Schemas
 - ✅ Tree Schemas  
+- ✅ Building Settings
 - ✅ Map Templates
 
 **Farming Simulator 22:**
 - ✅ Texture Schemas
 - ✅ Map Templates
 - ❌ Tree Schemas *(not supported)*
+- ❌ Building Settings *(not supported)*
 
 ### 📁 **Directory Structure**
 Settings are stored in the `templates/` folder within your [Data Directory](data_directory.md):
@@ -127,6 +130,43 @@ Provide the foundational structure and assets for generated maps.
 
 **Learn more:** [Map Templates Documentation](map_templates.md)
 
+### 🏢 **Building Settings** *(FS25 Only)*
+Control how buildings are placed on your maps.
+
+**Available Settings:**
+
+#### 🏗️ **Generate Buildings**
+- **Type:** Boolean (True/False)
+- **Default:** `True`
+- **Purpose:** Enable or disable building generation entirely
+
+#### 🌍 **Region**
+- **Type:** Selection (`auto`, `all`, `EU`, `US`)
+- **Default:** `auto`
+- **Purpose:** Define which regional building sets are available for placement
+  - **`auto`** - Automatically selects appropriate region based on map coordinates
+  - **`all`** - Ignores regional restrictions and allows mixing of all building types
+  - **`EU`** - Uses only European-style buildings
+  - **`US`** - Uses only American-style buildings
+
+#### 📏 **Tolerance Factor**
+- **Type:** Percentage (5% - 70%)
+- **Default:** `30%`
+- **Purpose:** Controls how precisely building sizes must match designated areas
+
+**How Tolerance Factor Works:**
+- **Lower values (5-15%)** - More precise size matching, fewer buildings placed, better visual accuracy
+- **Medium values (20-40%)** - Balanced approach with good coverage and reasonable accuracy  
+- **Higher values (50-70%)** - More buildings placed, but with potentially significant size differences
+
+⚠️ **Important:** Very low tolerance values may result in some building areas being left empty if no suitable matches are found.
+
+**Use Cases:**
+- **Realistic Placement** - Use lower tolerance for authentic building proportions
+- **Dense Coverage** - Use higher tolerance to ensure most designated areas get buildings
+- **Regional Theming** - Set specific regions for geographic authenticity
+- **Mixed Styles** - Use "all" regions for diverse architectural variety
+
 ## Getting Started with Settings
 
 ### 1️⃣ **Access Settings**
@@ -136,7 +176,7 @@ Navigate to the Settings tab in your local Maps4FS interface.
 Choose between Farming Simulator 25 or Farming Simulator 22.
 
 ### 3️⃣ **Browse Categories**
-Explore Texture Schemas, Tree Schemas (FS25), and Map Templates.
+Explore Texture Schemas, Tree Schemas (FS25), Building Settings (FS25), and Map Templates.
 
 ### 4️⃣ **Manage Your Settings**
 - View existing configurations
@@ -194,8 +234,6 @@ The [My Maps](my_maps.md) feature provides schema access and Settings integratio
 - **Configuration Discovery** - Find proven configurations from your map history
 - **Best Practice Capture** - Save working schemas for future use
 
-## Future Enhancements
-
 ### 🔧 **General Settings**
 Software-wide configurations and server management tools:
 
@@ -207,7 +245,8 @@ Essential backend server operations and maintenance:
 #### ℹ️ **Server Information** 
 Backend server status and configuration details:
 - **Backend URL** - Current server endpoint (typically `http://localhost:8000`)
-- **Environment** - Deployment environment (Local/Public)
+- **Environment** - Deployment environment (Local/Production)
+- **Status Monitoring** - Real-time server connectivity and health information
 
 ⚠️ **Important**: These operations affect the backend server. Ensure no map generation is in progress before performing maintenance tasks.
 
@@ -219,6 +258,13 @@ Planned additional features for General Settings:
 - **Interface Preferences** - Theme selection, layout customization, language options
 - **Generation Defaults** - Default map sizes, coordinate systems, output formats
 - **Integration Settings** - External tool configurations, export preferences
+
+### 📈 **Enhanced Management**
+Future improvements planned:
+- **Settings Validation** - Automatic compatibility checking and error detection
+- **Bulk Operations** - Import/export multiple settings simultaneously
+- **Settings Marketplace** - Community sharing platform for configurations
+- **Advanced Filtering** - Search and filter settings by tags, compatibility, or creation date
 
 ## Troubleshooting
 
