@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
 from pydantic import BaseModel, ConfigDict
 
@@ -279,6 +279,21 @@ class SatelliteSettings(SettingsModel):
     zoom_level: int = 16
 
 
+class BuildingSettings(SettingsModel):
+    """Represents the advanced settings for building component.
+
+    Attributes:
+        generate_buildings (bool): generate buildings on the map.
+        region (Literal["auto", "all", "EU", "US"]): region for the buildings.
+        tolerance_factor (float): tolerance factor representing allowed dimension difference
+            between OSM building footprint and the building model footprint.
+    """
+
+    generate_buildings: bool = True
+    region: Literal["auto", "all", "EU", "US"] = "auto"
+    tolerance_factor: float = 0.3
+
+
 class GenerationSettings(BaseModel):
     """Represents the settings for the map generation process."""
 
@@ -288,6 +303,7 @@ class GenerationSettings(BaseModel):
     i3d_settings: I3DSettings = I3DSettings()
     texture_settings: TextureSettings = TextureSettings()
     satellite_settings: SatelliteSettings = SatelliteSettings()
+    building_settings: BuildingSettings = BuildingSettings()
 
     def to_json(self) -> dict[str, Any]:
         """Convert the GenerationSettings instance to JSON format.
@@ -302,6 +318,7 @@ class GenerationSettings(BaseModel):
             "I3DSettings": self.i3d_settings.model_dump(),
             "TextureSettings": self.texture_settings.model_dump(),
             "SatelliteSettings": self.satellite_settings.model_dump(),
+            "BuildingSettings": self.building_settings.model_dump(),
         }
 
     @classmethod

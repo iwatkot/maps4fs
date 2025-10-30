@@ -205,8 +205,31 @@ SAT_CACHE_DIR = os.path.join(MFS_CACHE_DIR, "sat")
 
 osmnx_cache = os.path.join(MFS_CACHE_DIR, "osmnx")
 osmnx_data = os.path.join(MFS_CACHE_DIR, "odata")
-os.makedirs(osmnx_cache, exist_ok=True)
-os.makedirs(osmnx_data, exist_ok=True)
+
+CACHE_DIRS = [DTM_CACHE_DIR, SAT_CACHE_DIR, osmnx_cache, osmnx_data]
+
+
+def create_cache_dirs() -> None:
+    """Create cache directories if they do not exist."""
+    logger.info("Ensuring cache directories exist...")
+    for cache_dir in CACHE_DIRS:
+        os.makedirs(cache_dir, exist_ok=True)
+        logger.debug("Cache directory ensured: %s", cache_dir)
+    logger.info("All cache directories are ready.")
+
+
+def clean_cache() -> None:
+    """Clean all cache directories by removing and recreating them."""
+    logger.info("Cleaning cache directories...")
+    for cache_dir in CACHE_DIRS:
+        if os.path.exists(cache_dir):
+            shutil.rmtree(cache_dir)
+            logger.debug("Removed cache directory: %s", cache_dir)
+    create_cache_dirs()
+    logger.info("Cache directories cleaned and recreated.")
+
+
+create_cache_dirs()
 
 
 ox_settings.cache_folder = osmnx_cache

@@ -712,13 +712,35 @@ class I3d(XMLComponent, ImageComponent):
             else background_component.not_resized_path
         )
 
-        if not dem_path:
+        if not dem_path or not os.path.isfile(dem_path):
             self.logger.warning("Not resized DEM path not found.")
             return None
 
         not_resized_dem = cv2.imread(dem_path, cv2.IMREAD_UNCHANGED)
 
         return not_resized_dem
+
+    def get_not_resized_dem_with_foundations(
+        self, allow_fallback: bool = False
+    ) -> np.ndarray | None:
+        """Gets the not resized DEM with foundations. If the DEM with foundations is not found
+        and allow_fallback is True, the method returns the not resized DEM without foundations.
+
+        Arguments:
+            allow_fallback (bool, optional): Whether to allow fallback to DEM without
+                foundations. Defaults to False.
+
+        Returns:
+            np.ndarray | None: The not resized DEM image or None if the image could not be read.
+        """
+        dem_with_foundations = self.get_not_resized_dem(with_foundations=True)
+
+        if dem_with_foundations is not None:
+            return dem_with_foundations
+        self.logger.warning("Not resized DEM with foundations not found.")
+        if allow_fallback:
+            return self.get_not_resized_dem(with_foundations=False)
+        return None
 
     def info_sequence(self) -> dict[str, dict[str, str | float | int]]:
         """Returns information about the component.
