@@ -67,7 +67,7 @@
 📚 **Complete Documentation** - [Detailed guides](https://maps4fs.gitbook.io/docs) and video tutorials<br>
 
 <p align="center">
-<img src="https://github.com/iwatkot/maps4fsui/releases/download/0.0.2/mfstr.gif"><br>
+<img src="https://github.com/iwatkot/maps4fs/releases/download/2.9.34/mfsg.gif"><br>
 <i>Example of map generated with Maps4FS with no manual edits.</i>
 </p>
 
