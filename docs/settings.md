@@ -196,19 +196,29 @@ The [My Maps](my_maps.md) feature provides schema access and Settings integratio
 
 ## Future Enhancements
 
-### 🔧 **General Settings** *(Coming Soon)*
-Planned expansion to include software-wide configurations:
-- **Performance Settings** - Memory usage, CPU optimization, cache management
+### 🔧 **General Settings**
+Software-wide configurations and server management tools:
+
+#### 🖥️ **Server Management**
+Essential backend server operations and maintenance:
+- **🧹 Clean Cache** - Remove cached data and temporary files to resolve issues with outdated data or free up disk space
+- **🔄 Reload Templates** - Download and update default templates from the remote repository to ensure you have the most up-to-date schemas and configurations
+
+#### ℹ️ **Server Information** 
+Backend server status and configuration details:
+- **Backend URL** - Current server endpoint (typically `http://localhost:8000`)
+- **Environment** - Deployment environment (Local/Public)
+
+⚠️ **Important**: These operations affect the backend server. Ensure no map generation is in progress before performing maintenance tasks.
+
+## Future Enhancements
+
+### 🔧 **General Settings Expansion**
+Planned additional features for General Settings:
+- **Performance Settings** - Memory usage monitoring, CPU optimization controls
 - **Interface Preferences** - Theme selection, layout customization, language options
 - **Generation Defaults** - Default map sizes, coordinate systems, output formats
 - **Integration Settings** - External tool configurations, export preferences
-
-### 📈 **Enhanced Management**
-Future improvements planned:
-- **Settings Validation** - Automatic compatibility checking and error detection
-- **Bulk Operations** - Import/export multiple settings simultaneously
-- **Settings Marketplace** - Community sharing platform for configurations
-- **Advanced Filtering** - Search and filter settings by tags, compatibility, or creation date
 
 ## Troubleshooting
 
