@@ -5,12 +5,12 @@ import shutil
 
 import shapely
 
-from maps4fs.generator.component.base.component_mesh import ComponentMesh
+from maps4fs.generator.component.base.component_mesh import MeshComponent
 from maps4fs.generator.component.i3d import I3d
 from maps4fs.generator.settings import Parameters
 
 
-class Road(I3d, ComponentMesh):
+class Road(I3d, MeshComponent):
     """Component for map roads processing and generation.
 
     Arguments:
@@ -116,8 +116,169 @@ class Road(I3d, ComponentMesh):
         obj_output_path: str,
         mtl_output_path: str,
     ) -> None:
-        # Implementation for creating the textured linestrings mesh
-        pass
+        """Creates a textured mesh from linestrings with varying widths.
+
+        This method generates a 3D mesh for roads by:
+        1. Creating rectangular strips along each linestring based on its width
+        2. Applying proper UV mapping for tiled texture along the road length
+        3. Exporting the mesh to OBJ format with corresponding MTL material file
+
+        Arguments:
+            linestrings: List of tuples containing (shapely.LineString, width in meters)
+            texture_path: Path to the texture image file to apply
+            obj_output_path: Output path for the OBJ mesh file
+            mtl_output_path: Output path for the MTL material file
+        """
+        import numpy as np
+
+        vertices = []
+        faces = []
+        uvs = []
+        vertex_offset = 0
+
+        texture_tile_size = 10.0  # meters - how many meters before texture repeats
+
+        for linestring, width in linestrings:
+            coords = list(linestring.coords)
+            if len(coords) < 2:
+                continue
+
+            # Convert width from meters to coordinate units (assuming 1 unit = 1 meter)
+            half_width = width / 2.0
+
+            # Generate road strip vertices
+            segment_vertices = []
+            segment_uvs = []
+            accumulated_distance = 0.0
+
+            for i in range(len(coords)):
+                x, y = coords[i]
+
+                # Calculate direction vector for perpendicular offset
+                if i == 0:
+                    # First point: use direction to next point
+                    dx = coords[i + 1][0] - coords[i][0]
+                    dy = coords[i + 1][1] - coords[i][1]
+                elif i == len(coords) - 1:
+                    # Last point: use direction from previous point
+                    dx = coords[i][0] - coords[i - 1][0]
+                    dy = coords[i][1] - coords[i - 1][1]
+                else:
+                    # Middle points: average direction
+                    dx1 = coords[i][0] - coords[i - 1][0]
+                    dy1 = coords[i][1] - coords[i - 1][1]
+                    dx2 = coords[i + 1][0] - coords[i][0]
+                    dy2 = coords[i + 1][1] - coords[i][1]
+                    dx = (dx1 + dx2) / 2.0
+                    dy = (dy1 + dy2) / 2.0
+
+                # Normalize direction and get perpendicular
+                length = np.sqrt(dx * dx + dy * dy)
+                if length > 0:
+                    dx /= length
+                    dy /= length
+
+                # Perpendicular vector (rotated 90 degrees)
+                perp_x = -dy
+                perp_y = dx
+
+                # Create left and right vertices
+                left_vertex = (x + perp_x * half_width, y + perp_y * half_width, 0.0)
+                right_vertex = (x - perp_x * half_width, y - perp_y * half_width, 0.0)
+
+                segment_vertices.append(left_vertex)
+                segment_vertices.append(right_vertex)
+
+                # Calculate UV coordinates
+                # U coordinate: 0 for left edge, 1 for right edge
+                # V coordinate: based on accumulated distance along the road
+                if i > 0:
+                    segment_distance = np.sqrt(
+                        (coords[i][0] - coords[i - 1][0]) ** 2
+                        + (coords[i][1] - coords[i - 1][1]) ** 2
+                    )
+                    accumulated_distance += segment_distance
+
+                v_coord = accumulated_distance / texture_tile_size
+
+                # Add UVs for left and right vertices
+                segment_uvs.append((0.0, v_coord))  # Left edge
+                segment_uvs.append((1.0, v_coord))  # Right edge
+
+            # Add vertices and UVs to global lists
+            vertices.extend(segment_vertices)
+            uvs.extend(segment_uvs)
+
+            # Create faces (triangles) for the road strip
+            num_segments = len(coords) - 1
+            for i in range(num_segments):
+                # Each segment creates 2 triangles (a quad)
+                # Vertex indices for this segment
+                v0 = vertex_offset + i * 2  # Left vertex of current segment
+                v1 = vertex_offset + i * 2 + 1  # Right vertex of current segment
+                v2 = vertex_offset + (i + 1) * 2  # Left vertex of next segment
+                v3 = vertex_offset + (i + 1) * 2 + 1  # Right vertex of next segment
+
+                # First triangle (counter-clockwise winding)
+                faces.append((v0, v2, v1))
+                # Second triangle
+                faces.append((v1, v2, v3))
+
+            vertex_offset += len(segment_vertices)
+
+        if not vertices:
+            self.logger.warning("No vertices generated for road mesh.")
+            return
+
+        # Write MTL file
+        mtl_filename = os.path.basename(mtl_output_path)
+        texture_filename = os.path.basename(texture_path)
+
+        with open(mtl_output_path, "w", encoding="utf-8") as mtl_file:
+            mtl_file.write("# Road material\n")
+            mtl_file.write("newmtl RoadMaterial\n")
+            mtl_file.write("Ka 1.0 1.0 1.0\n")  # Ambient color
+            mtl_file.write("Kd 1.0 1.0 1.0\n")  # Diffuse color
+            mtl_file.write("Ks 0.3 0.3 0.3\n")  # Specular color
+            mtl_file.write("Ns 10.0\n")  # Specular exponent
+            mtl_file.write("illum 2\n")  # Illumination model
+            mtl_file.write(f"map_Kd {texture_filename}\n")  # Diffuse texture map
+
+        self.logger.info("MTL file written to %s", mtl_output_path)
+
+        # Write OBJ file
+        with open(obj_output_path, "w", encoding="utf-8") as obj_file:
+            obj_file.write("# Road mesh generated by maps4fs\n")
+            obj_file.write(f"mtllib {mtl_filename}\n\n")
+
+            # Write vertices
+            obj_file.write(f"# {len(vertices)} vertices\n")
+            for v in vertices:
+                obj_file.write(f"v {v[0]:.6f} {v[1]:.6f} {v[2]:.6f}\n")
+
+            # Write UV coordinates
+            obj_file.write(f"\n# {len(uvs)} texture coordinates\n")
+            for uv in uvs:
+                obj_file.write(f"vt {uv[0]:.6f} {uv[1]:.6f}\n")
+
+            # Write faces with material
+            obj_file.write(f"\n# {len(faces)} faces\n")
+            obj_file.write("usemtl RoadMaterial\n")
+            for face in faces:
+                # OBJ format uses 1-based indexing
+                # Format: f v1/vt1 v2/vt2 v3/vt3
+                obj_file.write(
+                    f"f {face[0] + 1}/{face[0] + 1} "
+                    f"{face[1] + 1}/{face[1] + 1} "
+                    f"{face[2] + 1}/{face[2] + 1}\n"
+                )
+
+        self.logger.info(
+            "OBJ file written to %s with %d vertices and %d faces",
+            obj_output_path,
+            len(vertices),
+            len(faces),
+        )
 
     def info_sequence(self):
         return {}
