@@ -112,7 +112,7 @@ class Road(I3d, MeshComponent):
         )
 
         mesh = trimesh.load_mesh(obj_output_path, force="mesh")
-        rotation_matrix = trimesh.transformations.rotation_matrix(-np.pi / 2, [1, 0, 0])
+        rotation_matrix = trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0])
         mesh.apply_transform(rotation_matrix)
 
         vertices = mesh.vertices
