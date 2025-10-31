@@ -3,7 +3,9 @@
 import os
 import shutil
 
+import numpy as np
 import shapely
+import trimesh
 
 from maps4fs.generator.component.base.component_mesh import MeshComponent
 from maps4fs.generator.component.i3d import I3d
@@ -109,6 +111,19 @@ class Road(I3d, MeshComponent):
             mtl_output_path=mtl_output_path,
         )
 
+        mesh = trimesh.load_mesh(obj_output_path, force="mesh")
+        rotation_matrix = trimesh.transformations.rotation_matrix(-np.pi / 2, [1, 0, 0])
+        mesh.apply_transform(rotation_matrix)
+
+        vertices = mesh.vertices
+        center = vertices.mean(axis=0)
+        mesh.vertices = vertices - center
+
+        output_directory = os.path.join(self.map_directory, "assets", "roads")
+        os.makedirs(output_directory, exist_ok=True)
+
+        self.mesh_to_i3d(mesh, output_directory, "roads", texture_path=dst_texture_path)
+
     def create_textured_linestrings_mesh(
         self,
         linestrings: list[tuple[shapely.LineString, int]],
@@ -129,7 +144,6 @@ class Road(I3d, MeshComponent):
             obj_output_path: Output path for the OBJ mesh file
             mtl_output_path: Output path for the MTL material file
         """
-        import numpy as np
 
         vertices = []
         faces = []
@@ -142,9 +156,6 @@ class Road(I3d, MeshComponent):
             coords = list(linestring.coords)
             if len(coords) < 2:
                 continue
-
-            # Convert width from meters to coordinate units (assuming 1 unit = 1 meter)
-            half_width = width / 2.0
 
             # Generate road strip vertices
             segment_vertices = []
@@ -183,8 +194,8 @@ class Road(I3d, MeshComponent):
                 perp_y = dx
 
                 # Create left and right vertices
-                left_vertex = (x + perp_x * half_width, y + perp_y * half_width, 0.0)
-                right_vertex = (x - perp_x * half_width, y - perp_y * half_width, 0.0)
+                left_vertex = (x + perp_x * width, y + perp_y * width, 0.0)
+                right_vertex = (x - perp_x * width, y - perp_y * width, 0.0)
 
                 segment_vertices.append(left_vertex)
                 segment_vertices.append(right_vertex)
