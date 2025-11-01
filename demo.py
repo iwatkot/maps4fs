@@ -29,7 +29,7 @@ game = mfs.Game.from_code(game_code)
 dtm_provider = mfs.dtm.SRTM30Provider
 
 # 3️⃣ Define the coordinates of the central point of the map, size and rotation.
-lat, lon = 45.324483045074, 20.061775888001694
+lat, lon = 45.284025921438634, 20.236710992285285
 coordinates = (lat, lon)
 size = 2048
 rotation = 0
@@ -41,7 +41,7 @@ if os.path.isdir(map_directory):
 os.makedirs(map_directory, exist_ok=True)
 
 # 5️⃣ Optional: use a custom OSM file.
-osm_file = "C:/Maps/test.osm"
+osm_file = "C:/OSMS/titelski_breg.osm"
 
 # 6️⃣ Optional: advanced settings. You can use the default settings, but
 # it's recommended to change them according to your needs.
@@ -49,11 +49,11 @@ dem_settings = mfs.settings.DEMSettings(
     multiplier=1, blur_radius=40, plateau=15, water_depth=10, add_foundations=True
 )
 background_settings = mfs.settings.BackgroundSettings(
-    generate_background=True,
-    generate_water=True,
-    remove_center=True,
+    # generate_background=True,
+    # generate_water=True,
+    # remove_center=True,
     flatten_roads=True,
-    flatten_water=True,
+    # flatten_water=True,
 )
 grle_settings = mfs.settings.GRLESettings(
     add_grass=True, farmland_margin=8, random_plants=True, add_farmyards=True
@@ -66,7 +66,7 @@ texture_settings = mfs.settings.TextureSettings(
     fields_padding=8,
     skip_drains=True,
 )
-satellite_settings = mfs.settings.SatelliteSettings(download_images=True, zoom_level=16)
+satellite_settings = mfs.settings.SatelliteSettings(download_images=False, zoom_level=16)
 
 buildings_settings = mfs.settings.BuildingSettings(
     generate_buildings=True, region="all", tolerance_factor=0.3
