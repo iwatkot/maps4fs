@@ -2,6 +2,7 @@
 
 import os
 import shutil
+from typing import NamedTuple
 
 import numpy as np
 import shapely
@@ -10,6 +11,14 @@ import trimesh
 from maps4fs.generator.component.base.component_mesh import MeshComponent
 from maps4fs.generator.component.i3d import I3d
 from maps4fs.generator.settings import Parameters
+
+PATCH_Z_OFFSET = -0.01
+
+
+class RoadEntry(NamedTuple):
+    linestring: shapely.LineString
+    width: int
+    z_offset: float = 0.0
 
 
 class Road(I3d, MeshComponent):
@@ -35,7 +44,7 @@ class Road(I3d, MeshComponent):
             self.logger.warning("Roads polylines data not found in textures info layer.")
             return
 
-        linestrings: list[tuple[shapely.LineString, int]] = []
+        road_entries: list[RoadEntry] = []
         for road_id, road_info in enumerate(roads_polylines, start=1):
             if isinstance(road_info, dict):
                 points: list[int | float] = road_info.get("points")
@@ -69,18 +78,16 @@ class Road(I3d, MeshComponent):
                 )
                 continue
 
-            linestrings.append((linestring, width))
+            road_entries.append(RoadEntry(linestring=linestring, width=width))
 
-        self.logger.info("Total found for mesh generation: %d", len(linestrings))
+        self.logger.info("Total found for mesh generation: %d", len(road_entries))
 
-        if linestrings:
-            patches_linestrings = self.get_patches_linestrings(linestrings)
-            linestrings.extend(patches_linestrings)
-            self.generate_road_mesh(linestrings)
+        if road_entries:
+            patches_road_entries: list[RoadEntry] = self.get_patches_linestrings(road_entries)
+            road_entries.extend(patches_road_entries)
+            self.generate_road_mesh(road_entries)
 
-    def get_patches_linestrings(
-        self, linestrings: list[tuple[shapely.LineString, int]]
-    ) -> list[tuple[shapely.LineString, int]]:
+    def get_patches_linestrings(self, road_entries: list[RoadEntry]) -> list[RoadEntry]:
         """Generate patch segments for T-junction intersections.
 
         This method identifies T-junctions where one road ends at another road,
@@ -88,10 +95,10 @@ class Road(I3d, MeshComponent):
         the intersection and prevent z-fighting.
 
         Arguments:
-            linestrings: List of tuples containing (shapely.LineString, width in meters)
+            road_entries (list[RoadEntry]): List of RoadEntry objects
 
         Returns:
-            List of patch linestrings with their widths to be added to original roads
+            (list[RoadEntry]): List of patch RoadEntry objects to be added.
         """
         from shapely.geometry import Point
 
@@ -99,13 +106,13 @@ class Road(I3d, MeshComponent):
         tolerance = 1.0  # Distance tolerance for endpoint intersection detection
 
         # Process each road to find T-junctions
-        for idx, (road, width) in enumerate(linestrings):
+        for idx, (road, width, z_offset) in enumerate(road_entries):
             # Get the endpoints of this road
             start_point = Point(road.coords[0])
             end_point = Point(road.coords[-1])
 
             # Check if either endpoint intersects with another road's middle
-            for other_idx, (other_road, other_width) in enumerate(linestrings):
+            for other_idx, (other_road, other_width, other_z_offset) in enumerate(road_entries):
                 if idx == other_idx:
                     continue
 
@@ -157,7 +164,13 @@ class Road(I3d, MeshComponent):
 
                         try:
                             patch_linestring = shapely.LineString(patch_coords)
-                            patches.append((patch_linestring, other_width))
+                            patch_z_offset = other_z_offset + PATCH_Z_OFFSET
+                            path_road_entry = RoadEntry(
+                                linestring=patch_linestring,
+                                width=other_width,
+                                z_offset=patch_z_offset,
+                            )
+                            patches.append(path_road_entry)
                             self.logger.debug(
                                 "Created patch for T-junction: road %d intersects road %d",
                                 idx,
@@ -170,7 +183,7 @@ class Road(I3d, MeshComponent):
         self.logger.info("Generated %d patch segments for T-junctions", len(patches))
         return patches
 
-    def generate_road_mesh(self, linestrings: list[tuple[shapely.LineString, int]]) -> None:
+    def generate_road_mesh(self, road_entries: list[RoadEntry]) -> None:
         road_mesh_directory = os.path.join(self.map_directory, "roads")
         os.makedirs(road_mesh_directory, exist_ok=True)
 
@@ -199,7 +212,7 @@ class Road(I3d, MeshComponent):
         mtl_output_path = os.path.join(road_mesh_directory, "roads.mtl")
 
         self.create_textured_linestrings_mesh(
-            linestrings=linestrings,
+            road_entries=road_entries,
             texture_path=dst_texture_path,
             obj_output_path=obj_output_path,
             mtl_output_path=mtl_output_path,
@@ -220,7 +233,7 @@ class Road(I3d, MeshComponent):
 
     def create_textured_linestrings_mesh(
         self,
-        linestrings: list[tuple[shapely.LineString, int]],
+        road_entries: list[RoadEntry],
         texture_path: str,
         obj_output_path: str,
         mtl_output_path: str,
@@ -246,7 +259,14 @@ class Road(I3d, MeshComponent):
 
         texture_tile_size = 10.0  # meters - how many meters before texture repeats
 
-        for linestring, width in linestrings:
+        patches_count = sum(1 for entry in road_entries if entry.z_offset > 0)
+        self.logger.info(
+            "Creating mesh for %d roads (%d patches with z-offset)",
+            len(road_entries),
+            patches_count,
+        )
+
+        for linestring, width, z_offset in road_entries:
             coords = list(linestring.coords)
             if len(coords) < 2:
                 continue
@@ -287,9 +307,9 @@ class Road(I3d, MeshComponent):
                 perp_x = -dy
                 perp_y = dx
 
-                # Create left and right vertices
-                left_vertex = (x + perp_x * width, y + perp_y * width, 0.0)
-                right_vertex = (x - perp_x * width, y - perp_y * width, 0.0)
+                # Create left and right vertices with z-offset
+                left_vertex = (x + perp_x * width, y + perp_y * width, z_offset)
+                right_vertex = (x - perp_x * width, y - perp_y * width, z_offset)
 
                 segment_vertices.append(left_vertex)
                 segment_vertices.append(right_vertex)
