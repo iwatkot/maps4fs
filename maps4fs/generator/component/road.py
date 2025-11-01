@@ -16,6 +16,8 @@ PATCH_Z_OFFSET = -0.01
 
 
 class RoadEntry(NamedTuple):
+    """Data structure representing a road entry with its linestring, width, and optional z-offset."""
+
     linestring: shapely.LineString
     width: int
     z_offset: float = 0.0
@@ -45,10 +47,10 @@ class Road(I3d, MeshComponent):
             return
 
         road_entries: list[RoadEntry] = []
-        for road_id, road_info in enumerate(roads_polylines, start=1):
+        for road_id, road_info in enumerate(roads_polylines, start=1):  # type: ignore
             if isinstance(road_info, dict):
-                points: list[int | float] = road_info.get("points")
-                width: int = road_info.get("width")
+                points: list[int | float] = road_info.get("points")  # type: ignore
+                width: int = road_info.get("width")  # type: ignore
             else:
                 continue
 
@@ -58,7 +60,7 @@ class Road(I3d, MeshComponent):
 
             try:
                 fitted_road = self.fit_object_into_bounds(
-                    linestring_points=points, angle=self.rotation
+                    linestring_points=points, angle=self.rotation  # type: ignore
                 )
             except ValueError as e:
                 self.logger.debug(
@@ -106,7 +108,7 @@ class Road(I3d, MeshComponent):
         tolerance = 1.0  # Distance tolerance for endpoint intersection detection
 
         # Process each road to find T-junctions
-        for idx, (road, width, z_offset) in enumerate(road_entries):
+        for idx, (road, _, _) in enumerate(road_entries):
             # Get the endpoints of this road
             start_point = Point(road.coords[0])
             end_point = Point(road.coords[-1])
@@ -184,6 +186,11 @@ class Road(I3d, MeshComponent):
         return patches
 
     def generate_road_mesh(self, road_entries: list[RoadEntry]) -> None:
+        """Generates the road mesh from linestrings and saves it as an I3D asset.
+
+        Arguments:
+            road_entries (list[RoadEntry]): List of RoadEntry objects to generate the mesh from.
+        """
         road_mesh_directory = os.path.join(self.map_directory, "roads")
         os.makedirs(road_mesh_directory, exist_ok=True)
 
@@ -276,7 +283,7 @@ class Road(I3d, MeshComponent):
             segment_uvs = []
             accumulated_distance = 0.0
 
-            for i in range(len(coords)):
+            for i in range(len(coords)):  # pylint: disable=consider-using-enumerate
                 x, y = coords[i]
 
                 # Calculate direction vector for perpendicular offset
