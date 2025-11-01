@@ -81,13 +81,94 @@ class Road(I3d, MeshComponent):
     def get_patches_linestrings(
         self, linestrings: list[tuple[shapely.LineString, int]]
     ) -> list[tuple[shapely.LineString, int]]:
-        # 1. Check ends of each linestring to identify where its near other roads (probably
-        # using width) basically we trying to find T-junctions.
-        # 2. When found intersection we take the line which not endind (the main one).
-        # 3. We need to take a part of line from main road probably part between previous and
-        # next point from junction.
-        # 4. The resulting segment (patch) must be an exact copy of the main road segment.
-        pass
+        """Generate patch segments for T-junction intersections.
+
+        This method identifies T-junctions where one road ends at another road,
+        and creates patch segments from the continuous (main) road to overlay
+        the intersection and prevent z-fighting.
+
+        Arguments:
+            linestrings: List of tuples containing (shapely.LineString, width in meters)
+
+        Returns:
+            List of patch linestrings with their widths to be added to original roads
+        """
+        from shapely.geometry import Point
+
+        patches = []
+        tolerance = 1.0  # Distance tolerance for endpoint intersection detection
+
+        # Process each road to find T-junctions
+        for idx, (road, width) in enumerate(linestrings):
+            # Get the endpoints of this road
+            start_point = Point(road.coords[0])
+            end_point = Point(road.coords[-1])
+
+            # Check if either endpoint intersects with another road's middle
+            for other_idx, (other_road, other_width) in enumerate(linestrings):
+                if idx == other_idx:
+                    continue
+
+                # Check both endpoints
+                for endpoint in [start_point, end_point]:
+                    # Check if endpoint is near the other road (but not at its endpoints)
+                    distance = endpoint.distance(other_road)
+
+                    if distance < tolerance:
+                        # This is a potential T-junction
+                        # Make sure it's not connecting at the other road's endpoints
+                        other_start = Point(other_road.coords[0])
+                        other_end = Point(other_road.coords[-1])
+
+                        # Skip if connecting at endpoints (this is a proper intersection, not T)
+                        if (
+                            endpoint.distance(other_start) < tolerance
+                            or endpoint.distance(other_end) < tolerance
+                        ):
+                            continue
+
+                        # Find the closest point on the other road
+                        intersection_point = other_road.interpolate(other_road.project(endpoint))
+
+                        # Find which segment of other_road contains this intersection
+                        coords = list(other_road.coords)
+                        segment_idx = None
+
+                        for i in range(len(coords) - 1):
+                            segment = shapely.LineString([coords[i], coords[i + 1]])
+                            if segment.distance(intersection_point) < tolerance:
+                                segment_idx = i
+                                break
+
+                        if segment_idx is None:
+                            continue
+
+                        # Create patch: take 2 points before and 2 points after the intersection
+                        # Ensure we don't go out of bounds
+                        start_idx = max(0, segment_idx - 2)
+                        end_idx = min(len(coords) - 1, segment_idx + 3)
+
+                        # Need at least 2 points for a valid linestring
+                        if end_idx - start_idx < 1:
+                            continue
+
+                        # Extract the patch segment
+                        patch_coords = coords[start_idx : end_idx + 1]
+
+                        try:
+                            patch_linestring = shapely.LineString(patch_coords)
+                            patches.append((patch_linestring, other_width))
+                            self.logger.debug(
+                                "Created patch for T-junction: road %d intersects road %d",
+                                idx,
+                                other_idx,
+                            )
+                        except Exception as e:
+                            self.logger.debug("Failed to create patch linestring: %s", e)
+                            continue
+
+        self.logger.info("Generated %d patch segments for T-junctions", len(patches))
+        return patches
 
     def generate_road_mesh(self, linestrings: list[tuple[shapely.LineString, int]]) -> None:
         road_mesh_directory = os.path.join(self.map_directory, "roads")
