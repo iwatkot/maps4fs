@@ -74,7 +74,20 @@ class Road(I3d, MeshComponent):
         self.logger.info("Total found for mesh generation: %d", len(linestrings))
 
         if linestrings:
+            patches_linestrings = self.get_patches_linestrings(linestrings)
+            linestrings.extend(patches_linestrings)
             self.generate_road_mesh(linestrings)
+
+    def get_patches_linestrings(
+        self, linestrings: list[tuple[shapely.LineString, int]]
+    ) -> list[tuple[shapely.LineString, int]]:
+        # 1. Check ends of each linestring to identify where its near other roads (probably
+        # using width) basically we trying to find T-junctions.
+        # 2. When found intersection we take the line which not endind (the main one).
+        # 3. We need to take a part of line from main road probably part between previous and
+        # next point from junction.
+        # 4. The resulting segment (patch) must be an exact copy of the main road segment.
+        pass
 
     def generate_road_mesh(self, linestrings: list[tuple[shapely.LineString, int]]) -> None:
         road_mesh_directory = os.path.join(self.map_directory, "roads")
