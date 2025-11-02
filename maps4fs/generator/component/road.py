@@ -101,9 +101,109 @@ class Road(I3d, MeshComponent):
             self.logger.info("Total found for mesh generation: %d", len(road_entries))
 
             if road_entries:
-                patches_road_entries: list[RoadEntry] = self.get_patches_linestrings(road_entries)
-                road_entries.extend(patches_road_entries)
-                self.generate_road_mesh(road_entries, texture)
+                # 1. Apply smart interpolation to make linstrings smoother,
+                # but carefully, ensuring that points are not too close to each other.
+                # Otherwise it may lead to artifacts in the mesh.
+                interpolated_road_entries: list[RoadEntry] = self.smart_interpolation(road_entries)
+
+                patches_road_entries: list[RoadEntry] = self.get_patches_linestrings(
+                    interpolated_road_entries
+                )
+                interpolated_road_entries.extend(patches_road_entries)
+                self.generate_road_mesh(interpolated_road_entries, texture)
+
+    def smart_interpolation(self, road_entries: list[RoadEntry]) -> list[RoadEntry]:
+        """Apply smart interpolation to road linestrings.
+        Making sure that result polylines do not have points too close to each other.
+
+        Arguments:
+            road_entries (list[RoadEntry]): List of RoadEntry objects
+
+        Returns:
+            (list[RoadEntry]): List of RoadEntry objects with interpolated linestrings.
+        """
+        interpolated_entries = []
+        target_segment_length = 5.0  # Target distance between points in meters
+        min_distance = 2.0  # Minimum allowed distance between points to avoid artifacts
+
+        for linestring, width, z_offset in road_entries:
+            coords = list(linestring.coords)
+            if len(coords) < 2:
+                interpolated_entries.append(RoadEntry(linestring, width, z_offset))
+                continue
+
+            # Check if interpolation is needed
+            needs_interpolation = False
+            for i in range(len(coords) - 1):
+                segment_length = np.sqrt(
+                    (coords[i + 1][0] - coords[i][0]) ** 2 + (coords[i + 1][1] - coords[i][1]) ** 2
+                )
+                if segment_length > target_segment_length * 1.5:
+                    needs_interpolation = True
+                    break
+
+            if not needs_interpolation:
+                # Road is already dense enough
+                interpolated_entries.append(RoadEntry(linestring, width, z_offset))
+                continue
+
+            # Perform interpolation
+            new_coords = []
+            for i in range(len(coords) - 1):
+                current_point = coords[i]
+                next_point = coords[i + 1]
+
+                # Always add the current point
+                new_coords.append(current_point)
+
+                # Calculate segment length
+                segment_length = np.sqrt(
+                    (next_point[0] - current_point[0]) ** 2
+                    + (next_point[1] - current_point[1]) ** 2
+                )
+
+                # If segment is long enough, interpolate
+                if segment_length > target_segment_length:
+                    # Calculate how many intermediate points we need
+                    num_points = int(np.ceil(segment_length / target_segment_length)) - 1
+
+                    # Add interpolated points
+                    for j in range(1, num_points + 1):
+                        t = j / (num_points + 1)
+                        interpolated_x = current_point[0] + t * (next_point[0] - current_point[0])
+                        interpolated_y = current_point[1] + t * (next_point[1] - current_point[1])
+                        new_coords.append((interpolated_x, interpolated_y))
+
+            # Add the last point
+            new_coords.append(coords[-1])
+
+            # Clean up: remove points that are too close to each other
+            cleaned_coords = [new_coords[0]]
+            for i in range(1, len(new_coords)):
+                distance_to_last = np.sqrt(
+                    (new_coords[i][0] - cleaned_coords[-1][0]) ** 2
+                    + (new_coords[i][1] - cleaned_coords[-1][1]) ** 2
+                )
+
+                # Keep point if it's far enough from the last kept point
+                # or if it's the last point (always keep endpoints)
+                if distance_to_last >= min_distance or i == len(new_coords) - 1:
+                    cleaned_coords.append(new_coords[i])
+
+            # Create new linestring with interpolated coordinates
+            try:
+                interpolated_linestring = shapely.LineString(cleaned_coords)
+                interpolated_entries.append(RoadEntry(interpolated_linestring, width, z_offset))
+            except Exception as e:
+                self.logger.warning(
+                    "Failed to create interpolated linestring: %s. Using original.", e
+                )
+                interpolated_entries.append(RoadEntry(linestring, width, z_offset))
+
+        self.logger.info(
+            "Smart interpolation complete. Processed %d roads.", len(interpolated_entries)
+        )
+        return interpolated_entries
 
     def get_patches_linestrings(self, road_entries: list[RoadEntry]) -> list[RoadEntry]:
         """Generate patch segments for T-junction intersections.
