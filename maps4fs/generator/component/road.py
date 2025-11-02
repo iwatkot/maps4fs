@@ -123,12 +123,40 @@ class Road(I3d, MeshComponent):
             (list[RoadEntry]): List of RoadEntry objects with interpolated linestrings.
         """
         interpolated_entries = []
-        target_segment_length = 5.0  # Target distance between points in meters
-        min_distance = 2.0  # Minimum allowed distance between points to avoid artifacts
+        target_segment_length = 4.0  # Target distance between points in meters (denser)
+        max_angle_change = 30.0  # Maximum angle change in degrees to allow interpolation
 
         for linestring, width, z_offset in road_entries:
             coords = list(linestring.coords)
             if len(coords) < 2:
+                interpolated_entries.append(RoadEntry(linestring, width, z_offset))
+                continue
+
+            # Check if road has sharp curves - if so, skip interpolation
+            has_sharp_curves = False
+            if len(coords) >= 3:
+                for i in range(1, len(coords) - 1):
+                    # Calculate angle change at this point
+                    v1_x = coords[i][0] - coords[i - 1][0]
+                    v1_y = coords[i][1] - coords[i - 1][1]
+                    v2_x = coords[i + 1][0] - coords[i][0]
+                    v2_y = coords[i + 1][1] - coords[i][1]
+
+                    # Calculate angle between vectors
+                    dot = v1_x * v2_x + v1_y * v2_y
+                    len1 = np.sqrt(v1_x**2 + v1_y**2)
+                    len2 = np.sqrt(v2_x**2 + v2_y**2)
+
+                    if len1 > 0 and len2 > 0:
+                        cos_angle = np.clip(dot / (len1 * len2), -1.0, 1.0)
+                        angle_deg = np.degrees(np.arccos(cos_angle))
+
+                        if angle_deg > max_angle_change:
+                            has_sharp_curves = True
+                            break
+
+            if has_sharp_curves:
+                # Skip interpolation for curved roads
                 interpolated_entries.append(RoadEntry(linestring, width, z_offset))
                 continue
 
@@ -147,52 +175,24 @@ class Road(I3d, MeshComponent):
                 interpolated_entries.append(RoadEntry(linestring, width, z_offset))
                 continue
 
-            # Perform interpolation
+            # Perform interpolation using shapely's interpolate (follows curves)
+            road_length = linestring.length
+            num_points = int(np.ceil(road_length / target_segment_length)) + 1
+
             new_coords = []
-            for i in range(len(coords) - 1):
-                current_point = coords[i]
-                next_point = coords[i + 1]
+            for i in range(num_points):
+                distance = min(i * target_segment_length, road_length)
+                point = linestring.interpolate(distance)
+                new_coords.append((point.x, point.y))
 
-                # Always add the current point
-                new_coords.append(current_point)
-
-                # Calculate segment length
-                segment_length = np.sqrt(
-                    (next_point[0] - current_point[0]) ** 2
-                    + (next_point[1] - current_point[1]) ** 2
-                )
-
-                # If segment is long enough, interpolate
-                if segment_length > target_segment_length:
-                    # Calculate how many intermediate points we need
-                    num_points = int(np.ceil(segment_length / target_segment_length)) - 1
-
-                    # Add interpolated points
-                    for j in range(1, num_points + 1):
-                        t = j / (num_points + 1)
-                        interpolated_x = current_point[0] + t * (next_point[0] - current_point[0])
-                        interpolated_y = current_point[1] + t * (next_point[1] - current_point[1])
-                        new_coords.append((interpolated_x, interpolated_y))
-
-            # Add the last point
-            new_coords.append(coords[-1])
-
-            # Clean up: remove points that are too close to each other
-            cleaned_coords = [new_coords[0]]
-            for i in range(1, len(new_coords)):
-                distance_to_last = np.sqrt(
-                    (new_coords[i][0] - cleaned_coords[-1][0]) ** 2
-                    + (new_coords[i][1] - cleaned_coords[-1][1]) ** 2
-                )
-
-                # Keep point if it's far enough from the last kept point
-                # or if it's the last point (always keep endpoints)
-                if distance_to_last >= min_distance or i == len(new_coords) - 1:
-                    cleaned_coords.append(new_coords[i])
+            # Ensure last point is exact
+            if new_coords[-1] != coords[-1]:
+                new_coords.append(coords[-1])
 
             # Create new linestring with interpolated coordinates
+            # No cleanup needed - interpolation already creates evenly spaced points
             try:
-                interpolated_linestring = shapely.LineString(cleaned_coords)
+                interpolated_linestring = shapely.LineString(new_coords)
                 interpolated_entries.append(RoadEntry(interpolated_linestring, width, z_offset))
             except Exception as e:
                 self.logger.warning(
