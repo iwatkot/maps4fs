@@ -7,12 +7,13 @@ from typing import NamedTuple
 import numpy as np
 import shapely
 import trimesh
+from shapely.geometry import Point
 
 from maps4fs.generator.component.base.component_mesh import MeshComponent
 from maps4fs.generator.component.i3d import I3d
 from maps4fs.generator.settings import Parameters
 
-PATCH_Z_OFFSET = -0.01
+PATCH_Z_OFFSET = -0.001
 
 
 class RoadEntry(NamedTuple):
@@ -102,10 +103,9 @@ class Road(I3d, MeshComponent):
         Returns:
             (list[RoadEntry]): List of patch RoadEntry objects to be added.
         """
-        from shapely.geometry import Point
-
         patches = []
         tolerance = 1.0  # Distance tolerance for endpoint intersection detection
+        cumulative_offset = PATCH_Z_OFFSET
 
         # Process each road to find T-junctions
         for idx, (road, _, _) in enumerate(road_entries):
@@ -166,7 +166,8 @@ class Road(I3d, MeshComponent):
 
                         try:
                             patch_linestring = shapely.LineString(patch_coords)
-                            patch_z_offset = other_z_offset + PATCH_Z_OFFSET
+                            patch_z_offset = other_z_offset + cumulative_offset
+                            cumulative_offset += PATCH_Z_OFFSET
                             path_road_entry = RoadEntry(
                                 linestring=patch_linestring,
                                 width=other_width,
