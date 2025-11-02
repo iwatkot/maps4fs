@@ -10,6 +10,7 @@ import shapely
 import trimesh
 from shapely.geometry import Point
 
+import maps4fs.generator.config as mfscfg
 from maps4fs.generator.component.base.component_mesh import MeshComponent
 from maps4fs.generator.component.i3d import I3d
 from maps4fs.generator.settings import Parameters
@@ -203,7 +204,7 @@ class Road(I3d, MeshComponent):
 
     def find_texture_file(self, templates_directory: str, texture_base_name: str) -> str:
         for ext in [".png", ".jpg", ".jpeg"]:
-            texture_path = os.path.join(templates_directory, texture_base_name + ext)
+            texture_path = os.path.join(templates_directory, texture_base_name + ext).lower()
             if os.path.isfile(texture_path):
                 return texture_path
         raise FileNotFoundError(
@@ -220,9 +221,8 @@ class Road(I3d, MeshComponent):
         road_mesh_directory = os.path.join(self.map_directory, "roads", texture)
         os.makedirs(road_mesh_directory, exist_ok=True)
 
-        templates_directory = "templates"  # TODO: Consider moving to constants or something similar
         try:
-            texture_path = self.find_texture_file(templates_directory, texture)
+            texture_path = self.find_texture_file(mfscfg.MFS_TEMPLATES_DIR, texture)
         except FileNotFoundError as e:
             self.logger.warning("Texture file not found: %s", e)
             return
