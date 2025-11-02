@@ -278,6 +278,15 @@ class Road(I3d, MeshComponent):
             obj_output_path: Output path for the OBJ mesh file
             mtl_output_path: Output path for the MTL material file
         """
+        # Use the not resized DEM with flattened roads to get accurate Z values
+        # for the road mesh vertices.
+        not_resized_dem = self.get_not_resized_dem_with_flattened_roads()
+        if not_resized_dem is None:
+            self.logger.warning(
+                "Not resized DEM with flattened roads is not available. "
+                "Cannot generate road mesh."
+            )
+            return
 
         vertices = []
         faces = []
@@ -334,9 +343,12 @@ class Road(I3d, MeshComponent):
                 perp_x = -dy
                 perp_y = dx
 
+                exact_z_value = self.get_z_coordinate_from_dem(not_resized_dem, x, y)
+                offsetted_z = -exact_z_value + z_offset
+
                 # Create left and right vertices with z-offset
-                left_vertex = (x + perp_x * width, y + perp_y * width, z_offset)
-                right_vertex = (x - perp_x * width, y - perp_y * width, z_offset)
+                left_vertex = (x + perp_x * width, y + perp_y * width, offsetted_z)
+                right_vertex = (x - perp_x * width, y - perp_y * width, offsetted_z)
 
                 segment_vertices.append(left_vertex)
                 segment_vertices.append(right_vertex)
