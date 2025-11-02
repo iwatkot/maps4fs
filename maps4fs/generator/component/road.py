@@ -471,7 +471,9 @@ class Road(I3d, MeshComponent):
                     )
                     accumulated_distance += segment_distance
 
-                v_coord = accumulated_distance / texture_tile_size
+                # Calculate V coordinate and keep it within Giants Editor's valid range [-32, 32]
+                # We use modulo to wrap the texture seamlessly
+                v_coord = (accumulated_distance / texture_tile_size) % 32.0
 
                 # Add UVs for left and right vertices
                 segment_uvs.append((0.0, v_coord))  # Left edge
