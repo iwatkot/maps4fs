@@ -62,6 +62,7 @@ class Layer:
         merge_into: str | None = None,
         building_category: str | None = None,
         external: bool = False,
+        road_texture: str | None = None,
     ):
         self.name = name
         self.count = count
@@ -84,6 +85,7 @@ class Layer:
         self.merge_into = merge_into
         self.building_category = building_category
         self.external = external
+        self.road_texture = road_texture
 
     def to_json(self) -> dict[str, str | list[str] | bool]:  # type: ignore
         """Returns dictionary with layer data.
@@ -112,6 +114,7 @@ class Layer:
             "merge_into": self.merge_into,
             "building_category": self.building_category,
             "external": self.external,
+            "road_texture": self.road_texture,
         }
 
         data = {k: v for k, v in data.items() if v is not None}

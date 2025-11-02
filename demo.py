@@ -77,8 +77,8 @@ buildings_settings = mfs.settings.BuildingSettings(
 tree_custom_schema_path = "C:/Maps/tree_schema.json"
 tree_custom_schema = json.load(open(tree_custom_schema_path, "r", encoding="utf-8"))
 
-texture_custom_schema_path = "C:/Maps/texture-schema.json"
-texture_custom_schema = json.load(open(texture_custom_schema_path, "r", encoding="utf-8"))
+# texture_custom_schema_path = "C:/Maps/texture-schema.json"
+# texture_custom_schema = json.load(open(texture_custom_schema_path, "r", encoding="utf-8"))
 
 generation_settings = mfs.GenerationSettings(
     dem_settings=dem_settings,
@@ -101,7 +101,7 @@ mp = mfs.Map(
     map_directory,
     custom_osm=osm_file,
     generation_settings=generation_settings,
-    texture_custom_schema=texture_custom_schema,
+    # texture_custom_schema=texture_custom_schema,
     tree_custom_schema=tree_custom_schema,
 )
 

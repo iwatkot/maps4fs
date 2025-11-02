@@ -2,6 +2,7 @@
 
 import os
 import shutil
+from collections import defaultdict
 from typing import NamedTuple
 
 import numpy as np
@@ -42,53 +43,67 @@ class Road(I3d, MeshComponent):
         pass
 
     def process(self) -> None:
-        roads_polylines = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
-        if not roads_polylines:
+        road_infos = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
+        if not road_infos:
             self.logger.warning("Roads polylines data not found in textures info layer.")
             return
 
-        road_entries: list[RoadEntry] = []
-        for road_id, road_info in enumerate(roads_polylines, start=1):  # type: ignore
-            if isinstance(road_info, dict):
-                points: list[int | float] = road_info.get("points")  # type: ignore
-                width: int = road_info.get("width")  # type: ignore
-            else:
-                continue
+        roads_by_texture = defaultdict(list)
+        for road_info in road_infos:  # type: ignore
+            road_texture = road_info.get("road_texture")
+            if road_texture:
+                roads_by_texture[road_texture].append(road_info)
 
-            if not points or len(points) < 2 or not width:
-                self.logger.debug("Invalid road data for road ID %s: %s", road_id, road_info)
-                continue
+        for texture, roads_polylines in roads_by_texture.items():
+            self.logger.info("Processing roads with texture: %s", texture)
 
-            try:
-                fitted_road = self.fit_object_into_bounds(
-                    linestring_points=points, angle=self.rotation  # type: ignore
-                )
-            except ValueError as e:
-                self.logger.debug(
-                    "Road %s could not be fitted into the map bounds with error: %s",
-                    road_id,
-                    e,
-                )
-                continue
+            # The texture name is represents the name of texture file without extension
+            # for easy reference if the texture uses various extensions.
+            # E.g. 'asphalt', 'gravel' -> 'asphalt.png', 'gravel.jpg', etc.
+            texture: str = texture.lower()
 
-            try:
-                linestring = shapely.LineString(fitted_road)
-            except ValueError as e:
-                self.logger.debug(
-                    "Road %s could not be converted to a LineString with error: %s",
-                    road_id,
-                    e,
-                )
-                continue
+            road_entries: list[RoadEntry] = []
+            for road_id, road_info in enumerate(roads_polylines, start=1):  # type: ignore
+                if isinstance(road_info, dict):
+                    points: list[int | float] = road_info.get("points")  # type: ignore
+                    width: int = road_info.get("width")  # type: ignore
+                else:
+                    continue
 
-            road_entries.append(RoadEntry(linestring=linestring, width=width))
+                if not points or len(points) < 2 or not width:
+                    self.logger.debug("Invalid road data for road ID %s: %s", road_id, road_info)
+                    continue
 
-        self.logger.info("Total found for mesh generation: %d", len(road_entries))
+                try:
+                    fitted_road = self.fit_object_into_bounds(
+                        linestring_points=points, angle=self.rotation  # type: ignore
+                    )
+                except ValueError as e:
+                    self.logger.debug(
+                        "Road %s could not be fitted into the map bounds with error: %s",
+                        road_id,
+                        e,
+                    )
+                    continue
 
-        if road_entries:
-            patches_road_entries: list[RoadEntry] = self.get_patches_linestrings(road_entries)
-            road_entries.extend(patches_road_entries)
-            self.generate_road_mesh(road_entries)
+                try:
+                    linestring = shapely.LineString(fitted_road)
+                except ValueError as e:
+                    self.logger.debug(
+                        "Road %s could not be converted to a LineString with error: %s",
+                        road_id,
+                        e,
+                    )
+                    continue
+
+                road_entries.append(RoadEntry(linestring=linestring, width=width))
+
+            self.logger.info("Total found for mesh generation: %d", len(road_entries))
+
+            if road_entries:
+                patches_road_entries: list[RoadEntry] = self.get_patches_linestrings(road_entries)
+                road_entries.extend(patches_road_entries)
+                self.generate_road_mesh(road_entries, texture)
 
     def get_patches_linestrings(self, road_entries: list[RoadEntry]) -> list[RoadEntry]:
         """Generate patch segments for T-junction intersections.
@@ -186,38 +201,42 @@ class Road(I3d, MeshComponent):
         self.logger.info("Generated %d patch segments for T-junctions", len(patches))
         return patches
 
-    def generate_road_mesh(self, road_entries: list[RoadEntry]) -> None:
+    def find_texture_file(self, templates_directory: str, texture_base_name: str) -> str:
+        for ext in [".png", ".jpg", ".jpeg"]:
+            texture_path = os.path.join(templates_directory, texture_base_name + ext)
+            if os.path.isfile(texture_path):
+                return texture_path
+        raise FileNotFoundError(
+            f"Texture file for base name {texture_base_name} not found in {templates_directory}."
+        )
+
+    def generate_road_mesh(self, road_entries: list[RoadEntry], texture: str) -> None:
         """Generates the road mesh from linestrings and saves it as an I3D asset.
 
         Arguments:
             road_entries (list[RoadEntry]): List of RoadEntry objects to generate the mesh from.
+            texture (str): The base name of the texture file to use for the roads.
         """
-        road_mesh_directory = os.path.join(self.map_directory, "roads")
+        road_mesh_directory = os.path.join(self.map_directory, "roads", texture)
         os.makedirs(road_mesh_directory, exist_ok=True)
 
-        templates_directory = "templates"
-        asphalt_texture_filename = "asphalt.png"
-        asphalt_texture_path = os.path.join(
-            templates_directory,
-            asphalt_texture_filename,
-        )
-        if not os.path.isfile(asphalt_texture_path):
-            self.logger.warning(
-                "Asphalt texture file not found at %s. Skipping road mesh generation.",
-                asphalt_texture_path,
-            )
+        templates_directory = "templates"  # TODO: Consider moving to constants or something similar
+        try:
+            texture_path = self.find_texture_file(templates_directory, texture)
+        except FileNotFoundError as e:
+            self.logger.warning("Texture file not found: %s", e)
             return
 
         dst_texture_path = os.path.join(
             road_mesh_directory,
-            asphalt_texture_filename,
+            os.path.basename(texture_path),  # From templates/asphalt.png -> asphalt.png.
         )
 
-        shutil.copyfile(asphalt_texture_path, dst_texture_path)
-        self.logger.info("Asphalt texture copied to %s", dst_texture_path)
+        shutil.copyfile(texture_path, dst_texture_path)
+        self.logger.info("Texture copied to %s", dst_texture_path)
 
-        obj_output_path = os.path.join(road_mesh_directory, "roads.obj")
-        mtl_output_path = os.path.join(road_mesh_directory, "roads.mtl")
+        obj_output_path = os.path.join(road_mesh_directory, f"roads_{texture}.obj")
+        mtl_output_path = os.path.join(road_mesh_directory, f"roads_{texture}.mtl")
 
         self.create_textured_linestrings_mesh(
             road_entries=road_entries,
@@ -234,10 +253,10 @@ class Road(I3d, MeshComponent):
         center = vertices.mean(axis=0)
         mesh.vertices = vertices - center
 
-        output_directory = os.path.join(self.map_directory, "assets", "roads")
+        output_directory = os.path.join(self.map_directory, "assets", "roads", texture)
         os.makedirs(output_directory, exist_ok=True)
 
-        self.mesh_to_i3d(mesh, output_directory, "roads", texture_path=dst_texture_path)
+        self.mesh_to_i3d(mesh, output_directory, f"roads_{texture}", texture_path=dst_texture_path)
 
     def create_textured_linestrings_mesh(
         self,
