@@ -61,7 +61,6 @@ class Road(I3d, MeshComponent):
             # The texture name is represents the name of texture file without extension
             # for easy reference if the texture uses various extensions.
             # E.g. 'asphalt', 'gravel' -> 'asphalt.png', 'gravel.jpg', etc.
-            texture: str = texture.lower()
 
             road_entries: list[RoadEntry] = []
             for road_id, road_info in enumerate(roads_polylines, start=1):  # type: ignore
@@ -203,7 +202,16 @@ class Road(I3d, MeshComponent):
         return patches
 
     def find_texture_file(self, templates_directory: str, texture_base_name: str) -> str:
-        for ext in [".png", ".jpg", ".jpeg"]:
+        """Finds the texture file with supported extensions in the templates directory.
+
+        Arguments:
+            templates_directory (str): The directory where texture files are stored.
+            texture_base_name (str): The base name of the texture file without extension.
+
+        Returns:
+            (str): The full path to the found texture file.
+        """
+        for ext in [".png", ".jpg", ".jpeg", ".dds"]:
             texture_path = os.path.join(templates_directory, texture_base_name + ext).lower()
             if os.path.isfile(texture_path):
                 return texture_path
