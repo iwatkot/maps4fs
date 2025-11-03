@@ -561,6 +561,7 @@ class Texture(ImageComponent):
                     "points": linestring,
                     "tags": str(layer.tags),
                     "width": layer.width,
+                    "road_texture": layer.road_texture,
                 }
                 info_layer_data[f"{layer.info_layer}_polylines"].append(linestring_entry)  # type: ignore
 

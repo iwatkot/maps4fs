@@ -38,6 +38,7 @@
 * [Fields](fields.md)
 * [Farmlands](farmlands.md)
 * [Textures](textures.md)
+* [Roads](roads.md)
 * [Overview Image](overview_image.md)
 * [Splines](splines.md)
 * [License Plates](license_plates.md)
@@ -53,3 +54,8 @@
   * [Legacy Deployment](legacy_deployment.md)
   * [Legacy Background Terrain](legacy_background_terrain.md)
   * [Legacy Water Planes](legacy_water_planes.md)
+
+## ⚖️ Legal Information
+* [License](license-info.md)
+* [Terms of Use](terms-of-use.md)
+* [Official Sources & Risks](official-sources.md)

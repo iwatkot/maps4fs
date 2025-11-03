@@ -58,6 +58,7 @@
 🌿 **Decorative Foliage** - Realistic vegetation and grass areas<br>
 🏘️ **Intelligent Building Placement** - Automatic building placement in appropriate areas<br>
 
+🚧 **3D Road Generation** - Automatic road mesh creation with custom textures<br>
 🚧 **Complete Spline Networks** - Roads and infrastructure<br>
 🔷 **Background Terrain** - 3D *.obj files for surrounding landscape<br>
 📦 **Giants Editor Ready** - Import and start building immediately<br>

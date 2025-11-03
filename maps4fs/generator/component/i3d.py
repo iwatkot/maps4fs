@@ -742,6 +742,27 @@ class I3d(XMLComponent, ImageComponent):
             return self.get_not_resized_dem(with_foundations=False)
         return None
 
+    def get_not_resized_dem_with_flattened_roads(self) -> np.ndarray | None:
+        """Gets the not resized DEM with flattened roads.
+
+        Returns:
+            np.ndarray | None: The not resized DEM image or None if the image could not be read.
+        """
+        background_component = self.map.get_background_component()
+        if not background_component:
+            self.logger.warning("Background component not found.")
+            return None
+
+        dem_path = background_component.not_resized_with_flattened_roads_path
+
+        if not dem_path or not os.path.isfile(dem_path):
+            self.logger.warning("Not resized DEM with flattened roads path not found.")
+            return None
+
+        not_resized_dem = cv2.imread(dem_path, cv2.IMREAD_UNCHANGED)
+
+        return not_resized_dem
+
     def info_sequence(self) -> dict[str, dict[str, str | float | int]]:
         """Returns information about the component.
 

@@ -81,6 +81,9 @@ class Background(MeshComponent, ImageComponent):
         self.not_resized_with_foundations_path: str = os.path.join(
             self.background_directory, "not_resized_with_foundations.png"
         )
+        self.not_resized_with_flattened_roads_path: str = os.path.join(
+            self.background_directory, "not_resized_with_flattened_roads.png"
+        )
 
         self.flatten_water_to: int | None = None
 
@@ -1188,6 +1191,13 @@ class Background(MeshComponent, ImageComponent):
         main_dem_path = self.game.dem_file_path(self.map_directory)
         dem_image = self.blur_by_mask(dem_image, full_mask, blur_radius=5)
         dem_image = self.blur_edges_by_mask(dem_image, full_mask)
+
+        # Save the not resized DEM with flattened roads.
+        cv2.imwrite(self.not_resized_with_flattened_roads_path, dem_image)
+        self.logger.debug(
+            "Not resized DEM with flattened roads saved to: %s",
+            self.not_resized_with_flattened_roads_path,
+        )
 
         output_size = dem_image.shape[0] + 1
         resized_dem = cv2.resize(
