@@ -89,6 +89,7 @@ Maps4fs is **completely free**. Anyone charging money for it or for maps created
 3. **Unofficial Websites**
    - File-sharing platforms (MediaFire, Mega, etc.)
    - Third-party download sites
+   - Fake websites pretending to be maps4fs.xyz
    - Mirror sites claiming to be "official"
 
 4. **Social Media Scams**
@@ -137,9 +138,10 @@ Downloading maps4fs from unofficial sources exposes you to:
 
 ### Check #1: URL Verification
 Only trust these exact URLs:
+- ✅ `maps4fs.xyz` (public web application)
 - ✅ `github.com/iwatkot/maps4fs`
 - ✅ `pypi.org/project/maps4fs/`
-- ✅ `iwatkot.github.io/maps4fs/`
+- ✅ `maps4fs.gitbook.io/docs`
 
 ### Check #2: Author Verification
 - ✅ GitHub username: **iwatkot**
@@ -220,12 +222,29 @@ Your reports help us:
 
 ---
 
-## Questions?
+## 💬 Get Help & Report Issues
 
-If you're unsure whether a source is legitimate:
+If you're unsure whether a source is legitimate or need help:
 
-- **Ask First**: Open an issue on GitHub before downloading
+### Primary Support Channels
+
+1. **Discord Community (Recommended)**
+   - **Join**: [https://discord.gg/Sj5QKKyE42](https://discord.gg/Sj5QKKyE42)
+   - ✅ Fast community support
+   - ✅ Real-time help from experienced users
+   - ✅ Report scams and suspicious activity
+   - ✅ General questions and discussions
+
+2. **GitHub Issues**
+   - **Visit**: [https://github.com/iwatkot/maps4fs/issues](https://github.com/iwatkot/maps4fs/issues)
+   - ✅ Bug reports and feature requests
+   - ✅ Technical issues
+   - ✅ Official issue tracking
+
+### Official Resources
+
+- **Web Application**: [https://maps4fs.xyz](https://maps4fs.xyz)
 - **Official Repository**: [https://github.com/iwatkot/maps4fs](https://github.com/iwatkot/maps4fs)
-- **Community Help**: Use GitHub Discussions for questions
+- **Documentation**: [https://maps4fs.gitbook.io/docs](https://maps4fs.gitbook.io/docs)
 
 **It's better to ask than to risk your security!**
