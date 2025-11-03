@@ -41,9 +41,17 @@ class Road(I3d, MeshComponent):
     """
 
     def preprocess(self) -> None:
-        pass
+        """Preprocess the road data before generation."""
 
-    def process(self) -> None:
+    def process(self):
+        """Process and generate roads for the map."""
+        try:
+            self.generate_roads()
+        except Exception as e:
+            self.logger.error("Error during road generation: %s", e)
+
+    def generate_roads(self) -> None:
+        """Generate roads for the map based on the info layer data."""
         road_infos = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
         if not road_infos:
             self.logger.warning("Roads polylines data not found in textures info layer.")
@@ -636,4 +644,5 @@ class Road(I3d, MeshComponent):
         )
 
     def info_sequence(self):
+        """Returns information about the component."""
         return {}
