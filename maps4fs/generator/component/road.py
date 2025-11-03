@@ -101,16 +101,22 @@ class Road(I3d, MeshComponent):
             self.logger.info("Total found for mesh generation: %d", len(road_entries))
 
             if road_entries:
-                # 1. Apply smart interpolation to make linstrings smoother,
+                # 1. Apply smart interpolation to make linestrings smoother,
                 # but carefully, ensuring that points are not too close to each other.
                 # Otherwise it may lead to artifacts in the mesh.
                 interpolated_road_entries: list[RoadEntry] = self.smart_interpolation(road_entries)
 
-                patches_road_entries: list[RoadEntry] = self.get_patches_linestrings(
+                # 2. Split roads that exceed Giants Engine's UV coordinate limits
+                # Giants Engine requires UV coordinates in [-32, 32] range
+                split_road_entries: list[RoadEntry] = self.split_long_roads(
                     interpolated_road_entries
                 )
-                interpolated_road_entries.extend(patches_road_entries)
-                self.generate_road_mesh(interpolated_road_entries, texture)
+
+                patches_road_entries: list[RoadEntry] = self.get_patches_linestrings(
+                    split_road_entries
+                )
+                split_road_entries.extend(patches_road_entries)
+                self.generate_road_mesh(split_road_entries, texture)
 
     def smart_interpolation(self, road_entries: list[RoadEntry]) -> list[RoadEntry]:
         """Apply smart interpolation to road linestrings.
@@ -123,7 +129,7 @@ class Road(I3d, MeshComponent):
             (list[RoadEntry]): List of RoadEntry objects with interpolated linestrings.
         """
         interpolated_entries = []
-        target_segment_length = 4.0  # Target distance between points in meters (denser)
+        target_segment_length = 5  # Target distance between points in meters (denser)
         max_angle_change = 30.0  # Maximum angle change in degrees to allow interpolation
 
         for linestring, width, z_offset in road_entries:
@@ -204,6 +210,70 @@ class Road(I3d, MeshComponent):
             "Smart interpolation complete. Processed %d roads.", len(interpolated_entries)
         )
         return interpolated_entries
+
+    def split_long_roads(
+        self, road_entries: list[RoadEntry], texture_tile_size: float = 10.0
+    ) -> list[RoadEntry]:
+        """Split roads that exceed Giants Engine's UV coordinate limits.
+
+        Giants Engine requires UV coordinates to be in [-32, 32] range.
+        Roads longer than 32 * texture_tile_size meters need to be split.
+
+        Arguments:
+            road_entries (list[RoadEntry]): List of RoadEntry objects
+            texture_tile_size (float): Size of texture tile in meters
+
+        Returns:
+            (list[RoadEntry]): List of RoadEntry objects with long roads split.
+        """
+        max_road_length = 30.0 * texture_tile_size  # Use 30 instead of 32 for safety margin
+        split_entries = []
+
+        for linestring, width, z_offset in road_entries:
+            road_length = linestring.length
+
+            if road_length <= max_road_length:
+                # Road is short enough, keep as is
+                split_entries.append(RoadEntry(linestring, width, z_offset))
+                continue
+
+            # Road is too long, split it into segments
+            num_segments = int(np.ceil(road_length / max_road_length))
+            segment_length = road_length / num_segments
+
+            self.logger.info(
+                "Splitting road (%.2fm) into %d segments of ~%.2fm each",
+                road_length,
+                num_segments,
+                segment_length,
+            )
+
+            for i in range(num_segments):
+                start_distance = i * segment_length
+                end_distance = min((i + 1) * segment_length, road_length)
+
+                # Extract segment using shapely's substring
+                try:
+                    segment_linestring = shapely.ops.substring(
+                        linestring, start_distance, end_distance, normalized=False
+                    )
+                    split_entries.append(RoadEntry(segment_linestring, width, z_offset))
+                    self.logger.debug(
+                        "  Segment %d: %.2fm to %.2fm (length: %.2fm)",
+                        i,
+                        start_distance,
+                        end_distance,
+                        segment_linestring.length,
+                    )
+                except Exception as e:
+                    self.logger.warning("Failed to split road segment %d: %s", i, e)
+
+        self.logger.info(
+            "Road splitting complete: %d roads -> %d segments",
+            len(road_entries),
+            len(split_entries),
+        )
+        return split_entries
 
     def get_patches_linestrings(self, road_entries: list[RoadEntry]) -> list[RoadEntry]:
         """Generate patch segments for T-junction intersections.
@@ -353,7 +423,8 @@ class Road(I3d, MeshComponent):
             mtl_output_path=mtl_output_path,
         )
 
-        mesh = trimesh.load_mesh(obj_output_path, force="mesh")
+        # Load the mesh but preserve_order to maintain UV mapping
+        mesh = trimesh.load_mesh(obj_output_path, force="mesh", process=False)
         rotation_matrix = trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0])
         mesh.apply_transform(rotation_matrix)
 
@@ -410,7 +481,7 @@ class Road(I3d, MeshComponent):
             patches_count,
         )
 
-        for linestring, width, z_offset in road_entries:
+        for _, (linestring, width, z_offset) in enumerate(road_entries):
             coords = list(linestring.coords)
             if len(coords) < 2:
                 continue
@@ -419,6 +490,7 @@ class Road(I3d, MeshComponent):
             segment_vertices = []
             segment_uvs = []
             accumulated_distance = 0.0
+            prev_center_3d = None  # Track previous center point in 3D for accurate distance
 
             for i in range(len(coords)):  # pylint: disable=consider-using-enumerate
                 x, y = coords[i]
@@ -452,7 +524,7 @@ class Road(I3d, MeshComponent):
                 perp_y = dx
 
                 exact_z_value = self.get_z_coordinate_from_dem(not_resized_dem, x, y)
-                offsetted_z = -exact_z_value + z_offset
+                offsetted_z = exact_z_value + z_offset
 
                 # Create left and right vertices with z-offset
                 left_vertex = (x + perp_x * width, y + perp_y * width, offsetted_z)
@@ -461,23 +533,29 @@ class Road(I3d, MeshComponent):
                 segment_vertices.append(left_vertex)
                 segment_vertices.append(right_vertex)
 
-                # Calculate UV coordinates
+                # Calculate UV coordinates based on 3D distance (including Z changes)
                 # U coordinate: 0 for left edge, 1 for right edge
-                # V coordinate: based on accumulated distance along the road
-                if i > 0:
-                    segment_distance = np.sqrt(
-                        (coords[i][0] - coords[i - 1][0]) ** 2
-                        + (coords[i][1] - coords[i - 1][1]) ** 2
+                # V coordinate: based on accumulated 3D distance along the road
+                segment_distance_3d = 0.0
+                current_center_3d = (x, y, offsetted_z)
+
+                if i > 0 and prev_center_3d is not None:
+                    # Calculate both 2D and 3D distances for comparison
+                    segment_distance_3d = np.sqrt(
+                        (current_center_3d[0] - prev_center_3d[0]) ** 2
+                        + (current_center_3d[1] - prev_center_3d[1]) ** 2
+                        + (current_center_3d[2] - prev_center_3d[2]) ** 2
                     )
-                    accumulated_distance += segment_distance
+                    accumulated_distance += segment_distance_3d
 
-                # Calculate V coordinate and keep it within Giants Editor's valid range [-32, 32]
-                # We use modulo to wrap the texture seamlessly
-                v_coord = (accumulated_distance / texture_tile_size) % 32.0
+                prev_center_3d = current_center_3d
 
-                # Add UVs for left and right vertices
-                segment_uvs.append((0.0, v_coord))  # Left edge
-                segment_uvs.append((1.0, v_coord))  # Right edge
+                # Calculate V coordinate - divide by texture tile size
+                v_coord_raw = accumulated_distance / texture_tile_size
+
+                # Store raw V coordinate for now - we'll apply modulo to the entire road later
+                segment_uvs.append((0.0, v_coord_raw))  # Left edge
+                segment_uvs.append((1.0, v_coord_raw))  # Right edge
 
             # Add vertices and UVs to global lists
             vertices.extend(segment_vertices)
