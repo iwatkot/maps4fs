@@ -490,7 +490,9 @@ class Road(I3d, MeshComponent):
             segment_vertices = []
             segment_uvs = []
             accumulated_distance = 0.0
-            prev_center_3d = None  # Track previous center point in 3D for accurate distance
+            prev_center_3d: tuple[float, float, float] | None = (
+                None  # Track previous center point in 3D
+            )
 
             for i in range(len(coords)):  # pylint: disable=consider-using-enumerate
                 x, y = coords[i]
@@ -539,6 +541,7 @@ class Road(I3d, MeshComponent):
                 segment_distance_3d = 0.0
                 current_center_3d = (x, y, offsetted_z)
 
+                # pylint: disable=unsubscriptable-object
                 if i > 0 and prev_center_3d is not None:
                     # Calculate both 2D and 3D distances for comparison
                     segment_distance_3d = np.sqrt(
