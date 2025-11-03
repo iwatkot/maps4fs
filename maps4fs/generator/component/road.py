@@ -534,7 +534,7 @@ class Road(I3d, MeshComponent):
                 perp_y = dx
 
                 exact_z_value = self.get_z_coordinate_from_dem(not_resized_dem, x, y)
-                offsetted_z = exact_z_value + z_offset
+                offsetted_z = -exact_z_value + z_offset
 
                 # Create left and right vertices with z-offset
                 left_vertex = (x + perp_x * width, y + perp_y * width, offsetted_z)
