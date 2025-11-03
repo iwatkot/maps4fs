@@ -58,4 +58,4 @@
 ## ⚖️ Legal Information
 * [License](license-info.md)
 * [Terms of Use](terms-of-use.md)
-* [Official Sources & Scam Warning](official-sources.md)
+* [Official Sources & Risks](official-sources.md)

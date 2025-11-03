@@ -1,4 +1,4 @@
-# ⚠️ Official Distribution & Scam Warning
+# Official Distribution & Scam Warning
 
 ## 🆓 Maps4FS is COMPLETELY FREE
 
