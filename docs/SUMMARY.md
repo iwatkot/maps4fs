@@ -54,3 +54,8 @@
   * [Legacy Deployment](legacy_deployment.md)
   * [Legacy Background Terrain](legacy_background_terrain.md)
   * [Legacy Water Planes](legacy_water_planes.md)
+
+## ⚖️ Legal Information
+* [License](license-info.md)
+* [Terms of Use](terms-of-use.md)
+* [Official Sources & Scam Warning](official-sources.md)
