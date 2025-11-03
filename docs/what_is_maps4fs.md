@@ -12,6 +12,7 @@ Maps4FS automatically generates complete, ready-to-use map templates for **Farmi
 - 🌾 **Creating farmable fields** based on real agricultural areas
 - 🌲 **Generating forests** with appropriate tree placement
 - 🌊 **Building water systems** including rivers and lakes
+- 🛣️ **Generating 3D road meshes** with realistic textures from OSM data
 - 🏘️ **Placing buildings** automatically in appropriate areas
 - 📐 **Producing 3D terrain** with accurate elevation models
 
@@ -23,6 +24,7 @@ Maps4FS automatically generates complete, ready-to-use map templates for **Farmi
 - **Fields & Farmlands**: Automatically detects and creates farmable areas
 - **Forests**: Places trees based on real forest data with customizable density
 - **Water Systems**: Generates water planes for rivers, lakes, and ponds
+- **Road Generation**: Creates 3D road meshes with proper textures and UV mapping
 - **Roads & Splines**: Creates road networks and spline systems
 - **Buildings**: Intelligent building placement in appropriate areas
 - **Decorative Foliage**: Adds realistic vegetation and grass areas
