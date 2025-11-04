@@ -370,7 +370,7 @@ class Config(XMLComponent, ImageComponent):
         country_code = self.supported_countries[country_name]
         eu_format = country_code in self.eu_countries
 
-        self.logger.info(
+        self.logger.debug(
             "Updating license plates for country: %s, EU format: %s",
             country_name,
             eu_format,
@@ -402,7 +402,7 @@ class Config(XMLComponent, ImageComponent):
                 COUNTRY_CODE_BOTTOM,
             )
 
-            self.logger.info("License plates updated successfully")
+            self.logger.debug("License plates updated successfully")
         except Exception as e:
             self.logger.error("Failed to update license plates: %s", e)
             return

@@ -15,14 +15,13 @@ import maps4fs.generator.config as mfscfg
 import maps4fs.generator.utils as mfsutils
 from maps4fs.generator.component import Background, Component, Layer, Satellite, Texture
 from maps4fs.generator.game import Game
-from maps4fs.generator.monitor import PerformanceMonitor, performance_session
+from maps4fs.generator.monitor import Logger, PerformanceMonitor, performance_session
 from maps4fs.generator.settings import GenerationSettings, MainSettings, SharedSettings
 from maps4fs.generator.statistics import (
     send_advanced_settings,
     send_main_settings,
     send_performance_report,
 )
-from maps4fs.logger import Logger
 
 
 class Map:
@@ -222,66 +221,90 @@ class Map:
             )
             generation_start = perf_counter()
 
-            for game_component in self.game.components:
-                component = game_component(
-                    self.game,
-                    self,
+            try:
+                for game_component in self.game.components:
+                    component = game_component(
+                        self.game,
+                        self,
+                        self.coordinates,
+                        self.size,
+                        self.rotated_size,
+                        self.rotation,
+                        self.map_directory,
+                        self.logger,
+                        texture_custom_schema=self.texture_custom_schema,  # type: ignore
+                        tree_custom_schema=self.tree_custom_schema,  # type: ignore
+                    )
+                    self.components.append(component)
+
+                    yield component.__class__.__name__
+
+                    try:
+                        component_start = perf_counter()
+                        component.process()
+                        component_finish = perf_counter()
+                        self.logger.info(
+                            "Component %s processed in %.2f seconds.",
+                            component.__class__.__name__,
+                            component_finish - component_start,
+                        )
+                        component.commit_generation_info()
+                    except Exception as e:
+                        self.logger.error(
+                            "Error processing or committing generation info for component %s: %s",
+                            component.__class__.__name__,
+                            e,
+                        )
+                        self._update_main_settings({"error": str(e)})
+                        raise e
+
+                generation_finish = perf_counter()
+                self.logger.info(
+                    "Map generation completed in %.2f seconds.",
+                    generation_finish - generation_start,
+                )
+
+                self._update_main_settings({"completed": True})
+
+                self.logger.info(
+                    "Map generation completed. Game code: %s. Coordinates: %s, size: %s. Rotation: %s.",
+                    self.game.code,
                     self.coordinates,
                     self.size,
-                    self.rotated_size,
                     self.rotation,
-                    self.map_directory,
-                    self.logger,
-                    texture_custom_schema=self.texture_custom_schema,  # type: ignore
-                    tree_custom_schema=self.tree_custom_schema,  # type: ignore
                 )
-                self.components.append(component)
 
-                yield component.__class__.__name__
+            finally:
+                self._save_metrics(session_id)
 
-                try:
-                    component_start = perf_counter()
-                    component.process()
-                    component_finish = perf_counter()
-                    self.logger.info(
-                        "Component %s processed in %.2f seconds.",
-                        component.__class__.__name__,
-                        component_finish - component_start,
-                    )
-                    component.commit_generation_info()
-                except Exception as e:
-                    self.logger.error(
-                        "Error processing or committing generation info for component %s: %s",
-                        component.__class__.__name__,
-                        e,
-                    )
-                    self._update_main_settings({"error": str(e)})
-                    raise e
+    def _save_metrics(self, session_id: str) -> None:
+        """Save logs and performance metrics to JSON files.
 
-            generation_finish = perf_counter()
-            self.logger.info(
-                "Map generation completed in %.2f seconds.",
-                generation_finish - generation_start,
-            )
+        Arguments:
+            session_id (str): Session ID.
+        """
+        try:
+            logs_json = self.logger.group_by_level(session_id)
+            if logs_json:
+                logs_filename = "generation_logs.json"
+                with open(
+                    os.path.join(self.map_directory, logs_filename), "w", encoding="utf-8"
+                ) as file:
+                    json.dump(logs_json, file, indent=4)
+        except Exception as e:
+            self.logger.error("Error saving logs to JSON: %s", e)
 
-            self._update_main_settings({"completed": True})
-
-            self.logger.info(
-                "Map generation completed. Game code: %s. Coordinates: %s, size: %s. Rotation: %s.",
-                self.game.code,
-                self.coordinates,
-                self.size,
-                self.rotation,
-            )
-
-        session_json = PerformanceMonitor().get_session_json(session_id)
-        if session_json:
-            report_filename = "performance_report.json"
-            with open(
-                os.path.join(self.map_directory, report_filename), "w", encoding="utf-8"
-            ) as file:
-                json.dump(session_json, file, indent=4)
-            send_performance_report(session_json)
+        try:
+            session_json = PerformanceMonitor().pop_session_json(session_id)
+            if session_json:
+                report_filename = "performance_report.json"
+                with open(
+                    os.path.join(self.map_directory, report_filename), "w", encoding="utf-8"
+                ) as file:
+                    json.dump(session_json, file, indent=4)
+                send_performance_report(session_json)
+        except Exception as e:
+            self.logger.error("Error saving performance report to JSON: %s", e)
 
     def _update_main_settings(self, data: dict[str, Any]) -> None:
         """Update main settings with provided data.

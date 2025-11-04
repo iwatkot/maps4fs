@@ -64,7 +64,7 @@ class Road(I3d, MeshComponent):
                 roads_by_texture[road_texture].append(road_info)
 
         for texture, roads_polylines in roads_by_texture.items():
-            self.logger.info("Processing roads with texture: %s", texture)
+            self.logger.debug("Processing roads with texture: %s", texture)
 
             # The texture name is represents the name of texture file without extension
             # for easy reference if the texture uses various extensions.
@@ -106,7 +106,7 @@ class Road(I3d, MeshComponent):
 
                 road_entries.append(RoadEntry(linestring=linestring, width=width))
 
-            self.logger.info("Total found for mesh generation: %d", len(road_entries))
+            self.logger.debug("Total found for mesh generation: %d", len(road_entries))
 
             if road_entries:
                 # 1. Apply smart interpolation to make linestrings smoother,
@@ -214,7 +214,7 @@ class Road(I3d, MeshComponent):
                 )
                 interpolated_entries.append(RoadEntry(linestring, width, z_offset))
 
-        self.logger.info(
+        self.logger.debug(
             "Smart interpolation complete. Processed %d roads.", len(interpolated_entries)
         )
         return interpolated_entries
@@ -249,7 +249,7 @@ class Road(I3d, MeshComponent):
             num_segments = int(np.ceil(road_length / max_road_length))
             segment_length = road_length / num_segments
 
-            self.logger.info(
+            self.logger.debug(
                 "Splitting road (%.2fm) into %d segments of ~%.2fm each",
                 road_length,
                 num_segments,
@@ -276,7 +276,7 @@ class Road(I3d, MeshComponent):
                 except Exception as e:
                     self.logger.warning("Failed to split road segment %d: %s", i, e)
 
-        self.logger.info(
+        self.logger.debug(
             "Road splitting complete: %d roads -> %d segments",
             len(road_entries),
             len(split_entries),
@@ -376,7 +376,7 @@ class Road(I3d, MeshComponent):
                             self.logger.debug("Failed to create patch linestring: %s", e)
                             continue
 
-        self.logger.info("Generated %d patch segments for T-junctions", len(patches))
+        self.logger.debug("Generated %d patch segments for T-junctions", len(patches))
         return patches
 
     def find_texture_file(self, templates_directory: str, texture_base_name: str) -> str:
@@ -419,7 +419,7 @@ class Road(I3d, MeshComponent):
         )
 
         shutil.copyfile(texture_path, dst_texture_path)
-        self.logger.info("Texture copied to %s", dst_texture_path)
+        self.logger.debug("Texture copied to %s", dst_texture_path)
 
         obj_output_path = os.path.join(road_mesh_directory, f"roads_{texture}.obj")
         mtl_output_path = os.path.join(road_mesh_directory, f"roads_{texture}.mtl")
@@ -483,7 +483,7 @@ class Road(I3d, MeshComponent):
         texture_tile_size = 10.0  # meters - how many meters before texture repeats
 
         patches_count = sum(1 for entry in road_entries if entry.z_offset > 0)
-        self.logger.info(
+        self.logger.debug(
             "Creating mesh for %d roads (%d patches with z-offset)",
             len(road_entries),
             patches_count,
@@ -607,7 +607,7 @@ class Road(I3d, MeshComponent):
             mtl_file.write("illum 2\n")  # Illumination model
             mtl_file.write(f"map_Kd {texture_filename}\n")  # Diffuse texture map
 
-        self.logger.info("MTL file written to %s", mtl_output_path)
+        self.logger.debug("MTL file written to %s", mtl_output_path)
 
         # Write OBJ file
         with open(obj_output_path, "w", encoding="utf-8") as obj_file:
@@ -636,7 +636,7 @@ class Road(I3d, MeshComponent):
                     f"{face[2] + 1}/{face[2] + 1}\n"
                 )
 
-        self.logger.info(
+        self.logger.debug(
             "OBJ file written to %s with %d vertices and %d faces",
             obj_output_path,
             len(vertices),

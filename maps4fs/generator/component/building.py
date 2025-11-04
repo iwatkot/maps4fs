@@ -350,7 +350,7 @@ class Building(I3d):
         else:
             self.buildings_schema = custom_buildings_schema
 
-        self.logger.info(
+        self.logger.debug(
             "Buildings schema loaded successfully with %d objects.", len(self.buildings_schema)
         )
 
@@ -398,7 +398,7 @@ class Building(I3d):
 
         # Save the buildings map image
         cv2.imwrite(self.buildings_map_path, buildings_map_image)
-        self.logger.info("Building categories map saved to: %s", self.buildings_map_path)
+        self.logger.debug("Building categories map saved to: %s", self.buildings_map_path)
 
         building_entries = []
         for building_entry in self.buildings_schema:
@@ -419,12 +419,12 @@ class Building(I3d):
         self.buildings_collection = BuildingEntryCollection(building_entries, region, ignore_region)
 
         if ignore_region:
-            self.logger.info(
+            self.logger.debug(
                 "Buildings collection created with %d buildings ignoring region restrictions.",
                 len(self.buildings_collection.entries),
             )
         else:
-            self.logger.info(
+            self.logger.debug(
                 "Buildings collection created with %d buildings for region '%s'.",
                 len(self.buildings_collection.entries),
                 region,
@@ -465,7 +465,7 @@ class Building(I3d):
             self.logger.warning("Buildings data not found in textures info layer.")
             return
 
-        self.logger.info("Found %d building entries to process.", len(buildings))
+        self.logger.debug("Found %d building entries to process.", len(buildings))
 
         # Initialize tracking for XML modifications
         tree = self.get_tree()
@@ -626,11 +626,11 @@ class Building(I3d):
                 continue
 
         added_buildings_count = node_id_counter - (BUILDINGS_STARTING_NODE_ID + 1000)
-        self.logger.info("Total buildings placed: %d of %d", added_buildings_count, len(buildings))
+        self.logger.debug("Total buildings placed: %d of %d", added_buildings_count, len(buildings))
 
         # Save the modified XML tree
         self.save_tree(tree)
-        self.logger.info("Buildings placement completed and saved to map.i3d")
+        self.logger.debug("Buildings placement completed and saved to map.i3d")
 
     def _get_polygon_dimensions_and_rotation(
         self, polygon_points: np.ndarray
