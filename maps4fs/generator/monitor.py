@@ -49,11 +49,8 @@ class Logger(logging.Logger):
         # Session storage - simple dict of lists
         self.session_logs: dict[str, list[dict[str, str]]] = defaultdict(list)
 
-    # pylint: disable=arguments-differ
-    def _log(self, level: int, msg: str, args, **kwargs) -> None:  # type: ignore
-        """Override _log to capture session logs."""
-        super()._log(level, msg, args, **kwargs)
-
+    def _capture_to_session(self, level: int, msg, args):
+        """Capture log to session storage regardless of logger level."""
         try:
             session_id = get_current_session()
             if session_id:
@@ -65,6 +62,26 @@ class Logger(logging.Logger):
         except Exception:
             pass
 
+    def debug(self, msg, *args, **kwargs):
+        """Override debug to always capture in session storage."""
+        self._capture_to_session(logging.DEBUG, msg, args)
+        super().debug(msg, *args, **kwargs)
+
+    def info(self, msg, *args, **kwargs):
+        """Override info to always capture in session storage."""
+        self._capture_to_session(logging.INFO, msg, args)
+        super().info(msg, *args, **kwargs)
+
+    def warning(self, msg, *args, **kwargs):
+        """Override warning to always capture in session storage."""
+        self._capture_to_session(logging.WARNING, msg, args)
+        super().warning(msg, *args, **kwargs)
+
+    def error(self, msg, *args, **kwargs):
+        """Override error to always capture in session storage."""
+        self._capture_to_session(logging.ERROR, msg, args)
+        super().error(msg, *args, **kwargs)
+
     def pop_session_logs(self, session_id: str) -> list[dict[str, str]]:
         """Pop logs for a specific session.
 
@@ -75,6 +92,24 @@ class Logger(logging.Logger):
             list[dict[str, str]]: List of log entries for the session.
         """
         return self.session_logs.pop(session_id, [])
+
+    def group_by_level(self, session_id: str) -> dict[str, list[dict[str, str]]]:
+        """Group logs by level for a specific session.
+
+        Arguments:
+            session_id (str): The session ID.
+
+        Returns:
+            dict[str, list[dict[str, str]]]: Logs grouped by level.
+        """
+        session_logs = self.pop_session_logs(session_id)
+        grouped_logs: dict[str, list[dict[str, str]]] = defaultdict(list)
+        for log in session_logs:
+            level = log.get("level")
+            if level:
+                grouped_logs[level].append(log)
+
+        return grouped_logs
 
 
 logger = Logger(name="MAPS4FS_MONITOR")
@@ -122,8 +157,8 @@ class PerformanceMonitor(metaclass=Singleton):
         """
         self.sessions[session][component][function] += time_taken
 
-    def get_session_json(self, session: str) -> dict[str, dict[str, float]]:
-        """Get performance data for a session in JSON-serializable format.
+    def pop_session_json(self, session: str) -> dict[str, dict[str, float]]:
+        """Pop performance data for a session in JSON-serializable format.
 
         Arguments:
             session (str): The session name.
@@ -131,7 +166,7 @@ class PerformanceMonitor(metaclass=Singleton):
         Returns:
             dict[str, dict[str, float]]: Performance data.
         """
-        return self.sessions.get(session, {})
+        return self.sessions.pop(session, {})
 
 
 def monitor_performance(func: Callable) -> Callable:
