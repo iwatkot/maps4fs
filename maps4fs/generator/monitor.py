@@ -25,6 +25,8 @@ SUPPORTED_LOG_LEVELS = {
 
 
 class Logger(logging.Logger):
+    """Handles logging to stdout with timestamps and session tracking."""
+
     def __init__(
         self,
         name: str = "MAPS4FS",
@@ -45,9 +47,10 @@ class Logger(logging.Logger):
         self.addHandler(self.stdout_handler)
 
         # Session storage - simple dict of lists
-        self.session_logs: dict[str, list[str]] = defaultdict(list)
+        self.session_logs: dict[str, list[dict[str, str]]] = defaultdict(list)
 
-    def _log(self, level: int, msg: str, args, **kwargs) -> None:
+    # pylint: disable=arguments-differ
+    def _log(self, level: int, msg: str, args, **kwargs) -> None:  # type: ignore
         """Override _log to capture session logs."""
         super()._log(level, msg, args, **kwargs)
 
@@ -62,14 +65,14 @@ class Logger(logging.Logger):
         except Exception:
             pass
 
-    def pop_session_logs(self, session_id: str) -> list[str]:
+    def pop_session_logs(self, session_id: str) -> list[dict[str, str]]:
         """Pop logs for a specific session.
 
         Arguments:
             session_id (str): The session ID.
 
         Returns:
-            list[str]: List of log entries for the session.
+            list[dict[str, str]]: List of log entries for the session.
         """
         return self.session_logs.pop(session_id, [])
 
