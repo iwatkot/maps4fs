@@ -15,14 +15,13 @@ import maps4fs.generator.config as mfscfg
 import maps4fs.generator.utils as mfsutils
 from maps4fs.generator.component import Background, Component, Layer, Satellite, Texture
 from maps4fs.generator.game import Game
-from maps4fs.generator.monitor import PerformanceMonitor, performance_session
+from maps4fs.generator.monitor import Logger, PerformanceMonitor, performance_session
 from maps4fs.generator.settings import GenerationSettings, MainSettings, SharedSettings
 from maps4fs.generator.statistics import (
     send_advanced_settings,
     send_main_settings,
     send_performance_report,
 )
-from maps4fs.logger import Logger
 
 
 class Map:
@@ -273,6 +272,14 @@ class Map:
                 self.size,
                 self.rotation,
             )
+
+        logs_json = self.logger.pop_session_logs(session_id)
+        if logs_json:
+            logs_filename = "generation_logs.json"
+            with open(
+                os.path.join(self.map_directory, logs_filename), "w", encoding="utf-8"
+            ) as file:
+                json.dump(logs_json, file, indent=4)
 
         session_json = PerformanceMonitor().get_session_json(session_id)
         if session_json:

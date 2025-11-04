@@ -1,19 +1,80 @@
 """Module for performance monitoring during map generation."""
 
 import functools
+import logging
+import os
+import sys
 import threading
 import uuid
 from collections import defaultdict
 from contextlib import contextmanager
+from datetime import datetime
 from time import perf_counter
-from typing import Callable, Generator
+from typing import Callable, Generator, Literal
 
 from maps4fs.generator.utils import Singleton
-from maps4fs.logger import Logger
-
-logger = Logger(name="MAPS4FS_MONITOR")
 
 _local = threading.local()
+MFS_LOG_LEVEL = "MFS_LOG_LEVEL"
+SUPPORTED_LOG_LEVELS = {
+    10: "DEBUG",
+    20: "INFO",
+    30: "WARNING",
+    40: "ERROR",
+}
+
+
+class Logger(logging.Logger):
+    def __init__(
+        self,
+        name: str = "MAPS4FS",
+        level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO",
+        **kwargs,
+    ):
+        log_level = os.getenv(MFS_LOG_LEVEL, level)
+        if log_level not in SUPPORTED_LOG_LEVELS.values():
+            log_level = "INFO"
+        super().__init__(name)
+        self.setLevel(level)
+
+        # Standard stdout handler
+        self.stdout_handler = logging.StreamHandler(sys.stdout)
+        formatter = "%(name)s | %(levelname)s | %(asctime)s | %(message)s"
+        self.fmt = formatter
+        self.stdout_handler.setFormatter(logging.Formatter(formatter))
+        self.addHandler(self.stdout_handler)
+
+        # Session storage - simple dict of lists
+        self.session_logs: dict[str, list[str]] = defaultdict(list)
+
+    def _log(self, level: int, msg: str, args, **kwargs) -> None:
+        """Override _log to capture session logs."""
+        super()._log(level, msg, args, **kwargs)
+
+        try:
+            session_id = get_current_session()
+            if session_id:
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
+                formatted_msg = msg % args if args else str(msg)
+                level_name = SUPPORTED_LOG_LEVELS.get(level, "INFO")
+                log_entry = {"level": level_name, "timestamp": timestamp, "message": formatted_msg}
+                self.session_logs[session_id].append(log_entry)
+        except Exception:
+            pass
+
+    def pop_session_logs(self, session_id: str) -> list[str]:
+        """Pop logs for a specific session.
+
+        Arguments:
+            session_id (str): The session ID.
+
+        Returns:
+            list[str]: List of log entries for the session.
+        """
+        return self.session_logs.pop(session_id, [])
+
+
+logger = Logger(name="MAPS4FS_MONITOR")
 
 
 def get_current_session() -> str | None:

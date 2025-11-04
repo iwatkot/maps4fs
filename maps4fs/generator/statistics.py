@@ -6,9 +6,9 @@ from typing import Any
 
 import requests
 
-from maps4fs.logger import Logger
+from maps4fs.generator.monitor import Logger
 
-logger = Logger()
+logger = Logger(name="MAPS4FS.STATISTICS")
 
 try:
     from dotenv import load_dotenv
