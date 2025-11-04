@@ -177,11 +177,65 @@ The minimap image displayed in-game.
 Contains development and preview files generated during the map creation process. These files are safe to remove if not needed for future reference or debugging.
 
 ### Generation Metadata
+
 **File:** `generation_info.json`
 
 Comprehensive metadata about the map generation process, including data sources, coordinates, and processing parameters. Valuable for recreating maps or accessing original data sources.
 
 For complete metadata documentation, see the [Generation Info](generation_info.md) documentation.
+
+**File:** `generation_logs.json`
+
+**NEW**: Detailed logging information from the map generation process, automatically collected and organized by log level for debugging and analysis purposes.
+
+**Structure:**
+```json
+{
+    "DEBUG": [
+        {
+            "level": "DEBUG",
+            "timestamp": "2025-11-04 14:30:15,123", 
+            "message": "Processing texture layer for grass..."
+        }
+    ],
+    "INFO": [
+        {
+            "level": "INFO",
+            "timestamp": "2025-11-04 14:30:16,456",
+            "message": "Component Background processed in 2.45 seconds."
+        }
+    ],
+    "WARNING": [
+        {
+            "level": "WARNING", 
+            "timestamp": "2025-11-04 14:30:17,789",
+            "message": "Custom texture schema not found, using default."
+        }
+    ],
+    "ERROR": [
+        {
+            "level": "ERROR",
+            "timestamp": "2025-11-04 14:30:18,012", 
+            "message": "Failed to download satellite imagery for coordinates."
+        }
+    ]
+}
+```
+
+**Key Features:**
+- **Comprehensive Coverage**: Includes ALL log levels (DEBUG, INFO, WARNING, ERROR, CRITICAL) regardless of console output level
+- **Detailed Timestamps**: Precise timing information for troubleshooting performance issues
+- **Organized by Level**: Easy filtering and analysis of specific log types
+- **Session-Specific**: Only contains logs from the specific generation session
+- **Automatic Generation**: No user configuration required - generated automatically during map creation
+
+**Usage:**
+- **Debugging**: Identify specific issues during map generation
+- **Performance Analysis**: Track component processing times and bottlenecks
+- **Support**: Provide detailed logs when requesting help or reporting issues
+- **Development**: Analyze generation patterns and optimize workflows
+
+**Note:** This file is safe to remove if detailed logging information is not needed for your use case.
 
 ## Mod Package Files
 
@@ -351,7 +405,8 @@ Below is the complete file structure of a generated map package:
  ┃ ┣ 📄dem_colored.png
  ┃ ┣ 📄dem_grayscale.png
  ┃ ┗ 📄textures_osm.png
- ┣ generation_info.json
+ ┣ 📄generation_info.json
+ ┣ 📄generation_logs.json
  ┣ 📄icon.dds
  ┣ 📄modDesc.xml
  ┗ 📄preview.dds
