@@ -235,20 +235,18 @@ The [My Maps](my_maps.md) feature provides schema access and Settings integratio
 - **Best Practice Capture** - Save working schemas for future use
 
 ### 🔧 **General Settings**
-Software-wide configurations and server management tools:
+Software-wide configurations and maintenance tools:
 
 #### 🖥️ **Server Management**
 Essential backend server operations and maintenance:
 - **🧹 Clean Cache** - Remove cached data and temporary files to resolve issues with outdated data or free up disk space
 - **🔄 Reload Templates** - Download and update default templates from the remote repository to ensure you have the most up-to-date schemas and configurations
 
-#### ℹ️ **Server Information** 
-Backend server status and configuration details:
-- **Backend URL** - Current server endpoint (typically `http://localhost:8000`)
-- **Environment** - Deployment environment (Local/Production)
-- **Status Monitoring** - Real-time server connectivity and health information
+#### 🌐 **Clear Browser Settings**
+Reset all local preferences and defaults:
+- **🗑️ Clear Settings** - Removes all stored preferences including default templates, presets, survey responses, and other settings saved in your browser's local storage
 
-⚠️ **Important**: These operations affect the backend server. Ensure no map generation is in progress before performing maintenance tasks.
+⚠️ **Important**: These operations affect the backend server and local data. Ensure no map generation is in progress before performing maintenance tasks.
 
 ## Future Enhancements
 

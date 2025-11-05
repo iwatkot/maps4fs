@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from typing import Any
 
 import cv2
 import numpy as np
@@ -40,6 +41,7 @@ class Config(XMLComponent, ImageComponent):
 
     def preprocess(self) -> None:
         """Gets the path to the map XML file and saves it to the instance variable."""
+        self.info: dict[str, Any] = {}
         self.xml_path = self.game.map_xml_path(self.map_directory)
         self.fog_parameters: dict[str, int] = {}
 
@@ -105,6 +107,8 @@ class Config(XMLComponent, ImageComponent):
         }
         if self.fog_parameters:
             data["Fog"] = self.fog_parameters  # type: ignore
+
+        data.update(self.info)
 
         return data  # type: ignore
 
@@ -360,6 +364,7 @@ class Config(XMLComponent, ImageComponent):
             return
 
         country_name = mfsutils.get_country_by_coordinates(self.map.coordinates).lower()
+        self.info["license_plate_country_name"] = country_name
         if country_name not in self.supported_countries:
             self.logger.warning(
                 "License plates processing is not supported for country: %s.", country_name
@@ -369,6 +374,8 @@ class Config(XMLComponent, ImageComponent):
         # Get license plate country code and EU format.
         country_code = self.supported_countries[country_name]
         eu_format = country_code in self.eu_countries
+        self.info["license_plate_country_code"] = country_code
+        self.info["license_plate_eu_format"] = eu_format
 
         self.logger.debug(
             "Updating license plates for country: %s, EU format: %s",
@@ -484,12 +491,17 @@ class Config(XMLComponent, ImageComponent):
         # 1. Update license plate prefix to ensure max 3 letters, uppercase.
         license_plate_prefix = license_plate_prefix.upper()[:3]
 
-        # 2. Position X values for the letters.
+        # 2. Pad the prefix to exactly 3 characters with spaces if needed.
+        license_plate_prefix = license_plate_prefix.ljust(3)
+        self.info["license_plate_prefix"] = license_plate_prefix
+
+        # 3. Position X values for the letters.
         pos_x_values = ["-0.1712", "-0.1172", "-0.0632"]  # ? DO WE REALLY NEED THEM?
 
-        # 3. Update only the first 3 values (prefix letters), leave others intact.
-        # Find and update nodes 0|0, 0|1, 0|2 specifically.
-        for i, letter in enumerate(license_plate_prefix):
+        # 4. Update all 3 positions (0|0, 0|1, 0|2) to ensure proper formatting.
+        # Always process exactly 3 positions, padding with spaces as needed.
+        for i in range(3):
+            letter = license_plate_prefix[i]  # This will be a space if padding was applied
             target_node = f"0|{i}"
             # Find existing value with this node ID.
             existing_value = None
