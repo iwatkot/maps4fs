@@ -285,13 +285,13 @@ class BuildingSettings(SettingsModel):
     Attributes:
         generate_buildings (bool): generate buildings on the map.
         region (Literal["auto", "all", "EU", "US"]): region for the buildings.
-        tolerance_factor (float): tolerance factor representing allowed dimension difference
+        tolerance_factor (int): tolerance factor representing allowed dimension difference
             between OSM building footprint and the building model footprint.
     """
 
     generate_buildings: bool = True
     region: Literal["auto", "all", "EU", "US"] = "auto"
-    tolerance_factor: float = 0.3
+    tolerance_factor: int = 30
 
 
 class GenerationSettings(BaseModel):

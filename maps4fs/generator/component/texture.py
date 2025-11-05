@@ -846,7 +846,7 @@ class Texture(ImageComponent):
             else:
                 objects = ox.features_from_bbox(bbox=self.new_bbox, tags=tags)
         except Exception as e:
-            self.logger.warning("Error fetching objects for tags: %s. Error: %s.", tags, e)
+            self.logger.debug("Error fetching objects for tags: %s. Error: %s.", tags, e)
             return None
 
         return objects

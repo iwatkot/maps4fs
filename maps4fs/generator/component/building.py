@@ -537,7 +537,7 @@ class Building(I3d):
                 category=category,
                 width=width,
                 depth=depth,
-                tolerance=self.map.building_settings.tolerance_factor,
+                tolerance=self.map.building_settings.tolerance_factor / 100,
             )
 
             if best_match:
