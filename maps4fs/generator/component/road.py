@@ -3,7 +3,7 @@
 import os
 import shutil
 from collections import defaultdict
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 import numpy as np
 import shapely
@@ -42,6 +42,7 @@ class Road(I3d, MeshComponent):
 
     def preprocess(self) -> None:
         """Preprocess the road data before generation."""
+        self.info: dict[str, Any] = {}
 
     def process(self):
         """Process and generate roads for the map."""
@@ -63,6 +64,11 @@ class Road(I3d, MeshComponent):
             if road_texture:
                 roads_by_texture[road_texture].append(road_info)
 
+        self.info["road_textures"] = list(roads_by_texture.keys())
+        self.info["total_OSM_roads"] = len(road_infos)
+
+        fitted_roads_count = 0
+        patches_created_count = 0
         for texture, roads_polylines in roads_by_texture.items():
             self.logger.debug("Processing roads with texture: %s", texture)
 
@@ -109,6 +115,7 @@ class Road(I3d, MeshComponent):
             self.logger.debug("Total found for mesh generation: %d", len(road_entries))
 
             if road_entries:
+                fitted_roads_count += len(road_entries)
                 # 1. Apply smart interpolation to make linestrings smoother,
                 # but carefully, ensuring that points are not too close to each other.
                 # Otherwise it may lead to artifacts in the mesh.
@@ -123,8 +130,12 @@ class Road(I3d, MeshComponent):
                 patches_road_entries: list[RoadEntry] = self.get_patches_linestrings(
                     split_road_entries
                 )
+                patches_created_count += len(patches_road_entries)
                 split_road_entries.extend(patches_road_entries)
                 self.generate_road_mesh(split_road_entries, texture)
+
+        self.info["total_fitted_roads"] = fitted_roads_count
+        self.info["total_patches_created"] = patches_created_count
 
     def smart_interpolation(self, road_entries: list[RoadEntry]) -> list[RoadEntry]:
         """Apply smart interpolation to road linestrings.
@@ -643,6 +654,10 @@ class Road(I3d, MeshComponent):
             len(faces),
         )
 
-    def info_sequence(self):
-        """Returns information about the component."""
-        return {}
+    def info_sequence(self) -> dict[str, Any]:
+        """Returns information about the road processing as a dictionary.
+
+        Returns:
+            dict[str, Any]: Information about road processing.
+        """
+        return self.info

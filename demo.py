@@ -73,7 +73,7 @@ texture_settings = mfs.settings.TextureSettings(
 satellite_settings = mfs.settings.SatelliteSettings(download_images=True, zoom_level=16)
 
 buildings_settings = mfs.settings.BuildingSettings(
-    generate_buildings=True, region="all", tolerance_factor=0.3
+    generate_buildings=True, region="all", tolerance_factor=30
 )
 
 # 7️⃣ Optional: define custom tree and textures schemas.

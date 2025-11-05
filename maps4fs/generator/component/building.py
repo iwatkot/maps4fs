@@ -2,7 +2,7 @@
 
 import json
 import os
-from typing import NamedTuple
+from typing import Any, NamedTuple
 from xml.etree import ElementTree as ET
 
 import cv2
@@ -320,6 +320,7 @@ class Building(I3d):
 
     def preprocess(self) -> None:
         """Preprocess and prepare buildings schema and buildings map image."""
+        self.info: dict[str, Any] = {}
         try:
             buildings_schema_path = self.game.buildings_schema
         except ValueError as e:
@@ -417,6 +418,10 @@ class Building(I3d):
             region = self.map.building_settings.region
 
         self.buildings_collection = BuildingEntryCollection(building_entries, region, ignore_region)
+
+        self.info["building_region"] = region
+        self.info["ignore_building_region"] = ignore_region
+        self.info["total_buildings_in_schema"] = len(self.buildings_collection.entries)
 
         if ignore_region:
             self.logger.debug(
@@ -628,6 +633,9 @@ class Building(I3d):
         added_buildings_count = node_id_counter - (BUILDINGS_STARTING_NODE_ID + 1000)
         self.logger.debug("Total buildings placed: %d of %d", added_buildings_count, len(buildings))
 
+        self.info["total_buildings_placed"] = added_buildings_count
+        self.info["total_buildings_attempted"] = len(buildings)
+
         # Save the modified XML tree
         self.save_tree(tree)
         self.logger.debug("Buildings placement completed and saved to map.i3d")
@@ -702,5 +710,10 @@ class Building(I3d):
         scene_node.append(buildings_group)
         return buildings_group
 
-    def info_sequence(self) -> dict[str, dict[str, str | float | int]]:
-        return {}
+    def info_sequence(self) -> dict[str, Any]:
+        """Return information about the building processing as a dictionary.
+
+        Returns:
+            dict[str, Any]: Information about building processing.
+        """
+        return self.info
