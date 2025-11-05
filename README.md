@@ -64,11 +64,10 @@
 📦 **Giants Editor Ready** - Import and start building immediately<br>
 
 🗺️ **Advanced Customization** - [Custom OSM maps](https://maps4fs.gitbook.io/docs/advanced-topics/custom_osm) and elevation data<br>
-🔌 **API Integration** - Generate maps programmatically via [API](https://github.com/iwatkot/maps4fsapi)<br>
 📚 **Complete Documentation** - [Detailed guides](https://maps4fs.gitbook.io/docs) and video tutorials<br>
 
 <p align="center">
-<img src="https://github.com/iwatkot/maps4fs/releases/download/2.9.34/mfsg.gif"><br>
+<img src="https://github.com/iwatkot/maps4fs/releases/download/2.9.40/mfsg2.gif"><br>
 <i>Example of map generated with Maps4FS with no manual edits.</i>
 </p>
 
