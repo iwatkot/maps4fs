@@ -114,4 +114,3 @@ Additionally, we extend gratitude to community members who have supported the pr
 - [kbrandwijk](https://github.com/kbrandwijk) - Created the [satellite image downloader tool](https://github.com/Paint-a-Farm/satmap_downloader) for Google Maps and granted permission for modification and Python package creation
 - [Maaslandmods](https://github.com/Maaslandmods) - Conceived the UI tree schema editing feature and provided implementation images and code examples
 - [StrauntMaunt](https://gitlab.com/StrauntMaunt) - Developed procedural generation scripts, provided essential Maps4FS updates, and authored procedural generation documentation
-- Torty - provided hardware to deploy the public version of the tool
