@@ -108,15 +108,10 @@ class Map:
         self.process_settings()
 
         self.logger = logger if logger else Logger()
-        generation_settings_json = generation_settings.to_json()
+        self.generation_settings_json = generation_settings.to_json()
 
-        try:
-            main_settings_json["is_public"] = self.kwargs.get("is_public", False)
-            send_main_settings(main_settings_json)
-            send_advanced_settings(generation_settings_json)
-            self.logger.info("Settings sent successfully.")
-        except Exception as e:
-            self.logger.warning("Error sending settings: %s", e)
+        # Store data for statistics sending after generation
+        self.initial_main_settings_json = main_settings_json.copy()
         # endregion
 
         # region JSON data saving
@@ -126,7 +121,7 @@ class Map:
         self.buildings_custom_schema = kwargs.get("buildings_custom_schema", None)
 
         json_data = {
-            "generation_settings.json": generation_settings_json,
+            "generation_settings.json": self.generation_settings_json,
             "texture_custom_schema.json": self.texture_custom_schema,
             "tree_custom_schema.json": self.tree_custom_schema,
             "buildings_custom_schema.json": self.buildings_custom_schema,
@@ -255,7 +250,7 @@ class Map:
                             component.__class__.__name__,
                             e,
                         )
-                        self._update_main_settings({"error": str(e)})
+                        self._update_main_settings({"error": str(repr(e))})
                         raise e
 
                 generation_finish = perf_counter()
@@ -305,6 +300,24 @@ class Map:
                 send_performance_report(session_json)
         except Exception as e:
             self.logger.error("Error saving performance report to JSON: %s", e)
+
+        # Send statistics after generation is complete
+        try:
+            # Read the current main settings (which may have been updated during generation)
+            if os.path.exists(self.main_settings_path):
+                with open(self.main_settings_path, "r", encoding="utf-8") as file:
+                    final_main_settings = json.load(file)
+            else:
+                final_main_settings = self.initial_main_settings_json.copy()
+
+            # Ensure we preserve the is_public flag and other kwargs
+            final_main_settings["is_public"] = self.kwargs.get("is_public", False)
+
+            send_main_settings(final_main_settings)
+            send_advanced_settings(self.generation_settings_json)
+            self.logger.info("Statistics sent successfully after generation.")
+        except Exception as e:
+            self.logger.warning("Error sending statistics after generation: %s", e)
 
     def _update_main_settings(self, data: dict[str, Any]) -> None:
         """Update main settings with provided data.

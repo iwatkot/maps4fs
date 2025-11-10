@@ -48,8 +48,15 @@ def post(endpoint: str, data: dict[str, Any]) -> None:
         except Exception as e:
             logger.warning("Error while trying to send settings: %s", e)
 
-    thread = threading.Thread(target=_post_thread, daemon=True)
+    # Use non-daemon thread and wait for completion to ensure critical data is sent
+    thread = threading.Thread(target=_post_thread, daemon=False)
     thread.start()
+    # Wait up to 15 seconds for the request to complete
+    thread.join(timeout=15)
+
+    # If thread is still alive, log a warning but don't block
+    if thread.is_alive():
+        logger.warning("Statistics request taking longer than expected, continuing without waiting")
 
 
 def send_main_settings(data: dict[str, Any]) -> None:
