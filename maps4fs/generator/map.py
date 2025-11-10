@@ -231,8 +231,10 @@ class Map:
                         tree_custom_schema=self.tree_custom_schema,  # type: ignore
                     )
                     self.components.append(component)
+                    component_name = component.__class__.__name__
+                    self.logger.debug("Processing component: %s", component_name)
 
-                    yield component.__class__.__name__
+                    yield component_name
 
                     try:
                         component_start = perf_counter()
@@ -240,17 +242,17 @@ class Map:
                         component_finish = perf_counter()
                         self.logger.info(
                             "Component %s processed in %.2f seconds.",
-                            component.__class__.__name__,
+                            component_name,
                             component_finish - component_start,
                         )
                         component.commit_generation_info()
                     except Exception as e:
                         self.logger.error(
                             "Error processing or committing generation info for component %s: %s",
-                            component.__class__.__name__,
+                            component_name,
                             e,
                         )
-                        self._update_main_settings({"error": str(repr(e))})
+                        self._update_main_settings({"error": f"{component_name} error: {repr(e)}"})
                         raise e
 
                 generation_finish = perf_counter()
