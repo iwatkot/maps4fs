@@ -204,7 +204,7 @@ python -m venv venv
 venv\Scripts\activate
 
 # Install dependencies
-pip install -r requirements.txt
+pip install -r dev/requirements.txt
 
 # Install Maps4FS in development mode
 pip install -e .
@@ -226,7 +226,7 @@ python3 -m venv venv
 source venv/bin/activate
 
 # Install dependencies
-pip install -r requirements.txt
+pip install -r dev/requirements.txt
 
 # Install Maps4FS in development mode
 pip install -e .
@@ -234,6 +234,55 @@ pip install -e .
 # Test installation
 python demo.py
 ```
+
+#### 💡 **Even Easier: Automated Setup Scripts**
+
+Maps4FS includes convenient automation scripts that handle all the setup for you:
+
+**Windows (PowerShell):**
+```cmd
+# Clone the repository
+git clone https://github.com/iwatkot/maps4fs.git
+cd maps4fs
+
+# Run the automated setup script
+powershell -ExecutionPolicy Bypass -File dev/create_venv.ps1
+
+# The script automatically:
+# - Creates virtual environment
+# - Activates it
+# - Installs all dependencies
+# - Sets up Maps4FS in development mode
+
+# Test installation
+python demo.py
+```
+
+**macOS/Linux (Bash):**
+```bash
+# Clone the repository
+git clone https://github.com/iwatkot/maps4fs.git
+cd maps4fs
+
+# Run the automated setup script
+bash dev/create_venv.sh
+
+# The script automatically:
+# - Creates virtual environment
+# - Activates it  
+# - Installs all dependencies
+# - Sets up Maps4FS in development mode
+
+# Test installation
+python demo.py
+```
+
+**Benefits of automation scripts:**
+- ✅ **One command setup** - No need to remember multiple steps
+- ✅ **Error handling** - Scripts check for prerequisites and handle common issues
+- ✅ **Consistent environment** - Same setup every time
+- ✅ **Platform optimized** - Different scripts for Windows vs Unix systems
+- ✅ **Time saving** - Perfect for quick setup or CI/CD
 
 #### 💡 **Pro Tip: Using Visual Studio Code**
 
