@@ -136,15 +136,21 @@ class DEM(ImageComponent):
         if len(data.shape) != 2:
             self.logger.error("DTM provider returned incorrect data: more than 1 channel.")
             raise ValueError(
-                "DTM provider returned incorrect data: more than 1 channel. "
-                "Try using different DTM provider."
+                "The DTM provider returned the downloaded data, however it has an incorrect format. "
+                "It may indicate that the DTM Provider does not support the requested area or "
+                "the data is corrupted on the provider side. "
+                "Please try using a different DTM provider."
+                f"Details: the returned data is not a single channel image: shape {data.shape}."
             )
 
         if data.dtype not in ["int16", "uint16", "float", "float32"]:
             self.logger.error("DTM provider returned incorrect data type: %s.", data.dtype)
             raise ValueError(
-                f"DTM provider returned incorrect data type: {data.dtype}. "
-                "Try using different DTM provider."
+                "The DTM provider returned the downloaded data, however it has an incorrect format. "
+                "It may indicate that the DTM Provider does not support the requested area or "
+                "the data is corrupted on the provider side. "
+                "Please try using a different DTM provider."
+                f"Details: the returned data type is not supported: {data.dtype}."
             )
 
         self.logger.debug(
@@ -160,7 +166,13 @@ class DEM(ImageComponent):
         # Check if the data contains any non-zero values, otherwise raise an error.
         if not np.any(data):
             self.logger.error("DTM provider returned empty data.")
-            raise ValueError("DTM provider returned empty data. Try using different DTM provider.")
+            raise ValueError(
+                "The DTM provider returned the downloaded data, however it appears to be empty "
+                "or contains no valid elevation information. "
+                "It may indicate that the DTM Provider does not support the requested area or "
+                "the data is corrupted on the provider side. "
+                "Please try using a different DTM provider."
+            )
 
         # 1. Resize DEM data to the output resolution.
         resampled_data = self.resize_to_output(data)
