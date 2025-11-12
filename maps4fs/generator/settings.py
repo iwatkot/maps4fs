@@ -360,6 +360,7 @@ class MainSettings(NamedTuple):
     version: str
     completed: bool
     error: str | None = None
+    origin: str | None = None
 
     @classmethod
     def from_json(cls, data: dict[str, str | float | int | bool | None]) -> MainSettings:
@@ -396,6 +397,7 @@ class MainSettings(NamedTuple):
             "version": self.version,
             "completed": self.completed,
             "error": self.error,
+            "origin": self.origin,
         }
 
     @classmethod
@@ -427,4 +429,5 @@ class MainSettings(NamedTuple):
             version=mfscfg.PACKAGE_VERSION,
             completed=False,
             error=None,
+            origin=map.kwargs.get("origin", None),
         )
