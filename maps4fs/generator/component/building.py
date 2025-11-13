@@ -499,7 +499,7 @@ class Building(I3d):
         file_id_counter = BUILDINGS_STARTING_NODE_ID
         node_id_counter = BUILDINGS_STARTING_NODE_ID + 1000
 
-        not_resized_dem = self.get_not_resized_dem_with_foundations(allow_fallback=True)
+        not_resized_dem = self.get_dem_image_with_fallback(start_at=1)
         if not_resized_dem is None:
             self.logger.warning("Not resized DEM not found.")
             return

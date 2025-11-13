@@ -24,6 +24,14 @@ from maps4fs.generator.settings import Parameters
 
 SEGMENT_LENGTH = 2
 
+# Note: the DEM types sorted by priority for usage with fallbacks.
+# Starting from the most detailed to the least detailed.
+SUPPORTED_DEM_TYPES = [
+    Parameters.NOT_RESIZED_DEM_ROADS,
+    Parameters.NOT_RESIZED_DEM_FOUNDATIONS,
+    Parameters.NOT_RESIZED_DEM,
+]
+
 
 class Background(MeshComponent, ImageComponent):
     """Component for creating 3D obj files based on DEM data around the map.
@@ -77,13 +85,6 @@ class Background(MeshComponent, ImageComponent):
         self.not_substracted_path: str = os.path.join(
             self.background_directory, "not_substracted.png"
         )
-        self.not_resized_path: str = os.path.join(self.background_directory, "not_resized.png")
-        self.not_resized_with_foundations_path: str = os.path.join(
-            self.background_directory, "not_resized_with_foundations.png"
-        )
-        self.not_resized_with_flattened_roads_path: str = os.path.join(
-            self.background_directory, "not_resized_with_flattened_roads.png"
-        )
 
         self.flatten_water_to: int | None = None
 
@@ -116,7 +117,9 @@ class Background(MeshComponent, ImageComponent):
 
         cutted_dem_path = self.save_map_dem(self.output_path)
         shutil.copyfile(self.output_path, self.not_substracted_path)
-        self.save_map_dem(self.output_path, save_path=self.not_resized_path)
+        self.save_map_dem(
+            self.output_path, save_path=self.not_resized_path(Parameters.NOT_RESIZED_DEM)
+        )
 
         if self.map.background_settings.flatten_roads:
             self.flatten_roads()
@@ -148,6 +151,32 @@ class Background(MeshComponent, ImageComponent):
                 self.logger.warning(
                     "Mesh processing is disabled for the game, skipping water mesh processing."
                 )
+
+    def not_resized_paths(self) -> list[str]:
+        """Returns the list of paths to all not resized DEM files.
+        Returns:
+            list[str] : The list of paths to all not resized DEM files.
+        """
+        return [self.not_resized_path(dem_type) for dem_type in SUPPORTED_DEM_TYPES]
+
+    def not_resized_path(self, dem_type: str) -> str:
+        """Returns the path to the specified not resized DEM file.
+
+        Arguments:
+            dem_type (str): The type of the DEM file. Must be one of the SUPPORTED_DEM_TYPES.
+
+        Raises:
+            ValueError: If the dem_type is not supported.
+
+        Returns:
+            str : The path to the specified not resized DEM file.
+        """
+        if not dem_type.endswith(".png"):
+            dem_type += ".png"
+        if dem_type not in SUPPORTED_DEM_TYPES:
+            raise ValueError(f"Unsupported dem_type: {dem_type}")
+
+        return os.path.join(self.background_directory, dem_type)
 
     @monitor_performance
     def create_foundations(self, dem_image: np.ndarray) -> np.ndarray:
@@ -567,9 +596,10 @@ class Background(MeshComponent, ImageComponent):
 
         if self.map.dem_settings.add_foundations:
             dem_data = self.create_foundations(dem_data)
-            cv2.imwrite(self.not_resized_with_foundations_path, dem_data)
+            cv2.imwrite(self.not_resized_path(Parameters.NOT_RESIZED_DEM_FOUNDATIONS), dem_data)
             self.logger.debug(
-                "Not resized DEM with foundations saved: %s", self.not_resized_with_foundations_path
+                "Not resized DEM with foundations saved: %s",
+                self.not_resized_path(Parameters.NOT_RESIZED_DEM_FOUNDATIONS),
             )
 
         output_size = self.scaled_size + 1
@@ -948,7 +978,9 @@ class Background(MeshComponent, ImageComponent):
         all_faces = []
         vertex_offset = 0
 
-        not_resized_dem = cv2.imread(self.not_resized_path, cv2.IMREAD_UNCHANGED)
+        not_resized_dem = cv2.imread(
+            self.not_resized_path(Parameters.NOT_RESIZED_DEM), cv2.IMREAD_UNCHANGED
+        )
 
         for polygon in polygons:
             # Get exterior 3D coordinates
@@ -1062,7 +1094,10 @@ class Background(MeshComponent, ImageComponent):
     @monitor_performance
     def flatten_roads(self) -> None:
         """Flattens the roads in the DEM data by averaging the height values along the road polylines."""
-        supported_files = [self.not_resized_with_foundations_path, self.not_resized_path]
+        supported_files = [
+            self.not_resized_path(Parameters.NOT_RESIZED_DEM_FOUNDATIONS),
+            self.not_resized_path(Parameters.NOT_RESIZED_DEM),
+        ]
 
         base_image_path = None
         for supported_file in supported_files:
@@ -1193,10 +1228,10 @@ class Background(MeshComponent, ImageComponent):
         dem_image = self.blur_edges_by_mask(dem_image, full_mask)
 
         # Save the not resized DEM with flattened roads.
-        cv2.imwrite(self.not_resized_with_flattened_roads_path, dem_image)
+        cv2.imwrite(self.not_resized_path(Parameters.NOT_RESIZED_DEM_ROADS), dem_image)
         self.logger.debug(
             "Not resized DEM with flattened roads saved to: %s",
-            self.not_resized_with_flattened_roads_path,
+            self.not_resized_path(Parameters.NOT_RESIZED_DEM_ROADS),
         )
 
         output_size = dem_image.shape[0] + 1
