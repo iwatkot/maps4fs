@@ -478,7 +478,7 @@ class Road(I3d, MeshComponent):
         """
         # Use the not resized DEM with flattened roads to get accurate Z values
         # for the road mesh vertices.
-        not_resized_dem = self.get_not_resized_dem_with_flattened_roads()
+        not_resized_dem = self.get_dem_image_with_fallback()
         if not_resized_dem is None:
             self.logger.warning(
                 "Not resized DEM with flattened roads is not available. "

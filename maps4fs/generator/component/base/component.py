@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 import cv2
 import numpy as np
@@ -638,3 +638,29 @@ class Component:
         z *= self.get_z_scaling_factor(ignore_height_scale_multiplier=True)
 
         return z
+
+    @staticmethod
+    def get_item_with_fallback(
+        items: list[Any], check_function: Callable, start_at: int = 0, end_on: int | None = None
+    ) -> Any | None:
+        """Slices the list from start_at to end_on and returns the result of the check_function
+        of the first item that returns a non-None value. If no item passes the check_function,
+        None is returned.
+
+        Arguments:
+            items (list[Any]): The list of items to check.
+            check_function (Callable): The function to check each item.
+            start_at (int): The index to start checking from. Defaults to 0 (start of the list).
+            end_on (int | None): The index to stop checking at. Defaults to None (end of the
+                list, including the last item).
+
+        Returns:
+            Any | None: The first item that passes the check_function or None if no item passes
+                the check_function.
+        """
+        sliced_items = items[start_at:end_on]
+        for item in sliced_items:
+            result = check_function(item)
+            if result is not None:
+                return result
+        return None

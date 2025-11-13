@@ -58,6 +58,10 @@ class Parameters:
     OVERVIEW_IMAGE_SIZE = 4096
     OVERVIEW_IMAGE_FILENAME = "overview"
 
+    NOT_RESIZED_DEM = "not_resized.png"
+    NOT_RESIZED_DEM_FOUNDATIONS = "not_resized_with_foundations.png"
+    NOT_RESIZED_DEM_ROADS = "not_resized_with_flattened_roads.png"
+
 
 class SharedSettings(BaseModel):
     """Represents the shared settings for all components."""
