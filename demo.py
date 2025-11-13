@@ -46,13 +46,13 @@ osm_file = "C:/NewMaps/FS25_Titelski_breg_DEV/custom_osm.osm"
 # 6️⃣ Optional: advanced settings. You can use the default settings, but
 # it's recommended to change them according to your needs.
 dem_settings = mfs.settings.DEMSettings(
-    multiplier=1, blur_radius=35, plateau=15, water_depth=10, add_foundations=True
+    multiplier=1, blur_radius=35, plateau=15, water_depth=10, add_foundations=False
 )
 background_settings = mfs.settings.BackgroundSettings(
     generate_background=True,
     generate_water=True,
     remove_center=True,
-    flatten_roads=True,
+    flatten_roads=False,
     flatten_water=True,
 )
 grle_settings = mfs.settings.GRLESettings(

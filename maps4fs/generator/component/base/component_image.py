@@ -290,12 +290,15 @@ class ImageComponent(Component):
         except Exception:
             return None
 
-    def get_dem_image_with_fallback(self, start_at: int = 0, end_on: int = -1) -> np.ndarray | None:
+    def get_dem_image_with_fallback(
+        self, start_at: int = 0, end_on: int | None = None
+    ) -> np.ndarray | None:
         """Gets the DEM image using fallback mechanism.
 
         Arguments:
             start_at (int, optional): The index to start checking from. Defaults to 0.
-            end_on (int, optional): The index to end checking on. Defaults to -1.
+            end_on (int | None, optional): The index to end checking on. Defaults to None (end of
+                the list, including the last item).
 
         Returns:
             np.ndarray | None: The DEM image or None if not found.

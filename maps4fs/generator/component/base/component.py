@@ -641,7 +641,7 @@ class Component:
 
     @staticmethod
     def get_item_with_fallback(
-        items: list[Any], check_function: Callable, start_at: int = 0, end_on: int = -1
+        items: list[Any], check_function: Callable, start_at: int = 0, end_on: int | None = None
     ) -> Any | None:
         """Slices the list from start_at to end_on and returns the result of the check_function
         of the first item that returns a non-None value. If no item passes the check_function,
@@ -651,7 +651,8 @@ class Component:
             items (list[Any]): The list of items to check.
             check_function (Callable): The function to check each item.
             start_at (int): The index to start checking from. Defaults to 0 (start of the list).
-            end_on (int): The index to stop checking at. Defaults to -1 (end of the list).
+            end_on (int | None): The index to stop checking at. Defaults to None (end of the
+                list, including the last item).
 
         Returns:
             Any | None: The first item that passes the check_function or None if no item passes

@@ -154,6 +154,7 @@ class Background(MeshComponent, ImageComponent):
 
     def not_resized_paths(self) -> list[str]:
         """Returns the list of paths to all not resized DEM files.
+
         Returns:
             list[str] : The list of paths to all not resized DEM files.
         """
@@ -169,7 +170,7 @@ class Background(MeshComponent, ImageComponent):
             ValueError: If the dem_type is not supported.
 
         Returns:
-            str : The path to the specified not resized DEM file.
+            str: The path to the specified not resized DEM file.
         """
         if not dem_type.endswith(".png"):
             dem_type += ".png"
