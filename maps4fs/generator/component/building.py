@@ -366,8 +366,10 @@ class Building(I3d):
             self.logger.warning("Texture component not found in the map.")
             return
 
+        map_size = self.map.output_size or self.map.size
+
         # Creating empty single-channel image for building categories.
-        buildings_map_image = np.zeros((self.map.size, self.map.size), dtype=np.uint8)
+        buildings_map_image = np.zeros((map_size, map_size), dtype=np.uint8)
 
         for layer in texture_component.get_building_category_layers():
             self.logger.debug(
@@ -397,7 +399,6 @@ class Building(I3d):
             mask = layer_image > 0
             buildings_map_image[mask] = pixel_value
 
-        # Save the buildings map image
         cv2.imwrite(self.buildings_map_path, buildings_map_image)
         self.logger.debug("Building categories map saved to: %s", self.buildings_map_path)
 
