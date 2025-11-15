@@ -225,19 +225,23 @@ class DEM(ImageComponent):
         return normalized_data
 
     @monitor_performance
-    def determine_height_scale(self, data: np.ndarray) -> int:
+    def determine_height_scale(self, data: np.ndarray, adjust: bool = True) -> int:
         """Determine height scale value using ceiling.
 
         Arguments:
             data (np.ndarray): DEM data.
+            adjust (bool, optional): Whether to adjust height scale based on data max value.
 
         Returns:
             int: Height scale value.
         """
         height_scale = self.map.dem_settings.minimum_height_scale
-        adjusted_height_scale = math.ceil(
-            max(height_scale, data.max() + self.map.dem_settings.ceiling)
-        )
+        if adjust:
+            adjusted_height_scale = math.ceil(
+                max(height_scale, data.max() + self.map.dem_settings.ceiling)
+            )
+        else:
+            adjusted_height_scale = height_scale
 
         self.map.shared_settings.height_scale_value = adjusted_height_scale  # type: ignore
         self.map.shared_settings.mesh_z_scaling_factor = 65535 / adjusted_height_scale

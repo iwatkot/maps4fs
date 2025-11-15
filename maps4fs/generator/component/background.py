@@ -111,6 +111,9 @@ class Background(MeshComponent, ImageComponent):
         if not self.map.custom_background_path:
             self.dem.process()
             self.validate_np_for_mesh(self.output_path, self.map_size)
+        else:
+            custom_dem_data = cv2.imread(self.map.custom_background_path, cv2.IMREAD_UNCHANGED)
+            self.dem.determine_height_scale(custom_dem_data, adjust=False)
 
         if self.map.dem_settings.water_depth:
             self.subtraction()
