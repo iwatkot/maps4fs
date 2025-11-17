@@ -32,6 +32,10 @@
 * [Settings](settings.md)
 * [Schemas Editor](schemas_editor.md)
 
+## 🌍 FS Atlas
+* [About](fs_atlas_about.md)
+* [Submit Map](fs_atlas_submit.md)
+
 ## 🗺️ Map Components
 * [Map Structure](map_structure.md)
 * [DEM (Elevation)](dem.md)
