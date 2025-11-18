@@ -1,9 +1,11 @@
 """This module contains configuration files for the maps4fs generator."""
 
+import io
 import os
 import shutil
-import subprocess
 import tempfile
+import zipfile
+from urllib.request import urlopen
 
 from osmnx import settings as ox_settings
 
@@ -48,11 +50,11 @@ TEMPLATES_STRUCTURE = {
 def ensure_templates():
     """Ensure templates directory exists and is populated with data.
 
-    If MFS_TEMPLATES_DIR is empty or doesn't exist, clone the maps4fsdata
-    repository and run the preparation script to populate it.
+    If MFS_TEMPLATES_DIR is empty or doesn't exist, download the maps4fsdata
+    repository and prepare the data files (no git required).
     """
     # Check if templates directory exists and has content
-    if os.path.exists(MFS_TEMPLATES_DIR):  # and os.listdir(MFS_TEMPLATES_DIR):
+    if os.path.exists(MFS_TEMPLATES_DIR):
         logger.info("Templates directory already exists: %s", MFS_TEMPLATES_DIR)
 
         files = [
@@ -72,85 +74,78 @@ def ensure_templates():
 
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
-            clone_dir = os.path.join(temp_dir, "maps4fsdata")
+            logger.info("Downloading maps4fsdata repository as ZIP archive...")
 
-            logger.info("Cloning maps4fsdata repository to temporary directory...")
-            # Clone the repository with depth 1 (shallow clone)
-            subprocess.run(
-                [
-                    "git",
-                    "clone",
-                    "--depth",
-                    "1",
-                    "https://github.com/iwatkot/maps4fsdata.git",
-                    clone_dir,
-                ],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
+            # Download repository as ZIP from GitHub
+            zip_url = "https://github.com/iwatkot/maps4fsdata/archive/refs/heads/main.zip"
+            with urlopen(zip_url) as response:
+                zip_data = response.read()
 
-            if os.name == "nt":
-                logger.info("Detected Windows OS, running PowerShell preparation script...")
-                prep_script = os.path.join(clone_dir, "prepare_data.ps1")
-                for_subprocess = [
-                    "powershell",
-                    "-ExecutionPolicy",
-                    "Bypass",
-                    "-File",
-                    "prepare_data.ps1",
-                ]
-            else:
-                logger.info("Detected non-Windows OS, running bash preparation script...")
-                prep_script = os.path.join(clone_dir, "prepare_data.sh")
-                for_subprocess = ["./prepare_data.sh"]
+            logger.info("Extracting repository archive...")
+            with zipfile.ZipFile(io.BytesIO(zip_data)) as zip_ref:
+                zip_ref.extractall(temp_dir)
 
-            if os.path.exists(prep_script):
-                try:
-                    os.chmod(prep_script, 0o755)
-                except Exception as e:
-                    logger.warning("Could not set execute permissions on script: %s", str(e))
+            # The extracted folder will be named "maps4fsdata-main"
+            repo_dir = os.path.join(temp_dir, "maps4fsdata-main")
 
-                logger.info("Running data preparation script...")
-                # Run the preparation script from the cloned directory
-                subprocess.run(
-                    for_subprocess, cwd=clone_dir, check=True, capture_output=True, text=True
-                )
+            if not os.path.exists(repo_dir):
+                raise FileNotFoundError(f"Expected repository directory not found: {repo_dir}")
 
-                # Copy the generated data directory to templates directory
-                data_src = os.path.join(clone_dir, "data")
-                if os.path.exists(data_src):
-                    logger.info(
-                        "Copying prepared data to templates directory: %s", MFS_TEMPLATES_DIR
-                    )
-                    # Copy all files from data directory to MFS_TEMPLATES_DIR
-                    for item in os.listdir(data_src):
-                        src_path = os.path.join(data_src, item)
-                        dst_path = os.path.join(MFS_TEMPLATES_DIR, item)
-                        if os.path.isdir(src_path):
-                            shutil.copytree(src_path, dst_path, dirs_exist_ok=True)
-                        else:
-                            shutil.copy2(src_path, dst_path)
-                    logger.info("Templates data prepared successfully")
-                else:
-                    logger.error("Data directory not found after running preparation script")
-                    raise FileNotFoundError(
-                        "Data preparation script did not create expected data directory"
-                    )
-            else:
-                logger.error("Preparation script not found: %s", prep_script)
-                raise FileNotFoundError("prepare_data.sh not found in cloned repository")
+            logger.info("Processing data files...")
+            _prepare_data_python(repo_dir, MFS_TEMPLATES_DIR)
+            logger.info("Templates data prepared successfully")
 
-    except subprocess.CalledProcessError as e:
-        logger.error("Failed to prepare templates data: %s", str(e))
-        if e.stdout:
-            logger.error("Script stdout: %s", e.stdout)
-        if e.stderr:
-            logger.error("Script stderr: %s", e.stderr)
-        raise
     except Exception as e:
         logger.error("Error preparing templates: %s", str(e))
         raise
+
+
+def _prepare_data_python(repo_dir: str, output_dir: str) -> None:
+    """Pure Python implementation of the prepare_data script.
+
+    Processes fs* directories by:
+    1. Copying top-level files to output directory
+    2. Zipping subdirectories and placing them in output directory
+
+    Arguments:
+        repo_dir (str): Path to the extracted repository directory
+        output_dir (str): Path where to place the prepared data files
+    """
+    # Find all directories starting with "fs" (e.g., fs22, fs25)
+    fs_dirs = [
+        d
+        for d in os.listdir(repo_dir)
+        if os.path.isdir(os.path.join(repo_dir, d)) and d.startswith("fs")
+    ]
+
+    for fs_dir_name in fs_dirs:
+        fs_dir_path = os.path.join(repo_dir, fs_dir_name)
+        logger.debug("Processing directory: %s", fs_dir_name)
+
+        # Copy all top-level files from fs* directory to output directory
+        for item in os.listdir(fs_dir_path):
+            item_path = os.path.join(fs_dir_path, item)
+            if os.path.isfile(item_path):
+                logger.debug("Copying file %s to templates directory", item)
+                shutil.copy2(item_path, output_dir)
+
+        # Process subdirectories - create ZIP archives
+        for item in os.listdir(fs_dir_path):
+            item_path = os.path.join(fs_dir_path, item)
+            if os.path.isdir(item_path):
+                zip_file = os.path.join(output_dir, f"{item}.zip")
+                logger.debug("Packing contents of %s into %s", item, zip_file)
+
+                # Create ZIP archive of subdirectory contents
+                with zipfile.ZipFile(zip_file, "w", zipfile.ZIP_DEFLATED) as zipf:
+                    for root, _, files in os.walk(item_path):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            # Calculate relative path from the subdirectory
+                            arcname = os.path.relpath(file_path, item_path)
+                            zipf.write(file_path, arcname)
+
+        logger.debug("Finished processing directory: %s", fs_dir_name)
 
 
 def ensure_template_subdirs() -> None:
@@ -246,17 +241,9 @@ def get_package_version(package_name: str) -> str:
         str: The version of the package, or "unknown" if it cannot be determined.
     """
     try:
-        result = subprocess.run(
-            [os.sys.executable, "-m", "pip", "show", package_name],  # type: ignore
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            check=True,
-        )
-        for line in result.stdout.splitlines():
-            if line.startswith("Version:"):
-                return line.split(":", 1)[1].strip()
-        return "unknown"
+        import importlib.metadata
+
+        return importlib.metadata.version(package_name)
     except Exception:
         return "unknown"
 

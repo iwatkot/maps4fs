@@ -29,7 +29,6 @@ dependencies = [
     "pydtmdl",
     "manifold3d",
     "fast-simplification",
-    "open3d",
 ]
 
 [project.urls]

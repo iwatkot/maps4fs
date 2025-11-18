@@ -7,7 +7,6 @@ from datetime import datetime
 
 import cv2
 import numpy as np
-import open3d as o3d
 import trimesh
 from PIL import Image
 from tqdm import tqdm
@@ -278,7 +277,7 @@ class MeshComponent(Component):
         return mesh_copy
 
     @staticmethod
-    def decimate_mesh(mesh: trimesh.Trimesh, reduction_factor: float) -> trimesh.Trimesh:
+    def decimate_mesh_by_o3d(mesh: trimesh.Trimesh, reduction_factor: float) -> trimesh.Trimesh:
         """Decimate mesh using Open3D's quadric decimation (similar to Blender's approach)
 
         Arguments:
@@ -288,6 +287,8 @@ class MeshComponent(Component):
         Returns:
             trimesh.Trimesh: Decimated trimesh mesh
         """
+        import open3d as o3d
+
         # 1. Convert trimesh to Open3D format.
         vertices = mesh.vertices
         faces = mesh.faces
@@ -308,6 +309,36 @@ class MeshComponent(Component):
         decimated_mesh = trimesh.Trimesh(vertices=decimated_vertices, faces=decimated_faces)
 
         return decimated_mesh
+
+    @staticmethod
+    def decimate_mesh(mesh: trimesh.Trimesh, reduction_factor: float) -> trimesh.Trimesh:
+        """Decimate mesh using available libraries (Open3D preferred, fallback to trimesh).
+
+        Arguments:
+            mesh (trimesh.Trimesh): Input trimesh mesh
+            reduction_factor (float): Reduce to this fraction of original triangles (0.5 = 50%)
+
+        Returns:
+            trimesh.Trimesh: Decimated trimesh mesh
+        """
+        try:
+            return MeshComponent.decimate_mesh_by_o3d(mesh, reduction_factor)
+        except ImportError:
+            return MeshComponent.decimate_mesh_by_trimesh(mesh, reduction_factor)
+
+    @staticmethod
+    def decimate_mesh_by_trimesh(mesh: trimesh.Trimesh, reduction_factor: float) -> trimesh.Trimesh:
+        """Decimate mesh using trimesh's built-in quadric decimation.
+
+        Arguments:
+            mesh (trimesh.Trimesh): Input trimesh mesh
+            reduction_factor (float): Reduce to this fraction of original triangles (0.5 = 50%)
+
+        Returns:
+            trimesh.Trimesh: Decimated trimesh mesh
+        """
+        target_faces = int(len(mesh.faces) * reduction_factor)
+        return mesh.simplify_quadric_decimation(face_count=target_faces)
 
     @staticmethod
     def texture_mesh(
