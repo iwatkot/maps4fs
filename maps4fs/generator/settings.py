@@ -365,6 +365,7 @@ class MainSettings(NamedTuple):
     completed: bool
     error: str | None = None
     origin: str | None = None
+    platform: str | None = None
 
     @classmethod
     def from_json(cls, data: dict[str, str | float | int | bool | None]) -> MainSettings:
@@ -402,6 +403,7 @@ class MainSettings(NamedTuple):
             "completed": self.completed,
             "error": self.error,
             "origin": self.origin,
+            "platform": self.platform,
         }
 
     @classmethod
@@ -434,4 +436,5 @@ class MainSettings(NamedTuple):
             completed=False,
             error=None,
             origin=map.kwargs.get("origin", None),
+            platform=map.kwargs.get("platform", None),
         )

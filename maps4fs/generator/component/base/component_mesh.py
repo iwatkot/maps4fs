@@ -68,6 +68,7 @@ class MeshComponent(Component):
         z_scaling_factor: float,
         remove_center: bool,
         remove_size: int,
+        **kwargs,
     ) -> trimesh.Trimesh:
         """Generates a mesh from the given numpy array.
 
@@ -81,6 +82,7 @@ class MeshComponent(Component):
         Returns:
             trimesh.Trimesh: The generated mesh.
         """
+        logger = kwargs.get("logger", None)
         output_x_size, _ = image.shape
         image = image.max() - image
 
@@ -129,7 +131,11 @@ class MeshComponent(Component):
         )
 
         if remove_center:
-            mesh = MeshComponent.remove_center_from_mesh(mesh, remove_size)
+            try:
+                mesh = MeshComponent.remove_center_from_mesh(mesh, remove_size, logger=logger)
+            except Exception as e:
+                if logger:
+                    logger.warning(f"Failed to remove center from mesh: {e}")
 
         return mesh
 
@@ -219,7 +225,9 @@ class MeshComponent(Component):
         return mesh_copy
 
     @staticmethod
-    def remove_center_from_mesh(mesh: trimesh.Trimesh, remove_size: int) -> trimesh.Trimesh:
+    def remove_center_from_mesh(
+        mesh: trimesh.Trimesh, remove_size: int, **kwargs
+    ) -> trimesh.Trimesh:
         """Removes the center from the given mesh.
 
         Arguments:
@@ -229,6 +237,7 @@ class MeshComponent(Component):
         Returns:
             trimesh.Trimesh: The mesh with the center removed.
         """
+        logger = kwargs.get("logger", None)
         mesh_copy = mesh.copy()
 
         _, _, z_size = mesh_copy.extents
@@ -239,11 +248,26 @@ class MeshComponent(Component):
             pass
         cube_mesh = trimesh.creation.box([remove_size, remove_size, z_size * 4])
 
-        return trimesh.boolean.difference(
+        mesh_copy = MeshComponent.fix_mesh(mesh_copy)
+
+        mesh_copy = trimesh.boolean.difference(
             [mesh_copy, cube_mesh],
-            check_volume=False,
-            engine="blender",
+            # check_volume=False,
+            engine="manifold",
         )
+
+        if mesh_copy is None:
+            if logger:
+                logger.warning("Resulting mesh is None after removing center. Using original mesh.")
+            return mesh
+        if mesh_copy.is_empty:
+            if logger:
+                logger.warning(
+                    "Resulting mesh is empty after removing center. Using original mesh."
+                )
+            return mesh
+
+        return mesh_copy
 
     @staticmethod
     def mesh_to_origin(mesh: trimesh.Trimesh) -> trimesh.Trimesh:

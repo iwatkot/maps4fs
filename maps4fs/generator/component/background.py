@@ -651,6 +651,7 @@ class Background(MeshComponent, ImageComponent):
             z_scaling_factor=self.get_z_scaling_factor(ignore_height_scale_multiplier=True),
             remove_center=remove_center,
             remove_size=self.scaled_size,
+            logger=self.logger,
         )
 
         try:
