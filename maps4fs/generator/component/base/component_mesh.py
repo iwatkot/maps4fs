@@ -276,39 +276,39 @@ class MeshComponent(Component):
         mesh_copy.faces = mesh_copy.faces[:, ::-1]  # type: ignore
         return mesh_copy
 
-    @staticmethod
-    def decimate_mesh_by_o3d(mesh: trimesh.Trimesh, reduction_factor: float) -> trimesh.Trimesh:
-        """Decimate mesh using Open3D's quadric decimation (similar to Blender's approach)
+    # @staticmethod
+    # def decimate_mesh_by_o3d(mesh: trimesh.Trimesh, reduction_factor: float) -> trimesh.Trimesh:
+    #     """Decimate mesh using Open3D's quadric decimation (similar to Blender's approach)
 
-        Arguments:
-            mesh (trimesh.Trimesh): Input trimesh mesh
-            reduction_factor (float): Reduce to this fraction of original triangles (0.5 = 50%)
+    #     Arguments:
+    #         mesh (trimesh.Trimesh): Input trimesh mesh
+    #         reduction_factor (float): Reduce to this fraction of original triangles (0.5 = 50%)
 
-        Returns:
-            trimesh.Trimesh: Decimated trimesh mesh
-        """
-        import open3d as o3d
+    #     Returns:
+    #         trimesh.Trimesh: Decimated trimesh mesh
+    #     """
+    #     import open3d as o3d
 
-        # 1. Convert trimesh to Open3D format.
-        vertices = mesh.vertices
-        faces = mesh.faces
+    #     # 1. Convert trimesh to Open3D format.
+    #     vertices = mesh.vertices
+    #     faces = mesh.faces
 
-        o3d_mesh = o3d.geometry.TriangleMesh()
-        o3d_mesh.vertices = o3d.utility.Vector3dVector(vertices)
-        o3d_mesh.triangles = o3d.utility.Vector3iVector(faces)
+    #     o3d_mesh = o3d.geometry.TriangleMesh()
+    #     o3d_mesh.vertices = o3d.utility.Vector3dVector(vertices)
+    #     o3d_mesh.triangles = o3d.utility.Vector3iVector(faces)
 
-        # 2. Calculate target number of triangles.
-        target_triangles = int(len(faces) * reduction_factor)
+    #     # 2. Calculate target number of triangles.
+    #     target_triangles = int(len(faces) * reduction_factor)
 
-        # 3. Apply quadric decimation.
-        decimated_o3d = o3d_mesh.simplify_quadric_decimation(target_triangles)
+    #     # 3. Apply quadric decimation.
+    #     decimated_o3d = o3d_mesh.simplify_quadric_decimation(target_triangles)
 
-        # 4. Convert back to trimesh.
-        decimated_vertices = np.asarray(decimated_o3d.vertices)
-        decimated_faces = np.asarray(decimated_o3d.triangles)
-        decimated_mesh = trimesh.Trimesh(vertices=decimated_vertices, faces=decimated_faces)
+    #     # 4. Convert back to trimesh.
+    #     decimated_vertices = np.asarray(decimated_o3d.vertices)
+    #     decimated_faces = np.asarray(decimated_o3d.triangles)
+    #     decimated_mesh = trimesh.Trimesh(vertices=decimated_vertices, faces=decimated_faces)
 
-        return decimated_mesh
+    #     return decimated_mesh
 
     @staticmethod
     def decimate_mesh(mesh: trimesh.Trimesh, reduction_factor: float) -> trimesh.Trimesh:
@@ -321,10 +321,10 @@ class MeshComponent(Component):
         Returns:
             trimesh.Trimesh: Decimated trimesh mesh
         """
-        try:
-            return MeshComponent.decimate_mesh_by_o3d(mesh, reduction_factor)
-        except ImportError:
-            return MeshComponent.decimate_mesh_by_trimesh(mesh, reduction_factor)
+        # try:
+        #     return MeshComponent.decimate_mesh_by_o3d(mesh, reduction_factor)
+        # except ImportError:
+        return MeshComponent.decimate_mesh_by_trimesh(mesh, reduction_factor)
 
     @staticmethod
     def decimate_mesh_by_trimesh(mesh: trimesh.Trimesh, reduction_factor: float) -> trimesh.Trimesh:
