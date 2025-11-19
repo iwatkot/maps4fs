@@ -252,8 +252,8 @@ class MeshComponent(Component):
 
         mesh_copy = trimesh.boolean.difference(
             [mesh_copy, cube_mesh],
-            # check_volume=False,
-            engine="manifold",
+            check_volume=False,
+            engine="blender",
         )
 
         if mesh_copy is None:
