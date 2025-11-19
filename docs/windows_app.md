@@ -44,9 +44,8 @@ Maps4FS for Windows is a **standalone portable application** that includes every
 ## ⚡ Quick Start
 
 1. **Download** from [https://maps4fs.xyz/download](https://maps4fs.xyz/download)
-2. **Extract** the ZIP file to any location
-3. **Run** `maps4fs.exe`
-4. **Generate** your maps!
+2. **Run** `maps4fs-0.0.1.exe` (or other version number)
+3. **Generate** your maps!
 
 ## ⚠️ Preview Version Notice
 
