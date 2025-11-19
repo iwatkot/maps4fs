@@ -1,6 +1,12 @@
-# How to deploy Maps4FS locally?
+# Local Deployment (Docker)
 
-Local version of the tool allows you to use all the features, that may be disabled on the public version due to hosting limitations and large amount of users. If you deploy the tool locally, you can generate maps of any size with the highest speed limited only by your hardware.
+**For advanced users who want full control and features**
+
+> 💡 **Looking for something simpler?** Check out the [Windows App](windows_app.md) - a standalone executable with no Docker setup required!
+
+Local deployment using Docker allows you to use all the features that may be disabled on the public version due to hosting limitations and large amount of users. If you deploy the tool locally, you can generate maps of any size with the highest speed limited only by your hardware.
+
+This guide is for **advanced users** comfortable with Docker, command line tools, and system configuration. If you're new to these technologies, consider using the [Windows App](windows_app.md) instead.
 
 ## 🆕 **Exclusive Local Features**
 

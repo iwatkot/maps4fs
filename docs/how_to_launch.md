@@ -2,7 +2,43 @@
 
 Maps4FS offers multiple deployment options to suit different user needs, from quick online generation to full local control. Choose the method that best fits your requirements and technical expertise.
 
-## 🌐 Option 1: Public Web App (Easiest)
+## 🪟 Option 1: Windows App (Easiest for Windows)
+
+**Standalone portable application - no installation needed**
+
+### 🎯 When to Use
+- You're on Windows and want the simplest setup
+- Don't want to deal with Docker or Python
+- Want a portable app you can run from anywhere
+- Need full features without complex installation
+
+### ✅ Advantages
+- **📦 Zero Setup**: Download and run immediately
+- **🗺️ Full Map Sizes**: 2x2, 4x4, 8x8, 16x16 km + custom dimensions
+- **💼 Portable**: Run from any folder or USB drive
+- **⚡ Fast**: Native Windows performance
+- **🔒 Privacy**: Everything runs locally
+
+### ⚠️ Important Notes
+- **🧪 Preview Version**: Expect bugs, features in development
+- **🎨 Blender Required**: For Background Terrain center removal (install Blender 4.3+)
+- **🪟 Windows Only**: Not available for Mac or Linux
+
+### 🚀 Quick Start
+1. Download from **[maps4fs.xyz/download](https://maps4fs.xyz/download)**
+2. Extract and run `maps4fs.exe`
+3. Start generating maps!
+
+### 🚨 Security Warning
+**ONLY download from the official website: maps4fs.xyz/download**  
+Carefully verify the URL - downloading executables from unofficial sources can be extremely dangerous.
+
+### 📖 Full Documentation
+- 📚 [Complete Windows App Guide](windows_app.md)
+
+---
+
+## 🌐 Option 2: Public Web App (No Installation)
 
 **Perfect for beginners and quick map generation**
 
@@ -31,9 +67,9 @@ Maps4FS offers multiple deployment options to suit different user needs, from qu
 
 ---
 
-## 🐳 Option 2: Local Docker Deployment (Recommended)
+## 🐳 Option 3: Local Docker Deployment (For Advanced Users)
 
-**Best balance of features and ease of use**
+**Full features with containerized environment**
 
 ### 🎯 When to Use
 - Want larger maps (up to 16x16 km)
@@ -67,7 +103,7 @@ For complete setup guides including Docker installation:
 
 ---
 
-## 💻 Option 3: Python Package (Advanced Users)
+## 💻 Option 4: Python Package (Developers Only)
 
 **Maximum control and performance for developers**
 
@@ -111,27 +147,32 @@ pip install -e .
 
 ## 🤔 Which Option Should I Choose?
 
-### 🆕 **New to Maps4FS?**
-→ Start with **Option 1 (Web App)** to explore features and create your first map
+### 🪟 **On Windows?**
+→ Start with **Option 1 (Windows App)** for the easiest experience
 
-### 🎯 **Serious Map Making?**
-→ Use **Option 2 (Docker)** for full features and larger maps
+### 🆕 **Just Testing or Quick Maps?**
+→ Use **Option 2 (Web App)** - zero installation, works anywhere
 
-### 💻 **Developer or Advanced User?**
-→ Choose **Option 3 (Python)** for maximum control and performance
+### 🎯 **Serious Map Making (Mac/Linux or prefer Docker)?**
+→ Choose **Option 3 (Docker)** for full features and stability
+
+### 💻 **Developer or Want to Contribute?**
+→ Use **Option 4 (Python)** for maximum control and development access
 
 ## 📊 Feature Comparison
 
-| Feature | Web App | Docker | Python |
-|---------|---------|--------|--------|
-| **Setup Difficulty** | ⭐ Easy | ⭐⭐ Medium | ⭐⭐⭐ Advanced |
-| **Map Sizes** | 2x2, 4x4 km | All sizes | All sizes |
-| **Custom Dimensions** | ❌ | ✅ | ✅ |
-| **Map Scaling** | ❌ | ✅ | ✅ |
-| **Advanced Settings** | Partial | Full | Full |
-| **Generation Speed** | Slower | Fast | Fastest |
-| **Offline Usage** | ❌ | ✅ | ✅ |
-| **Updates** | Automatic | Manual | Manual |
+| Feature | Windows App | Web App | Docker | Python |
+|---------|-------------|---------|--------|--------|
+| **Setup Difficulty** | ⭐ Easiest | ⭐ Easy | ⭐⭐⭐ Advanced | ⭐⭐⭐⭐ Expert |
+| **Platform** | Windows only | Any browser | Any OS | Any OS |
+| **Map Sizes** | All sizes | 2x2, 4x4 km | All sizes | All sizes |
+| **Custom Dimensions** | ✅ | ❌ | ✅ | ✅ |
+| **Map Scaling** | ✅ | ❌ | ✅ | ✅ |
+| **Advanced Settings** | Full | Partial | Full | Full |
+| **Generation Speed** | Fast | Slower | Fast | Fastest |
+| **Offline Usage** | ✅ | ❌ | ✅ | ✅ |
+| **Stability** | Preview | Stable | Stable | Stable |
+| **Updates** | Manual | Automatic | Manual | Manual |
 
 ## 🆘 Need Help?
 

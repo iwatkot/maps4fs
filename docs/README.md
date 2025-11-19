@@ -28,7 +28,10 @@ Jump right in with the **[Step by Step Guide](step_by_step_guide.md)** - you'll 
 Learn **[What Maps4FS Actually Does](what_is_maps4fs.md)** and see how geographic data becomes playable terrain.
 
 ### 💻 Ready to Install?
-Choose your setup method in **[How to Launch Maps4FS](how_to_launch.md)** - from simple web interface to powerful local installation.
+Choose your setup method in **[How to Launch Maps4FS](how_to_launch.md)**:
+- **[Windows App](windows_app.md)** - Standalone executable (easiest for Windows users)
+- **Web Interface** - No installation required
+- **Docker Deployment** - Full features for advanced users
 
 ## Popular Starting Points
 

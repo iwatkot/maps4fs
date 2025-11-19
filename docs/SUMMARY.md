@@ -20,7 +20,8 @@
 * [Generation Info](generation_info.md)
 
 ## 💻 Setup & Installation
-* [Local Deployment](local_deployment.md)
+* [Windows App](windows_app.md)
+* [Local Deployment (Docker)](local_deployment.md)
 * [Python Package Deployment](python_package_deployment.md)
 * [Getting Help](get_help.md)
 * [Data Directory](data_directory.md)
