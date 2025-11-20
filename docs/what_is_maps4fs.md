@@ -95,7 +95,7 @@ Ready to create your first map? Check out our guides:
 
 Join thousands of map creators in our community:
 
-- **Discord**: [Join our server](https://discord.gg/Sj5QKKyE42) for help, tips, and map sharing
+- **Discord**: [Join our server](https://discord.gg/wemVfUUFRA) for help, tips, and map sharing
 - **GitHub**: [Report issues](https://github.com/iwatkot/maps4fs/issues) or contribute to development
 - **YouTube**: [Watch tutorials](https://www.youtube.com/@iwatkot) and see Maps4FS in action
 

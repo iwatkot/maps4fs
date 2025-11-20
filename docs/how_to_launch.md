@@ -177,7 +177,7 @@ pip install -e .
 ## 🆘 Need Help?
 
 ### 💬 Community Support
-- **Discord**: [Join our server](https://discord.gg/Sj5QKKyE42) for real-time help
+- **Discord**: [Join our server](https://discord.gg/wemVfUUFRA) for real-time help
 - **GitHub Issues**: [Report problems](https://github.com/iwatkot/maps4fs/issues)
 - **Documentation**: Check our [FAQ](FAQ.md) for common questions
 

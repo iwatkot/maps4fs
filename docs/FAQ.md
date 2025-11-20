@@ -20,7 +20,7 @@ Maps4FS uses data from [OpenStreetMap](https://www.openstreetmap.org/), so if so
 
 Maps4FS uses a curated whitelist of supported objects rather than importing everything from OSM. You can check which objects are supported in our [Texture Schema](texture_schema.md) documentation.
 
-**Need a new object type added?** Contact us on [Discord](https://discord.gg/Sj5QKKyE42) or open a GitHub issue. We'll review and add appropriate objects to the whitelist.
+**Need a new object type added?** Contact us on [Discord](https://discord.gg/wemVfUUFRA) or open a GitHub issue. We'll review and add appropriate objects to the whitelist.
 
 ### There's no needed objects on OSM, what should I do?
 
@@ -113,7 +113,7 @@ setShapeCullingWorldProperties(-8192, -100, -8192, 8192, 500, 8192, 16, 0, 9000)
    *Note: Folder name varies by Giants Editor version*
 
 3. **Review latest log entries** for error patterns
-4. **Need help?** Share relevant log sections in our [Discord](https://discord.gg/Sj5QKKyE42)
+4. **Need help?** Share relevant log sections in our [Discord](https://discord.gg/wemVfUUFRA)
 
 ### Game crashes or hangs when loading map
 
@@ -140,7 +140,7 @@ If game crashes before console access:
 C:/Users/<username>/OneDrive/Documents/My Games/FarmingSimulator2025/log.txt
 ```
 
-Focus on the latest entries and share relevant sections in [Discord](https://discord.gg/Sj5QKKyE42) if needed.
+Focus on the latest entries and share relevant sections in [Discord](https://discord.gg/wemVfUUFRA) if needed.
 
 ## 📦 Mod Installation Issues
 
@@ -184,4 +184,4 @@ FS25_mod name _ kgjdfg.zip       ← Incorrect (spaces/special chars)
 
 ---
 
-**Need more help?** Join our [Discord community](https://discord.gg/Sj5QKKyE42) for real-time support and troubleshooting assistance!
+**Need more help?** Join our [Discord community](https://discord.gg/wemVfUUFRA) for real-time support and troubleshooting assistance!

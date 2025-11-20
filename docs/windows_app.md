@@ -155,7 +155,7 @@ See [How to Launch](how_to_launch.md) for detailed comparison.
 ## 🆘 Get Help
 
 - **Documentation**: [maps4fs.xyz/docs](https://maps4fs.xyz/docs)
-- **Discord**: [Join our community](https://discord.gg/Sj5QKKyE42)
+- **Discord**: [Join our community](https://discord.gg/wemVfUUFRA)
 - **GitHub**: [Report issues](https://github.com/iwatkot/maps4fs/issues)
 - **FAQ**: [Frequently Asked Questions](FAQ.md)
 

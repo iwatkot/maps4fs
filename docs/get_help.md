@@ -273,7 +273,7 @@ Prepare answers to these questions:
 - Easy to share files
 - No GitHub account needed
 
-[![Join Discord](https://img.shields.io/badge/join-discord-blue)](https://discord.gg/Sj5QKKyE42)
+[![Join Discord](https://img.shields.io/badge/join-discord-blue)](https://discord.gg/wemVfUUFRA)
 
 **Post in #support channel with:**
 - Your interactive help output (if available)

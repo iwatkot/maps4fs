@@ -157,6 +157,6 @@ If you've tried the solutions above and still have issues:
    - Steps to reproduce
 
 2. **Reach Out**
-   - Join our [Discord community](https://discord.gg/Sj5QKKyE42) for real-time support
+   - Join our [Discord community](https://discord.gg/wemVfUUFRA) for real-time support
    - Open an issue on [GitHub](https://github.com/iwatkot/maps4fs/issues) with complete information
    - Follow the checklist in [Getting Help](get_help.md) to ensure your issue can be addressed quickly

@@ -218,7 +218,7 @@ Your map is now playable but needs finishing touches:
 - 💡 [Workflow Optimization](workflow_optimizations.md) - Best practices and tips
 
 ### Community Support
-- 💬 [Discord Server](https://discord.gg/Sj5QKKyE42) - Get help and share your progress
+- 💬 [Discord Server](https://discord.gg/wemVfUUFRA) - Get help and share your progress
 - 🐛 [GitHub Issues](https://github.com/iwatkot/maps4fs/issues) - Report bugs or request features
 - 🌐 [OpenStreetMap](https://www.openstreetmap.org) - Improve source data for better maps
 

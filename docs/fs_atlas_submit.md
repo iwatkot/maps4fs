@@ -8,7 +8,7 @@ Want to share your Maps4FS creation with the community? You can submit your map 
 
 The submission process is currently being refined. For now:
 
-1. **Join the Discord Community**: Connect with the Maps4FS community on [Discord](https://discord.gg/Sj5QKKyE42)
+1. **Join the Discord Community**: Connect with the Maps4FS community on [Discord](https://discord.gg/wemVfUUFRA)
 2. **Contact Me on Discord**: Reach out to discuss publishing your map
 3. **Provide Map Details**: Share information about your map (location, features, screenshots, etc.)
 

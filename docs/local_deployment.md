@@ -298,7 +298,7 @@ docker logs maps4fsui > maps4fsui.log
 ```
 
 If the logs do not contain any errors, but simply indicate that the process was terminated, you may be facing a resource limitation issue and it's recommended to check the system resource usage (CPU, RAM) during the container runtime.  
-If the logs contain errors, but they are unclear, it's recommended to ask for help in the [Discord](https://discord.gg/Sj5QKKyE42).
+If the logs contain errors, but they are unclear, it's recommended to ask for help in the [Discord](https://discord.gg/wemVfUUFRA).
 
 #### Docker events
 
@@ -352,7 +352,7 @@ The expected response should be the HTML content of the frontend UI.
 **Recommended approach:**
 1. 🎯 **Try the Interactive Help Tool** at `http://localhost:3000/help` (if containers are running)
 2. 📋 **Use the generated markdown** from the tool for your support request
-3. 💬 **Ask for help** in the [Discord](https://discord.gg/Sj5QKKyE42) server or see [Getting Help](get_help.md) guide
+3. 💬 **Ask for help** in the [Discord](https://discord.gg/wemVfUUFRA) server or see [Getting Help](get_help.md) guide
 
 **Manual approach:**
 - Make sure you've followed all the troubleshooting steps above

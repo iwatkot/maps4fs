@@ -229,7 +229,7 @@ If you're unsure whether a source is legitimate or need help:
 ### Primary Support Channels
 
 1. **Discord Community (Recommended)**
-   - **Join**: [https://discord.gg/Sj5QKKyE42](https://discord.gg/Sj5QKKyE42)
+   - **Join**: [https://discord.gg/wemVfUUFRA](https://discord.gg/wemVfUUFRA)
    - ✅ Fast community support
    - ✅ Real-time help from experienced users
    - ✅ Report scams and suspicious activity
