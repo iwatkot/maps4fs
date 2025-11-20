@@ -15,7 +15,7 @@
 
 <div align="center" markdown>
 <a href="https://discord.gg/Sj5QKKyE42">
-<img src="https://github.com/user-attachments/assets/37043333-d6ef-4ca3-9f3c-81323d9d0b71">
+<img src="https://github.com/iwatkot/maps4fs/releases/download/2.9.53/main-discord-1280-640.png">
 </a>
 
 <p align="center">
