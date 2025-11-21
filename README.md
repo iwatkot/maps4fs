@@ -86,7 +86,7 @@ The main goal of this project is to generate map templates based on real-world d
 
 **🪟 [Windows App](https://maps4fs.gitbook.io/docs/setup-and-installation/windows_app)** - NEW standalone application for Windows! No Docker required - download, extract, and run. Perfect for users who want the simplest setup experience.<br>
 
-**🌍 [Atlas FS](https://atlasfs.xyz)** - NEW community platform for sharing and discovering ready-to-play maps! Browse and download maps created by the community, or [submit your own creations](https://maps4fs.gitbook.io/docs/atlas-fs/fs_atlas_submit) to share with other players.<br>
+**🌍 [Atlas FS](https://atlasfs.xyz)** - NEW community platform for sharing and discovering ready-to-play maps! Browse and download maps created by the community, or [submit your own creations](https://maps4fs.gitbook.io/docs/atlas-fs/atlas_submit) to share with other players.<br>
 
 ![Maps4FS Interface](https://github.com/iwatkot/maps4fsapi/releases/download/2.6.0/screenshot-localhost-3000-1757595208136.png)
 
