@@ -79,6 +79,18 @@ Every aspect of generation can be fine-tuned:
 Maps4FS works worldwide thanks to:
 - **OpenStreetMap** global coverage
 - **Multiple DTM providers** for elevation data (high-quality sources available in many regions)
+
+## 🆕 Recent Additions
+
+### Windows App
+The **[Windows App](windows_app.md)** provides the easiest way to run Maps4FS on Windows without Docker or Python installation. Simply download, extract, and run - perfect for users who want a straightforward setup experience.
+
+### Atlas FS
+**[Atlas FS](fs_atlas_about.md)** is our new community platform where you can:
+- Browse ready-to-play maps created by the community
+- Download maps based on real-world locations
+- [Submit your own maps](fs_atlas_submit.md) to share with others
+- Discover new farming locations from around the world
 - **Multiple satellite providers** for high-quality imagery
 - **Flexible coordinate systems** supporting any location
 

@@ -1,6 +1,8 @@
 <div align="center" markdown>
 
 [![Maps4FS](https://img.shields.io/badge/maps4fs-gray?style=for-the-badge)](https://github.com/iwatkot/maps4fs)
+[![Maps4FS](https://img.shields.io/badge/atlasfs-green?style=for-the-badge)](https://github.com/iwatkot/atlasfs)
+[![Maps4FS](https://img.shields.io/badge/maps4fs-windows-purple?style=for-the-badge)](https://github.com/iwatkot/maps4fswindows)
 [![PYDTMDL](https://img.shields.io/badge/pydtmdl-blue?style=for-the-badge)](https://github.com/iwatkot/pydtmdl)
 [![PYGDMDL](https://img.shields.io/badge/pygmdl-teal?style=for-the-badge)](https://github.com/iwatkot/pygmdl)  
 [![Maps4FS API](https://img.shields.io/badge/maps4fs-api-green?style=for-the-badge)](https://github.com/iwatkot/maps4fsapi)
@@ -65,6 +67,8 @@
 📦 **Giants Editor Ready** - Import and start building immediately<br>
 
 🗺️ **Advanced Customization** - [Custom OSM maps](https://maps4fs.gitbook.io/docs/advanced-topics/custom_osm) and elevation data<br>
+🪟 **Windows App** - [Standalone application](https://maps4fs.gitbook.io/docs/setup-and-installation/windows_app) with no Docker required<br>
+🌍 **Atlas FS** - [Community platform](https://atlasfs.xyz) for sharing and discovering maps<br>
 📚 **Complete Documentation** - [Detailed guides](https://maps4fs.gitbook.io/docs) and video tutorials<br>
 
 <p align="center">
@@ -77,6 +81,12 @@
 The core idea originates from the excellent [maps4cim](https://github.com/klamann/maps4cim) project.<br>
 
 The main goal of this project is to generate map templates based on real-world data for Farming Simulator. It's important to understand that **templates are not finished maps**. They serve as a foundation for map creation, using built-in textures to represent different terrain types and structures with accurate shapes and scales, along with generating realistic height maps. The detailed work of creating a complete, playable map remains with you. If you expected to simply run this tool and receive a ready-to-play map, this may not meet those expectations. However, if you're a map creator, this tool will significantly reduce your development time.<br>
+
+### 🆕 Latest Features
+
+**🪟 [Windows App](https://maps4fs.gitbook.io/docs/setup-and-installation/windows_app)** - NEW standalone application for Windows! No Docker required - download, extract, and run. Perfect for users who want the simplest setup experience.<br>
+
+**🌍 [Atlas FS](https://atlasfs.xyz)** - NEW community platform for sharing and discovering ready-to-play maps! Browse and download maps created by the community, or [submit your own creations](https://maps4fs.gitbook.io/docs/atlas-fs/fs_atlas_submit) to share with other players.<br>
 
 ![Maps4FS Interface](https://github.com/iwatkot/maps4fsapi/releases/download/2.6.0/screenshot-localhost-3000-1757595208136.png)
 

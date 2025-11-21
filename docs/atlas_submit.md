@@ -1,6 +1,6 @@
-# Submit Your Map to FS Atlas
+# Submit Your Map to Atlas FS
 
-Want to share your Maps4FS creation with the community? You can submit your map to **FS Atlas** and make it available for other players to enjoy!
+Want to share your Maps4FS creation with the community? You can submit your map to **Atlas FS** and make it available for other players to enjoy!
 
 🌐 **Website**: [atlasfs.xyz](https://atlasfs.xyz)
 
@@ -23,7 +23,7 @@ When submitting your map, you can provide:
 - **Donation Platforms**: Links to your Patreon, Ko-fi, PayPal, or other donation/support platforms
 - **Description**: Information about your map's features, location, and gameplay characteristics
 
-All creator attributions and links will be preserved and displayed alongside your map on FS Atlas.
+All creator attributions and links will be preserved and displayed alongside your map on Atlas FS.
 
 ## Benefits of Submitting
 
@@ -38,5 +38,5 @@ If you have questions about submitting your map or the submission process, pleas
 
 ## Related Documentation
 
-- [About FS Atlas](fs_atlas_about.md)
+- [About Atlas FS](fs_atlas_about.md)
 - [My Maps](my_maps.md) - Managing your local map collection

@@ -19,6 +19,16 @@ Ever wondered what it would be like to farm in your hometown? Or recreate that b
 🗺️ **Overview Maps** - Generate in-game minimap displays  
 🏡 **Familiar Landscapes** - Bring recognizable locations into the game  
 
+## 🆕 What's New?
+
+### 🪟 Windows App - Standalone Application
+The easiest way to run Maps4FS on Windows! **[Download the Windows App](windows_app.md)** - no Docker or Python required. Just extract and run. Perfect for beginners and users who want a simple setup.
+
+### 🌍 Atlas FS - Community Map Platform
+Discover and share ready-to-play maps! **[Visit Atlas FS](fs_atlas_about.md)** to browse community-created maps based on real-world locations, or **[submit your own](fs_atlas_submit.md)** to share with the community.
+
+---
+
 ## Your Journey Starts Here
 
 ### 🚀 Brand New to Maps4FS?
@@ -46,7 +56,7 @@ Most users love to explore these areas first:
 
 🎥 **Visual Learner?** Check out the **[YouTube tutorials](https://www.youtube.com/watch?v=hPbJZ0HoiDE&list=PLug0g7UYHX8D1Jik6NkJjQhdxqS-NOtB9)** that show real map creation from start to finish.
 
-🗺️ **See What's Possible** - Browse the community showcase and discover amazing maps others have created with real-world locations.
+🌍 **Looking for Ready-to-Play Maps?** Visit **[Atlas FS](fs_atlas_about.md)** to browse and download community-created maps based on real-world locations - no editing required!
 
 ## Need Help Along the Way?
 
