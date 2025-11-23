@@ -6,7 +6,7 @@ import cv2
 # Setting to 4x larger: 4096 * 1024 * 1024 = ~4 billion pixels (65,536 x 65,536 images)
 
 try:
-    cv2.CV_IO_MAX_IMAGE_PIXELS = 4096 * 1024 * 1024  # type: ignore
+    cv2.CV_IO_MAX_IMAGE_PIXELS = 4096 * 1024 * 1024 * 2  # type: ignore
 except Exception as e:
     print(f"Warning: Could not set CV_IO_MAX_IMAGE_PIXELS: {e}")
 import pydtmdl.providers as dtm
