@@ -247,9 +247,9 @@ Buildings can belong to **multiple categories** for flexible placement:
 
 ## Custom Schema Development
 
-### **⚠️ Local Deployment Required**
+### Schema Editing
 
-Schema editing is **only available with local deployment** (Python or Docker). Web app users cannot modify building schemas.
+You can create and modify building schemas to customize which buildings are placed in your maps and how they are distributed.
 
 ### Schema Modification Workflow
 
@@ -415,7 +415,7 @@ Simply **delete entries** from the schema to prevent placement:
 ## ⚠️ Important Limitations
 
 - **FS25 exclusive**: No building schema support for FS22
-- **Local deployment only**: Schema editing requires Python/Docker installation
+- **Schema editing**: Create and modify custom building placement configurations
 - **Template dependency**: Custom buildings require proper map template integration  
 - **Asset requirements**: Custom buildings must include complete asset packages
 - **Performance impact**: Large building schemas may slow generation processing

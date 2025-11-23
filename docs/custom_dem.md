@@ -77,8 +77,8 @@ The extra 4096 pixels provide background terrain data extending beyond the playa
 
 ## File Placement
 
-### **Presets System (Local Deployment Only)**
-⚠️ **Local Deployment Required**: This method requires [Local Deployment](local_deployment.md) and uses the [Presets](presets.md) feature.
+### **Presets System**
+The [Presets](presets.md) feature allows you to store and manage multiple DEM files along with complete map configurations.
 
 For managing multiple DEM configurations:
 

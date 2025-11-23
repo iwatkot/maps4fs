@@ -20,7 +20,7 @@ Maps4FS offers multiple deployment options to suit different user needs, from qu
 - **🔒 Privacy**: Everything runs locally
 
 ### ⚠️ Important Notes
-- **🧪 Preview Version**: Expect bugs, features in development
+- **🎯 Full Features**: Includes Presets, Settings, and all map components
 - **🎨 Blender Required**: For Background Terrain center removal (install Blender 4.3+)
 - **🪟 Windows Only**: Not available for Mac or Linux
 
@@ -83,7 +83,6 @@ Carefully verify the URL - downloading executables from unofficial sources can b
 - **⚙️ Complete Features**: All advanced settings available
 - **⚡ Faster Generation**: Local processing power
 - **🔒 Privacy**: Your data stays on your machine
-- **🌐 Offline Capable**: Works without internet (after initial setup)
 
 ### 📋 Requirements
 - **Docker Desktop** installed on your system
@@ -170,8 +169,6 @@ pip install -e .
 | **Map Scaling** | ✅ | ❌ | ✅ | ✅ |
 | **Advanced Settings** | Full | Partial | Full | Full |
 | **Generation Speed** | Fast | Slower | Fast | Fastest |
-| **Offline Usage** | ✅ | ❌ | ✅ | ✅ |
-| **Stability** | Preview | Stable | Stable | Stable |
 | **Updates** | Manual | Automatic | Manual | Manual |
 
 ## 🆘 Need Help?

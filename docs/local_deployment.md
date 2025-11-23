@@ -8,19 +8,19 @@ Local deployment using Docker allows you to use all the features that may be dis
 
 This guide is for **advanced users** comfortable with Docker, command line tools, and system configuration. If you're new to these technologies, consider using the [Windows App](windows_app.md) instead.
 
-## 🆕 **Exclusive Local Features**
+## 🎛️ **Key Features**
 
-### 🎛️ **Presets System** 
-The revolutionary [Presets](presets.md) feature is **exclusively available in local deployment**, allowing you to:
+### **Presets System** 
+The [Presets](presets.md) feature allows you to:
 - 📁 **Store Multiple Configurations** - OSM files, DEM files, Main Settings, and Generation Settings
 - 🚀 **One-Click Apply** - Load complete map setups instantly
 - 💾 **Save from My Maps** - Convert successful generations into reusable presets
 - 🔄 **Build Template Libraries** - Create collections of proven configurations
 
-### 🗂️ **Advanced Data Management**
+### **Advanced Data Management**
 - **[My Maps](my_maps.md)** - Complete map library management and organization
 - **[Data Directory](data_directory.md)** - Full control over your map generation assets
-- **Custom Resources** - Unlimited [Custom OSM](custom_osm.md) and [Custom DEM](custom_dem.md) files
+- **Custom Resources** - [Custom OSM](custom_osm.md) and [Custom DEM](custom_dem.md) files
 
 ## System Requirements
 

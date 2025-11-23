@@ -107,7 +107,7 @@ Generation Settings control detailed aspects of the map creation process:
 
 ## 🖥️ Using Presets (Local Version Only)
 
-⚠️ **Availability**: The Presets feature is **exclusively available in the local deployment version** of Maps4FS. Cloud and web versions do not support this functionality.
+ℹ️ **Note**: The Presets feature is available in the Windows App and Docker deployment. The web version does not support this functionality.
 
 ### Setting Up Preset Directories
 

@@ -47,13 +47,13 @@ Maps4FS for Windows is a **standalone portable application** that includes every
 2. **Run** `maps4fs-0.0.1.exe` (or other version number)
 3. **Generate** your maps!
 
-## ⚠️ Preview Version Notice
+## 🎯 Available Features
 
-This is a **preview version** of the Windows App. Please note:
-- **Expect bugs** and unexpected behavior
-- Features may be incomplete or change
-- Report issues on [GitHub](https://github.com/iwatkot/maps4fs/issues)
-- Regular updates will improve stability
+The Windows App includes all major Maps4FS features:
+- **[Presets](presets.md)** - Store and manage complete map configurations
+- **[Settings](settings.md)** - Customize your generation preferences
+- **All Map Components** - Fields, forests, roads, buildings, and more
+- **Custom Resources** - Use your own [OSM files](custom_osm.md) and [DEM data](custom_dem.md)
 
 ## 📋 Requirements
 
@@ -81,7 +81,6 @@ Without Blender, all other features will work normally, but the Background Terra
 ## ⚠️ Limitations
 
 - **🪟 Windows Only**: Not available for Mac or Linux
-- **🧪 Preview Status**: May contain bugs
 - **🔄 Manual Updates**: Need to download new versions manually
 - **🎨 Blender Required**: For Background Terrain center removal
 
@@ -139,10 +138,9 @@ The Windows App does not auto-update. To get the latest version:
 |---------|-------------|---------|--------|
 | **Setup Time** | 2 minutes | 0 minutes | 15-30 minutes |
 | **Map Sizes** | All sizes | 2x2, 4x4 km | All sizes |
-| **Offline Use** | ✅ (after data download) | ❌ | ✅ |
 | **Portability** | ✅ | ✅ | ❌ |
 | **Background Terrain** | ✅ (with Blender) | ❌ | ✅ |
-| **Stability** | Preview (some bugs) | Stable | Stable |
+| **Presets & Settings** | ✅ | ❌ | ✅ |
 
 ### When to Use Each Option
 

@@ -2,7 +2,7 @@
 
 Custom OSM functionality allows you to use your own OpenStreetMap data instead of downloading from public OSM servers. This gives you complete control over map features, road networks, and geographic elements without community approval or modification restrictions.
 
-💡 **New Feature**: With the introduction of [Presets](presets.md), you can now store and manage multiple OSM files in your local deployment, making it easier to switch between different configurations and build libraries of map data.
+💡 **Presets Feature**: The [Presets](presets.md) system allows you to store and manage multiple OSM files, making it easier to switch between different configurations and build libraries of map data.
 
 ## Why Use Custom OSM?
 
@@ -24,9 +24,9 @@ The simplest approach for one-time map generation:
 
 **Best For**: Testing, single map projects, quick iterations
 
-### Method 2: Presets System (Local Deployment Only)
+### Method 2: Presets System
 
-⚠️ **Local Deployment Only**: This method requires [Local Deployment](local_deployment.md) and uses the [Presets](presets.md) feature.
+The [Presets](presets.md) feature provides a convenient way to store and manage multiple OSM files.
 
 For flexible management of multiple OSM configurations:
 

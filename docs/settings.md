@@ -2,7 +2,7 @@
 
 The Settings feature provides centralized management of game-specific configurations that define how Maps4FS generates your maps. This powerful tool allows you to customize and organize your texture schemas, tree schemas, and map templates across different Farming Simulator versions.
 
-⚠️ **Local Deployment Only**: Settings management is exclusively available in [Local Deployment](local_deployment.md), similar to the [Presets](presets.md) feature.
+ℹ️ **Availability**: Settings management is available in the Windows App and Docker deployment, similar to the [Presets](presets.md) feature.
 
 ## What are Settings?
 

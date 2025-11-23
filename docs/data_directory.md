@@ -1,6 +1,6 @@
 # Data Directory
 
-The Data Directory is a crucial component of Maps4FS local deployment that serves as the central hub for all map generation data, user inputs, and system resources. When using Maps4FS locally, this directory bridges your local file system with the application's data management needs.
+The Data Directory is a crucial component of Maps4FS that serves as the central hub for all map generation data, user inputs, and system resources. This directory bridges your local file system with the application's data management needs.
 
 ## What is the Data Directory?
 
@@ -60,7 +60,7 @@ The Data Directory contains three main components:
 ### **defaults** - Source Data Repository & Presets
 **Purpose**: Default geographic data and the new [Presets](presets.md) system for managing multiple configurations
 
-**Presets Structure (Local Deployment)**:
+**Presets Structure**:
 ```
 📂 defaults/
 ├── 📂 osm/                         # OpenStreetMap data files
@@ -105,9 +105,9 @@ The Data Directory contains three main components:
 - **Flexibility** - Mix and match different preset components
 - **Backup Safety** - Multiple versions prevent configuration loss
 
-## Integration with Local Deployment
+## Integration with Maps4FS
 
-When you set up [Local Deployment](local_deployment.md), the Data Directory becomes the bridge between your file system and Maps4FS:
+The Data Directory becomes the bridge between your file system and Maps4FS:
 
 1. **Docker Mount** - Directory is mounted into the container at runtime
 2. **Persistent Storage** - Data persists across container restarts and updates
@@ -117,7 +117,7 @@ When you set up [Local Deployment](local_deployment.md), the Data Directory beco
 ## Getting Started
 
 ### **Initial Setup**
-The Data Directory is automatically created during local deployment setup. You'll find a realistic example in the `maps4fs_DD` folder in the Maps4FS repository.
+The Data Directory is automatically created during setup. You'll find a realistic example in the `maps4fs_DD` folder in the Maps4FS repository.
 
 ### **Basic Workflow**
 1. **Place custom data** in `defaults/` folders if needed

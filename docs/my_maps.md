@@ -2,9 +2,9 @@
 
 My Maps transforms Maps4FS from a simple map generator into a complete map development workbench. Instead of generating maps and forgetting about them, you build a personal library where every map becomes a foundation for future projects.
 
-## **📍 Local Deployment Only**
+## **📍 Availability**
 
-My Maps is exclusively available in local deployments. For setup instructions, see [Local Deployment Guide](local_deployment.md) and [Data Directory Overview](data_directory.md).
+My Maps is available in the Windows App and Docker deployment. For more information, see [Data Directory Overview](data_directory.md).
 
 ![My Maps Interface](https://github.com/iwatkot/maps4fsui/releases/download/2.6.0.1/screenshot-localhost-3000-1757595594033.png)
 
