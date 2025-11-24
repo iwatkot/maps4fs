@@ -102,4 +102,6 @@ If you have questions about submitting your map or need help with the submission
 
 - [About Atlas FS](atlas_about.md)
 - [My Maps](my_maps.md) - Managing your local map collection
+- [Atlas Terms of Use](atlas_terms.md) - User responsibilities and legal consequences
+- [Atlas License](atlas_license.md) - Map ownership and licensing
 - [Generation Info](generation_info.md) - Understanding map_settings.json

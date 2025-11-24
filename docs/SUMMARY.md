@@ -36,6 +36,8 @@
 ## 🌍 Atlas FS
 * [About](atlas_about.md)
 * [Submit Map](atlas_submit.md)
+* [License](atlas_license.md)
+* [Terms of Use](atlas_terms.md)
 
 ## 🗺️ Map Components
 * [Map Structure](map_structure.md)
