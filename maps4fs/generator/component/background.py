@@ -115,11 +115,11 @@ class Background(MeshComponent, ImageComponent):
             custom_dem_data = cv2.imread(self.map.custom_background_path, cv2.IMREAD_UNCHANGED)
             self.dem.determine_height_scale(custom_dem_data, adjust=False)
 
+        shutil.copyfile(self.output_path, self.not_substracted_path)
         if self.map.dem_settings.water_depth:
             self.subtraction()
 
         cutted_dem_path = self.save_map_dem(self.output_path)
-        shutil.copyfile(self.output_path, self.not_substracted_path)
         self.save_map_dem(
             self.output_path, save_path=self.not_resized_path(Parameters.NOT_RESIZED_DEM)
         )
@@ -983,9 +983,7 @@ class Background(MeshComponent, ImageComponent):
         all_faces = []
         vertex_offset = 0
 
-        not_resized_dem = cv2.imread(
-            self.not_resized_path(Parameters.NOT_RESIZED_DEM), cv2.IMREAD_UNCHANGED
-        )
+        not_resized_dem = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
 
         for polygon in polygons:
             # Get exterior 3D coordinates
@@ -1011,6 +1009,7 @@ class Background(MeshComponent, ImageComponent):
                     z = self.get_z_coordinate_from_dem(
                         not_resized_dem, exterior_coords[idx, 0], exterior_coords[idx, 1]  # type: ignore
                     )
+                    z = -z
                 else:
                     z = single_z_value
                 vertices_3d.append([v[0], v[1], z])
