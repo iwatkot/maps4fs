@@ -773,7 +773,10 @@ class Texture(ImageComponent):
         else:
             raise ValueError(f"Geometry type {type(geometry)} not supported.")
 
-        return geometry.buffer(width if width else 0, cap_style=self.cap_style)
+        buffered = geometry.buffer(width if width else 0, cap_style=self.cap_style)
+        if not isinstance(buffered, Polygon):
+            raise ValueError("Buffered geometry is not a Polygon.")
+        return buffered
 
     def _converters(
         self, geom_type: str
