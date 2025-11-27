@@ -520,8 +520,6 @@ class MeshComponent(Component):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        # Apply transformations (only for water meshes)
-        # if water_mesh:
         if rotate_mesh:
             # 1. Apply rotation fix (90-degree X-axis correction) - water only
             rotation_matrix = trimesh.transformations.rotation_matrix(-np.pi / 2, [1, 0, 0])
