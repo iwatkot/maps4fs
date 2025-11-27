@@ -820,7 +820,7 @@ class Background(MeshComponent, ImageComponent):
             texture_custom_schema=background_layers,  # type: ignore
             skip_scaling=True,  # type: ignore
             info_layer_path=os.path.join(self.info_layers_directory, "background.json"),  # type: ignore
-            cap_style="flat",
+            cap_style="flat",  # type: ignore
         )
 
         self.background_texture.preprocess()
@@ -972,6 +972,7 @@ class Background(MeshComponent, ImageComponent):
         self.assets.line_based_water_mesh = line_based_save_path
 
     def generate_line_surface_water(self) -> None:
+        """Generate water mesh based on line surface water polylines from the background info layer."""
         water_infos = self.get_infolayer_data(Parameters.BACKGROUND, Parameters.WATER_POLYLINES)
         if not water_infos:
             self.logger.warning("Water polylines data not found in textures info layer.")
@@ -990,8 +991,8 @@ class Background(MeshComponent, ImageComponent):
                 continue
 
             try:
-                fitted_water = self.fit_object_into_bounds(
-                    linestring_points=points,
+                fitted_water = self.fit_object_into_bounds(  # type: ignore
+                    linestring_points=points,  # type: ignore
                     angle=self.rotation,
                     canvas_size=self.background_size,
                     xshift=-Parameters.BACKGROUND_DISTANCE,  # type: ignore
