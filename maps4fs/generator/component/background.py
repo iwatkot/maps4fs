@@ -16,7 +16,10 @@ from tqdm import tqdm
 from trimesh import Trimesh
 
 from maps4fs.generator.component.base.component_image import ImageComponent
-from maps4fs.generator.component.base.component_mesh import MeshComponent
+from maps4fs.generator.component.base.component_mesh import (
+    LineSurfaceEntry,
+    MeshComponent,
+)
 from maps4fs.generator.component.dem import DEM
 from maps4fs.generator.component.texture import Texture
 from maps4fs.generator.monitor import monitor_performance
@@ -569,6 +572,8 @@ class Background(MeshComponent, ImageComponent):
                 output_dir=self.assets_water_directory,
                 name=Parameters.WATER_RESOURCES,
                 water_mesh=True,
+                rotate_mesh=True,
+                center_mesh=True,
             )
             self.logger.debug(
                 "Water resources mesh converted to i3d successfully: %s", i3d_water_resources
@@ -964,6 +969,92 @@ class Background(MeshComponent, ImageComponent):
 
         self.assets.line_based_water_mesh = line_based_save_path
 
+    def generate_line_surface_water(self) -> None:
+        water_infos = self.get_infolayer_data(Parameters.BACKGROUND, Parameters.WATER_POLYLINES)
+        if not water_infos:
+            self.logger.warning("Water polylines data not found in textures info layer.")
+            return
+
+        water_entries: list[LineSurfaceEntry] = []
+        for water_id, water_info in enumerate(water_infos, start=1):  # type: ignore
+            if isinstance(water_info, dict):
+                points: list[int | float] = water_info.get("points")  # type: ignore
+                width: int = water_info.get("width")  # type: ignore
+            else:
+                continue
+
+            if not points or len(points) < 2 or not width:
+                self.logger.debug("Invalid water data for water ID %s: %s", water_id, water_info)
+                continue
+
+            try:
+                fitted_water = self.fit_object_into_bounds(
+                    linestring_points=points,
+                    angle=self.rotation,
+                    canvas_size=self.background_size,
+                    xshift=-Parameters.BACKGROUND_DISTANCE,  # type: ignore
+                )
+            except ValueError as e:
+                self.logger.debug(
+                    "Water %s could not be fitted into the map bounds with error: %s",
+                    water_id,
+                    e,
+                )
+                continue
+
+            try:
+                linestring = shapely.LineString(fitted_water)
+            except ValueError as e:
+                self.logger.debug(
+                    "Water %s could not be converted to a LineString with error: %s",
+                    water_id,
+                    e,
+                )
+                continue
+
+            water_entries.append(LineSurfaceEntry(linestring=linestring, width=width))
+
+        if not water_entries:
+            self.logger.warning("No valid water polylines found in textures info layer.")
+            return
+
+        interpolated_water_entries: list[LineSurfaceEntry] = self.smart_interpolation(water_entries)
+
+        split_line_surface_entries: list[LineSurfaceEntry] = self.split_long_line_surfaces(
+            interpolated_water_entries
+        )
+
+        obj_output_path = os.path.join(self.water_directory, "line_surface_water.obj")
+
+        dem_image = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
+        if dem_image is None:
+            self.logger.error("Could not read DEM image for line surface water generation.")
+            return
+
+        self.create_textured_linestrings_mesh(
+            split_line_surface_entries, obj_output_path, dem_override=dem_image
+        )
+
+        mesh = trimesh.load_mesh(obj_output_path, force="mesh", process=False)
+        rotation_matrix = trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0])
+        mesh.apply_transform(rotation_matrix)
+
+        vertices = mesh.vertices
+        center = vertices.mean(axis=0)
+        mesh.vertices = vertices - center
+
+        output_directory = os.path.join(self.map_directory, "assets", "water")
+        os.makedirs(output_directory, exist_ok=True)
+
+        self.mesh_to_i3d(
+            mesh,
+            output_directory,
+            f"{Parameters.WATER_RESOURCES}_line_surface",
+            water_mesh=True,
+            rotate_mesh=False,
+            center_mesh=False,
+        )
+
     def mesh_from_3d_polygons(
         self, polygons: list[shapely.Polygon], single_z_value: int | None = None
     ) -> Trimesh | None:
@@ -1032,6 +1123,11 @@ class Background(MeshComponent, ImageComponent):
     def generate_water_resources_obj(self) -> None:
         """Generates 3D obj files based on water resources data."""
         self.logger.debug("Starting water resources generation...")
+        try:
+            self.generate_line_surface_water()
+        except Exception as e:
+            self.logger.error("Error during line surface water generation: %s", e)
+
         try:
             self.generate_linebased_water()
         except Exception as e:

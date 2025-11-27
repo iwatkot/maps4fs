@@ -284,7 +284,7 @@ class Config(XMLComponent, ImageComponent):
         )
 
         cv2.imwrite(resized_overview_path, resized_overview_image)
-        self.logger.info("Overview image saved to: %s", resized_overview_path)
+        self.logger.debug("Overview image saved to: %s", resized_overview_path)
 
         if os.path.isfile(overview_image_path):
             try:
@@ -295,7 +295,7 @@ class Config(XMLComponent, ImageComponent):
                 return
 
         self.convert_png_to_dds(resized_overview_path, overview_image_path)
-        self.logger.info("Overview image converted and saved to: %s", overview_image_path)
+        self.logger.debug("Overview image converted and saved to: %s", overview_image_path)
 
     @property
     def supported_countries(self) -> dict[str, str]:
