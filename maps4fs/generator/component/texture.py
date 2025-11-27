@@ -50,6 +50,8 @@ class Texture(ImageComponent):
         else:
             self.info_layer_path = self.kwargs["info_layer_path"]  # type: ignore
 
+        self.cap_style = self.kwargs.get("cap_style", "round")
+
     def read_layers(self, layers_schema: list[dict[str, Any]]) -> None:
         """Reads layers from the schema.
 
@@ -771,7 +773,7 @@ class Texture(ImageComponent):
         else:
             raise ValueError(f"Geometry type {type(geometry)} not supported.")
 
-        return geometry.buffer(width if width else 0)
+        return geometry.buffer(width if width else 0, cap_style=self.cap_style)
 
     def _converters(
         self, geom_type: str

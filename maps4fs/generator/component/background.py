@@ -26,6 +26,7 @@ from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
 SEGMENT_LENGTH = 2
+LINE_SURFACE_WATER_WIDTH_EXTENSION = 2
 
 # Note: the DEM types sorted by priority for usage with fallbacks.
 # Starting from the most detailed to the least detailed.
@@ -819,6 +820,7 @@ class Background(MeshComponent, ImageComponent):
             texture_custom_schema=background_layers,  # type: ignore
             skip_scaling=True,  # type: ignore
             info_layer_path=os.path.join(self.info_layers_directory, "background.json"),  # type: ignore
+            cap_style="flat",
         )
 
         self.background_texture.preprocess()
@@ -1012,6 +1014,7 @@ class Background(MeshComponent, ImageComponent):
                 )
                 continue
 
+            width += LINE_SURFACE_WATER_WIDTH_EXTENSION
             water_entries.append(LineSurfaceEntry(linestring=linestring, width=width))
 
         if not water_entries:
