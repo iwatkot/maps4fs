@@ -81,3 +81,11 @@ When **Download Satellite Images** is enabled in Maps4FS:
 **Performance Optimization**: Apply appropriate DDS compression to minimize loading times
 
 **Strategic Tip**: The overview image significantly impacts players' first impression of your map. Invest time in creating a polished, professional result that showcases your map's unique character and geographic setting.
+
+## Attribution Pack (Optional)
+
+Want to show that your map was created with Maps4FS? We've prepared an **optional attribution pack** with graphics like "Created with Maps4FS" and "Powered by Maps4FS" that you can use on your map images, websites, or promotional materials.
+
+**📦 Download**: [Attribution Pack](https://1drv.ms/u/c/a4f172ed55b8f7e1/IQDVdINs6vmMQYzXqabkL3w6AaF8ePwYx423W9e4RftVzFc?e=c5BgvK) - *Completely optional, not required*
+
+These graphics are provided for users who want to credit the tool, but there's **no obligation** to use them. Use them if you'd like to show support or let others know how your map was created!
