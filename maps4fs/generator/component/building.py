@@ -320,11 +320,11 @@ class Building(I3d):
 
     def preprocess(self) -> None:
         """Preprocess and prepare buildings schema and buildings map image."""
+        self.info: dict[str, Any] = {}
         if not self.map.building_settings.generate_buildings:
             self.logger.debug("Building generation is disabled in the map settings.")
             return
 
-        self.info: dict[str, Any] = {}
         try:
             buildings_schema_path = self.game.buildings_schema
         except ValueError as e:
