@@ -72,7 +72,7 @@ The world is full of incredible places waiting to become your next farming adven
 
 ## 🎨 Attribution Pack (Optional)
 
-Want to show that your map was created with Maps4FS? We've prepared an **optional attribution pack** with graphics like "Created with Maps4FS" and "Powered by Maps4FS" that you can use on your maps, websites, or promotional materials.
+Want to show that your map was created with Maps4FS? You can use an **optional attribution pack** with graphics like "Created with Maps4FS" and "Powered by Maps4FS" that you can use on your maps, websites, or promotional materials.
 
 **📦 Download**: [Attribution Pack](https://1drv.ms/u/c/a4f172ed55b8f7e1/IQDVdINs6vmMQYzXqabkL3w6AaF8ePwYx423W9e4RftVzFc?e=c5BgvK) - *Completely optional, not required*
 
