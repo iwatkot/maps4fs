@@ -32,6 +32,7 @@
 * [Presets](presets.md)
 * [Settings](settings.md)
 * [Schemas Editor](schemas_editor.md)
+* [Useful Software](useful_software.md)
 
 ## 🌍 Atlas FS
 * [About](atlas_about.md)
