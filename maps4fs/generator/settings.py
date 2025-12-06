@@ -225,7 +225,7 @@ class GRLESettings(SettingsModel):
     add_grass: bool = True
     base_grass: tuple | str = ("smallDenseMix", "meadow")
     random_plants: bool = True
-    fill_empty_farmlands: bool = False
+    fill_empty_farmlands: bool = True
 
 
 class I3DSettings(SettingsModel):
