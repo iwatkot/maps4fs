@@ -225,7 +225,7 @@ class GRLESettings(SettingsModel):
     add_grass: bool = True
     base_grass: tuple | str = ("smallDenseMix", "meadow")
     random_plants: bool = True
-    fill_empty_farmlands: bool = False
+    fill_empty_farmlands: bool = True
 
 
 class I3DSettings(SettingsModel):
@@ -245,7 +245,7 @@ class I3DSettings(SettingsModel):
 
     add_trees: bool = True
     forest_density: int = 10
-    tree_limit: int = 0
+    tree_limit: int = 20000
     trees_relative_shift: int = 20
 
     spline_density: int = 2
