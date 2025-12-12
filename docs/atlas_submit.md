@@ -21,16 +21,16 @@ Required for your first submission only. Not needed for subsequent maps:
 
 ### 🗺️ Map Information
 
-#### Option 1: Using map_settings.json (Recommended)
+#### Option 1: Using main_settings.json (Recommended)
 
-If you generated your map with Maps4FS, simply provide the `map_settings.json` file from your map's directory. This file contains all the technical information needed:
+If you generated your map with Maps4FS, simply provide the `main_settings.json` file from your map's directory. This file contains all the technical information needed:
 - Coordinates
 - Game version
 - DTM provider and resolution
 - Map rotation
 - And more
 
-📁 **Location**: `your_map/info_layers/map_settings.json`
+📁 **Location**: `your_map/main_settings.json`
 
 #### Option 2: Manual Information
 
@@ -104,4 +104,4 @@ If you have questions about submitting your map or need help with the submission
 - [My Maps](my_maps.md) - Managing your local map collection
 - [Atlas Terms of Use](atlas_terms.md) - User responsibilities and legal consequences
 - [Atlas License](atlas_license.md) - Map ownership and licensing
-- [Generation Info](generation_info.md) - Understanding map_settings.json
+- [Generation Info](generation_info.md) - Understanding main_settings.json
