@@ -585,6 +585,14 @@ class Background(MeshComponent, ImageComponent):
             self.logger.error("Could not convert water mesh to i3d: %s", e)
             return False
 
+    def map_dem_size(self) -> int:
+        """Returns the size of the map DEM.
+
+        Returns:
+            int -- The size of the map DEM.
+        """
+        return self.scaled_size + 1
+
     def save_map_dem(self, dem_path: str, save_path: str | None = None) -> str:
         """Cuts out the center of the DEM (the actual map) and saves it as a separate file.
 
@@ -612,7 +620,7 @@ class Background(MeshComponent, ImageComponent):
                 self.not_resized_path(Parameters.NOT_RESIZED_DEM_FOUNDATIONS),
             )
 
-        output_size = self.scaled_size + 1
+        output_size = self.map_dem_size()
 
         main_dem_path = self.game.dem_file_path(self.map_directory)
 
@@ -1338,7 +1346,7 @@ class Background(MeshComponent, ImageComponent):
             self.not_resized_path(Parameters.NOT_RESIZED_DEM_ROADS),
         )
 
-        output_size = dem_image.shape[0] + 1
+        output_size = self.map_dem_size()
         resized_dem = cv2.resize(
             dem_image, (output_size, output_size), interpolation=cv2.INTER_NEAREST
         )
