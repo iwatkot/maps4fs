@@ -9,6 +9,7 @@
 * [Workflow Optimizations](workflow_optimizations.md)
 * [Troubleshooting](troubleshooting.md)
 * [FAQ](FAQ.md)
+* [The Origin Story of Maps4FS](maps4fs_origin_story.md)
 
 ## 🔧 Understanding the basics
 * [Main Settings](main_settings.md)
