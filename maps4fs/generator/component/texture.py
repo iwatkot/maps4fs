@@ -546,9 +546,9 @@ class Texture(ImageComponent):
             layer (Layer): Layer with textures and tags.
             info_layer_data (dict[list[list[int]]]): Dictionary to store info layer data.
         """
-        linestring_infolayers = ["roads"]
-        if self.kwargs.get("info_layer_path", None):
-            linestring_infolayers.append("water")
+        linestring_infolayers = ["roads", "water"]
+        # if self.kwargs.get("info_layer_path", None):
+        #     linestring_infolayers.append("water")
 
         if layer.info_layer in linestring_infolayers:
             for linestring in self.objects_generator(
