@@ -124,7 +124,14 @@ class I3d(XMLComponent, ImageComponent):
 
         tree = self.get_tree(splines_i3d_path)
 
-        roads_polylines = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
+        roads_polylines = (
+            self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES) or []
+        )
+
+        water_polylines = (
+            self.get_infolayer_data(Parameters.TEXTURES, Parameters.WATER_POLYLINES) or []
+        )
+        roads_polylines.extend(water_polylines)
 
         if self.map.i3d_settings.field_splines:
             fields_polygons = self.get_infolayer_data(Parameters.TEXTURES, Parameters.FIELDS)
