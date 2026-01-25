@@ -263,9 +263,9 @@ class ImageComponent(Component):
                     # Create RGB version on white background
                     rgb_img = Image.new("RGB", img.size, (255, 255, 255))
                     rgb_img.paste(img, mask=img.split()[-1])  # Use alpha as mask
-                    img = rgb_img
+                    img = rgb_img  # type: ignore
                 elif img.mode != "RGB":
-                    img = img.convert("RGB")
+                    img = img.convert("RGB")  # type: ignore
 
                 img.save(output_dds_path, format="DDS")
         except Exception as e:
