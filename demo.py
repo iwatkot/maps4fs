@@ -29,10 +29,10 @@ game = mfs.Game.from_code(game_code)
 dtm_provider = mfs.dtm.SRTM30Provider
 
 # 3️⃣ Define the coordinates of the central point of the map, size and rotation.
-lat, lon = 45.2858, 20.219
+lat, lon = 45.28701170059837, 20.238282687720712
 coordinates = (lat, lon)
-size = 4096
-rotation = 25
+size = 1024
+rotation = 0
 
 # 4️⃣ Define the output directory.
 map_directory = "map_directory"
@@ -41,7 +41,7 @@ if os.path.isdir(map_directory):
 os.makedirs(map_directory, exist_ok=True)
 
 # 5️⃣ Optional: use a custom OSM file.
-osm_file = "C:/NewMaps/FS25_Titelski_breg_DEV/custom_osm.osm"
+# osm_file = "C:/NewMaps/FS25_Titelski_breg_DEV/custom_osm.osm"
 
 # 6️⃣ Optional: advanced settings. You can use the default settings, but
 # it's recommended to change them according to your needs.
@@ -49,8 +49,8 @@ dem_settings = mfs.settings.DEMSettings(
     multiplier=1, blur_radius=35, plateau=15, water_depth=10, add_foundations=False
 )
 background_settings = mfs.settings.BackgroundSettings(
-    generate_background=True,
-    generate_water=True,
+    # generate_background=True,
+    # generate_water=True,
     remove_center=True,
     flatten_roads=False,
     flatten_water=True,
@@ -66,7 +66,7 @@ i3d_settings = mfs.settings.I3DSettings(
     license_plate_prefix="NS",
 )
 texture_settings = mfs.settings.TextureSettings(
-    dissolve=True,
+    # dissolve=True,
     fields_padding=10,
     skip_drains=True,
 )
@@ -78,11 +78,11 @@ buildings_settings = mfs.settings.BuildingSettings(
 
 # 7️⃣ Optional: define custom tree and textures schemas.
 # Default schemas can be found in the `data` directory of the repository.
-tree_custom_schema_path = "C:/NewMaps/FS25_Titelski_breg_DEV/tree_custom_schema.json"
-tree_custom_schema = json.load(open(tree_custom_schema_path, "r", encoding="utf-8"))
+# tree_custom_schema_path = "C:/NewMaps/FS25_Titelski_breg_DEV/tree_custom_schema.json"
+# tree_custom_schema = json.load(open(tree_custom_schema_path, "r", encoding="utf-8"))
 
-texture_custom_schema_path = "templates/fs25-texture-schema.json"
-texture_custom_schema = json.load(open(texture_custom_schema_path, "r", encoding="utf-8"))
+# texture_custom_schema_path = "templates/fs25-texture-schema.json"
+# texture_custom_schema = json.load(open(texture_custom_schema_path, "r", encoding="utf-8"))
 
 generation_settings = mfs.GenerationSettings(
     dem_settings=dem_settings,
@@ -103,10 +103,10 @@ mp = mfs.Map(
     size,
     rotation,
     map_directory,
-    custom_osm=osm_file,
+    # custom_osm=osm_file,
     generation_settings=generation_settings,
     # texture_custom_schema=texture_custom_schema,
-    tree_custom_schema=tree_custom_schema,
+    # tree_custom_schema=tree_custom_schema,
 )
 
 # 9️⃣ Launch the generation process.

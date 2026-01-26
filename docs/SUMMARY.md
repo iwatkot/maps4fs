@@ -68,3 +68,4 @@
 * [License](license-info.md)
 * [Terms of Use](terms-of-use.md)
 * [Official Sources & Risks](official-sources.md)
+* [Supporting the Project](support.md)
