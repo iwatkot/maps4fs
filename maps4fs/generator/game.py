@@ -16,6 +16,7 @@ from maps4fs.generator.component.i3d import I3d
 from maps4fs.generator.component.road import Road
 from maps4fs.generator.component.satellite import Satellite
 from maps4fs.generator.component.texture import Texture
+from maps4fs.generator.settings import Parameters
 
 
 class Game:
@@ -220,7 +221,7 @@ class Game:
         Returns:
             str: The path to the density map fruits file."""
         weights_dir = self.weights_dir_path(map_directory)
-        return os.path.join(weights_dir, "densityMap_fruits.png")
+        return os.path.join(weights_dir, Parameters.DENSITY_MAP_FRUITS)
 
     def get_farmlands_path(self, map_directory: str) -> str:
         """Returns the path to the farmlands file.
@@ -231,7 +232,7 @@ class Game:
         Returns:
             str: The path to the farmlands file."""
         weights_dir = self.weights_dir_path(map_directory)
-        return os.path.join(weights_dir, "infoLayer_farmlands.png")
+        return os.path.join(weights_dir, Parameters.INFO_LAYER_FARMLANDS)
 
     def get_environment_path(self, map_directory: str) -> str:
         """Returns the path to the environment file.
@@ -242,7 +243,7 @@ class Game:
         Returns:
             str: The path to the environment file."""
         weights_dir = self.weights_dir_path(map_directory)
-        return os.path.join(weights_dir, "infoLayer_environment.png")
+        return os.path.join(weights_dir, Parameters.INFO_LAYER_ENVIRONMENT)
 
     def get_indoor_mask_path(self, map_directory: str) -> str:
         """Returns the path to the indoor mask file.
