@@ -62,6 +62,10 @@ class Parameters:
     NOT_RESIZED_DEM_FOUNDATIONS = "not_resized_with_foundations.png"
     NOT_RESIZED_DEM_ROADS = "not_resized_with_flattened_roads.png"
 
+    INFO_LAYER_FARMLANDS = "infoLayer_farmlands.png"
+    DENSITY_MAP_FRUITS = "densityMap_fruits.png"
+    INFO_LAYER_ENVIRONMENT = "infoLayer_environment.png"
+
 
 class SharedSettings(BaseModel):
     """Represents the shared settings for all components."""

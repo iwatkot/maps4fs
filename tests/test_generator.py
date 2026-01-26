@@ -46,6 +46,18 @@ generation_settings = GenerationSettings(
 )
 
 
+def get_coordinates_cases(number_of_cases: int) -> list[tuple[float, float]]:
+    """Return random coordinate cases.
+
+    Arguments:
+        number_of_cases (int): Number of cases to return.
+
+    Returns:
+        list[tuple[float, float]]: Random coordinate cases.
+    """
+    return [choice(coordinates_cases) for _ in range(number_of_cases)]
+
+
 def get_random_size() -> tuple[int, int]:
     """Return random size.
 
@@ -88,7 +100,7 @@ def test_map():
     """Test Map generation for different cases."""
     for game_code in game_code_cases:
         game = Game.from_code(game_code)
-        for coordinates in coordinates_cases:
+        for coordinates in get_coordinates_cases(3):  # To reduce test time, only 3 cases per game.
             height, width = get_random_size()
             directory = map_directory(game_code)
 

@@ -3,6 +3,7 @@
 import json
 import os
 from random import choice, randint
+from typing import NamedTuple
 
 import cv2
 import numpy as np
@@ -58,6 +59,24 @@ def area_type_to_pixel_value(area_type: str) -> int | None:
     return area_types.get(area_type)
 
 
+class GRLELayer(NamedTuple):
+    """Named tuple for GRLE layer.
+
+    Arguments:
+        name (str): name of the layer including file extension (e.g., "infoLayer_tipCollision.png").
+        height_multiplier (float): multiplier for the height of the layer relative to the map size.
+        width_multiplier (float): multiplier for the width of the layer relative to the map size.
+        channels (int): number of channels in the layer (e.g., 1 for grayscale, 3 for RGB).
+        data_type (str): data type of the layer (e.g., "uint8", "float32").
+    """
+
+    name: str
+    height_multiplier: float
+    width_multiplier: float
+    channels: int
+    data_type: str
+
+
 class GRLE(ImageComponent, XMLComponent):
     """Component for to generate InfoLayer PNG files based on GRLE schema.
 
@@ -82,12 +101,12 @@ class GRLE(ImageComponent, XMLComponent):
             self.logger.warning("Farmlands XML file processing is not implemented for this game.")
             self.xml_path = None
 
-    def _read_grle_schema(self) -> dict[str, float | int | str] | None:
+    def _read_grle_schema(self) -> list[GRLELayer]:
         try:
             grle_schema_path = self.game.grle_schema
         except ValueError:
             self.logger.warning("GRLE schema processing is not implemented for this game.")
-            return None
+            return []
 
         try:
             with open(grle_schema_path, "r", encoding="utf-8") as file:
@@ -97,7 +116,21 @@ class GRLE(ImageComponent, XMLComponent):
             self.logger.error("Error loading GRLE schema from %s: %s.", grle_schema_path, error)
             grle_schema = None
 
-        return grle_schema
+        try:
+            return [
+                GRLELayer(
+                    name=layer["name"],
+                    height_multiplier=layer["height_multiplier"],
+                    width_multiplier=layer["width_multiplier"],
+                    channels=layer["channels"],
+                    data_type=layer["data_type"],
+                )
+                for layer in grle_schema
+            ]
+
+        except (KeyError, TypeError) as e:
+            self.logger.error("Error parsing GRLE schema: %s.", e)
+            return []
 
     @monitor_performance
     def process(self) -> None:
@@ -108,26 +141,25 @@ class GRLE(ImageComponent, XMLComponent):
             return
 
         for info_layer in tqdm(grle_schema, desc="Preparing GRLE files", unit="layer"):
-            if isinstance(info_layer, dict):
-                file_path = os.path.join(
-                    self.game.weights_dir_path(self.map_directory), info_layer["name"]
-                )
+            file_path = os.path.join(
+                self.game.weights_dir_path(self.map_directory), info_layer.name
+            )
 
-                height = int(self.scaled_size * info_layer["height_multiplier"])
-                width = int(self.scaled_size * info_layer["width_multiplier"])
-                channels = info_layer["channels"]
-                data_type = info_layer["data_type"]
+            height = int(self.scaled_size * info_layer.height_multiplier)
+            width = int(self.scaled_size * info_layer.width_multiplier)
+            channels = info_layer.channels
+            data_type = info_layer.data_type
 
-                # Create the InfoLayer PNG file with zeros.
-                if channels == 1:
-                    info_layer_data = np.zeros((height, width), dtype=data_type)
-                else:
-                    info_layer_data = np.zeros((height, width, channels), dtype=data_type)
-                self.logger.debug("Shape of %s: %s.", info_layer["name"], info_layer_data.shape)
-                cv2.imwrite(file_path, info_layer_data)
-                self.logger.debug("InfoLayer PNG file %s created.", file_path)
+            # Create the InfoLayer PNG file with zeros.
+            if channels == 1:
+                info_layer_data = np.zeros((height, width), dtype=data_type)
             else:
-                self.logger.warning("Invalid InfoLayer schema: %s.", info_layer)
+                info_layer_data = np.zeros((height, width, channels), dtype=data_type)  # type: ignore
+            self.logger.debug("Shape of %s: %s.", info_layer.name, info_layer_data.shape)
+            cv2.imwrite(file_path, info_layer_data)
+            self.logger.debug("InfoLayer PNG file %s created.", file_path)
+
+        self.grle_schema = grle_schema
 
         self._add_farmlands()
         if self.game.plants_processing and self.map.grle_settings.add_grass:
@@ -135,6 +167,22 @@ class GRLE(ImageComponent, XMLComponent):
         if self.game.environment_processing:
             self._process_environment()
             self._process_indoor()
+
+    def get_info_layer_by_name(self, name: str) -> GRLELayer | None:
+        """Returns the GRLELayer object for the given name.
+
+        Arguments:
+            name (str): The name of the InfoLayer PNG file.
+
+        Returns:
+            GRLELayer | None: The GRLELayer object if found, else None.
+        """
+        if not hasattr(self, "grle_schema") or not isinstance(self.grle_schema, list):
+            return None
+        for layer in self.grle_schema:
+            if layer.name == name:
+                return layer
+        return None
 
     @monitor_performance
     def previews(self) -> list[str]:
@@ -262,7 +310,26 @@ class GRLE(ImageComponent, XMLComponent):
                 )
                 continue
 
-            farmland_np = self.polygon_points_to_np(fitted_farmland, divide=2)
+            # divide argument depends on the width and height multipliers of the farmlands info layer.
+            # By default, it's 2, since farmlands is 0.5 to the map size in both width and height.
+            farmlands_grle_layer = self.get_info_layer_by_name(Parameters.INFO_LAYER_FARMLANDS)
+            if not farmlands_grle_layer:
+                self.logger.error("Farmlands InfoLayer PNG file not found in the GRLE schema.")
+                return
+
+            if not farmlands_grle_layer.height_multiplier == farmlands_grle_layer.width_multiplier:
+                self.logger.error(
+                    "Farmlands InfoLayer PNG file has different height and width multipliers, "
+                    "which is not supported by Giants Editor."
+                )
+                raise ValueError(
+                    "Farmlands InfoLayer PNG file has different height and width multipliers."
+                )
+
+            divide = int(1 / farmlands_grle_layer.height_multiplier)
+            self.logger.debug("Using divide value of %s for farmland ID %s.", divide, farmland_id)
+
+            farmland_np = self.polygon_points_to_np(fitted_farmland, divide=divide)
 
             if farmland_id > Parameters.FARMLAND_ID_LIMIT:
                 self.logger.warning(
@@ -338,17 +405,34 @@ class GRLE(ImageComponent, XMLComponent):
         # Single channeled 8-bit image, where non-zero values (255) are where the grass is.
         grass_image = cv2.imread(grass_image_path, cv2.IMREAD_UNCHANGED)
 
-        # Density map of the fruits is 2X size of the base image, so we need to resize it.
-        # We'll resize the base image to make it bigger, so we can compare the values.
+        grle_density_map_fruits = self.get_info_layer_by_name(Parameters.DENSITY_MAP_FRUITS)
+        if not grle_density_map_fruits:
+            self.logger.error(
+                "Density map for fruits InfoLayer PNG file not found in the GRLE schema."
+            )
+            return
+        height_multiplier = int(grle_density_map_fruits.height_multiplier)
+        width_multiplier = int(grle_density_map_fruits.width_multiplier)
+        self.logger.debug(
+            "Resizing grass and forest images with height multiplier %s and width multiplier %s.",
+            height_multiplier,
+            width_multiplier,
+        )
+
+        # Density map of the fruits by default is 2X size of the base image, so we need to resize it.
+        # However, it's possible to customize the values in the schema, so we need to take that into account.
         grass_image = cv2.resize(
             grass_image,  # type: ignore
-            (grass_image.shape[1] * 2, grass_image.shape[0] * 2),  # type: ignore
+            (grass_image.shape[1] * width_multiplier, grass_image.shape[0] * height_multiplier),  # type: ignore
             interpolation=cv2.INTER_NEAREST,
         )
         if forest_image is not None:
             forest_image = cv2.resize(
                 forest_image,
-                (forest_image.shape[1] * 2, forest_image.shape[0] * 2),
+                (
+                    forest_image.shape[1] * width_multiplier,
+                    forest_image.shape[0] * height_multiplier,
+                ),
                 interpolation=cv2.INTER_NEAREST,
             )
 
