@@ -17,10 +17,14 @@ jobs:
         with:
           python-version: 3.12
 
+      - name: Install pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install osmnx from forked repo
+        run:  pip install git+https://github.com/iwatkot/osmnx.git
+
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r dev/requirements.txt
+        run:  pip install -r dev/requirements.txt
 
       - name: Install zip utility
         run: sudo apt-get update && sudo apt-get install -y zip
