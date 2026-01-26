@@ -24,5 +24,6 @@ If you find Maps4FS or AtlasFS valuable, please consider supporting the project 
 - ☕ [Buy Me a Coffee](https://buymeacoffee.com/iwatkot)
 - 🎨 [Patreon](https://www.patreon.com/iwatkot)
 - 💙 [Ko-fi](https://ko-fi.com/iwatkot)
+- 💰 **Crypto (USDT TRC20)**: `TGm46LNqe4RcVdsz5sWJw5eLZBp4W8ZSLk`
 
 Thank you for your support! 🙏
