@@ -560,7 +560,7 @@ class Texture(ImageComponent):
                 layer.tags, layer.width, layer.info_layer, yield_linestrings=True
             ):
                 if self.map.size_scale is not None:
-                    linestring = [
+                    linestring = [  # type: ignore
                         (int(x * self.map.size_scale), int(y * self.map.size_scale))
                         for x, y in linestring
                     ]
@@ -807,7 +807,11 @@ class Texture(ImageComponent):
         width: int | None,
         info_layer: str | None = None,
         yield_linestrings: bool = False,
-    ) -> Generator[np.ndarray, None, None] | Generator[list[tuple[int, int]], None, None]:
+    ) -> Generator[
+        tuple[list[tuple[int, int]], dict[str, Any]] | tuple[np.ndarray, dict[str, Any]],
+        None,
+        None,
+    ]:
         """Generator which yields numpy arrays of polygons from OSM data.
 
         Arguments:
@@ -817,8 +821,8 @@ class Texture(ImageComponent):
             yield_linestrings (bool): Flag to determine if the LineStrings should be yielded.
 
         Yields:
-            Generator[np.ndarray, None, None] | Generator[list[tuple[int, int]], None, None]:
-                Numpy array of polygon points or list of point coordinates.
+            Generator[tuple[list[tuple[int, int]], dict] | tuple[np.ndarray, dict], None, None]:
+                Tuple containing geometry data (numpy array or list of points) and OSM tags dict.
         """
         if tags is None:
             return
@@ -863,14 +867,15 @@ class Texture(ImageComponent):
 
     def linestrings_generator(
         self, objects: gpd.GeoDataFrame, *args, **kwargs
-    ) -> Generator[list[tuple[int, int]], None, None]:
+    ) -> Generator[tuple[list[tuple[int, int]], dict[str, Any]], None, None]:
         """Generator which yields lists of point coordinates which represent LineStrings from OSM.
 
         Arguments:
             objects (gpd.GeoDataFrame): GeoDataFrame with OSM objects.
 
         Yields:
-            Generator[list[tuple[int, int]], None, None]: List of point coordinates.
+            Generator[tuple[list[tuple[int, int]], dict[str, Any]], None, None]:
+                Tuple containing list of point coordinates and corresponding OSM tags dict.
         """
         for _, obj in objects.iterrows():
             geometry = obj["geometry"]
@@ -879,15 +884,13 @@ class Texture(ImageComponent):
                 points = [self.latlon_to_pixel(x, y) for y, x in geometry.coords]
                 yield points, osm_tags
 
-    def _get_tags_from_osm_object(
-        self, obj: pd.core.series.Series
-    ) -> dict[str, str | list[str] | bool]:
+    def _get_tags_from_osm_object(self, obj: pd.core.series.Series) -> dict[str, Any]:
         """Extracts tags from OSM object.
 
         Arguments:
             obj (pd.core.series.Series): OSM object.
         Returns:
-            dict[str, str | list[str] | bool]: Dictionary of tags.
+            dict[str, Any]: Dictionary of tags.
         """
         ignored_keys = {"geometry", "osmid", "element_type", "action", "visible"}
         tags = {}
@@ -901,7 +904,7 @@ class Texture(ImageComponent):
 
     def polygons_generator(
         self, objects: pd.core.frame.DataFrame, width: int | None, is_fieds: bool
-    ) -> Generator[np.ndarray, None, None]:
+    ) -> Generator[tuple[np.ndarray, dict[str, Any]], None, None]:
         """Generator which yields numpy arrays of polygons from OSM data.
 
         Arguments:
@@ -910,7 +913,8 @@ class Texture(ImageComponent):
             is_fieds (bool): Flag to determine if the fields should be padded.
 
         Yields:
-            Generator[np.ndarray, None, None]: Numpy array of polygon points.
+            Generator[tuple[np.ndarray, dict[str, Any]], None, None]:
+                Tuple containing numpy array of polygon points and OSM tags dict.
         """
         for _, obj in objects.iterrows():
             osm_tags = self._get_tags_from_osm_object(obj)
