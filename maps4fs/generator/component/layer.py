@@ -63,6 +63,7 @@ class Layer:
         building_category: str | None = None,
         external: bool = False,
         road_texture: str | None = None,
+        save_tags: bool = False,
     ):
         self.name = name
         self.count = count
@@ -86,6 +87,7 @@ class Layer:
         self.building_category = building_category
         self.external = external
         self.road_texture = road_texture
+        self.save_tags = save_tags
 
     def to_json(self) -> dict[str, str | list[str] | bool]:  # type: ignore
         """Returns dictionary with layer data.
@@ -115,6 +117,7 @@ class Layer:
             "building_category": self.building_category,
             "external": self.external,
             "road_texture": self.road_texture,
+            "save_tags": self.save_tags,
         }
 
         data = {k: v for k, v in data.items() if v is not None}

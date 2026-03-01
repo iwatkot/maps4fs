@@ -66,6 +66,9 @@ class Parameters:
     DENSITY_MAP_FRUITS = "densityMap_fruits.png"
     INFO_LAYER_ENVIRONMENT = "infoLayer_environment.png"
 
+    POINTS = "points"
+    TAGS = "tags"
+
 
 class SharedSettings(BaseModel):
     """Represents the shared settings for all components."""
