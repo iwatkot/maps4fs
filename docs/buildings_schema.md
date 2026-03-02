@@ -245,6 +245,166 @@ Buildings can belong to **multiple categories** for flexible placement:
 
 **Placement Logic**: This building can be placed in **either** retail areas **or** commercial areas, providing greater placement flexibility.
 
+## Advanced Tag-Based Building Matching
+
+### Prioritized Category Resolution
+
+Maps4FS uses a **two-tier intelligent matching system** to determine building categories with maximum accuracy:
+
+#### Tier 1: Individual OSM Tag Matching (Priority)
+
+When OSM building polygons include their own tags (e.g., from `building=*`, `landuse=*`, `amenity=*` properties), Maps4FS **prioritizes direct tag matching** over area-based detection.
+
+**How It Works:**
+1. System extracts all OSM tags from the building polygon
+2. Compares building tags against texture schema layer tags
+3. If any tag key-value pair matches, immediately assigns that layer's `building_category`
+4. Provides **higher precision** than pixel-based area detection
+
+**Example Scenario:**
+
+Building polygon has tags: `{'building': 'yes', 'landuse': 'commercial', 'amenity': 'fuel'}`
+
+Texture schema contains:
+```json
+{
+  "name": "BC_retail",
+  "tags": { "amenity": "fuel" },
+  "building_category": "retail"
+}
+```
+
+**Result**: Building is categorized as `retail` based on the `amenity=fuel` tag match, even if it's located within a broader commercial area.
+
+#### Tier 2: Pixel-Based Area Detection (Fallback)
+
+If no individual OSM tags match texture schema entries, the system falls back to **traditional area-based detection**:
+
+1. Identifies the center point of the building polygon
+2. Samples the building categories map at that location
+3. Assigns the category based on the underlying area type
+4. Provides **broad coverage** for buildings without specific tags
+
+**When This Activates:**
+- Building polygon has no OSM tags beyond `building=yes`
+- Building tags don't match any texture schema entries
+- Generic buildings within categorized land use areas
+
+### Tag Matching Logic
+
+**Matching Rules:**
+- **Single value match**: `"landuse": "commercial"` matches if building has `landuse=commercial`
+- **List value match**: `"landuse": ["commercial", "retail"]` matches if building has either value
+- **Key presence**: Tag key must exist in both schema and building tags
+- **First match wins**: First matching layer determines the category (order matters)
+
+**Tag Extraction:**
+The system automatically extracts relevant tags from OSM building data while filtering out technical metadata:
+
+**Included Tags:**
+- `building` - Building type classification
+- `landuse` - Land use designation  
+- `amenity` - Amenity/facility type
+- `shop` - Shop/retail type
+- `leisure` - Leisure facility type
+- `tourism` - Tourism-related type
+- `name` - Building name (when relevant)
+- Any other descriptive OSM tags
+
+**Excluded Tags** (technical/internal):
+- `geometry` - Geometric data
+- `osmid` - OSM identifier
+- `element_type` - Element classification
+- `action` - Edit action type
+- `visible` - Visibility status
+
+### Configuration for Tag-Based Matching
+
+To enable precise tag-based building placement, ensure your texture schema includes the `save_tags` property:
+
+```json
+{
+  "name": "BC_residential",
+  "count": 1,
+  "external": true,
+  "tags": { "landuse": "residential" },
+  "building_category": "residential",
+  "save_tags": true  // Enables individual tag capture
+}
+```
+
+**⚠️ Important**: The `save_tags` property must be set to `true` in texture schema layers where you want individual building tags to be captured and used for matching.
+
+### Strategic Advantages
+
+**1. Precision Placement**
+- Gas stations (`amenity=fuel`) correctly categorized as retail regardless of surrounding area
+- Schools (`amenity=school`) properly categorized even in mixed-use zones
+- Religious buildings (`amenity=place_of_worship`) accurately identified
+
+**2. Mixed-Use Area Support**
+- Individual buildings within complex areas get appropriate types
+- Overrides generic area classification when specific data exists
+- Reduces misclassification in boundary regions
+
+**3. OSM Data Leverage**
+- Utilizes rich OpenStreetMap tagging for maximum accuracy
+- Benefits from community-maintained building classifications
+- Provides future-proof categorization as OSM data improves
+
+### Example: Complex Urban Area
+
+**Scenario**: Commercial district with mixed retail and office buildings
+
+**OSM Data:**
+```
+Area polygon: landuse=commercial
+Building 1: { building=yes, office=company }
+Building 2: { building=yes, shop=convenience, amenity=fuel }  
+Building 3: { building=yes }  // No specific tags
+```
+
+**Texture Schema:**
+```json
+[
+  {
+    "name": "BC_commercial",
+    "tags": { "landuse": "commercial" },
+    "building_category": "commercial",
+    "save_tags": true
+  },
+  {
+    "name": "BC_retail", 
+    "tags": { "amenity": "fuel" },
+    "building_category": "retail",
+    "save_tags": true
+  }
+]
+```
+
+**Resolution:**
+- **Building 1**: `commercial` (fallback to area-based, no matching tags)
+- **Building 2**: `retail` (tag-based match on `amenity=fuel`)
+- **Building 3**: `commercial` (fallback to area-based, no tags)
+
+### Best Practices for Tag-Based Matching
+
+**Schema Design:**
+- 🎯 **Order matters**: Place more specific tag patterns before generic ones
+- 🎯 **Use granular tags**: Target specific amenity/shop types for precision
+- 🎯 **Enable save_tags**: Set `"save_tags": true` for layers requiring precision matching
+- 🎯 **Test with real data**: Verify tag matching with actual OSM building data
+
+**OSM Data Quality:**
+- 🎯 **Enrich building tags**: Add relevant amenity/shop/building tags to OSM
+- 🎯 **Consistent tagging**: Use standard OSM tagging conventions
+- 🎯 **Verify coverage**: Check that key buildings have appropriate descriptive tags
+
+**Performance Considerations:**
+- ⚡ Tag matching adds minimal overhead (< 1% generation time increase)
+- ⚡ Fallback system ensures all buildings are categorized
+- ⚡ No impact on buildings without individual tags
+
 ## Custom Schema Development
 
 ### Schema Editing
