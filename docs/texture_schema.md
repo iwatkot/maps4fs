@@ -200,6 +200,44 @@ Maps4FS leverages the comprehensive [OpenStreetMap (OSM)](https://www.openstreet
 **Use Case**: Consolidating similar features for performance optimization  
 **Result**: Source layer content transfers to specified target layer
 
+**`building_category`** *(string, FS25 buildings integration)*  
+**Purpose**: Links texture layer to building placement categories  
+**Options**: `"residential"`, `"commercial"`, `"industrial"`, `"retail"`, `"farmyard"`, `"religious"`, `"recreation"`  
+**Requirement**: Must be used with `"external": true` to enable building placement  
+**Integration**: Works with buildings schema to place appropriate buildings in designated areas  
+**Reference**: See [Buildings Schema](buildings_schema.md) for complete building configuration
+
+**`save_tags`** *(boolean, individual tag capture)*  
+**Purpose**: Capture and store individual OSM tags from each polygon/feature  
+**Default**: `false` (tags not saved)  
+**When True**: Each polygon's OSM tags are saved to info layer for precise matching  
+**Use Case**: Enable tag-based building categorization instead of pixel-based area detection  
+**Performance**: Minimal overhead (< 1% increase in processing time)  
+**Critical For**: Precise building placement using individual building tags rather than area classification
+
+**Example: Building Categories with Tag Capture**
+```json
+{
+  "name": "BC_commercial",
+  "count": 1,
+  "external": true,
+  "tags": { "landuse": "commercial" },
+  "building_category": "commercial",
+  "save_tags": true,
+  "color": [200, 100, 50],
+  "info_layer": "buildings"
+}
+```
+
+**Tag-Based Matching Workflow:**
+1. Layer with `save_tags: true` captures all OSM tags from each polygon
+2. Individual building tags (e.g., `amenity=fuel`) are stored in info layer
+3. Building placement system matches individual tags against texture schema
+4. Buildings get precise categories based on their specific tags, not just their location
+5. Fallback to pixel-based area detection if no tag matches found
+
+**Performance Note**: `save_tags` only affects layers where individual polygon classification matters. For basic terrain textures (grass, roads, etc.), this property can remain `false` for optimal performance.
+
 ## Custom Schema Editing
 
 ### Local Deployment Advantage

@@ -509,7 +509,13 @@ class Building(I3d):
             self.logger.warning("Not resized DEM not found.")
             return
 
-        for building in tqdm(buildings, desc="Placing buildings", unit="building"):
+        for building_data in tqdm(buildings, desc="Placing buildings", unit="building"):
+            building = building_data.get(Parameters.POINTS)
+            building_osm_tags = building_data.get(Parameters.TAGS)
+            if not building:
+                self.logger.debug("Skipping building entry with missing points data.")
+                continue
+
             try:
                 fitted_building = self.fit_object_into_bounds(
                     polygon_points=building, angle=self.rotation
@@ -521,16 +527,28 @@ class Building(I3d):
                 )
                 continue
 
-            # 1. Identify the center point of the building polygon.
+            # Calculate center point (needed for both tag-based and pixel-based matching, and for DEM)
             center_point = np.mean(fitted_building, axis=0).astype(int)
             x, y = center_point
             self.logger.debug("Center point of building polygon: %s", center_point)
 
-            pixel_value = buildings_map_image[y, x]
-            self.logger.debug("Pixel value at center point: %s", pixel_value)
+            # 0. Try to match building category from OSM tags first (prioritized method)
+            category = None
+            if building_osm_tags:
+                category = self._match_category_from_osm_tags(building_osm_tags)
+                self.logger.debug(
+                    "Building category matched from OSM tags: %s (tags: %s)",
+                    category,
+                    building_osm_tags,
+                )
 
-            category = pixel_value_to_building_category_type(pixel_value)
-            self.logger.debug("Building category at center point: %s", category)
+            # 1. If no category matched from OSM tags, fall back to pixel-based method
+            if not category:
+                pixel_value = buildings_map_image[y, x]
+                self.logger.debug("Pixel value at center point: %s", pixel_value)
+
+                category = pixel_value_to_building_category_type(pixel_value)
+                self.logger.debug("Building category from pixel-based method: %s", category)
 
             # 2. Obtain building dimensions and rotation using minimum area bounding rectangle
             polygon_np = self.polygon_points_to_np(fitted_building)
@@ -644,6 +662,53 @@ class Building(I3d):
         # Save the modified XML tree
         self.save_tree(tree)
         self.logger.debug("Buildings placement completed and saved to map.i3d")
+
+    def _match_category_from_osm_tags(self, building_osm_tags: dict[str, Any]) -> str | None:
+        """Match building category based on OSM tags from texture schema layers.
+
+        This method prioritizes OSM tag matching over pixel-based detection by checking if any
+        tags from the building match tags defined in texture schema layers.
+
+        Arguments:
+            building_osm_tags (dict[str, Any]): Dictionary of OSM tags from the building
+
+        Returns:
+            str | None: Matched building category or None if no match found
+        """
+        texture_component = self.map.get_texture_component()
+        if not texture_component:
+            return None
+
+        building_category_layers = texture_component.get_building_category_layers()
+
+        for layer in building_category_layers:
+            if not layer.tags:
+                continue
+
+            # Check if any of the layer's tags match any of the building's tags
+            for tag_key, tag_values in layer.tags.items():
+                if tag_key not in building_osm_tags:
+                    continue
+
+                building_tag_value = building_osm_tags[tag_key]
+
+                # Handle both single value and list of values in schema
+                matched = False
+                if isinstance(tag_values, list):
+                    matched = building_tag_value in tag_values
+                else:
+                    matched = building_tag_value == tag_values
+
+                if matched:
+                    self.logger.debug(
+                        "Matched building category '%s' from OSM tag %s=%s",
+                        layer.building_category,
+                        tag_key,
+                        building_tag_value,
+                    )
+                    return layer.building_category
+
+        return None
 
     def _get_polygon_dimensions_and_rotation(
         self, polygon_points: np.ndarray

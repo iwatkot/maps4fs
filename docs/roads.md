@@ -20,15 +20,18 @@ Road generation is configured in the texture schema file (e.g., `fs25-texture-sc
 ```json
 {
   "name": "asphalt",
+  "count": 2,
   "tags": {
     "highway": ["residential"]
   },
   "width": 6,
+  "info_layer": "roads",
   "road_texture": "asphalt-white"
 }
 ```
 
 **Key Properties:**
+- `count`: Number of texture variations (required, typically 2 for most of the textures)
 - `road_texture`: Name of the texture file (without extension) to use for the road mesh
 - `width`: Road width in meters (half-width from center line)
 - `tags`: OSM tags that identify which roads should use this texture
@@ -115,8 +118,8 @@ The main road will generate a patch over the intersection point.
 2. **Split Secondary Road:** Edit the OSM data to split one road into two segments:
    ```
    Before (no patch):          After (patch generated):
-   ═════╬═════                 ═════╬═════
-        ║                           ║ ║
+   ═════╬═════                 ═══════════
+        ║                           ║
         ║                      (split into two)
    ```
    When split, both segments end at the main road and will be covered by patches.
@@ -258,6 +261,7 @@ This is normal and expected - automatic road generation provides a starting poin
 [
   {
     "name": "asphalt",
+    "count": 2,
     "tags": {
       "highway": ["motorway", "trunk", "primary"]
     },
@@ -268,6 +272,7 @@ This is normal and expected - automatic road generation provides a starting poin
   },
   {
     "name": "asphaltResidential",
+    "count": 2,
     "tags": {
       "highway": ["residential", "service"]
     },
@@ -278,6 +283,7 @@ This is normal and expected - automatic road generation provides a starting poin
   },
   {
     "name": "gravel",
+    "count": 2,
     "tags": {
       "highway": ["track", "path"]
     },
