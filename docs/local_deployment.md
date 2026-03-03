@@ -22,6 +22,9 @@ The [Presets](presets.md) feature allows you to:
 - **[Data Directory](data_directory.md)** - Full control over your map generation assets
 - **Custom Resources** - [Custom OSM](custom_osm.md) and [Custom DEM](custom_dem.md) files
 
+### **Localization**
+Want to see the app in your language? Maps4FS UI translations are community-driven — anyone can contribute or add a new language. See [Localization](localization.md) for details.
+
 ## System Requirements
 
 - CPU with at least 4 cores

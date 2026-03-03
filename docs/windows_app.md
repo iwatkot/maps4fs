@@ -54,6 +54,7 @@ The Windows App includes all major Maps4FS features:
 - **[Settings](settings.md)** - Customize your generation preferences
 - **All Map Components** - Fields, forests, roads, buildings, and more
 - **Custom Resources** - Use your own [OSM files](custom_osm.md) and [DEM data](custom_dem.md)
+- **[Localization](localization.md)** - Want to see the app in your language? Community-driven translations are welcome!
 
 ## 📋 Requirements
 
