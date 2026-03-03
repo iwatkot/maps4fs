@@ -18,12 +18,14 @@ logger = Logger(name="MAPS4FS.CONFIG")
 MFS_TEMPLATES_DIR = os.path.join(os.getcwd(), "templates")
 
 MFS_DEFAULTS_DIR = os.path.join(os.getcwd(), "defaults")
+MFS_LOCALE_DIR = os.path.join(os.getcwd(), "locale")
 MFS_DEM_DEFAULTS_DIR = os.path.join(MFS_DEFAULTS_DIR, "dem")
 MFS_OSM_DEFAULTS_DIR = os.path.join(MFS_DEFAULTS_DIR, "osm")
 MFS_MSETTINGS_DEFAULTS_DIR = os.path.join(MFS_DEFAULTS_DIR, "main_settings")
 MFS_GSETTINGS_DEFAULTS_DIR = os.path.join(MFS_DEFAULTS_DIR, "generation_settings")
 default_dirs = [
     MFS_DEM_DEFAULTS_DIR,
+    MFS_LOCALE_DIR,
     MFS_OSM_DEFAULTS_DIR,
     MFS_MSETTINGS_DEFAULTS_DIR,
     MFS_GSETTINGS_DEFAULTS_DIR,
@@ -180,8 +182,65 @@ def reload_templates() -> None:
     logger.info("Templates reloaded successfully.")
 
 
+def ensure_locale() -> None:
+    """Ensure locale directory is populated with up-to-date language files.
+
+    Removes all existing files from MFS_LOCALE_DIR and downloads fresh
+    language YML files from the maps4fslocale repository.
+    """
+    logger.info("Ensuring locale files are up-to-date...")
+
+    # Remove all existing files in the locale directory
+    if os.path.exists(MFS_LOCALE_DIR):
+        for item in os.listdir(MFS_LOCALE_DIR):
+            item_path = os.path.join(MFS_LOCALE_DIR, item)
+            if os.path.isfile(item_path):
+                try:
+                    os.remove(item_path)
+                    logger.debug("Removed locale file: %s", item_path)
+                except Exception as e:
+                    logger.warning("Could not remove locale file %s: %s", item_path, str(e))
+
+    os.makedirs(MFS_LOCALE_DIR, exist_ok=True)
+
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            logger.info("Downloading maps4fslocale repository as ZIP archive...")
+
+            zip_url = "https://github.com/iwatkot/maps4fslocale/archive/refs/heads/main.zip"
+            with urlopen(zip_url) as response:
+                zip_data = response.read()
+
+            logger.info("Extracting locale archive...")
+            with zipfile.ZipFile(io.BytesIO(zip_data)) as zip_ref:
+                zip_ref.extractall(temp_dir)
+
+            repo_dir = os.path.join(temp_dir, "maps4fslocale-main")
+
+            if not os.path.exists(repo_dir):
+                raise FileNotFoundError(f"Expected repository directory not found: {repo_dir}")
+
+            languages_dir = os.path.join(repo_dir, "languages")
+            if not os.path.exists(languages_dir):
+                raise FileNotFoundError(f"Expected languages directory not found: {languages_dir}")
+
+            for item in os.listdir(languages_dir):
+                if item.endswith(".yml"):
+                    src = os.path.join(languages_dir, item)
+                    dst = os.path.join(MFS_LOCALE_DIR, item)
+                    shutil.copy2(src, dst)
+                    logger.debug("Copied locale file: %s", item)
+
+            logger.info("Locale files updated successfully in: %s", MFS_LOCALE_DIR)
+
+    except Exception as e:
+        logger.error("Error updating locale files: %s", str(e))
+        raise
+
+
 ensure_templates()
 ensure_template_subdirs()
+ensure_locale()
 
 MFS_ROOT_DIR = os.getenv("MFS_ROOT_DIRECTORY", os.path.join(os.getcwd(), "mfsrootdir"))
 MFS_CACHE_DIR = os.path.join(MFS_ROOT_DIR, "cache")
