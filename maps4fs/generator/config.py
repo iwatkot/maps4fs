@@ -3,6 +3,7 @@
 import io
 import os
 import shutil
+import ssl
 import tempfile
 import zipfile
 from urllib.request import urlopen
@@ -12,6 +13,30 @@ from osmnx import settings as ox_settings
 from maps4fs.generator.monitor import Logger
 
 TQDM_DISABLE = os.getenv("TQDM_DISABLE", "0") == "1"
+
+
+def _urlopen_with_ssl_fallback(url: str) -> bytes:
+    """Try to open a URL with SSL verification; on failure retry without it.
+
+    Arguments:
+        url (str): The URL to fetch.
+
+    Returns:
+        bytes: The response body.
+    """
+    try:
+        with urlopen(url) as response:
+            return response.read()
+    except ssl.SSLError as e:
+        logger.warning(
+            "SSL verification failed (%s), retrying without certificate verification...", str(e)
+        )
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        with urlopen(url, context=ctx) as response:
+            return response.read()
+
 
 logger = Logger(name="MAPS4FS.CONFIG")
 
@@ -80,8 +105,7 @@ def ensure_templates():
 
             # Download repository as ZIP from GitHub
             zip_url = "https://github.com/iwatkot/maps4fsdata/archive/refs/heads/main.zip"
-            with urlopen(zip_url) as response:
-                zip_data = response.read()
+            zip_data = _urlopen_with_ssl_fallback(zip_url)
 
             logger.info("Extracting repository archive...")
             with zipfile.ZipFile(io.BytesIO(zip_data)) as zip_ref:
@@ -208,8 +232,7 @@ def ensure_locale() -> None:
             logger.info("Downloading maps4fslocale repository as ZIP archive...")
 
             zip_url = "https://github.com/iwatkot/maps4fslocale/archive/refs/heads/main.zip"
-            with urlopen(zip_url) as response:
-                zip_data = response.read()
+            zip_data = _urlopen_with_ssl_fallback(zip_url)
 
             logger.info("Extracting locale archive...")
             with zipfile.ZipFile(io.BytesIO(zip_data)) as zip_ref:
