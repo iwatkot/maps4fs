@@ -6,6 +6,7 @@ import shutil
 import ssl
 import tempfile
 import zipfile
+from urllib.error import URLError
 from urllib.request import urlopen
 
 from osmnx import settings as ox_settings
@@ -13,6 +14,7 @@ from osmnx import settings as ox_settings
 from maps4fs.generator.monitor import Logger
 
 TQDM_DISABLE = os.getenv("TQDM_DISABLE", "0") == "1"
+logger = Logger(name="MAPS4FS.CONFIG")
 
 
 def _urlopen_with_ssl_fallback(url: str) -> bytes:
@@ -27,7 +29,7 @@ def _urlopen_with_ssl_fallback(url: str) -> bytes:
     try:
         with urlopen(url) as response:
             return response.read()
-    except ssl.SSLError as e:
+    except (ssl.SSLError, URLError) as e:
         logger.warning(
             "SSL verification failed (%s), retrying without certificate verification...", str(e)
         )
@@ -37,8 +39,6 @@ def _urlopen_with_ssl_fallback(url: str) -> bytes:
         with urlopen(url, context=ctx) as response:
             return response.read()
 
-
-logger = Logger(name="MAPS4FS.CONFIG")
 
 MFS_TEMPLATES_DIR = os.path.join(os.getcwd(), "templates")
 
