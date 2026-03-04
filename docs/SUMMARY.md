@@ -35,6 +35,7 @@
 * [Settings](settings.md)
 * [Schemas Editor](schemas_editor.md)
 * [Useful Software](useful_software.md)
+* [3rd Party Tutorials](third_party_tutorials.md)
 
 ## 🌍 Atlas FS
 * [About](atlas_about.md)
