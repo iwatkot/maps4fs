@@ -873,6 +873,10 @@ class I3d(XMLComponent, ImageComponent):
         if mesh_centroid_x is not None and mesh_centroid_z is not None:
             ge_x = float(mesh_centroid_x) - self.scaled_size // 2
             ge_y = float(mesh_centroid_z) - self.scaled_size // 2
+            mesh_centroid_y = position_data.get("mesh_centroid_y")
+            ge_elevation = (
+                float(mesh_centroid_y) if mesh_centroid_y is not None else (min_z + max_z) / 2
+            )
         else:
             centroid_x = position_data.get("centroid_x")
             centroid_y = position_data.get("centroid_y")
@@ -886,8 +890,7 @@ class I3d(XMLComponent, ImageComponent):
                 center_pixel_x = int(left + (self.scaled_size - left - right) / 2)
                 center_pixel_y = int(top + (self.scaled_size - top - bottom) / 2)
                 ge_x, ge_y = self.top_left_coordinates_to_center((center_pixel_x, center_pixel_y))
-
-        ge_elevation = (min_z + max_z) / 2
+            ge_elevation = (min_z + max_z) / 2
 
         # GE translation string order: X (east-west), Y (elevation), Z (north-south).
         translation = f"{ge_x} {ge_elevation} {ge_y}"

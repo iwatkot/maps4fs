@@ -308,6 +308,7 @@ class Road(I3d, MeshComponent):
                 with open(position_path, "r", encoding="utf-8") as pf:
                     pos_data = json.load(pf)
             pos_data["mesh_centroid_x"] = float(center[0])
+            pos_data["mesh_centroid_y"] = float(center[1])
             pos_data["mesh_centroid_z"] = float(center[2])
             with open(position_path, "w", encoding="utf-8") as pf:
                 json.dump(pos_data, pf, ensure_ascii=False, indent=4)
