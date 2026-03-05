@@ -865,21 +865,27 @@ class I3d(XMLComponent, ImageComponent):
         min_z = position_data.get("min_z", 0.0)
         max_z = position_data.get("max_z", 0.0)
 
-        centroid_x = position_data.get("centroid_x")
-        centroid_y = position_data.get("centroid_y")
+        # Prefer the exact mesh vertex centroid saved by road.py (post-rotation, pre-centering).
+        # This matches vertices -= center exactly, unlike mask pixel centroid.
+        mesh_centroid_x = position_data.get("mesh_centroid_x")
+        mesh_centroid_z = position_data.get("mesh_centroid_z")
 
-        if centroid_x is not None and centroid_y is not None:
-            # Use the true pixel centroid — matches where mesh.vertices -= center placed the origin.
-            ge_x, ge_y = self.top_left_coordinates_to_center((centroid_x, centroid_y))
+        if mesh_centroid_x is not None and mesh_centroid_z is not None:
+            ge_x = float(mesh_centroid_x) - self.scaled_size // 2
+            ge_y = float(mesh_centroid_z) - self.scaled_size // 2
         else:
-            # Fallback: bounding box center (less accurate for non-uniform road networks).
-            left = position_data.get("left", 0)
-            top = position_data.get("top", 0)
-            right = position_data.get("right", 0)
-            bottom = position_data.get("bottom", 0)
-            center_pixel_x = int(left + (self.scaled_size - left - right) / 2)
-            center_pixel_y = int(top + (self.scaled_size - top - bottom) / 2)
-            ge_x, ge_y = self.top_left_coordinates_to_center((center_pixel_x, center_pixel_y))
+            centroid_x = position_data.get("centroid_x")
+            centroid_y = position_data.get("centroid_y")
+            if centroid_x is not None and centroid_y is not None:
+                ge_x, ge_y = self.top_left_coordinates_to_center((centroid_x, centroid_y))
+            else:
+                left = position_data.get("left", 0)
+                top = position_data.get("top", 0)
+                right = position_data.get("right", 0)
+                bottom = position_data.get("bottom", 0)
+                center_pixel_x = int(left + (self.scaled_size - left - right) / 2)
+                center_pixel_y = int(top + (self.scaled_size - top - bottom) / 2)
+                ge_x, ge_y = self.top_left_coordinates_to_center((center_pixel_x, center_pixel_y))
 
         ge_elevation = (min_z + max_z) / 2
 
