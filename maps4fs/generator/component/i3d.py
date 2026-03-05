@@ -20,6 +20,8 @@ from maps4fs.generator.settings import Parameters
 NODE_ID_STARTING_VALUE = 2000
 SPLINES_NODE_ID_STARTING_VALUE = 5000
 TREE_NODE_ID_STARTING_VALUE = 30000
+FILE_ID_STARTING_VALUE = 120000
+BINARY_MESHES_NODE_ID_STARTING_VALUE = 150000
 
 FIELDS_ATTRIBUTES = [
     ("angle", "integer", "0"),
@@ -65,6 +67,8 @@ class I3d(XMLComponent, ImageComponent):
             if self.map.i3d_settings.add_trees:
                 self._add_forests()
             self._add_splines()
+
+        self.insert_meshes()
 
     def update_height_scale(self, value: int | None = None) -> None:
         """Updates the height scale value in the map I3D file.
@@ -710,3 +714,107 @@ class I3d(XMLComponent, ImageComponent):
         }
 
         return data
+
+    def _find_binary_i3d_in_directory(self, directory: str) -> str | None:
+        """Finds the binary I3D file in the given directory.
+
+        Arguments:
+            directory (str): The directory to search for the binary I3D file.
+
+        Returns:
+            str | None: The path to the binary I3D file if found, otherwise None.
+        """
+        for file in os.listdir(directory):
+            if file.endswith("_binary.i3d"):
+                return os.path.join(directory, file)
+        return None
+
+    def _find_nested_binary_i3d_in_directory(self, directory: str) -> dict[str, str]:
+        """Finds binary I3D files in immediate subdirectories of the given directory.
+
+        Arguments:
+            directory (str): The directory containing subdirectories with binary I3D files.
+                Expected structure: directory/type_name/something_binary.i3d
+
+        Returns:
+            dict[str, str]: Mapping of subdirectory name to binary I3D file path.
+        """
+        result: dict[str, str] = {}
+        for entry in os.scandir(directory):
+            if not entry.is_dir():
+                continue
+            binary_path = self._find_binary_i3d_in_directory(entry.path)
+            if binary_path:
+                result[entry.name] = binary_path
+        return result
+
+    def insert_meshes(self) -> None:
+        """Inserts meshes into the I3D file."""
+        assets_directory = self.map.assets_directory
+        self.logger.info(
+            "Inserting meshes into the I3D file using assets from: %s.", assets_directory
+        )
+
+        background_assets_directory = os.path.join(assets_directory, "background")
+        roads_assets_directory = os.path.join(assets_directory, "roads")
+        water_assets_directory = os.path.join(assets_directory, "water")
+
+        assets_directories: dict[str, str] = {"background_terrain": background_assets_directory}
+        if os.path.isdir(water_assets_directory):
+            assets_directories["water_resources"] = water_assets_directory
+        if os.path.isdir(roads_assets_directory):
+            assets_directories.update(
+                self._find_nested_binary_i3d_in_directory(roads_assets_directory)
+            )
+
+        file_id = FILE_ID_STARTING_VALUE
+        node_id = BINARY_MESHES_NODE_ID_STARTING_VALUE
+        for asset_name, asset_path in assets_directories.items():
+            if os.path.isfile(asset_path):
+                binary_i3d_path: str | None = asset_path
+            elif os.path.isdir(asset_path):
+                binary_i3d_path = self._find_binary_i3d_in_directory(asset_path)
+            else:
+                self.logger.warning("Asset path not found: %s.", asset_path)
+                continue
+
+            if not binary_i3d_path:
+                self.logger.warning(
+                    "Binary I3D file not found for asset: %s.",
+                    asset_name,
+                )
+                continue
+
+            tree = self.get_tree()
+            root = tree.getroot()
+
+            files_node = root.find(".//Files")
+            scene_node = root.find(".//Scene")
+
+            if files_node is None or scene_node is None:
+                self.logger.warning("Required nodes (Files, Scene) not found in I3D file.")
+                continue
+
+            i3d_dir = os.path.dirname(self.xml_path)  # type: ignore
+            self.logger.info("Inserting mesh %s from file %s.", asset_name, binary_i3d_path)
+            binary_rel_path = os.path.relpath(binary_i3d_path, i3d_dir).replace("\\", "/")
+            self.logger.info("Relative path for the binary I3D file: %s.", binary_rel_path)
+
+            files_node.append(
+                self.create_element("File", {"fileId": str(file_id), "filename": binary_rel_path})
+            )
+            scene_node.append(
+                self.create_element(
+                    "ReferenceNode",
+                    {"name": asset_name, "referenceId": str(file_id), "nodeId": str(node_id)},
+                )
+            )
+
+            self.save_tree(tree)
+            self.logger.debug("Mesh %s inserted into the I3D file.", asset_name)
+
+            file_id += 1
+            node_id += 1
+
+            # TODO: Post-process to set needed properties and params.
+            # TODO: Position the meshes correctly in the scene.
