@@ -2,6 +2,7 @@
 
 import os
 import shutil
+import subprocess
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from typing import NamedTuple
@@ -14,6 +15,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from maps4fs.generator.component.base.component import Component
+from maps4fs.generator.config import get_i3d_executable_path
 from maps4fs.generator.settings import Parameters
 
 
@@ -492,6 +494,41 @@ class MeshComponent(Component):
         return obj_filepath, mtl_filepath
 
     @staticmethod
+    def to_i3d_binary(raw_i3d_path: str, binary_i3d_path: str, **kwargs) -> str:
+        """Convert the raw XML i3d file to the Giants binary i3d format using the i3dConverter.exe tool.
+
+        Generates a raw XML i3d file first, then converts it to the Giants binary i3d
+        format in-place by running: i3dConverter.exe -in <file> -out <file>
+
+        Arguments:
+            raw_i3d_path (str): Path to the raw XML i3d file
+            binary_i3d_path (str): Path to save the converted binary i3d file
+
+        Returns:
+            str: Full path to the generated binary i3d file
+
+        Raises:
+            RuntimeError: If the converter executable is not found or returns a non-zero exit code.
+        """
+        converter_path = get_i3d_executable_path()
+        if converter_path is None:
+            raise RuntimeError(
+                "i3d_converter executable not found. Cannot convert to binary i3d format."
+            )
+
+        # Run the converter: overwrites the XML file with the binary format in-place.
+        cmd = [converter_path, "-in", raw_i3d_path, "-out", binary_i3d_path]
+        result = subprocess.run(
+            cmd, capture_output=True, text=True
+        )  # pylint: disable=subprocess-run-check
+
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"i3dConverter.exe failed (exit code {result.returncode}). "
+                f"stdout: {result.stdout.strip()} | stderr: {result.stderr.strip()}"
+            )
+
+    @staticmethod
     def mesh_to_i3d(
         mesh: trimesh.Trimesh,
         output_dir: str,
@@ -547,7 +584,38 @@ class MeshComponent(Component):
         output_path = os.path.join(output_dir, f"{name}.i3d")
         MeshComponent._write_i3d_file(mesh, output_path, name, texture_file, water_mesh)
 
+        try:
+            # 5. Try converting to binary i3d format (optional, can be skipped if converter not available).
+            binary_output_path = os.path.join(output_dir, f"{name}_binary.i3d")
+            MeshComponent.to_i3d_binary(output_path, binary_output_path)
+            output_path = binary_output_path
+            # 6. Fix binary i3d paths for shaders if needed (only for water meshes).
+            MeshComponent.fix_binary_paths(output_path)
+        except Exception:
+            pass
+
         return output_path
+
+    @staticmethod
+    def fix_binary_paths(binary_i3d_path: str) -> None:
+        """The binary i3d converter replaces $data with data in file paths, which causes issues with
+        loading shaders.
+
+        Arguments:
+            binary_i3d_path (str): Path to the binary i3d file to fix
+        """
+
+        if not os.path.isfile(binary_i3d_path):
+            return
+
+        with open(binary_i3d_path, "r") as f:
+            content = f.read()
+            content = content.replace(
+                'filename="data/shaders/oceanShader.xml"',
+                'filename="$data/shaders/oceanShader.xml"',
+            )
+        with open(binary_i3d_path, "w") as f:
+            f.write(content)
 
     @staticmethod
     def _write_i3d_file(

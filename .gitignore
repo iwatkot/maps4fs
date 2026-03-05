@@ -27,3 +27,4 @@ defaults/
 templates/
 locale/
 *.osm
+executables/
