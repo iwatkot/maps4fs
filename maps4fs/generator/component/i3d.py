@@ -759,9 +759,11 @@ class I3d(XMLComponent, ImageComponent):
         roads_assets_directory = os.path.join(assets_directory, "roads")
         water_assets_directory = os.path.join(assets_directory, "water")
 
-        assets_directories: dict[str, str] = {"background_terrain": background_assets_directory}
+        assets_directories: dict[str, str] = {
+            Parameters.BACKGROUND_TERRAIN: background_assets_directory
+        }
         if os.path.isdir(water_assets_directory):
-            assets_directories["water_resources"] = water_assets_directory
+            assets_directories[Parameters.WATER_RESOURCES] = water_assets_directory
         if os.path.isdir(roads_assets_directory):
             assets_directories.update(
                 self._find_nested_binary_i3d_in_directory(roads_assets_directory)
@@ -816,5 +818,203 @@ class I3d(XMLComponent, ImageComponent):
             file_id += 1
             node_id += 1
 
-            # TODO: Post-process to set needed properties and params.
-            # TODO: Position the meshes correctly in the scene.
+            self._postprocess_i3d(binary_i3d_path, asset_name)
+
+    def _postprocess_i3d(self, binary_i3d_path: str, asset_name: str) -> None:
+        """Post-processes the I3D file after all modifications are done.
+
+        Arguments:
+            binary_i3d_path (str): The path to the binary I3D file that was inserted.
+            asset_name (str): The name of the asset corresponding to the binary I3D file.
+        """
+        if asset_name == Parameters.BACKGROUND_TERRAIN:
+            self.logger.info("Post-processing background terrain mesh.")
+            self._postprocess_background_terrain(binary_i3d_path)
+        elif asset_name == Parameters.WATER_RESOURCES:
+            self.logger.info("Post-processing water resources mesh.")
+            self._postprocess_water_resources(binary_i3d_path)
+        else:
+            self.logger.info("Post-processing mesh for asset: %s.", asset_name)
+
+    def _postprocess_background_terrain(self, binary_i3d_path: str) -> None:
+        """Post-processes the background terrain mesh in the I3D file.
+
+        Arguments:
+            tree (ET.ElementTree): The XML tree of the I3D file.
+        """
+        tree = self.get_tree(binary_i3d_path)
+        root = tree.getroot()
+
+        material_node = root.find(".//Material[@name='background_terrain_material']")
+        shape_node = root.find(".//Shape[@name='background_terrain_shape']")
+
+        if material_node is not None:
+            if "specularColor" in material_node.attrib:
+                del material_node.attrib["specularColor"]
+
+        if shape_node is not None:
+            shape_node.set("receiveShadows", "true")
+
+        self.save_tree(tree, binary_i3d_path)
+
+    def _postprocess_water_resources(self, binary_i3d_path: str) -> None:
+        """Post-processes the water resources mesh in the I3D file.
+
+        Arguments:
+            binary_i3d_path (str): The path to the binary I3D file to post-process.
+        """
+        tree = self.get_tree(binary_i3d_path)
+        root = tree.getroot()
+
+        # --- Files: bump shader fileId 3 → 4, insert normalmap as fileId 2 ---
+        files_node = root.find(".//Files")
+        if files_node is not None:
+            shader_file = files_node.find("File[@fileId='3']")
+            if shader_file is not None:
+                shader_file.set("fileId", "4")
+            normalmap_file = self.create_element(
+                "File",
+                {"fileId": "2", "filename": "$data/maps/textures/shared/water_normal.dds"},
+            )
+            files_node.insert(0, normalmap_file)
+
+        # --- Material: update attributes and add children ---
+        material_node = root.find(".//Material[@name='OceanShader']")
+        if material_node is not None:
+            material_node.set("specularColor", "1 1 1")
+            material_node.set("customShaderId", "4")
+            material_node.set("customShaderVariation", "simple")
+
+            normalmap_elem = self.create_element("Normalmap", {"fileId": "2"})
+            material_node.insert(0, normalmap_elem)
+
+            material_node.append(
+                self.create_element(
+                    "CustomParameter",
+                    {"name": "underwaterFogColor", "value": "0.12 0.14 0.11 1"},
+                )
+            )
+            material_node.append(
+                self.create_element(
+                    "CustomParameter",
+                    {"name": "underwaterFogDepth", "value": "1.4 1.2 1 1"},
+                )
+            )
+
+        # --- Shape: add static/collision attrs, fix castsShadows ---
+        shape_node = root.find(".//Shape[@name='water_resources']")
+        if shape_node is not None:
+            shape_node.set("static", "true")
+            shape_node.set("collisionFilterGroup", "0x80000000")
+            shape_node.set("collisionFilterMask", "0x1")
+            shape_node.set("castsShadows", "false")
+
+        # --- UserAttributes: add onCreate callback ---
+        user_attrs_node = root.find(".//UserAttributes")
+        if user_attrs_node is None:
+            user_attrs_node = ET.SubElement(root, "UserAttributes")
+
+        shape_node_id = shape_node.get("nodeId") if shape_node is not None else None
+        if shape_node_id is not None:
+            ua = self.get_user_attribute_node(
+                int(shape_node_id),
+                [("onCreate", "scriptCallback", "Environment.onCreateWater")],
+            )
+            user_attrs_node.append(ua)
+
+        self.save_tree(tree, binary_i3d_path)
+
+
+# Before post processing in background terrain:
+#   <Materials>
+#     <Material name="background_terrain_material" materialId="1" specularColor="0.501961 1 0.501961">
+#       <Texture fileId="1"/>
+#     </Material>
+#   </Materials>
+#   <Scene>
+#     <TransformGroup name="background_terrain" nodeId="4">
+#       <Shape name="background_terrain_shape" shapeId="1" static="true" nodeId="5" castsShadows="false" receiveShadows="false" materialIds="1"/>
+#     </TransformGroup>
+#   </Scene>
+
+# After post processing in background terrain:
+#       <Materials>
+#     <Material name="background_terrain_material" materialId="18">
+#       <Texture fileId="1" />
+#     </Material>
+#   </Materials>
+#   <Scene>
+#     <TransformGroup name="background_terrain" nodeId="8">
+#       <Shape name="background_terrain_shape" shapeId="1" static="true" nodeId="9"
+#         castsShadows="false" receiveShadows="true" materialIds="18" />
+#     </TransformGroup>
+#   </Scene>
+# Bsically we rempve the specular color and set receiveShadows to true.
+
+# Before post processing in water resources:
+# <?xml version="1.0" encoding="iso-8859-1"?>
+
+# <i3D name="water_resources" version="1.6" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://i3d.giants.ch/schema/i3d-1.6.xsd">
+#   <Asset>
+#     <Export program="i3dConverter" version="1.0"/>
+#   </Asset>
+
+#   <Files>
+#     <File fileId="3" filename="$data/shaders/oceanShader.xml"/>
+#   </Files>
+
+
+#   <Materials>
+#     <Material name="OceanShader" materialId="1" diffuseColor="0.8 0.8 0.8 1" specularColor="0.501961 1 0" customShaderId="3">
+#       <Refractionmap coeff="1" bumpScale="0.01" withSSRData="true"/>
+#     </Material>
+#   </Materials>
+
+
+#   <Shapes externalShapesFile="water_resources_binary.i3d.shapes">
+#   </Shapes>
+
+#   <Scene>
+#     <Shape name="water_resources" shapeId="1" nodeId="4" castsShadows="true" receiveShadows="true" materialIds="1"/>
+#   </Scene>
+
+# </i3D>
+
+# After post processing in water resources:
+# <?xml version="1.0" encoding="iso-8859-1"?>
+
+# <i3D name="water_resources_binary.i3d" version="1.6" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://i3d.giants.ch/schema/i3d-1.6.xsd">
+#   <Asset>
+#     <Export program="GIANTS Editor 64bit" version="10.0.11"/>
+#   </Asset>
+
+#   <Files>
+#     <File fileId="2" filename="$data/maps/textures/shared/water_normal.dds"/>
+#     <File fileId="4" filename="$data/shaders/oceanShader.xml"/>
+#   </Files>
+
+
+#   <Materials>
+#     <Material name="OceanShader" materialId="40" diffuseColor="0.8 0.8 0.8 1" specularColor="1 1 1" customShaderId="4" customShaderVariation="simple">
+#       <Normalmap fileId="2"/>
+#       <Refractionmap coeff="1" bumpScale="0.01" withSSRData="true"/>
+#       <CustomParameter name="underwaterFogColor" value="0.12 0.14 0.11 1"/>
+#       <CustomParameter name="underwaterFogDepth" value="1.4 1.2 1 1"/>
+#     </Material>
+#   </Materials>
+
+
+#   <Shapes externalShapesFile="water_resources_binary.i3d.shapes">
+#   </Shapes>
+
+#   <Scene>
+#     <Shape name="water_resources" shapeId="1" static="true" collisionFilterGroup="0x80000000" collisionFilterMask="0x1" nodeId="8" castsShadows="false" receiveShadows="true" materialIds="40"/>
+#   </Scene>
+
+#   <UserAttributes>
+#     <UserAttribute nodeId="8">
+#       <Attribute name="onCreate" type="scriptCallback" value="Environment.onCreateWater"/>
+#     </UserAttribute>
+#   </UserAttributes>
+
+# </i3D>
