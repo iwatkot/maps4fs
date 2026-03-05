@@ -837,6 +837,67 @@ class I3d(XMLComponent, ImageComponent):
             self.logger.info("Post-processing road mesh for asset: %s.", asset_name)
             self._postprocess_roads(binary_i3d_path)
 
+        self.position_inserted_mesh(binary_i3d_path, asset_name)
+
+    def position_inserted_mesh(self, binary_i3d_path: str, asset_name: str) -> None:
+        positions_directory = os.path.join(self.map_directory, "positions")
+        position_file_path = os.path.join(positions_directory, f"{asset_name}.json")
+        if not os.path.isfile(position_file_path):
+            self.logger.warning(
+                "Position file not found for asset %s at path: %s. Skipping positioning.",
+                asset_name,
+                position_file_path,
+            )
+            return
+
+        try:
+            with open(position_file_path, "r", encoding="utf-8") as position_file:
+                position_data = json.load(position_file)  # type: ignore
+        except json.JSONDecodeError as e:
+            self.logger.warning(
+                "Could not load position data for asset %s from file %s with error: %s. Skipping positioning.",
+                asset_name,
+                position_file_path,
+                e,
+            )
+            return
+
+        min_z = position_data.get("min_z", 0.0)
+        max_z = position_data.get("max_z", 0.0)
+
+        centroid_x = position_data.get("centroid_x")
+        centroid_y = position_data.get("centroid_y")
+
+        if centroid_x is not None and centroid_y is not None:
+            # Use the true pixel centroid — matches where mesh.vertices -= center placed the origin.
+            ge_x, ge_y = self.top_left_coordinates_to_center((centroid_x, centroid_y))
+        else:
+            # Fallback: bounding box center (less accurate for non-uniform road networks).
+            left = position_data.get("left", 0)
+            top = position_data.get("top", 0)
+            right = position_data.get("right", 0)
+            bottom = position_data.get("bottom", 0)
+            center_pixel_x = int(left + (self.scaled_size - left - right) / 2)
+            center_pixel_y = int(top + (self.scaled_size - top - bottom) / 2)
+            ge_x, ge_y = self.top_left_coordinates_to_center((center_pixel_x, center_pixel_y))
+
+        ge_elevation = (min_z + max_z) / 2
+
+        # GE translation string order: X (east-west), Y (elevation), Z (north-south).
+        translation = f"{ge_x} {ge_elevation} {ge_y}"
+        self.logger.info("Positioning mesh %s at translation: %s.", asset_name, translation)
+
+        binary_tree = self.get_tree(binary_i3d_path)
+        binary_root = binary_tree.getroot()
+
+        shape_node = binary_root.find(".//Shape")
+        if shape_node is None:
+            self.logger.warning("Shape node not found in binary I3D for asset %s.", asset_name)
+            return
+
+        shape_node.set("translation", translation)
+        self.save_tree(binary_tree, binary_i3d_path)
+
     def _postprocess_background_terrain(self, binary_i3d_path: str) -> None:
         """Post-processes the background terrain mesh in the I3D file.
 

@@ -710,3 +710,52 @@ class Component:
             end_on,
         )
         return result
+
+    def get_non_zero_bounds(self, image: np.ndarray) -> tuple[int, int, int, int] | None:
+        """Gets the distance from each edge of the image to the nearest non-zero pixel.
+
+        Arguments:
+            image (np.ndarray): The image to get the non-zero bounds of.
+
+        Returns:
+            tuple[int, int, int, int] | None: Distances (left, top, right, bottom) from each
+                edge to the nearest non-zero pixel, or None if the image is empty.
+        """
+        coords = cv2.findNonZero(image)
+        if coords is None:
+            return None
+        x, y, w, h = cv2.boundingRect(coords)
+        image_height, image_width = image.shape[:2]
+        return x, y, image_width - (x + w), image_height - (y + h)
+
+    @staticmethod
+    def get_dem_extremes_by_mask(
+        dem: np.ndarray, mask: np.ndarray
+    ) -> tuple[tuple[int, int, float], tuple[int, int, float]] | None:
+        """Finds the minimum and maximum DEM values within the non-zero area of a mask,
+        along with their pixel coordinates.
+
+        Arguments:
+            dem (np.ndarray): The DEM image.
+            mask (np.ndarray): The mask image (non-zero pixels define the region of interest).
+
+        Returns:
+            tuple | None: ((min_x, min_y, min_val), (max_x, max_y, max_val)) or None if the
+                mask is empty.
+        """
+        binary_mask = (mask > 0).astype(np.uint8)
+        if not np.any(binary_mask):
+            return None
+
+        masked_dem = np.where(binary_mask, dem.astype(np.float64), np.nan)
+
+        min_idx = np.nanargmin(masked_dem)
+        max_idx = np.nanargmax(masked_dem)
+
+        min_y, min_x = np.unravel_index(min_idx, masked_dem.shape)
+        max_y, max_x = np.unravel_index(max_idx, masked_dem.shape)
+
+        min_val = float(dem[min_y, min_x])
+        max_val = float(dem[max_y, max_x])
+
+        return (int(min_x), int(min_y), min_val), (int(max_x), int(max_y), max_val)

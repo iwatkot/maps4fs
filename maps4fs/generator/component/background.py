@@ -3,6 +3,7 @@ around the map."""
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 from copy import deepcopy
@@ -158,6 +159,8 @@ class Background(MeshComponent, ImageComponent):
                 self.logger.warning(
                     "Mesh processing is disabled for the game, skipping water mesh processing."
                 )
+
+        self.process_road_masks()
 
     def not_resized_paths(self) -> list[str]:
         """Returns the list of paths to all not resized DEM files.
@@ -1353,3 +1356,75 @@ class Background(MeshComponent, ImageComponent):
 
         cv2.imwrite(main_dem_path, resized_dem)
         self.logger.debug("Flattened roads saved to DEM file: %s", main_dem_path)
+
+    def process_road_masks(self):
+        roads_directory = os.path.join(self.map_directory, "roads")
+
+        # Get all files in directory ending with _mask.png
+        mask_files = [f for f in os.listdir(roads_directory) if f.endswith("_mask.png")]
+
+        for mask_file in mask_files:
+            mask_path = os.path.join(roads_directory, mask_file)
+            mask = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
+            bounds = self.get_non_zero_bounds(mask)
+            if bounds is None:
+                self.logger.warning(
+                    "No non-zero pixels found in rotated mask, skipping road mask processing."
+                )
+                return
+            left, top, right, bottom = bounds
+
+            dem_image = self.get_dem_image_with_fallback()
+            if dem_image is None:
+                self.logger.warning("DEM image not found, skipping road mask processing.")
+                return
+
+            extremes = self.get_dem_extremes_by_mask(dem_image, mask)
+            if extremes is None:
+                self.logger.warning("No valid pixels found in DEM image for road mask, skipping.")
+                return
+
+            (min_x, min_y, min_val), (max_x, max_y, max_val) = extremes
+
+            min_z = self.get_z_coordinate_from_dem(dem_image, min_x, min_y)
+            max_z = self.get_z_coordinate_from_dem(dem_image, max_x, max_y)
+
+            # Compute the true pixel centroid of the mask (mean of all non-zero pixel coords).
+            # This matches where mesh.vertices -= center places the mesh origin.
+            ys, xs = np.where(mask > 0)
+            centroid_x = int(np.mean(xs))
+            centroid_y = int(np.mean(ys))
+
+            road_data = {
+                "left": left,
+                "top": top,
+                "right": right,
+                "bottom": bottom,
+                "centroid_x": centroid_x,
+                "centroid_y": centroid_y,
+                "min_x": min_x,
+                "min_y": min_y,
+                "min_z": min_z,
+                "min_val": min_val,
+                "max_x": max_x,
+                "max_y": max_y,
+                "max_z": max_z,
+                "max_val": max_val,
+            }
+
+            base_filename = os.path.splitext(mask_file)[0].replace("_mask", "")
+            positions_directory = os.path.join(self.map_directory, "positions")
+            os.makedirs(positions_directory, exist_ok=True)
+
+            road_data_path = os.path.join(positions_directory, f"{base_filename}.json")
+            with open(road_data_path, "w", encoding="utf-8") as f:
+                json.dump(road_data, f, ensure_ascii=False, indent=4)
+                self.logger.debug("Road data saved to %s.", road_data_path)
+
+            try:
+                os.remove(mask_path)
+                self.logger.debug("Temporary road mask %s removed.", mask_path)
+            except Exception as e:
+                self.logger.warning(
+                    "Error removing temporary road mask %s: %s.", mask_path, repr(e)
+                )

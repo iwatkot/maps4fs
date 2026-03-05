@@ -444,6 +444,70 @@ class Texture(ImageComponent):
             ),
         )
 
+    def save_road_mask(self, layer: Layer, layer_image: np.ndarray) -> None:
+        """Processes road mask for the layer and saves it to the corresponding file.
+
+        Arguments:
+            layer (Layer): Layer with textures and tags.
+            layer_image (np.ndarray): Layer image.
+        """
+        if not layer.road_texture:
+            return
+
+        roads_directory = os.path.join(self.map_directory, "roads")
+        os.makedirs(roads_directory, exist_ok=True)
+        mask_path = os.path.join(roads_directory, f"{layer.road_texture}_mask.png")
+
+        cv2.imwrite(mask_path, layer_image)
+        self.rotate_image(
+            mask_path, self.rotation, output_height=self.map_size, output_width=self.map_size
+        )
+
+        # rotated_mask = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
+        # bounds = self.get_non_zero_bounds(rotated_mask)
+        # if bounds is None:
+        #     self.logger.warning(
+        #         "No non-zero pixels found in rotated mask, skipping road mask processing."
+        #     )
+        #     return
+        # left, top, right, bottom = bounds
+
+        # dem_image = self.get_dem_image_with_fallback()
+        # if dem_image is None:
+        #     self.logger.warning("DEM image not found, skipping road mask processing.")
+        #     return
+
+        # extremes = self.get_dem_extremes_by_mask(dem_image, rotated_mask)
+        # if extremes is None:
+        #     self.logger.warning("No valid pixels found in DEM image for road mask, skipping.")
+        #     return
+
+        # (min_x, min_y, min_val), (max_x, max_y, max_val) = extremes
+
+        # road_data = {
+        #     "left": left,
+        #     "top": top,
+        #     "right": right,
+        #     "bottom": bottom,
+        #     "min_x": min_x,
+        #     "min_y": min_y,
+        #     "min_val": min_val,
+        #     "max_x": max_x,
+        #     "max_y": max_y,
+        #     "max_val": max_val,
+        # }
+
+        # road_data_path = os.path.join(roads_directory, f"{layer.road_texture}.json")
+        # with open(road_data_path, "w", encoding="utf-8") as f:
+        #     json.dump(road_data, f, ensure_ascii=False, indent=4)
+        #     self.logger.debug("Road data saved to %s.", road_data_path)
+
+        # try:
+        #     os.remove(mask_path)
+        #     self.logger.debug("Temporary road mask %s removed.", mask_path)
+        # except Exception as e:
+        #     self.logger.warning("Error removing temporary road mask %s: %s.", mask_path, repr(e))
+
     @monitor_performance
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
@@ -477,6 +541,10 @@ class Texture(ImageComponent):
 
             mask = cv2.bitwise_not(cumulative_image)  # type: ignore
             self._draw_layer(layer, info_layer_data, layer_image)  # type: ignore
+
+            if layer.road_texture:
+                self.save_road_mask(layer, layer_image)  # type: ignore
+
             self._add_roads(layer, info_layer_data)
 
             if not layer.external:

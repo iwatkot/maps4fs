@@ -298,7 +298,13 @@ class Road(I3d, MeshComponent):
         output_directory = os.path.join(self.map_directory, "assets", "roads", texture)
         os.makedirs(output_directory, exist_ok=True)
 
-        self.mesh_to_i3d(mesh, output_directory, f"roads_{texture}", texture_path=dst_texture_path)
+        self.mesh_to_i3d(
+            mesh,
+            output_directory,
+            f"roads_{texture}",
+            texture_path=dst_texture_path,
+            center_mesh=True,
+        )
 
     def info_sequence(self) -> dict[str, Any]:
         """Returns information about the road processing as a dictionary.
