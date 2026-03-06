@@ -807,6 +807,9 @@ class I3d(XMLComponent, ImageComponent):
 
             tree = self.get_tree()
             root = tree.getroot()
+            if root is None:
+                self.logger.warning("Could not get root of I3D tree, skipping mesh insertion.")
+                continue
 
             files_node = root.find(".//Files")
             scene_node = root.find(".//Scene")
@@ -861,7 +864,13 @@ class I3d(XMLComponent, ImageComponent):
         self.position_inserted_mesh(binary_i3d_path, asset_name)
 
     def position_inserted_mesh(self, binary_i3d_path: str, asset_name: str) -> None:
-        # Background terrain is centered at X=0, Z=0 by construction.
+        """Reads the saved position data for the given asset and sets its translation in the
+        binary I3D file.
+
+        Arguments:
+            binary_i3d_path (str): Path to the binary I3D file to position.
+            asset_name (str): Name of the asset to position.
+        """
         # We only need to lift it by its mean elevation so it aligns with the GE terrain.
         if asset_name == Parameters.BACKGROUND_TERRAIN:
             positions_directory = os.path.join(self.map_directory, "positions")
@@ -953,6 +962,9 @@ class I3d(XMLComponent, ImageComponent):
 
         binary_tree = self.get_tree(binary_i3d_path)
         binary_root = binary_tree.getroot()
+        if binary_root is None:
+            self.logger.warning("Could not get root of binary I3D tree for asset %s.", asset_name)
+            return
 
         shape_node = binary_root.find(".//Shape")
         if shape_node is None:
@@ -970,6 +982,9 @@ class I3d(XMLComponent, ImageComponent):
         """
         tree = self.get_tree(binary_i3d_path)
         root = tree.getroot()
+        if root is None:
+            self.logger.warning("Could not get root of background terrain I3D tree.")
+            return
 
         material_node = root.find(".//Material[@name='background_terrain_material']")
         shape_node = root.find(".//Shape[@name='background_terrain_shape']")
@@ -991,6 +1006,9 @@ class I3d(XMLComponent, ImageComponent):
         """
         tree = self.get_tree(binary_i3d_path)
         root = tree.getroot()
+        if root is None:
+            self.logger.warning("Could not get root of water resources I3D tree.")
+            return
 
         # --- Files: bump shader fileId 3 → 4, insert normalmap as fileId 2 ---
         files_node = root.find(".//Files")
@@ -1071,6 +1089,9 @@ class I3d(XMLComponent, ImageComponent):
         """
         tree = self.get_tree(binary_i3d_path)
         root = tree.getroot()
+        if root is None:
+            self.logger.warning("Could not get root of road mesh I3D tree.")
+            return
 
         material_node = root.find(".//Material")
         if material_node is not None:

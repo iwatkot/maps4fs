@@ -1428,7 +1428,9 @@ class Background(MeshComponent, ImageComponent):
         cv2.imwrite(main_dem_path, resized_dem)
         self.logger.debug("Flattened roads saved to DEM file: %s", main_dem_path)
 
-    def process_road_masks(self):
+    def process_road_masks(self) -> None:
+        """Reads road mask images from the roads directory and saves bounding-box position
+        data for each mask so the GE can position the road meshes correctly."""
         roads_directory = os.path.join(self.map_directory, "roads")
 
         # Get all files in directory ending with _mask.png
@@ -1437,6 +1439,9 @@ class Background(MeshComponent, ImageComponent):
         for mask_file in mask_files:
             mask_path = os.path.join(roads_directory, mask_file)
             mask = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
+            if mask is None:
+                self.logger.warning("Could not read mask file: %s, skipping.", mask_path)
+                continue
             bounds = self.get_non_zero_bounds(mask)
             if bounds is None:
                 self.logger.warning(

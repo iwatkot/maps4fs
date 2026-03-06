@@ -494,7 +494,7 @@ class MeshComponent(Component):
         return obj_filepath, mtl_filepath
 
     @staticmethod
-    def to_i3d_binary(raw_i3d_path: str, binary_i3d_path: str, **kwargs) -> str:
+    def to_i3d_binary(raw_i3d_path: str, binary_i3d_path: str, **kwargs) -> None:
         """Convert the raw XML i3d file to the Giants binary i3d format using the i3dConverter.exe tool.
 
         Generates a raw XML i3d file first, then converts it to the Giants binary i3d
@@ -503,9 +503,6 @@ class MeshComponent(Component):
         Arguments:
             raw_i3d_path (str): Path to the raw XML i3d file
             binary_i3d_path (str): Path to save the converted binary i3d file
-
-        Returns:
-            str: Full path to the generated binary i3d file
 
         Raises:
             RuntimeError: If the converter executable is not found or returns a non-zero exit code.
@@ -617,13 +614,13 @@ class MeshComponent(Component):
         if not os.path.isfile(binary_i3d_path):
             return
 
-        with open(binary_i3d_path, "r") as f:
+        with open(binary_i3d_path, "r", encoding="utf-8") as f:
             content = f.read()
             content = content.replace(
                 'filename="data/shaders/oceanShader.xml"',
                 'filename="$data/shaders/oceanShader.xml"',
             )
-        with open(binary_i3d_path, "w") as f:
+        with open(binary_i3d_path, "w", encoding="utf-8") as f:
             f.write(content)
 
     @staticmethod

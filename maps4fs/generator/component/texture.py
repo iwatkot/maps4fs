@@ -547,7 +547,7 @@ class Texture(ImageComponent):
         if tags is None:
             return
 
-        for polygon, osm_tags, geom_type in self.objects_generator(tags, layer.width, layer.info_layer):
+        for polygon, osm_tags, geom_type in self.objects_generator(tags, layer.width, layer.info_layer):  # type: ignore[misc]
             if not len(polygon) > 2:
                 self.logger.debug("Skipping polygon with less than 3 points.")
                 continue
@@ -584,7 +584,7 @@ class Texture(ImageComponent):
         #     linestring_infolayers.append("water")
 
         if layer.info_layer in linestring_infolayers:
-            for linestring, _ in self.objects_generator(
+            for linestring, _ in self.objects_generator(  # type: ignore[misc]
                 layer.tags, layer.width, layer.info_layer, yield_linestrings=True
             ):
                 if self.map.size_scale is not None:
@@ -836,7 +836,7 @@ class Texture(ImageComponent):
         info_layer: str | None = None,
         yield_linestrings: bool = False,
     ) -> Generator[
-        tuple[list[tuple[int, int]], dict[str, Any]] | tuple[np.ndarray, dict[str, Any]],
+        tuple[list[tuple[int, int]], dict[str, Any]] | tuple[np.ndarray, dict[str, Any], str],
         None,
         None,
     ]:
