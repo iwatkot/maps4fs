@@ -523,7 +523,7 @@ class MeshComponent(Component):
             "stdin": subprocess.DEVNULL,
             "capture_output": True,
             "text": True,
-            "creationflags": subprocess.CREATE_NO_WINDOW,
+            "creationflags": subprocess.CREATE_NO_WINDOW,  # type: ignore[attr-defined]
         }
 
         result = subprocess.run(cmd, **run_kwargs)  # pylint: disable=subprocess-run-check

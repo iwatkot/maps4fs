@@ -2,6 +2,8 @@
 
 maps4fs now includes automatic road generation from OpenStreetMap (OSM) data. Roads are generated as 3D meshes with proper UV mapping and texture application.
 
+> **Windows App users:** If you are using the Windows App and the i3dConverter is available (it is downloaded automatically on first run), road meshes are automatically converted to binary i3d format, material properties are configured, and each road mesh is positioned correctly on the map. No manual Giants Editor setup is required.
+
 ## Overview
 
 The road generation system:
