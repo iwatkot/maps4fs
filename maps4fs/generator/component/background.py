@@ -575,6 +575,16 @@ class Background(MeshComponent, ImageComponent):
         mesh.apply_transform(rotation_matrix)
         center = mesh.vertices.mean(axis=0)
 
+        # After -pi/2 X rotation: center[0]=mean pixel X, center[2]=mean pixel Y,
+        # center[1] may be raw DEM units if flatten_water_to was set — always look it up.
+        background_dem = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
+        if background_dem is not None:
+            elevation = self.get_z_coordinate_from_dem(
+                background_dem, int(center[0]), int(center[2])
+            )
+        else:
+            elevation = float(center[1])
+
         positions_dir = os.path.join(self.map_directory, "positions")
         os.makedirs(positions_dir, exist_ok=True)
         position_path = os.path.join(positions_dir, f"{Parameters.WATER_RESOURCES}.json")
@@ -583,7 +593,7 @@ class Background(MeshComponent, ImageComponent):
                 json.dump(
                     {
                         "mesh_centroid_x": float(center[0]),
-                        "mesh_centroid_y": float(center[1]),
+                        "mesh_centroid_y": float(elevation),
                         "mesh_centroid_z": float(center[2]),
                     },
                     pf,
