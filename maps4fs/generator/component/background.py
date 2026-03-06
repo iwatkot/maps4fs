@@ -570,13 +570,36 @@ class Background(MeshComponent, ImageComponent):
             self.logger.error("Could not load line-based water mesh: %s", e)
             return False
 
+        # Apply the rotation that mesh_to_i3d would do, so we can capture the centroid.
+        rotation_matrix = trimesh.transformations.rotation_matrix(-np.pi / 2, [1, 0, 0])
+        mesh.apply_transform(rotation_matrix)
+        center = mesh.vertices.mean(axis=0)
+
+        positions_dir = os.path.join(self.map_directory, "positions")
+        os.makedirs(positions_dir, exist_ok=True)
+        position_path = os.path.join(positions_dir, f"{Parameters.WATER_RESOURCES}.json")
+        try:
+            with open(position_path, "w", encoding="utf-8") as pf:
+                json.dump(
+                    {
+                        "mesh_centroid_x": float(center[0]),
+                        "mesh_centroid_y": float(center[1]),
+                        "mesh_centroid_z": float(center[2]),
+                    },
+                    pf,
+                    ensure_ascii=False,
+                    indent=4,
+                )
+        except Exception as e:
+            self.logger.warning("Could not save water resources centroid: %s", e)
+
         try:
             i3d_water_resources = self.mesh_to_i3d(
                 mesh,
                 output_dir=self.assets_water_directory,
                 name=Parameters.WATER_RESOURCES,
                 water_mesh=True,
-                rotate_mesh=True,
+                rotate_mesh=False,
                 center_mesh=True,
             )
             self.logger.debug(
@@ -1058,13 +1081,34 @@ class Background(MeshComponent, ImageComponent):
         center = vertices.mean(axis=0)
         mesh.vertices = vertices - center
 
+        # Save mesh centroid for GE positioning.
+        positions_dir = os.path.join(self.map_directory, "positions")
+        os.makedirs(positions_dir, exist_ok=True)
+        position_path = os.path.join(
+            positions_dir, f"{Parameters.WATER_RESOURCES}_line_surface.json"
+        )
+        try:
+            with open(position_path, "w", encoding="utf-8") as pf:
+                json.dump(
+                    {
+                        "mesh_centroid_x": float(center[0]),
+                        "mesh_centroid_y": float(center[1]),
+                        "mesh_centroid_z": float(center[2]),
+                    },
+                    pf,
+                    ensure_ascii=False,
+                    indent=4,
+                )
+        except Exception as e:
+            self.logger.warning("Could not save water line surface centroid: %s", e)
+
         output_directory = os.path.join(self.map_directory, "assets", "water")
         os.makedirs(output_directory, exist_ok=True)
 
         self.mesh_to_i3d(
             mesh,
             output_directory,
-            f"{Parameters.WATER_RESOURCES}_line_surface",
+            Parameters.WATER_RESOURCES_LINE_SURFACE,
             water_mesh=True,
             rotate_mesh=False,
             center_mesh=False,

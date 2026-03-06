@@ -40,6 +40,7 @@ class Parameters:
     BACKGROUND_TERRAIN = "background_terrain"
 
     WATER_RESOURCES = "water_resources"
+    WATER_RESOURCES_LINE_SURFACE = "water_resources_line_surface"
 
     RESIZE_FACTOR = 8
 

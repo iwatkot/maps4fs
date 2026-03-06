@@ -729,6 +729,22 @@ class I3d(XMLComponent, ImageComponent):
                 return os.path.join(directory, file)
         return None
 
+    def _find_flat_binary_i3d_in_directory(self, directory: str) -> dict[str, str]:
+        """Finds all binary I3D files directly in the given directory (non-recursive).
+
+        Arguments:
+            directory (str): The flat directory to scan.
+
+        Returns:
+            dict[str, str]: Mapping of asset name (filename stem, without '_binary.i3d') to path.
+        """
+        result: dict[str, str] = {}
+        for file in os.listdir(directory):
+            if file.endswith("_binary.i3d"):
+                name = file[: -len("_binary.i3d")]
+                result[name] = os.path.join(directory, file)
+        return result
+
     def _find_nested_binary_i3d_in_directory(self, directory: str) -> dict[str, str]:
         """Finds binary I3D files in immediate subdirectories of the given directory.
 
@@ -763,7 +779,9 @@ class I3d(XMLComponent, ImageComponent):
             Parameters.BACKGROUND_TERRAIN: background_assets_directory
         }
         if os.path.isdir(water_assets_directory):
-            assets_directories[Parameters.WATER_RESOURCES] = water_assets_directory
+            assets_directories.update(
+                self._find_flat_binary_i3d_in_directory(water_assets_directory)
+            )
         if os.path.isdir(roads_assets_directory):
             assets_directories.update(
                 self._find_nested_binary_i3d_in_directory(roads_assets_directory)
@@ -830,8 +848,11 @@ class I3d(XMLComponent, ImageComponent):
         if asset_name == Parameters.BACKGROUND_TERRAIN:
             self.logger.info("Post-processing background terrain mesh.")
             self._postprocess_background_terrain(binary_i3d_path)
-        elif asset_name == Parameters.WATER_RESOURCES:
-            self.logger.info("Post-processing water resources mesh.")
+        elif asset_name in (
+            Parameters.WATER_RESOURCES,
+            Parameters.WATER_RESOURCES_LINE_SURFACE,
+        ):
+            self.logger.info("Post-processing water mesh for asset: %s.", asset_name)
             self._postprocess_water_resources(binary_i3d_path)
         else:
             self.logger.info("Post-processing road mesh for asset: %s.", asset_name)
@@ -871,8 +892,17 @@ class I3d(XMLComponent, ImageComponent):
         mesh_centroid_z = position_data.get("mesh_centroid_z")
 
         if mesh_centroid_x is not None and mesh_centroid_z is not None:
-            ge_x = float(mesh_centroid_x) - self.scaled_size // 2
-            ge_y = float(mesh_centroid_z) - self.scaled_size // 2
+            # Water meshes are generated over the full background canvas
+            # (map_size + 2 * BACKGROUND_DISTANCE), so their pixel coordinates must be
+            # offset by half the background canvas size, not half the map size.
+            water_assets = {Parameters.WATER_RESOURCES, Parameters.WATER_RESOURCES_LINE_SURFACE}
+            if asset_name in water_assets:
+                canvas_half = (self.scaled_size + Parameters.BACKGROUND_DISTANCE * 2) // 2
+            else:
+                canvas_half = self.scaled_size // 2
+
+            ge_x = float(mesh_centroid_x) - canvas_half
+            ge_y = float(mesh_centroid_z) - canvas_half
             mesh_centroid_y = position_data.get("mesh_centroid_y")
             ge_elevation = (
                 float(mesh_centroid_y) if mesh_centroid_y is not None else (min_z + max_z) / 2
@@ -973,12 +1003,25 @@ class I3d(XMLComponent, ImageComponent):
             )
 
         # --- Shape: add static/collision attrs, fix castsShadows ---
-        shape_node = root.find(".//Shape[@name='water_resources']")
+        shape_node = root.find(".//Shape")
         if shape_node is not None:
             shape_node.set("static", "true")
             shape_node.set("collisionFilterGroup", "0x80000000")
             shape_node.set("collisionFilterMask", "0x1")
             shape_node.set("castsShadows", "false")
+
+        # --- Wrap bare Shape (direct Scene child) in a TransformGroup so GE respects translation ---
+        scene_node = root.find(".//Scene")
+        if scene_node is not None and shape_node is not None:
+            if shape_node in list(scene_node):
+                shape_nodeid = int(shape_node.get("nodeId", "4"))
+                tg = self.create_element(
+                    "TransformGroup",
+                    {"name": shape_node.get("name", "water"), "nodeId": str(shape_nodeid - 1)},
+                )
+                scene_node.remove(shape_node)
+                tg.append(shape_node)
+                scene_node.append(tg)
 
         # --- UserAttributes: add onCreate callback ---
         user_attrs_node = root.find(".//UserAttributes")
