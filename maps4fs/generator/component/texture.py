@@ -444,6 +444,25 @@ class Texture(ImageComponent):
             ),
         )
 
+    def save_road_mask(self, layer: Layer, layer_image: np.ndarray) -> None:
+        """Processes road mask for the layer and saves it to the corresponding file.
+
+        Arguments:
+            layer (Layer): Layer with textures and tags.
+            layer_image (np.ndarray): Layer image.
+        """
+        if not layer.road_texture:
+            return
+
+        roads_directory = os.path.join(self.map_directory, "roads")
+        os.makedirs(roads_directory, exist_ok=True)
+        mask_path = os.path.join(roads_directory, f"{layer.road_texture}_mask.png")
+
+        cv2.imwrite(mask_path, layer_image)
+        self.rotate_image(
+            mask_path, self.rotation, output_height=self.map_size, output_width=self.map_size
+        )
+
     @monitor_performance
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
@@ -477,6 +496,10 @@ class Texture(ImageComponent):
 
             mask = cv2.bitwise_not(cumulative_image)  # type: ignore
             self._draw_layer(layer, info_layer_data, layer_image)  # type: ignore
+
+            if layer.road_texture:
+                self.save_road_mask(layer, layer_image)  # type: ignore
+
             self._add_roads(layer, info_layer_data)
 
             if not layer.external:
@@ -524,19 +547,24 @@ class Texture(ImageComponent):
         if tags is None:
             return
 
-        for polygon, osm_tags in self.objects_generator(tags, layer.width, layer.info_layer):
+        for polygon, osm_tags, geom_type in self.objects_generator(tags, layer.width, layer.info_layer):  # type: ignore[misc]
             if not len(polygon) > 2:
                 self.logger.debug("Skipping polygon with less than 3 points.")
                 continue
             if layer.info_layer:
-                if layer.save_tags:
-                    entry = {
-                        Parameters.POINTS: self.np_to_polygon_points(polygon),  # type: ignore
-                        Parameters.TAGS: osm_tags,
-                    }
+                # For the water info layer, skip linestring-buffered entries — they are
+                # handled by the separate line_surface_water mesh (water_resources_line_surface).
+                if layer.info_layer == "water" and geom_type != "Polygon":
+                    pass
                 else:
-                    entry = self.np_to_polygon_points(polygon)  # type: ignore
-                info_layer_data[layer.info_layer].append(entry)  # type: ignore
+                    if layer.save_tags:
+                        entry = {
+                            Parameters.POINTS: self.np_to_polygon_points(polygon),  # type: ignore
+                            Parameters.TAGS: osm_tags,
+                        }
+                    else:
+                        entry = self.np_to_polygon_points(polygon)  # type: ignore
+                    info_layer_data[layer.info_layer].append(entry)  # type: ignore
             if not layer.invisible:
                 try:
                     cv2.fillPoly(layer_image, [polygon], color=255)  # type: ignore
@@ -556,7 +584,7 @@ class Texture(ImageComponent):
         #     linestring_infolayers.append("water")
 
         if layer.info_layer in linestring_infolayers:
-            for linestring, _ in self.objects_generator(
+            for linestring, _ in self.objects_generator(  # type: ignore[misc]
                 layer.tags, layer.width, layer.info_layer, yield_linestrings=True
             ):
                 if self.map.size_scale is not None:
@@ -808,7 +836,7 @@ class Texture(ImageComponent):
         info_layer: str | None = None,
         yield_linestrings: bool = False,
     ) -> Generator[
-        tuple[list[tuple[int, int]], dict[str, Any]] | tuple[np.ndarray, dict[str, Any]],
+        tuple[list[tuple[int, int]], dict[str, Any]] | tuple[np.ndarray, dict[str, Any], str],
         None,
         None,
     ]:
@@ -904,7 +932,7 @@ class Texture(ImageComponent):
 
     def polygons_generator(
         self, objects: pd.core.frame.DataFrame, width: int | None, is_fieds: bool
-    ) -> Generator[tuple[np.ndarray, dict[str, Any]], None, None]:
+    ) -> Generator[tuple[np.ndarray, dict[str, Any], str], None, None]:
         """Generator which yields numpy arrays of polygons from OSM data.
 
         Arguments:
@@ -913,10 +941,12 @@ class Texture(ImageComponent):
             is_fieds (bool): Flag to determine if the fields should be padded.
 
         Yields:
-            Generator[tuple[np.ndarray, dict[str, Any]], None, None]:
-                Tuple containing numpy array of polygon points and OSM tags dict.
+            Generator[tuple[np.ndarray, dict[str, Any], str], None, None]:
+                Tuple containing numpy array of polygon points, OSM tags dict, and the original
+                OSM geometry type string (e.g. "Polygon", "LineString").
         """
         for _, obj in objects.iterrows():
+            geom_type = obj["geometry"].geom_type
             osm_tags = self._get_tags_from_osm_object(obj)
             try:
                 polygon = self._to_polygon(obj, width)
@@ -937,7 +967,7 @@ class Texture(ImageComponent):
                     polygon = padded_polygon
 
             polygon_np = self._to_np(polygon)
-            yield polygon_np, osm_tags
+            yield polygon_np, osm_tags, geom_type
 
     @monitor_performance
     def previews(self) -> list[str]:

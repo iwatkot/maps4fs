@@ -26,6 +26,8 @@ map_directory/
 
 ## 🚀 How to Use (FS25)
 
+> **Windows App users:** If you are using the Windows App and the i3dConverter is available (it is downloaded automatically on first run), the conversion to binary i3d, ocean shader setup, collision/physics properties, normal map assignment, and in-map positioning are all done **automatically**. You can skip the Giants Editor configuration steps below.
+
 ### Step 1: Generate Your Map
 1. Enable **Generate Water** in the Background Settings
 2. Generate your map normally

@@ -1,5 +1,6 @@
 """Component for map roads processing and generation."""
 
+import json
 import os
 import shutil
 from collections import defaultdict
@@ -295,10 +296,35 @@ class Road(I3d, MeshComponent):
         center = vertices.mean(axis=0)
         mesh.vertices = vertices - center
 
+        # Save exact vertex centroid (post-rotation, pre-centering) for GE positioning.
+        # center[0] = mean pixel X (east-west), center[2] = mean pixel Y (north-south)
+        # after the 90° X-rotation that maps pixel Y → mesh Z.
+        positions_dir = os.path.join(self.map_directory, "positions")
+        os.makedirs(positions_dir, exist_ok=True)
+        position_path = os.path.join(positions_dir, f"{texture}.json")
+        try:
+            pos_data: dict = {}
+            if os.path.isfile(position_path):
+                with open(position_path, "r", encoding="utf-8") as pf:
+                    pos_data = json.load(pf)
+            pos_data["mesh_centroid_x"] = float(center[0])
+            pos_data["mesh_centroid_y"] = float(center[1])
+            pos_data["mesh_centroid_z"] = float(center[2])
+            with open(position_path, "w", encoding="utf-8") as pf:
+                json.dump(pos_data, pf, ensure_ascii=False, indent=4)
+        except Exception as e:
+            self.logger.warning("Could not save mesh centroid for positioning: %s", e)
+
         output_directory = os.path.join(self.map_directory, "assets", "roads", texture)
         os.makedirs(output_directory, exist_ok=True)
 
-        self.mesh_to_i3d(mesh, output_directory, f"roads_{texture}", texture_path=dst_texture_path)
+        self.mesh_to_i3d(
+            mesh,
+            output_directory,
+            f"roads_{texture}",
+            texture_path=dst_texture_path,
+            # center_mesh=True,
+        )
 
     def info_sequence(self) -> dict[str, Any]:
         """Returns information about the road processing as a dictionary.

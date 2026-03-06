@@ -20,6 +20,8 @@ from maps4fs.generator.settings import Parameters
 NODE_ID_STARTING_VALUE = 2000
 SPLINES_NODE_ID_STARTING_VALUE = 5000
 TREE_NODE_ID_STARTING_VALUE = 30000
+FILE_ID_STARTING_VALUE = 120000
+BINARY_MESHES_NODE_ID_STARTING_VALUE = 150000
 
 FIELDS_ATTRIBUTES = [
     ("angle", "integer", "0"),
@@ -65,6 +67,8 @@ class I3d(XMLComponent, ImageComponent):
             if self.map.i3d_settings.add_trees:
                 self._add_forests()
             self._add_splines()
+
+        self.insert_meshes()
 
     def update_height_scale(self, value: int | None = None) -> None:
         """Updates the height scale value in the map I3D file.
@@ -710,3 +714,393 @@ class I3d(XMLComponent, ImageComponent):
         }
 
         return data
+
+    def _find_binary_i3d_in_directory(self, directory: str) -> str | None:
+        """Finds the binary I3D file in the given directory.
+
+        Arguments:
+            directory (str): The directory to search for the binary I3D file.
+
+        Returns:
+            str | None: The path to the binary I3D file if found, otherwise None.
+        """
+        for file in os.listdir(directory):
+            if file.endswith("_binary.i3d"):
+                return os.path.join(directory, file)
+        return None
+
+    def _find_flat_binary_i3d_in_directory(self, directory: str) -> dict[str, str]:
+        """Finds all binary I3D files directly in the given directory (non-recursive).
+
+        Arguments:
+            directory (str): The flat directory to scan.
+
+        Returns:
+            dict[str, str]: Mapping of asset name (filename stem, without '_binary.i3d') to path.
+        """
+        result: dict[str, str] = {}
+        for file in os.listdir(directory):
+            if file.endswith("_binary.i3d"):
+                name = file[: -len("_binary.i3d")]
+                result[name] = os.path.join(directory, file)
+        return result
+
+    def _find_nested_binary_i3d_in_directory(self, directory: str) -> dict[str, str]:
+        """Finds binary I3D files in immediate subdirectories of the given directory.
+
+        Arguments:
+            directory (str): The directory containing subdirectories with binary I3D files.
+                Expected structure: directory/type_name/something_binary.i3d
+
+        Returns:
+            dict[str, str]: Mapping of subdirectory name to binary I3D file path.
+        """
+        result: dict[str, str] = {}
+        for entry in os.scandir(directory):
+            if not entry.is_dir():
+                continue
+            binary_path = self._find_binary_i3d_in_directory(entry.path)
+            if binary_path:
+                result[entry.name] = binary_path
+        return result
+
+    def insert_meshes(self) -> None:
+        """Inserts meshes into the I3D file."""
+        assets_directory = self.map.assets_directory
+        self.logger.debug(
+            "Inserting meshes into the I3D file using assets from: %s.", assets_directory
+        )
+
+        background_assets_directory = os.path.join(assets_directory, "background")
+        roads_assets_directory = os.path.join(assets_directory, "roads")
+        water_assets_directory = os.path.join(assets_directory, "water")
+
+        assets_directories: dict[str, str] = {
+            Parameters.BACKGROUND_TERRAIN: background_assets_directory
+        }
+        if os.path.isdir(water_assets_directory):
+            assets_directories.update(
+                self._find_flat_binary_i3d_in_directory(water_assets_directory)
+            )
+        if os.path.isdir(roads_assets_directory):
+            assets_directories.update(
+                self._find_nested_binary_i3d_in_directory(roads_assets_directory)
+            )
+
+        file_id = FILE_ID_STARTING_VALUE
+        node_id = BINARY_MESHES_NODE_ID_STARTING_VALUE
+        for asset_name, asset_path in assets_directories.items():
+            if os.path.isfile(asset_path):
+                binary_i3d_path: str | None = asset_path
+            elif os.path.isdir(asset_path):
+                binary_i3d_path = self._find_binary_i3d_in_directory(asset_path)
+            else:
+                self.logger.warning("Asset path not found: %s.", asset_path)
+                continue
+
+            if not binary_i3d_path:
+                self.logger.warning(
+                    "Binary I3D file not found for asset: %s.",
+                    asset_name,
+                )
+                continue
+
+            tree = self.get_tree()
+            root = tree.getroot()
+            if root is None:
+                self.logger.warning("Could not get root of I3D tree, skipping mesh insertion.")
+                continue
+
+            files_node = root.find(".//Files")
+            scene_node = root.find(".//Scene")
+
+            if files_node is None or scene_node is None:
+                self.logger.warning("Required nodes (Files, Scene) not found in I3D file.")
+                continue
+
+            i3d_dir = os.path.dirname(self.xml_path)  # type: ignore
+            self.logger.debug("Inserting mesh %s from file %s.", asset_name, binary_i3d_path)
+            binary_rel_path = os.path.relpath(binary_i3d_path, i3d_dir).replace("\\", "/")
+            self.logger.debug("Relative path for the binary I3D file: %s.", binary_rel_path)
+
+            files_node.append(
+                self.create_element("File", {"fileId": str(file_id), "filename": binary_rel_path})
+            )
+            scene_node.append(
+                self.create_element(
+                    "ReferenceNode",
+                    {"name": asset_name, "referenceId": str(file_id), "nodeId": str(node_id)},
+                )
+            )
+
+            self.save_tree(tree)
+            self.logger.debug("Mesh %s inserted into the I3D file.", asset_name)
+
+            file_id += 1
+            node_id += 1
+
+            self._postprocess_i3d(binary_i3d_path, asset_name)
+
+    def _postprocess_i3d(self, binary_i3d_path: str, asset_name: str) -> None:
+        """Post-processes the I3D file after all modifications are done.
+
+        Arguments:
+            binary_i3d_path (str): The path to the binary I3D file that was inserted.
+            asset_name (str): The name of the asset corresponding to the binary I3D file.
+        """
+        if asset_name == Parameters.BACKGROUND_TERRAIN:
+            self.logger.debug("Post-processing background terrain mesh.")
+            self._postprocess_background_terrain(binary_i3d_path)
+        elif asset_name in (
+            Parameters.WATER_RESOURCES,
+            Parameters.WATER_RESOURCES_LINE_SURFACE,
+        ):
+            self.logger.debug("Post-processing water mesh for asset: %s.", asset_name)
+            self._postprocess_water_resources(binary_i3d_path)
+        else:
+            self.logger.debug("Post-processing road mesh for asset: %s.", asset_name)
+            self._postprocess_roads(binary_i3d_path)
+
+        self.position_inserted_mesh(binary_i3d_path, asset_name)
+
+    def position_inserted_mesh(self, binary_i3d_path: str, asset_name: str) -> None:
+        """Reads the saved position data for the given asset and sets its translation in the
+        binary I3D file.
+
+        Arguments:
+            binary_i3d_path (str): Path to the binary I3D file to position.
+            asset_name (str): Name of the asset to position.
+        """
+        # We only need to lift it by its mean elevation so it aligns with the GE terrain.
+        if asset_name == Parameters.BACKGROUND_TERRAIN:
+            positions_directory = os.path.join(self.map_directory, "positions")
+            position_file_path = os.path.join(
+                positions_directory, f"{Parameters.BACKGROUND_TERRAIN}.json"
+            )
+            elevation = 0.0
+            if os.path.isfile(position_file_path):
+                try:
+                    with open(position_file_path, "r", encoding="utf-8") as pf:
+                        pos_data = json.load(pf)
+                    elevation = float(pos_data.get("mesh_centroid_y", 0.0))
+                except Exception as e:
+                    self.logger.warning(
+                        "Could not read background terrain elevation: %s. Using 0.", e
+                    )
+            self._set_mesh_translation(binary_i3d_path, f"0 {elevation} 0", asset_name)
+            return
+
+        positions_directory = os.path.join(self.map_directory, "positions")
+        position_file_path = os.path.join(positions_directory, f"{asset_name}.json")
+        if not os.path.isfile(position_file_path):
+            self.logger.warning(
+                "Position file not found for asset %s at path: %s. Skipping positioning.",
+                asset_name,
+                position_file_path,
+            )
+            return
+
+        try:
+            with open(position_file_path, "r", encoding="utf-8") as position_file:
+                position_data = json.load(position_file)  # type: ignore
+        except json.JSONDecodeError as e:
+            self.logger.warning(
+                "Could not load position data for asset %s from file %s with error: %s. Skipping positioning.",
+                asset_name,
+                position_file_path,
+                e,
+            )
+            return
+
+        min_z = position_data.get("min_z", 0.0)
+        max_z = position_data.get("max_z", 0.0)
+
+        # Prefer the exact mesh vertex centroid saved by road.py (post-rotation, pre-centering).
+        # This matches vertices -= center exactly, unlike mask pixel centroid.
+        mesh_centroid_x = position_data.get("mesh_centroid_x")
+        mesh_centroid_z = position_data.get("mesh_centroid_z")
+
+        if mesh_centroid_x is not None and mesh_centroid_z is not None:
+            # Water meshes are generated over the full background canvas
+            # (map_size + 2 * BACKGROUND_DISTANCE), so their pixel coordinates must be
+            # offset by half the background canvas size, not half the map size.
+            water_assets = {Parameters.WATER_RESOURCES, Parameters.WATER_RESOURCES_LINE_SURFACE}
+            if asset_name in water_assets:
+                canvas_half = (self.scaled_size + Parameters.BACKGROUND_DISTANCE * 2) // 2
+            else:
+                canvas_half = self.scaled_size // 2
+
+            ge_x = float(mesh_centroid_x) - canvas_half
+            ge_y = float(mesh_centroid_z) - canvas_half
+            mesh_centroid_y = position_data.get("mesh_centroid_y")
+            ge_elevation = (
+                float(mesh_centroid_y) if mesh_centroid_y is not None else (min_z + max_z) / 2
+            )
+        else:
+            centroid_x = position_data.get("centroid_x")
+            centroid_y = position_data.get("centroid_y")
+            if centroid_x is not None and centroid_y is not None:
+                ge_x, ge_y = self.top_left_coordinates_to_center((centroid_x, centroid_y))
+            else:
+                left = position_data.get("left", 0)
+                top = position_data.get("top", 0)
+                right = position_data.get("right", 0)
+                bottom = position_data.get("bottom", 0)
+                center_pixel_x = int(left + (self.scaled_size - left - right) / 2)
+                center_pixel_y = int(top + (self.scaled_size - top - bottom) / 2)
+                ge_x, ge_y = self.top_left_coordinates_to_center((center_pixel_x, center_pixel_y))
+            ge_elevation = (min_z + max_z) / 2
+
+        # GE translation string order: X (east-west), Y (elevation), Z (north-south).
+        translation = f"{ge_x} {ge_elevation} {ge_y}"
+        self._set_mesh_translation(binary_i3d_path, translation, asset_name)
+
+    def _set_mesh_translation(
+        self, binary_i3d_path: str, translation: str, asset_name: str
+    ) -> None:
+        self.logger.debug("Positioning mesh %s at translation: %s.", asset_name, translation)
+
+        binary_tree = self.get_tree(binary_i3d_path)
+        binary_root = binary_tree.getroot()
+        if binary_root is None:
+            self.logger.warning("Could not get root of binary I3D tree for asset %s.", asset_name)
+            return
+
+        shape_node = binary_root.find(".//Shape")
+        if shape_node is None:
+            self.logger.warning("Shape node not found in binary I3D for asset %s.", asset_name)
+            return
+
+        shape_node.set("translation", translation)
+        self.save_tree(binary_tree, binary_i3d_path)
+
+    def _postprocess_background_terrain(self, binary_i3d_path: str) -> None:
+        """Post-processes the background terrain mesh in the I3D file.
+
+        Arguments:
+            tree (ET.ElementTree): The XML tree of the I3D file.
+        """
+        tree = self.get_tree(binary_i3d_path)
+        root = tree.getroot()
+        if root is None:
+            self.logger.warning("Could not get root of background terrain I3D tree.")
+            return
+
+        material_node = root.find(".//Material[@name='background_terrain_material']")
+        shape_node = root.find(".//Shape[@name='background_terrain_shape']")
+
+        if material_node is not None:
+            if "specularColor" in material_node.attrib:
+                del material_node.attrib["specularColor"]
+
+        if shape_node is not None:
+            shape_node.set("receiveShadows", "true")
+
+        self.save_tree(tree, binary_i3d_path)
+
+    def _postprocess_water_resources(self, binary_i3d_path: str) -> None:
+        """Post-processes the water resources mesh in the I3D file.
+
+        Arguments:
+            binary_i3d_path (str): The path to the binary I3D file to post-process.
+        """
+        tree = self.get_tree(binary_i3d_path)
+        root = tree.getroot()
+        if root is None:
+            self.logger.warning("Could not get root of water resources I3D tree.")
+            return
+
+        # --- Files: bump shader fileId 3 → 4, insert normalmap as fileId 2 ---
+        files_node = root.find(".//Files")
+        if files_node is not None:
+            shader_file = files_node.find("File[@fileId='3']")
+            if shader_file is not None:
+                shader_file.set("fileId", "4")
+            normalmap_file = self.create_element(
+                "File",
+                {"fileId": "2", "filename": "$data/maps/textures/shared/water_normal.dds"},
+            )
+            files_node.insert(0, normalmap_file)
+
+        # --- Material: update attributes and add children ---
+        material_node = root.find(".//Material[@name='OceanShader']")
+        if material_node is not None:
+            material_node.set("specularColor", "1 1 1")
+            material_node.set("customShaderId", "4")
+            material_node.set("customShaderVariation", "simple")
+
+            normalmap_elem = self.create_element("Normalmap", {"fileId": "2"})
+            material_node.insert(0, normalmap_elem)
+
+            material_node.append(
+                self.create_element(
+                    "CustomParameter",
+                    {"name": "underwaterFogColor", "value": "0.12 0.14 0.11 1"},
+                )
+            )
+            material_node.append(
+                self.create_element(
+                    "CustomParameter",
+                    {"name": "underwaterFogDepth", "value": "1.4 1.2 1 1"},
+                )
+            )
+
+        # --- Shape: add static/collision attrs, fix castsShadows ---
+        shape_node = root.find(".//Shape")
+        if shape_node is not None:
+            shape_node.set("static", "true")
+            shape_node.set("collisionFilterGroup", "0x80000000")
+            shape_node.set("collisionFilterMask", "0x1")
+            shape_node.set("castsShadows", "false")
+
+        # --- Wrap bare Shape (direct Scene child) in a TransformGroup so GE respects translation ---
+        scene_node = root.find(".//Scene")
+        if scene_node is not None and shape_node is not None:
+            if shape_node in list(scene_node):
+                shape_nodeid = int(shape_node.get("nodeId", "4"))
+                tg = self.create_element(
+                    "TransformGroup",
+                    {"name": shape_node.get("name", "water"), "nodeId": str(shape_nodeid - 1)},
+                )
+                scene_node.remove(shape_node)
+                tg.append(shape_node)
+                scene_node.append(tg)
+
+        # --- UserAttributes: add onCreate callback ---
+        user_attrs_node = root.find(".//UserAttributes")
+        if user_attrs_node is None:
+            user_attrs_node = ET.SubElement(root, "UserAttributes")
+
+        shape_node_id = shape_node.get("nodeId") if shape_node is not None else None
+        if shape_node_id is not None:
+            ua = self.get_user_attribute_node(
+                int(shape_node_id),
+                [("onCreate", "scriptCallback", "Environment.onCreateWater")],
+            )
+            user_attrs_node.append(ua)
+
+        self.save_tree(tree, binary_i3d_path)
+
+    def _postprocess_roads(self, binary_i3d_path: str) -> None:
+        """Post-processes a road mesh in the I3D file.
+
+        Arguments:
+            binary_i3d_path (str): The path to the binary I3D file to post-process.
+        """
+        tree = self.get_tree(binary_i3d_path)
+        root = tree.getroot()
+        if root is None:
+            self.logger.warning("Could not get root of road mesh I3D tree.")
+            return
+
+        material_node = root.find(".//Material")
+        if material_node is not None:
+            material_node.attrib.pop("specularColor", None)
+
+        shape_node = root.find(".//Shape")
+        if shape_node is not None:
+            shape_node.set("collisionFilterGroup", "0x601c")
+            shape_node.set("collisionFilterMask", "0xfffffbff")
+            shape_node.set("receiveShadows", "true")
+
+        self.save_tree(tree, binary_i3d_path)

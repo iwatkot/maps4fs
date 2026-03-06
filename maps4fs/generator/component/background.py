@@ -3,6 +3,7 @@ around the map."""
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 from copy import deepcopy
@@ -158,6 +159,8 @@ class Background(MeshComponent, ImageComponent):
                 self.logger.warning(
                     "Mesh processing is disabled for the game, skipping water mesh processing."
                 )
+
+        self.process_road_masks()
 
     def not_resized_paths(self) -> list[str]:
         """Returns the list of paths to all not resized DEM files.
@@ -501,6 +504,23 @@ class Background(MeshComponent, ImageComponent):
             self.logger.error("Could not load textured background mesh: %s", e)
             return False
 
+        # Compute terrain max elevation and save for GE positioning.
+        # The mesh is built with z_vertex = (pixel - max_pixel) * z_factor (inverted),
+        # so T_y = max_pixel * z_factor maps every vertex back to its real elevation.
+        try:
+            background_dem = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
+            if background_dem is not None:
+                z_factor = self.get_z_scaling_factor(ignore_height_scale_multiplier=True)
+                max_elevation = float(np.max(background_dem) * z_factor)
+                positions_dir = os.path.join(self.map_directory, "positions")
+                os.makedirs(positions_dir, exist_ok=True)
+                position_path = os.path.join(positions_dir, f"{Parameters.BACKGROUND_TERRAIN}.json")
+                with open(position_path, "w", encoding="utf-8") as pf:
+                    json.dump({"mesh_centroid_y": max_elevation}, pf, indent=4)
+                self.logger.debug("Background terrain T_y (max elevation): %.4f m", max_elevation)
+        except Exception as e:
+            self.logger.warning("Could not save background terrain elevation: %s", e)
+
         try:
             i3d_background_terrain = self.mesh_to_i3d(
                 mesh,
@@ -567,13 +587,46 @@ class Background(MeshComponent, ImageComponent):
             self.logger.error("Could not load line-based water mesh: %s", e)
             return False
 
+        # Apply the rotation that mesh_to_i3d would do, so we can capture the centroid.
+        rotation_matrix = trimesh.transformations.rotation_matrix(-np.pi / 2, [1, 0, 0])
+        mesh.apply_transform(rotation_matrix)
+        center = mesh.vertices.mean(axis=0)
+
+        # After -pi/2 X rotation: center[0]=mean pixel X, center[2]=mean pixel Y,
+        # center[1] may be raw DEM units if flatten_water_to was set — always look it up.
+        background_dem = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
+        if background_dem is not None:
+            elevation = self.get_z_coordinate_from_dem(
+                background_dem, int(center[0]), int(center[2])
+            )
+        else:
+            elevation = float(center[1])
+
+        positions_dir = os.path.join(self.map_directory, "positions")
+        os.makedirs(positions_dir, exist_ok=True)
+        position_path = os.path.join(positions_dir, f"{Parameters.WATER_RESOURCES}.json")
+        try:
+            with open(position_path, "w", encoding="utf-8") as pf:
+                json.dump(
+                    {
+                        "mesh_centroid_x": float(center[0]),
+                        "mesh_centroid_y": float(elevation),
+                        "mesh_centroid_z": float(center[2]),
+                    },
+                    pf,
+                    ensure_ascii=False,
+                    indent=4,
+                )
+        except Exception as e:
+            self.logger.warning("Could not save water resources centroid: %s", e)
+
         try:
             i3d_water_resources = self.mesh_to_i3d(
                 mesh,
                 output_dir=self.assets_water_directory,
                 name=Parameters.WATER_RESOURCES,
                 water_mesh=True,
-                rotate_mesh=True,
+                rotate_mesh=False,
                 center_mesh=True,
             )
             self.logger.debug(
@@ -1055,13 +1108,34 @@ class Background(MeshComponent, ImageComponent):
         center = vertices.mean(axis=0)
         mesh.vertices = vertices - center
 
+        # Save mesh centroid for GE positioning.
+        positions_dir = os.path.join(self.map_directory, "positions")
+        os.makedirs(positions_dir, exist_ok=True)
+        position_path = os.path.join(
+            positions_dir, f"{Parameters.WATER_RESOURCES}_line_surface.json"
+        )
+        try:
+            with open(position_path, "w", encoding="utf-8") as pf:
+                json.dump(
+                    {
+                        "mesh_centroid_x": float(center[0]),
+                        "mesh_centroid_y": float(center[1]),
+                        "mesh_centroid_z": float(center[2]),
+                    },
+                    pf,
+                    ensure_ascii=False,
+                    indent=4,
+                )
+        except Exception as e:
+            self.logger.warning("Could not save water line surface centroid: %s", e)
+
         output_directory = os.path.join(self.map_directory, "assets", "water")
         os.makedirs(output_directory, exist_ok=True)
 
         self.mesh_to_i3d(
             mesh,
             output_directory,
-            f"{Parameters.WATER_RESOURCES}_line_surface",
+            Parameters.WATER_RESOURCES_LINE_SURFACE,
             water_mesh=True,
             rotate_mesh=False,
             center_mesh=False,
@@ -1353,3 +1427,80 @@ class Background(MeshComponent, ImageComponent):
 
         cv2.imwrite(main_dem_path, resized_dem)
         self.logger.debug("Flattened roads saved to DEM file: %s", main_dem_path)
+
+    def process_road_masks(self) -> None:
+        """Reads road mask images from the roads directory and saves bounding-box position
+        data for each mask so the GE can position the road meshes correctly."""
+        roads_directory = os.path.join(self.map_directory, "roads")
+
+        # Get all files in directory ending with _mask.png
+        mask_files = [f for f in os.listdir(roads_directory) if f.endswith("_mask.png")]
+
+        for mask_file in mask_files:
+            mask_path = os.path.join(roads_directory, mask_file)
+            mask = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
+            if mask is None:
+                self.logger.warning("Could not read mask file: %s, skipping.", mask_path)
+                continue
+            bounds = self.get_non_zero_bounds(mask)
+            if bounds is None:
+                self.logger.warning(
+                    "No non-zero pixels found in rotated mask, skipping road mask processing."
+                )
+                return
+            left, top, right, bottom = bounds
+
+            dem_image = self.get_dem_image_with_fallback()
+            if dem_image is None:
+                self.logger.warning("DEM image not found, skipping road mask processing.")
+                return
+
+            extremes = self.get_dem_extremes_by_mask(dem_image, mask)
+            if extremes is None:
+                self.logger.warning("No valid pixels found in DEM image for road mask, skipping.")
+                return
+
+            (min_x, min_y, min_val), (max_x, max_y, max_val) = extremes
+
+            min_z = self.get_z_coordinate_from_dem(dem_image, min_x, min_y)
+            max_z = self.get_z_coordinate_from_dem(dem_image, max_x, max_y)
+
+            # Compute the true pixel centroid of the mask (mean of all non-zero pixel coords).
+            # This matches where mesh.vertices -= center places the mesh origin.
+            ys, xs = np.where(mask > 0)
+            centroid_x = int(np.mean(xs))
+            centroid_y = int(np.mean(ys))
+
+            road_data = {
+                "left": left,
+                "top": top,
+                "right": right,
+                "bottom": bottom,
+                "centroid_x": centroid_x,
+                "centroid_y": centroid_y,
+                "min_x": min_x,
+                "min_y": min_y,
+                "min_z": min_z,
+                "min_val": min_val,
+                "max_x": max_x,
+                "max_y": max_y,
+                "max_z": max_z,
+                "max_val": max_val,
+            }
+
+            base_filename = os.path.splitext(mask_file)[0].replace("_mask", "")
+            positions_directory = os.path.join(self.map_directory, "positions")
+            os.makedirs(positions_directory, exist_ok=True)
+
+            road_data_path = os.path.join(positions_directory, f"{base_filename}.json")
+            with open(road_data_path, "w", encoding="utf-8") as f:
+                json.dump(road_data, f, ensure_ascii=False, indent=4)
+                self.logger.debug("Road data saved to %s.", road_data_path)
+
+            try:
+                os.remove(mask_path)
+                self.logger.debug("Temporary road mask %s removed.", mask_path)
+            except Exception as e:
+                self.logger.warning(
+                    "Error removing temporary road mask %s: %s.", mask_path, repr(e)
+                )

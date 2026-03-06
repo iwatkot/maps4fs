@@ -27,6 +27,8 @@ map_directory/
 
 ## 🚀 How to Use (FS25)
 
+> **Windows App users:** If you are using the Windows App and the i3dConverter is available (it is downloaded automatically on first run), all of the steps below — conversion to binary i3d, material setup, and positioning on the map — are done **automatically**. You can skip straight to opening the map in Giants Editor.
+
 ### Step 1: Generate Your Map
 1. Enable **Download Satellite Images** in the Satellite component
 2. Enable **Generate Background** in the Background Settings

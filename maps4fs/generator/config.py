@@ -15,6 +15,32 @@ from maps4fs.generator.monitor import Logger
 
 TQDM_DISABLE = os.getenv("TQDM_DISABLE", "0") == "1"
 logger = Logger(name="MAPS4FS.CONFIG")
+I3D_CONVERTER_NAME = "i3dConverter.exe"
+I3D_CONVERTER_REMOTE_URL = "http://storage.atlasfs.xyz/mfsmedia/i3dConverter.exe"
+
+
+def get_i3d_executable_path() -> str | None:
+    """Get the path to the i3d_converter executable.
+
+    Returns:
+        str | None: The path to the i3d_converter executable, or None if not found.
+    """
+    # First, check that we're on Windows, since the executable is only relevant there.
+    if os.name != "nt":
+        logger.info("Non-Windows OS detected, i3d_converter executable is not required.")
+        return None
+
+    # Check if the executable exists in the MFS_EXECUTABLES_DIR
+    expected_path = os.path.join(MFS_EXECUTABLES_DIR, I3D_CONVERTER_NAME)
+    if os.path.isfile(expected_path):
+        logger.debug("Found i3d_converter executable at: %s", expected_path)
+        return expected_path
+
+    logger.warning(
+        "i3d_converter executable not found in %s. Please ensure it is placed there.",
+        MFS_EXECUTABLES_DIR,
+    )
+    return None
 
 
 def _urlopen_with_ssl_fallback(url: str) -> bytes:
@@ -41,6 +67,7 @@ def _urlopen_with_ssl_fallback(url: str) -> bytes:
 
 
 MFS_TEMPLATES_DIR = os.path.join(os.getcwd(), "templates")
+MFS_EXECUTABLES_DIR = os.path.join(os.getcwd(), "executables")
 
 MFS_DEFAULTS_DIR = os.path.join(os.getcwd(), "defaults")
 MFS_LOCALE_DIR = os.path.join(os.getcwd(), "locale")
@@ -54,6 +81,7 @@ default_dirs = [
     MFS_OSM_DEFAULTS_DIR,
     MFS_MSETTINGS_DEFAULTS_DIR,
     MFS_GSETTINGS_DEFAULTS_DIR,
+    MFS_EXECUTABLES_DIR,
 ]
 for directory in default_dirs:
     os.makedirs(directory, exist_ok=True)
@@ -264,6 +292,30 @@ def ensure_locale() -> None:
 ensure_templates()
 ensure_template_subdirs()
 ensure_locale()
+
+
+def ensure_executables() -> None:
+    """Ensure required executables are present. On Windows, downloads i3dConverter.exe
+    from the remote URL if it is not already in MFS_EXECUTABLES_DIR."""
+    if os.name != "nt":
+        return
+
+    expected_path = os.path.join(MFS_EXECUTABLES_DIR, I3D_CONVERTER_NAME)
+    if os.path.isfile(expected_path):
+        logger.info("i3d_converter already present at: %s", expected_path)
+        return
+
+    logger.info("i3d_converter not found, downloading from %s...", I3D_CONVERTER_REMOTE_URL)
+    try:
+        data = _urlopen_with_ssl_fallback(I3D_CONVERTER_REMOTE_URL)
+        with open(expected_path, "wb") as f:
+            f.write(data)
+        logger.info("Downloaded i3d_converter to: %s", expected_path)
+    except Exception as e:
+        logger.warning("Could not download i3d_converter: %s", e)
+
+
+ensure_executables()
 
 MFS_ROOT_DIR = os.getenv("MFS_ROOT_DIRECTORY", os.path.join(os.getcwd(), "mfsrootdir"))
 MFS_CACHE_DIR = os.path.join(MFS_ROOT_DIR, "cache")

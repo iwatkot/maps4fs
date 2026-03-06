@@ -56,6 +56,18 @@ The Windows App includes all major Maps4FS features:
 - **Custom Resources** - Use your own [OSM files](custom_osm.md) and [DEM data](custom_dem.md)
 - **[Localization](localization.md)** - Want to see the app in your language? Community-driven translations are welcome!
 
+## 🤖 Automatic Mesh Conversion
+
+The Windows App automatically downloads **i3dConverter** on first launch. When the converter is available, the following is handled for you with **no manual steps in Giants Editor**:
+
+| Asset | What is automated |
+|-------|------------------|
+| **Background Terrain** | Binary i3d conversion, material setup, correct in-map positioning |
+| **Water** | Binary i3d conversion, ocean shader & normal map setup, collision/physics properties, in-map positioning |
+| **Roads** | Binary i3d conversion, material & collision properties, per-road in-map positioning |
+
+Just import the generated `.i3d` files into Giants Editor — everything else is already configured.
+
 ## 📋 Requirements
 
 ### System Requirements
