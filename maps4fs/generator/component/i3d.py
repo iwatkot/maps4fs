@@ -767,7 +767,7 @@ class I3d(XMLComponent, ImageComponent):
     def insert_meshes(self) -> None:
         """Inserts meshes into the I3D file."""
         assets_directory = self.map.assets_directory
-        self.logger.info(
+        self.logger.debug(
             "Inserting meshes into the I3D file using assets from: %s.", assets_directory
         )
 
@@ -816,9 +816,9 @@ class I3d(XMLComponent, ImageComponent):
                 continue
 
             i3d_dir = os.path.dirname(self.xml_path)  # type: ignore
-            self.logger.info("Inserting mesh %s from file %s.", asset_name, binary_i3d_path)
+            self.logger.debug("Inserting mesh %s from file %s.", asset_name, binary_i3d_path)
             binary_rel_path = os.path.relpath(binary_i3d_path, i3d_dir).replace("\\", "/")
-            self.logger.info("Relative path for the binary I3D file: %s.", binary_rel_path)
+            self.logger.debug("Relative path for the binary I3D file: %s.", binary_rel_path)
 
             files_node.append(
                 self.create_element("File", {"fileId": str(file_id), "filename": binary_rel_path})
@@ -846,16 +846,16 @@ class I3d(XMLComponent, ImageComponent):
             asset_name (str): The name of the asset corresponding to the binary I3D file.
         """
         if asset_name == Parameters.BACKGROUND_TERRAIN:
-            self.logger.info("Post-processing background terrain mesh.")
+            self.logger.debug("Post-processing background terrain mesh.")
             self._postprocess_background_terrain(binary_i3d_path)
         elif asset_name in (
             Parameters.WATER_RESOURCES,
             Parameters.WATER_RESOURCES_LINE_SURFACE,
         ):
-            self.logger.info("Post-processing water mesh for asset: %s.", asset_name)
+            self.logger.debug("Post-processing water mesh for asset: %s.", asset_name)
             self._postprocess_water_resources(binary_i3d_path)
         else:
-            self.logger.info("Post-processing road mesh for asset: %s.", asset_name)
+            self.logger.debug("Post-processing road mesh for asset: %s.", asset_name)
             self._postprocess_roads(binary_i3d_path)
 
         self.position_inserted_mesh(binary_i3d_path, asset_name)
@@ -949,7 +949,7 @@ class I3d(XMLComponent, ImageComponent):
     def _set_mesh_translation(
         self, binary_i3d_path: str, translation: str, asset_name: str
     ) -> None:
-        self.logger.info("Positioning mesh %s at translation: %s.", asset_name, translation)
+        self.logger.debug("Positioning mesh %s at translation: %s.", asset_name, translation)
 
         binary_tree = self.get_tree(binary_i3d_path)
         binary_root = binary_tree.getroot()
