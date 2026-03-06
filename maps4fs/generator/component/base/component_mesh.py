@@ -518,9 +518,18 @@ class MeshComponent(Component):
 
         # Run the converter: overwrites the XML file with the binary format in-place.
         cmd = [converter_path, "-in", raw_i3d_path, "-out", binary_i3d_path]
-        result = subprocess.run(
-            cmd, capture_output=True, text=True
-        )  # pylint: disable=subprocess-run-check
+
+        # PyInstaller windowed apps have no console, so we must:
+        #   - set stdin=DEVNULL (parent stdin is None in windowed mode, child must not inherit it)
+        #   - use CREATE_NO_WINDOW so the converter doesn't try to open a console of its own
+        run_kwargs: dict = {
+            "stdin": subprocess.DEVNULL,
+            "capture_output": True,
+            "text": True,
+            "creationflags": subprocess.CREATE_NO_WINDOW,
+        }
+
+        result = subprocess.run(cmd, **run_kwargs)  # pylint: disable=subprocess-run-check
 
         if result.returncode != 0:
             raise RuntimeError(
