@@ -504,6 +504,23 @@ class Background(MeshComponent, ImageComponent):
             self.logger.error("Could not load textured background mesh: %s", e)
             return False
 
+        # Compute terrain max elevation and save for GE positioning.
+        # The mesh is built with z_vertex = (pixel - max_pixel) * z_factor (inverted),
+        # so T_y = max_pixel * z_factor maps every vertex back to its real elevation.
+        try:
+            background_dem = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
+            if background_dem is not None:
+                z_factor = self.get_z_scaling_factor(ignore_height_scale_multiplier=True)
+                max_elevation = float(np.max(background_dem) * z_factor)
+                positions_dir = os.path.join(self.map_directory, "positions")
+                os.makedirs(positions_dir, exist_ok=True)
+                position_path = os.path.join(positions_dir, f"{Parameters.BACKGROUND_TERRAIN}.json")
+                with open(position_path, "w", encoding="utf-8") as pf:
+                    json.dump({"mesh_centroid_y": max_elevation}, pf, indent=4)
+                self.logger.debug("Background terrain T_y (max elevation): %.4f m", max_elevation)
+        except Exception as e:
+            self.logger.warning("Could not save background terrain elevation: %s", e)
+
         try:
             i3d_background_terrain = self.mesh_to_i3d(
                 mesh,

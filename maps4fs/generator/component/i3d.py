@@ -861,6 +861,26 @@ class I3d(XMLComponent, ImageComponent):
         self.position_inserted_mesh(binary_i3d_path, asset_name)
 
     def position_inserted_mesh(self, binary_i3d_path: str, asset_name: str) -> None:
+        # Background terrain is centered at X=0, Z=0 by construction.
+        # We only need to lift it by its mean elevation so it aligns with the GE terrain.
+        if asset_name == Parameters.BACKGROUND_TERRAIN:
+            positions_directory = os.path.join(self.map_directory, "positions")
+            position_file_path = os.path.join(
+                positions_directory, f"{Parameters.BACKGROUND_TERRAIN}.json"
+            )
+            elevation = 0.0
+            if os.path.isfile(position_file_path):
+                try:
+                    with open(position_file_path, "r", encoding="utf-8") as pf:
+                        pos_data = json.load(pf)
+                    elevation = float(pos_data.get("mesh_centroid_y", 0.0))
+                except Exception as e:
+                    self.logger.warning(
+                        "Could not read background terrain elevation: %s. Using 0.", e
+                    )
+            self._set_mesh_translation(binary_i3d_path, f"0 {elevation} 0", asset_name)
+            return
+
         positions_directory = os.path.join(self.map_directory, "positions")
         position_file_path = os.path.join(positions_directory, f"{asset_name}.json")
         if not os.path.isfile(position_file_path):
@@ -924,6 +944,11 @@ class I3d(XMLComponent, ImageComponent):
 
         # GE translation string order: X (east-west), Y (elevation), Z (north-south).
         translation = f"{ge_x} {ge_elevation} {ge_y}"
+        self._set_mesh_translation(binary_i3d_path, translation, asset_name)
+
+    def _set_mesh_translation(
+        self, binary_i3d_path: str, translation: str, asset_name: str
+    ) -> None:
         self.logger.info("Positioning mesh %s at translation: %s.", asset_name, translation)
 
         binary_tree = self.get_tree(binary_i3d_path)
