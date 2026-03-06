@@ -1111,6 +1111,8 @@ class I3d(XMLComponent, ImageComponent):
         self.save_tree(tree, binary_i3d_path)
 
     def insert_map_bounds(self) -> None:
+        """Inserts the map bounds into the I3D file by copying the template map bounds files,
+        updating their positions, and adding a reference to the main I3D file."""
         filepaths = get_map_bounds_file_paths()
         if not filepaths:
             self.logger.warning(
@@ -1146,6 +1148,12 @@ class I3d(XMLComponent, ImageComponent):
         bounds_tree = self.get_tree(dest_i3d_path)
         bounds_root = bounds_tree.getroot()
 
+        if bounds_root is None:
+            self.logger.warning(
+                "Could not get root of map bounds I3D tree. Skipping position update."
+            )
+            return
+
         tg_node = bounds_root.find(".//Scene/TransformGroup[@name='mapbounds']")
         if tg_node is not None:
             shape_configs = {
@@ -1166,6 +1174,11 @@ class I3d(XMLComponent, ImageComponent):
         # 2. Insert file reference into main I3D Files section and a ReferenceNode into Scene.
         tree = self.get_tree()
         root = tree.getroot()
+        if root is None:
+            self.logger.warning(
+                "Could not get root of main I3D tree. Skipping map bounds reference insertion."
+            )
+            return
 
         files_node = root.find(".//Files")
         scene_node = root.find(".//Scene")
