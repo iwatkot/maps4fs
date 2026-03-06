@@ -12,6 +12,7 @@
 [![Maps4FS Upgrader](https://img.shields.io/badge/maps4fs-upgrader-yellow?style=for-the-badge)](https://github.com/iwatkot/maps4fsupgrader)
 [![Maps4FS Stats](https://img.shields.io/badge/maps4fs-stats-red?style=for-the-badge)](https://github.com/iwatkot/maps4fsstats)
 [![Maps4FS Bot](https://img.shields.io/badge/maps4fs-bot-teal?style=for-the-badge)](https://github.com/iwatkot/maps4fsbot)
+[![Maps4FS Locale](https://img.shields.io/badge/maps4fs-locale-purple?style=for-the-badge)](https://github.com/iwatkot/maps4fslocale)
 
 </div>
 
