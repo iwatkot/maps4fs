@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 from random import choice, randint, uniform
 from typing import Any, Generator
 from xml.etree import ElementTree as ET
@@ -14,6 +15,7 @@ from tqdm import tqdm
 
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_xml import XMLComponent
+from maps4fs.generator.config import get_map_bounds_file_paths
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
@@ -22,6 +24,8 @@ SPLINES_NODE_ID_STARTING_VALUE = 5000
 TREE_NODE_ID_STARTING_VALUE = 30000
 FILE_ID_STARTING_VALUE = 120000
 BINARY_MESHES_NODE_ID_STARTING_VALUE = 150000
+BOUNDS_FILE_ID = 160000
+BOUNDS_NODE_ID = 200000
 
 FIELDS_ATTRIBUTES = [
     ("angle", "integer", "0"),
@@ -69,6 +73,7 @@ class I3d(XMLComponent, ImageComponent):
             self._add_splines()
 
         self.insert_meshes()
+        self.insert_map_bounds()
 
     def update_height_scale(self, value: int | None = None) -> None:
         """Updates the height scale value in the map I3D file.
@@ -1104,3 +1109,93 @@ class I3d(XMLComponent, ImageComponent):
             shape_node.set("receiveShadows", "true")
 
         self.save_tree(tree, binary_i3d_path)
+
+    def insert_map_bounds(self) -> None:
+        filepaths = get_map_bounds_file_paths()
+        if not filepaths:
+            self.logger.warning(
+                "Map bounds file paths could not be found. Skipping map bounds insertion."
+            )
+            return
+
+        i3d_path, shapes_path = filepaths
+
+        # Copy both files to map_directory/assets/map_bounds/
+        # e.g. result: map_directory/assets/map_bounds/map_bounds.i3d
+        # and map_directory/assets/map_bounds/map_bounds.i3d.shapes
+        dest_dir = os.path.join(self.map_directory, "assets", "map_bounds")
+        os.makedirs(dest_dir, exist_ok=True)
+        dest_i3d_path = os.path.join(dest_dir, "map_bounds.i3d")
+        dest_shapes_path = os.path.join(dest_dir, "map_bounds.i3d.shapes")
+        try:
+            shutil.copy(i3d_path, dest_i3d_path)
+            shutil.copy(shapes_path, dest_shapes_path)
+            self.logger.debug(
+                "Map bounds files copied to %s and %s.", dest_i3d_path, dest_shapes_path
+            )
+        except IOError as e:
+            self.logger.warning("Failed to copy map bounds files: %s.", e)
+            return
+
+        half = self.map_size // 2
+        quarter = self.map_size // 4
+
+        # 1. Update positions of the map bounds in the map_bounds.i3d file.
+        # Translations use half the map size (GE center-origin coordinate system).
+        # Scale span (Z) = half, scale height (X after rotation) = quarter (template ratio).
+        bounds_tree = self.get_tree(dest_i3d_path)
+        bounds_root = bounds_tree.getroot()
+
+        tg_node = bounds_root.find(".//Scene/TransformGroup[@name='mapbounds']")
+        if tg_node is not None:
+            shape_configs = {
+                "mapbound_W": (f"-{half} 0 0", f"{quarter} 1 {half}"),
+                "mapbound_E": (f"{half} 0 0", f"{quarter} 1 {half}"),
+                "mapbound_N": (f"0 0 -{half}", f"{quarter} 1 {half}"),
+                "mapbound_S": (f"0 0 {half}", f"{quarter} 1 {half}"),
+            }
+            for shape_name, (translation, scale) in shape_configs.items():
+                shape_node = tg_node.find(f"Shape[@name='{shape_name}']")
+                if shape_node is not None:
+                    shape_node.set("translation", translation)
+                    shape_node.set("scale", scale)
+
+        self.save_tree(bounds_tree, dest_i3d_path)
+        self.logger.debug("Map bounds positions updated in %s.", dest_i3d_path)
+
+        # 2. Insert file reference into main I3D Files section and a ReferenceNode into Scene.
+        tree = self.get_tree()
+        root = tree.getroot()
+
+        files_node = root.find(".//Files")
+        scene_node = root.find(".//Scene")
+
+        if files_node is None or scene_node is None:
+            self.logger.warning(
+                "Files or Scene node not found in main I3D file. Skipping map bounds insertion."
+            )
+            return
+
+        i3d_dir = os.path.dirname(self.xml_path)  # type: ignore
+        bounds_rel_path = os.path.relpath(dest_i3d_path, i3d_dir).replace("\\", "/")
+
+        files_node.append(
+            self.create_element(
+                "File", {"fileId": str(BOUNDS_FILE_ID), "filename": bounds_rel_path}
+            )
+        )
+        # Y=1024 is the fixed height above ground in GE's X Z Y coordinate system.
+        scene_node.append(
+            self.create_element(
+                "ReferenceNode",
+                {
+                    "name": "mapbounds",
+                    "translation": "0 1024 0",
+                    "referenceId": str(BOUNDS_FILE_ID),
+                    "nodeId": str(BOUNDS_NODE_ID),
+                },
+            )
+        )
+
+        self.save_tree(tree)
+        self.logger.debug("Map bounds reference inserted into main I3D file.")

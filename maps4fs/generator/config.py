@@ -18,6 +18,29 @@ logger = Logger(name="MAPS4FS.CONFIG")
 I3D_CONVERTER_NAME = "i3dConverter.exe"
 I3D_CONVERTER_REMOTE_URL = "http://storage.atlasfs.xyz/mfsmedia/i3dConverter.exe"
 
+MAP_BOUNDS_FILENAME = "map_bounds"
+
+
+def get_map_bounds_file_paths() -> tuple[str, str] | None:
+    """Get the paths to the map bounds i3d and shapes files.
+
+    Returns:
+        tuple[str, str] | None: A tuple containing the paths to the i3d and shapes files,
+        or None if the required files are not found.
+    """
+    i3d_path = os.path.join(MFS_TEMPLATES_DIR, f"{MAP_BOUNDS_FILENAME}.i3d")
+    shapes_path = os.path.join(MFS_TEMPLATES_DIR, f"{MAP_BOUNDS_FILENAME}.i3d.shapes")
+    required_files = [i3d_path, shapes_path]
+    if all(os.path.isfile(path) for path in required_files):
+        logger.debug("Found map bounds files: %s and %s", i3d_path, shapes_path)
+        return i3d_path, shapes_path
+    logger.warning(
+        "Map bounds files not found. Expected at: %s and %s. Please ensure they are placed there.",
+        i3d_path,
+        shapes_path,
+    )
+    return None
+
 
 def get_i3d_executable_path() -> str | None:
     """Get the path to the i3d_converter executable.
