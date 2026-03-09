@@ -4,6 +4,30 @@ DDS (DirectDraw Surface) is the native texture format used throughout Farming Si
 
 > 🎉 **NEW for FS25**: Maps4FS now automatically generates `overview.dds` files when **Download Satellite Images** is enabled! Manual conversion is only needed for custom overview maps or FS22.
 
+## Windows App: Built-in DDS Conversion
+
+Maps4FS Windows application includes native DDS conversion powered by **texconv** (Microsoft DirectXTex), so you rarely need external tools.
+
+### Background Terrain Texture — Fully Automatic
+
+When the **Windows app** generates a map with background terrain enabled, the background satellite texture is automatically converted to DDS format:
+
+- 📁 `map_directory/assets/background/background_texture.jpg` — source texture (always kept)
+- 📁 `map_directory/assets/background/background_texture.dds` — DDS version, referenced by the i3d file
+
+No extra steps needed — the i3d file is generated pointing straight to the `.dds` texture. If texconv is unavailable, Maps4FS falls back to a PIL-based converter so generation never fails.
+
+### Icon & Preview — One-Click Conversion in Map Editor
+
+In the **Map Editor** tab of the Windows app you can select any existing map folder and convert `icon.png` and `preview.png` to proper DDS format with a single button click:
+
+1. Open the **Windows app** and go to the **Map Editor** tab.
+2. Select your map directory.
+3. Click **Convert icon & preview to DDS**.
+4. Both `icon.dds` and `preview.dds` are written into the map root — ready for use in Farming Simulator.
+
+> This replaces the need for GIMP, Paint.NET, or any other external tool for the two most commonly required DDS files.
+
 ## Why DDS Format?
 
 **Performance Benefits:**
@@ -18,8 +42,8 @@ DDS (DirectDraw Surface) is the native texture format used throughout Farming Si
 
 | File | Dimensions | Purpose | Usage | FS25 Status |
 |------|------------|---------|--------|-------------|
-| `icon.dds` | 256×256 (FS22)<br>512×512 (FS25) | Mod icon | Displayed in mod browser | Manual conversion required |
-| `preview.dds` | 2048×2048 | Loading screen preview | Shows during map loading | Manual conversion required |
+| `icon.dds` | 256×256 (FS22)<br>512×512 (FS25) | Mod icon | Displayed in mod browser | ✅ **One-click** in Windows app Map Editor |
+| `preview.dds` | 2048×2048 | Loading screen preview | Shows during map loading | ✅ **One-click** in Windows app Map Editor |
 | `overview.dds` | 4096×4096 | In-game minimap | Interactive map display | ✅ **Auto-generated** with satellite images |
 
 > **FS25 Automation**: When **Download Satellite Images** is enabled, Maps4FS automatically creates `overview.dds` using satellite imagery - no manual conversion needed!
@@ -51,7 +75,7 @@ When you enable **Download Satellite Images** in Maps4FS settings:
 ### When Manual Conversion is Still Needed
 - **FS22 maps**: Automation only available for FS25
 - **Custom overview designs**: If you prefer artistic or stylized minimaps
-- **Icon and preview images**: These still require manual creation and conversion
+- **Icon and preview images**: Use the one-click converter in the Windows app Map Editor, or convert manually with the tools below
 
 ## Conversion Tools & Methods
 

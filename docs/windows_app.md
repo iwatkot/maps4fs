@@ -68,6 +68,25 @@ The Windows App automatically downloads **i3dConverter** on first launch. When t
 
 Just import the generated `.i3d` files into Giants Editor — everything else is already configured.
 
+## 🖼️ DDS Texture Conversion
+
+The Windows App includes built-in DDS conversion powered by **texconv** (Microsoft DirectXTex), so you don't need external tools like GIMP or Paint.NET.
+
+### Background Terrain — Fully Automatic
+When generating a map with background terrain enabled, the satellite texture is automatically converted to DDS format:
+- `assets/background/background_texture.dds` is created alongside the `.jpg` source
+- The generated i3d file references the `.dds` texture directly — no extra steps needed
+
+### Icon & Preview — One-Click in Map Editor
+In the **Map Editor** tab you can convert `icon.png` and `preview.png` to proper DDS format with a single button click:
+
+1. Open the **Map Editor** tab
+2. Select your map directory
+3. Click **Convert icon & preview to DDS**
+4. `icon.dds` and `preview.dds` are written into the map root — ready for Farming Simulator
+
+See [DDS Conversion Guide](dds_conversion.md) for more details on DDS files and when they are needed.
+
 ## 📋 Requirements
 
 ### System Requirements
