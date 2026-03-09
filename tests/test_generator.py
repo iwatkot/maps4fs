@@ -1,3 +1,4 @@
+import itertools
 import json
 import os
 import shutil
@@ -31,6 +32,7 @@ COORDINATE_CASES = {
 }
 
 GAME_CODE_CASES = {"FS25": 3, "FS22": 1}
+SIZE_CASES = [512, 1024, 2048]
 
 dtm_provider_code = "srtm30"
 dtm_provider = DTMProvider.get_provider_by_code(dtm_provider_code)
@@ -59,30 +61,39 @@ def load_textures_schema(json_path: str) -> dict:
 
 def _build_map_test_cases() -> tuple[list[tuple], list[str]]:
     cases, ids = [], []
+    size_cycle = itertools.cycle(SIZE_CASES)
     for game_code, n_cases in GAME_CODE_CASES.items():
         coord_names = list(COORDINATE_CASES.keys())[:n_cases]
         for name in coord_names:
-            cases.append((game_code, COORDINATE_CASES[name], 1024))
-            ids.append(f"{game_code}-{name}-1024")
+            size = next(size_cycle)
+            cases.append((game_code, COORDINATE_CASES[name], size, None))
+            ids.append(f"{game_code}-{name}-{size}")
+    # Special case: non-standard size with output_size rescaling
+    cases.append(("FS25", COORDINATE_CASES["balkans"], 1200, 1024))
+    ids.append("FS25-balkans-1200-output1024")
     return cases, ids
 
 
 def _build_preview_test_cases() -> tuple[list[tuple], list[str]]:
     cases, ids = [], []
+    size_cycle = itertools.cycle(SIZE_CASES)
     for game_code, n_cases in GAME_CODE_CASES.items():
         coord_names = list(COORDINATE_CASES.keys())[: min(n_cases, 2)]
         for name in coord_names:
-            cases.append((game_code, COORDINATE_CASES[name], 1024))
-            ids.append(f"{game_code}-{name}-1024")
+            size = next(size_cycle)
+            cases.append((game_code, COORDINATE_CASES[name], size))
+            ids.append(f"{game_code}-{name}-{size}")
     return cases, ids
 
 
 def _build_pack_test_cases() -> tuple[list[tuple], list[str]]:
     cases, ids = [], []
+    size_cycle = itertools.cycle(SIZE_CASES)
     for game_code in GAME_CODE_CASES:
         name = list(COORDINATE_CASES.keys())[0]
-        cases.append((game_code, COORDINATE_CASES[name], 1024))
-        ids.append(f"{game_code}-{name}-1024")
+        size = next(size_cycle)
+        cases.append((game_code, COORDINATE_CASES[name], size))
+        ids.append(f"{game_code}-{name}-{size}")
     return cases, ids
 
 
@@ -91,11 +102,15 @@ _PREVIEW_CASES, _PREVIEW_IDS = _build_preview_test_cases()
 _PACK_CASES, _PACK_IDS = _build_pack_test_cases()
 
 
-@pytest.mark.parametrize("game_code,coordinates,size", _MAP_CASES, ids=_MAP_IDS)
-def test_map(game_code: str, coordinates: tuple[float, float], size: int):
+@pytest.mark.parametrize("game_code,coordinates,size,output_size", _MAP_CASES, ids=_MAP_IDS)
+def test_map(game_code: str, coordinates: tuple[float, float], size: int, output_size: int | None):
     """Test Map generation for different coordinate cases."""
     game = Game.from_code(game_code)
     directory = map_directory(game_code)
+
+    extra_kwargs = {}
+    if output_size:
+        extra_kwargs["output_size"] = output_size
 
     print(f"Generating map for {game_code} at {coordinates} with size {size}x{size}...")
 
@@ -108,6 +123,7 @@ def test_map(game_code: str, coordinates: tuple[float, float], size: int):
         rotation=0,
         map_directory=directory,
         generation_settings=generation_settings,
+        **extra_kwargs,
     )
 
     for _ in map.generate():
@@ -135,11 +151,12 @@ def test_map(game_code: str, coordinates: tuple[float, float], size: int):
             assert os.path.isfile(texture_path), f"Texture not found: {texture_path}"
             img = cv2.imread(texture_path)
             assert img is not None, f"Texture could not be read: {texture_path}"
+            expected_size = output_size if output_size else size
             assert img.shape == (
-                size,
-                size,
+                expected_size,
+                expected_size,
                 3,
-            ), f"Texture shape mismatch: {img.shape} != {(size, size, 3)}"
+            ), f"Texture shape mismatch: {img.shape} != {(expected_size, expected_size, 3)}"
             assert img.dtype == "uint8", f"Texture dtype mismatch: {img.dtype} != uint8"
 
     dem_name = "map_dem.png" if game_code == "FS22" else "dem.png"
