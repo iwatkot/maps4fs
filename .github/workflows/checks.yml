@@ -68,7 +68,7 @@ jobs:
         if: always()
         with:
           paths: report.xml
-          show: "all tests"
+          show: "all"
 
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5

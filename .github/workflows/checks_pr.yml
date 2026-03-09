@@ -69,7 +69,7 @@ jobs:
         if: always()
         with:
           paths: report.xml
-          show: "all tests"
+          show: "all"
 
       - name: Post PR comment with test results
         uses: EnricoMi/publish-unit-test-result-action@v2
