@@ -33,6 +33,7 @@ COORDINATE_CASES = {
 
 GAME_CODE_CASES = {"FS25": 3, "FS22": 1}
 SIZE_CASES = [512, 1024, 2048]
+ROTATION_CASES = [-90, -45, 0, 45, 90]
 
 dtm_provider_code = "srtm30"
 dtm_provider = DTMProvider.get_provider_by_code(dtm_provider_code)
@@ -62,38 +63,44 @@ def load_textures_schema(json_path: str) -> dict:
 def _build_map_test_cases() -> tuple[list[tuple], list[str]]:
     cases, ids = [], []
     size_cycle = itertools.cycle(SIZE_CASES)
+    rotation_cycle = itertools.cycle(ROTATION_CASES)
     for game_code, n_cases in GAME_CODE_CASES.items():
         coord_names = list(COORDINATE_CASES.keys())[:n_cases]
         for name in coord_names:
             size = next(size_cycle)
-            cases.append((game_code, COORDINATE_CASES[name], size, None))
-            ids.append(f"{game_code}-{name}-{size}")
+            rotation = next(rotation_cycle)
+            cases.append((game_code, COORDINATE_CASES[name], size, None, rotation))
+            ids.append(f"{game_code}-{name}-{size}-rot{rotation}")
     # Special case: non-standard size with output_size rescaling
-    cases.append(("FS25", COORDINATE_CASES["balkans"], 1200, 1024))
-    ids.append("FS25-balkans-1200-output1024")
+    cases.append(("FS25", COORDINATE_CASES["balkans"], 1200, 1024, 30))
+    ids.append("FS25-balkans-1200-output1024-rot30")
     return cases, ids
 
 
 def _build_preview_test_cases() -> tuple[list[tuple], list[str]]:
     cases, ids = [], []
     size_cycle = itertools.cycle(SIZE_CASES)
+    rotation_cycle = itertools.cycle(ROTATION_CASES)
     for game_code, n_cases in GAME_CODE_CASES.items():
         coord_names = list(COORDINATE_CASES.keys())[: min(n_cases, 2)]
         for name in coord_names:
             size = next(size_cycle)
-            cases.append((game_code, COORDINATE_CASES[name], size))
-            ids.append(f"{game_code}-{name}-{size}")
+            rotation = next(rotation_cycle)
+            cases.append((game_code, COORDINATE_CASES[name], size, rotation))
+            ids.append(f"{game_code}-{name}-{size}-rot{rotation}")
     return cases, ids
 
 
 def _build_pack_test_cases() -> tuple[list[tuple], list[str]]:
     cases, ids = [], []
     size_cycle = itertools.cycle(SIZE_CASES)
+    rotation_cycle = itertools.cycle(ROTATION_CASES)
     for game_code in GAME_CODE_CASES:
         name = list(COORDINATE_CASES.keys())[0]
         size = next(size_cycle)
-        cases.append((game_code, COORDINATE_CASES[name], size))
-        ids.append(f"{game_code}-{name}-{size}")
+        rotation = next(rotation_cycle)
+        cases.append((game_code, COORDINATE_CASES[name], size, rotation))
+        ids.append(f"{game_code}-{name}-{size}-rot{rotation}")
     return cases, ids
 
 
@@ -102,8 +109,16 @@ _PREVIEW_CASES, _PREVIEW_IDS = _build_preview_test_cases()
 _PACK_CASES, _PACK_IDS = _build_pack_test_cases()
 
 
-@pytest.mark.parametrize("game_code,coordinates,size,output_size", _MAP_CASES, ids=_MAP_IDS)
-def test_map(game_code: str, coordinates: tuple[float, float], size: int, output_size: int | None):
+@pytest.mark.parametrize(
+    "game_code,coordinates,size,output_size,rotation", _MAP_CASES, ids=_MAP_IDS
+)
+def test_map(
+    game_code: str,
+    coordinates: tuple[float, float],
+    size: int,
+    output_size: int | None,
+    rotation: int,
+):
     """Test Map generation for different coordinate cases."""
     game = Game.from_code(game_code)
     directory = map_directory(game_code)
@@ -112,7 +127,9 @@ def test_map(game_code: str, coordinates: tuple[float, float], size: int, output
     if output_size:
         extra_kwargs["output_size"] = output_size
 
-    print(f"Generating map for {game_code} at {coordinates} with size {size}x{size}...")
+    print(
+        f"Generating map for {game_code} at {coordinates} with size {size}x{size}, rotation {rotation}..."
+    )
 
     map = Map(
         game=game,
@@ -120,7 +137,7 @@ def test_map(game_code: str, coordinates: tuple[float, float], size: int, output
         dtm_provider_settings=None,
         coordinates=coordinates,
         size=size,
-        rotation=0,
+        rotation=rotation,
         map_directory=directory,
         generation_settings=generation_settings,
         **extra_kwargs,
@@ -169,8 +186,8 @@ def test_map(game_code: str, coordinates: tuple[float, float], size: int, output
     assert img.dtype == "uint16", f"DEM dtype mismatch: {img.dtype} != uint16"
 
 
-@pytest.mark.parametrize("game_code,coordinates,size", _PREVIEW_CASES, ids=_PREVIEW_IDS)
-def test_map_preview(game_code: str, coordinates: tuple[float, float], size: int):
+@pytest.mark.parametrize("game_code,coordinates,size,rotation", _PREVIEW_CASES, ids=_PREVIEW_IDS)
+def test_map_preview(game_code: str, coordinates: tuple[float, float], size: int, rotation: int):
     """Test Map preview generation."""
     game = Game.from_code(game_code)
     directory = map_directory(game_code)
@@ -180,7 +197,7 @@ def test_map_preview(game_code: str, coordinates: tuple[float, float], size: int
         dtm_provider_settings=None,
         coordinates=coordinates,
         size=size,
-        rotation=0,
+        rotation=rotation,
         map_directory=directory,
         generation_settings=generation_settings,
     )
@@ -195,8 +212,8 @@ def test_map_preview(game_code: str, coordinates: tuple[float, float], size: int
         assert img is not None, f"Preview could not be read: {preview_path}"
 
 
-@pytest.mark.parametrize("game_code,coordinates,size", _PACK_CASES, ids=_PACK_IDS)
-def test_map_pack(game_code: str, coordinates: tuple[float, float], size: int):
+@pytest.mark.parametrize("game_code,coordinates,size,rotation", _PACK_CASES, ids=_PACK_IDS)
+def test_map_pack(game_code: str, coordinates: tuple[float, float], size: int, rotation: int):
     """Test Map packing into zip archive."""
     game = Game.from_code(game_code)
 
@@ -217,7 +234,7 @@ def test_map_pack(game_code: str, coordinates: tuple[float, float], size: int):
         dtm_provider_settings=None,
         coordinates=coordinates,
         size=size,
-        rotation=30,
+        rotation=rotation,
         map_directory=directory,
         generation_settings=pack_generation_settings,
     )
