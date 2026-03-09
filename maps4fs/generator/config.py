@@ -17,6 +17,8 @@ TQDM_DISABLE = os.getenv("TQDM_DISABLE", "0") == "1"
 logger = Logger(name="MAPS4FS.CONFIG")
 I3D_CONVERTER_NAME = "i3dConverter.exe"
 I3D_CONVERTER_REMOTE_URL = "http://storage.atlasfs.xyz/mfsmedia/i3dConverter.exe"
+TEXCONV_NAME = "texconv.exe"
+TEXCONV_REMOTE_URL = "https://github.com/microsoft/DirectXTex/releases/download/oct2025/texconv.exe"
 
 MAP_BOUNDS_FILENAME = "map_bounds"
 
@@ -42,28 +44,48 @@ def get_map_bounds_file_paths() -> tuple[str, str] | None:
     return None
 
 
+def get_windows_executable_path(executable_name: str) -> str | None:
+    """Get the path to a Windows executable in the MFS_EXECUTABLES_DIR.
+
+    Arguments:
+        executable_name (str): The name of the executable to find.
+
+    Returns:
+        str | None: The path to the executable if found, or None if not found or not on Windows.
+    """
+    if os.name != "nt":
+        logger.info("Non-Windows OS detected, %s executable is not required.", executable_name)
+        return None
+
+    expected_path = os.path.join(MFS_EXECUTABLES_DIR, executable_name)
+    if os.path.isfile(expected_path):
+        logger.debug("Found %s executable at: %s", executable_name, expected_path)
+        return expected_path
+
+    logger.warning(
+        "%s executable not found in %s. Please ensure it is placed there.",
+        executable_name,
+        MFS_EXECUTABLES_DIR,
+    )
+    return None
+
+
 def get_i3d_executable_path() -> str | None:
     """Get the path to the i3d_converter executable.
 
     Returns:
         str | None: The path to the i3d_converter executable, or None if not found.
     """
-    # First, check that we're on Windows, since the executable is only relevant there.
-    if os.name != "nt":
-        logger.info("Non-Windows OS detected, i3d_converter executable is not required.")
-        return None
+    return get_windows_executable_path(I3D_CONVERTER_NAME)
 
-    # Check if the executable exists in the MFS_EXECUTABLES_DIR
-    expected_path = os.path.join(MFS_EXECUTABLES_DIR, I3D_CONVERTER_NAME)
-    if os.path.isfile(expected_path):
-        logger.debug("Found i3d_converter executable at: %s", expected_path)
-        return expected_path
 
-    logger.warning(
-        "i3d_converter executable not found in %s. Please ensure it is placed there.",
-        MFS_EXECUTABLES_DIR,
-    )
-    return None
+def get_texconv_executable_path() -> str | None:
+    """Get the path to the texconv executable.
+
+    Returns:
+        str | None: The path to the texconv executable, or None if not found.
+    """
+    return get_windows_executable_path(TEXCONV_NAME)
 
 
 def _urlopen_with_ssl_fallback(url: str) -> bytes:
@@ -323,19 +345,29 @@ def ensure_executables() -> None:
     if os.name != "nt":
         return
 
-    expected_path = os.path.join(MFS_EXECUTABLES_DIR, I3D_CONVERTER_NAME)
-    if os.path.isfile(expected_path):
-        logger.info("i3d_converter already present at: %s", expected_path)
-        return
+    required_executables = [
+        (I3D_CONVERTER_NAME, I3D_CONVERTER_REMOTE_URL),
+        (TEXCONV_NAME, TEXCONV_REMOTE_URL),
+    ]
 
-    logger.info("i3d_converter not found, downloading from %s...", I3D_CONVERTER_REMOTE_URL)
-    try:
-        data = _urlopen_with_ssl_fallback(I3D_CONVERTER_REMOTE_URL)
-        with open(expected_path, "wb") as f:
-            f.write(data)
-        logger.info("Downloaded i3d_converter to: %s", expected_path)
-    except Exception as e:
-        logger.warning("Could not download i3d_converter: %s", e)
+    logger.info("Checking for required executables in: %s", MFS_EXECUTABLES_DIR)
+
+    for executable_name, remote_url in required_executables:
+        expected_path = os.path.join(MFS_EXECUTABLES_DIR, executable_name)
+        if os.path.isfile(expected_path):
+            logger.info("%s already present at: %s", executable_name, expected_path)
+            continue
+
+        logger.info("%s not found, downloading from %s...", executable_name, remote_url)
+        try:
+            data = _urlopen_with_ssl_fallback(remote_url)
+            with open(expected_path, "wb") as f:
+                f.write(data)
+            logger.info("Downloaded %s to: %s", executable_name, expected_path)
+        except Exception as e:
+            logger.warning("Could not download %s: %s", executable_name, e)
+
+    logger.info("Executable check complete.")
 
 
 ensure_executables()

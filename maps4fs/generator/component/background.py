@@ -457,6 +457,18 @@ class Background(MeshComponent, ImageComponent):
         cv2.imwrite(resized_texture_save_path, resized_texture_image)
         self.logger.debug("Resized background texture saved: %s", resized_texture_save_path)
 
+        dds_texture_save_path = os.path.join(
+            self.textured_mesh_directory,
+            "background_texture.dds",
+        )
+        texture_for_i3d = resized_texture_save_path
+        try:
+            self.convert_png_to_dds(resized_texture_save_path, dds_texture_save_path)
+            self.logger.debug("Background texture converted to DDS: %s", dds_texture_save_path)
+            texture_for_i3d = dds_texture_save_path
+        except Exception as e:
+            self.logger.warning("Could not convert background texture to DDS: %s", e)
+
         decimated_mesh = trimesh.load_mesh(decimated_background_mesh_path, force="mesh")
 
         if decimated_mesh is None:
@@ -473,7 +485,7 @@ class Background(MeshComponent, ImageComponent):
 
             self.assets.textured_background_mesh = obj_save_path
             self.assets.textured_background_mtl = mtl_save_path
-            self.assets.resized_background_texture = resized_texture_save_path
+            self.assets.resized_background_texture = texture_for_i3d
             self.logger.debug("Textured background mesh saved: %s", obj_save_path)
         except Exception as e:
             self.logger.error("Could not texture background mesh: %s", e)

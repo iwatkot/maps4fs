@@ -1,12 +1,14 @@
 """Base class for all components that primarily used to work with images."""
 
 import os
+import subprocess
 
 import cv2
 import numpy as np
 from PIL import Image, ImageFile
 
 from maps4fs.generator.component.base.component import Component
+from maps4fs.generator.config import get_texconv_executable_path
 from maps4fs.generator.settings import Parameters
 
 
@@ -241,7 +243,7 @@ class ImageComponent(Component):
 
     @staticmethod
     def convert_png_to_dds(input_png_path: str, output_dds_path: str):
-        """Convert a PNG file to DDS format using PIL
+        """Convert a PNG file to DDS format.
 
         Arguments:
             input_png_path (str): Path to input PNG file
@@ -254,6 +256,22 @@ class ImageComponent(Component):
         if not os.path.exists(input_png_path):
             raise FileNotFoundError(f"Input PNG file not found: {input_png_path}")
 
+        try:
+            ImageComponent.convert_png_to_dds_texconv(input_png_path, output_dds_path)
+        except Exception:
+            ImageComponent.convert_png_to_dds_pil(input_png_path, output_dds_path)
+
+    @staticmethod
+    def convert_png_to_dds_pil(input_png_path: str, output_dds_path: str):
+        """Convert a PNG file to DDS format using PIL
+
+        Arguments:
+            input_png_path (str): Path to input PNG file
+            output_dds_path (str): Path for output DDS file
+
+        Raises:
+            RuntimeError: If the DDS conversion fails.
+        """
         try:
             ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -270,3 +288,49 @@ class ImageComponent(Component):
                 img.save(output_dds_path, format="DDS")
         except Exception as e:
             raise RuntimeError(f"DDS conversion failed: {e}")
+
+    @staticmethod
+    def convert_png_to_dds_texconv(input_png_path: str, output_dds_path: str):
+        """Convert a PNG file to DDS format using texconv
+
+        Arguments:
+            input_png_path (str): Path to input PNG file
+            output_dds_path (str): Path for output DDS file
+
+        Raises:
+            RuntimeError: If the DDS conversion fails.
+        """
+        texconv_path = get_texconv_executable_path()
+        if texconv_path is None:
+            raise RuntimeError("texconv executable not found.")
+
+        output_dir = os.path.dirname(os.path.abspath(output_dds_path))
+        os.makedirs(output_dir, exist_ok=True)
+
+        cmd = [texconv_path, "-f", "BC1_UNORM", "-m", "1", "-y", "-o", output_dir, input_png_path]
+
+        # PyInstaller windowed apps have no console, so we must:
+        #   - set stdin=DEVNULL (parent stdin is None in windowed mode, child must not inherit it)
+        #   - use CREATE_NO_WINDOW so texconv doesn't try to open a console of its own
+        run_kwargs: dict = {
+            "stdin": subprocess.DEVNULL,
+            "capture_output": True,
+            "text": True,
+            "creationflags": subprocess.CREATE_NO_WINDOW,  # type: ignore[attr-defined]
+        }
+
+        result = subprocess.run(cmd, **run_kwargs)  # pylint: disable=subprocess-run-check
+
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"texconv failed (exit code {result.returncode}). "
+                f"stdout: {result.stdout.strip()} | stderr: {result.stderr.strip()}"
+            )
+
+        # texconv writes <stem>.dds into the output dir; rename if the caller wants a different name
+        produced = os.path.join(
+            output_dir,
+            os.path.splitext(os.path.basename(input_png_path))[0] + ".dds",
+        )
+        if os.path.abspath(produced) != os.path.abspath(output_dds_path):
+            os.replace(produced, output_dds_path)
