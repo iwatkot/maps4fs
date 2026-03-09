@@ -63,6 +63,13 @@ jobs:
           path: report.xml
           reporter: java-junit
 
+      - name: Test summary
+        uses: test-summary/action@v2
+        if: always()
+        with:
+          paths: report.xml
+          show: "all tests"
+
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
         with:

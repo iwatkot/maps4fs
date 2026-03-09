@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       checks: write
+      pull-requests: write
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -62,3 +63,17 @@ jobs:
           name: pytest results
           path: report.xml
           reporter: java-junit
+
+      - name: Test summary
+        uses: test-summary/action@v2
+        if: always()
+        with:
+          paths: report.xml
+          show: "all tests"
+
+      - name: Post PR comment with test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: report.xml
+          comment_title: "Test Results"
