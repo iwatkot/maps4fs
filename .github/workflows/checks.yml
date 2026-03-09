@@ -51,7 +51,15 @@ jobs:
         run: pylint maps4fs
 
       - name: Run pytest with coverage
-        run: pytest --cov=maps4fs --cov-report xml
+        run: pytest -v --cov=maps4fs --cov-report xml --junit-xml=report.xml
+
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: pytest results
+          path: report.xml
+          reporter: java-junit
 
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
