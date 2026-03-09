@@ -8,6 +8,8 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -51,7 +53,22 @@ jobs:
         run: pylint maps4fs
 
       - name: Run pytest with coverage
-        run: pytest --cov=maps4fs --cov-report xml
+        run: pytest -v --cov=maps4fs --cov-report xml --junit-xml=report.xml
+
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: pytest results
+          path: report.xml
+          reporter: java-junit
+
+      - name: Test summary
+        uses: test-summary/action@v2
+        if: always()
+        with:
+          paths: report.xml
+          show: "all"
 
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5

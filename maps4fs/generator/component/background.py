@@ -1432,6 +1432,9 @@ class Background(MeshComponent, ImageComponent):
         """Reads road mask images from the roads directory and saves bounding-box position
         data for each mask so the GE can position the road meshes correctly."""
         roads_directory = os.path.join(self.map_directory, "roads")
+        if not os.path.isdir(roads_directory):
+            self.logger.warning("Roads directory not found, skipping road mask processing.")
+            return
 
         # Get all files in directory ending with _mask.png
         mask_files = [f for f in os.listdir(roads_directory) if f.endswith("_mask.png")]
