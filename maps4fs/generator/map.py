@@ -274,6 +274,12 @@ class Map:
             finally:
                 self._save_metrics(session_id)
 
+        if self.i3d_settings.self_clear:
+            self.logger.info(
+                "Self-clear is enabled. Clearing map directory: %s", self.map_directory
+            )
+            self.self_clear(self.map_directory)
+
     def _save_metrics(self, session_id: str) -> None:
         """Save logs and performance metrics to JSON files.
 
@@ -459,3 +465,51 @@ class Map:
             except Exception as e:
                 self.logger.debug("Error removing map directory %s: %s", self.map_directory, e)
         return archive_path
+
+    @staticmethod
+    def self_clear(map_directory: str) -> None:
+        """Clear map directory.
+
+        Arguments:
+            map_directory (str): Path to the map directory.
+        """
+        optional_directories = [
+            "background",
+            "buildings",
+            "info_layers",
+            "positions",
+            "previews",
+            "satellite",
+            "scripts",
+            "water",
+            "roads",
+        ]
+
+        optional_files = [
+            "main_settings.json",
+            "generation_settings.json",
+            "texture_custom_schema.json",
+            "tree_custom_schema.json",
+            "buildings_custom_schema.json",
+            "generation_info.json",
+            "generation_logs.json",
+            "performance_report.json",
+            "custom_osm.osm",
+            "custom_dem.png",
+        ]
+
+        for directory in optional_directories:
+            dir_path = os.path.join(map_directory, directory)
+            if os.path.exists(dir_path):
+                try:
+                    shutil.rmtree(dir_path)
+                except Exception:
+                    pass
+
+        for file in optional_files:
+            file_path = os.path.join(map_directory, file)
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except Exception:
+                    pass
