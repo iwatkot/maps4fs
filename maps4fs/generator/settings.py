@@ -262,6 +262,8 @@ class I3DSettings(SettingsModel):
 
     license_plate_prefix: str = "M4S"
 
+    self_clear: bool = False
+
 
 class TextureSettings(SettingsModel):
     """Represents the advanced settings for texture component.

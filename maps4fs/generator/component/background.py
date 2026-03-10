@@ -780,6 +780,11 @@ class Background(MeshComponent, ImageComponent):
         preview_paths = self.dem_previews(self.game.dem_file_path(self.map_directory))
 
         background_dem_preview_path = os.path.join(self.previews_directory, "background_dem.png")
+
+        if not os.path.isfile(self.output_path):
+            self.logger.warning("DEM file not found for preview generation: %s", self.output_path)
+            return preview_paths
+
         background_dem_preview_image = cv2.imread(self.output_path, cv2.IMREAD_UNCHANGED)
 
         background_dem_preview_image = cv2.resize(
@@ -1016,7 +1021,7 @@ class Background(MeshComponent, ImageComponent):
                     polygon_points=polygon.exterior.coords,
                     angle=self.rotation,
                     canvas_size=self.background_size,
-                    xshift=-Parameters.BACKGROUND_DISTANCE,
+                    rotated_canvas_size=self.rotated_size,
                 )
                 fitted_polygon = shapely.Polygon(fitted_polygon_points)
                 fitted_polygons.append(fitted_polygon)
@@ -1068,7 +1073,7 @@ class Background(MeshComponent, ImageComponent):
                     linestring_points=points,  # type: ignore
                     angle=self.rotation,
                     canvas_size=self.background_size,
-                    xshift=-Parameters.BACKGROUND_DISTANCE,  # type: ignore
+                    rotated_canvas_size=self.rotated_size,
                 )
             except ValueError as e:
                 self.logger.debug(

@@ -386,6 +386,7 @@ class Component:
         canvas_size: int | None = None,
         xshift: int = 0,
         yshift: int = 0,
+        rotated_canvas_size: int | None = None,
     ) -> list[tuple[int, int]]:
         """Fits a polygon into the bounds of the map.
 
@@ -415,7 +416,17 @@ class Component:
         osm_object = object_type(polygon_points or linestring_points)
 
         if angle:
-            center_x = center_y = self.map_rotated_size * self.map.size_scale // 2
+            if rotated_canvas_size is not None:
+                # Caller supplied the size of the rotated input pixel space explicitly.
+                # Use its centre as the rotation origin and derive the translation to
+                # map that centre onto the output canvas centre.
+                center_x = center_y = rotated_canvas_size // 2
+                offset = limit // 2 - rotated_canvas_size // 2
+            else:
+                center_x = center_y = self.map_rotated_size * self.map.size_scale // 2
+                offset = (
+                    int((self.map_size / 2) - (self.map_rotated_size / 2)) * self.map.size_scale
+                )
             self.logger.debug(
                 "Rotating the osm_object by %s degrees with center at %sx%s",
                 angle,
@@ -423,7 +434,6 @@ class Component:
                 center_y,
             )
             osm_object = rotate(osm_object, -angle, origin=(center_x, center_y))
-            offset = int((self.map_size / 2) - (self.map_rotated_size / 2)) * self.map.size_scale
             xoff = yoff = offset
             xoff += xshift
             yoff += yshift
