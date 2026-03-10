@@ -783,7 +783,7 @@ class Background(MeshComponent, ImageComponent):
 
         if not os.path.isfile(self.output_path):
             self.logger.warning("DEM file not found for preview generation: %s", self.output_path)
-            return preview_paths
+            return []
 
         background_dem_preview_image = cv2.imread(self.output_path, cv2.IMREAD_UNCHANGED)
 
