@@ -42,15 +42,14 @@ class Config(XMLComponent, ImageComponent):
     def preprocess(self) -> None:
         """Gets the path to the map XML file and saves it to the instance variable."""
         self.info: dict[str, Any] = {}
-        self.xml_path = self.game.map_xml_path(self.map_directory)
+        self.xml_path = self.game.map_xml_path
         self.fog_parameters: dict[str, int] = {}
 
     def process(self) -> None:
         """Sets the map size in the map.xml file."""
         self._set_map_size()
 
-        if self.game.fog_processing:
-            self._adjust_fog()
+        self._adjust_fog()
 
         self._set_overview()
 
@@ -111,13 +110,7 @@ class Config(XMLComponent, ImageComponent):
     def _adjust_fog(self) -> None:
         """Adjusts the fog settings in the environment XML file based on the DEM and height scale."""
         self.logger.debug("Adjusting fog settings based on DEM and height scale...")
-        try:
-            environment_xml_path = self.game.get_environment_xml_path(self.map_directory)
-        except NotImplementedError:
-            self.logger.warning(
-                "Game does not support environment XML file, fog adjustment will not be applied."
-            )
-            return
+        environment_xml_path = self.game.environment_xml_path
 
         if not environment_xml_path or not os.path.isfile(environment_xml_path):
             self.logger.warning(
@@ -184,7 +177,7 @@ class Config(XMLComponent, ImageComponent):
                 is not found or cannot be read.
         """
         self.logger.debug("Reading DEM meter parameters...")
-        dem_path = self.game.dem_file_path(self.map_directory)
+        dem_path = self.game.dem_file_path
         if not dem_path or not os.path.isfile(dem_path):
             self.logger.warning("DEM file not found, fog adjustment will not be applied.")
             return None
@@ -222,13 +215,7 @@ class Config(XMLComponent, ImageComponent):
     @monitor_performance
     def _set_overview(self) -> None:
         """Generates and sets the overview image for the map."""
-        try:
-            overview_image_path = self.game.overview_file_path(self.map_directory)
-        except NotImplementedError:
-            self.logger.warning(
-                "Game does not support overview image file, overview generation will be skipped."
-            )
-            return
+        overview_image_path = self.game.overview_file_path
 
         satellite_component = self.map.get_satellite_component()
         if not satellite_component:
@@ -339,11 +326,7 @@ class Config(XMLComponent, ImageComponent):
     @monitor_performance
     def update_license_plates(self):
         """Updates license plates for the specified country."""
-        try:
-            license_plates_directory = self.game.license_plates_dir_path(self.map_directory)
-        except NotImplementedError:
-            self.logger.warning("Game does not support license plates processing.")
-            return
+        license_plates_directory = self.game.license_plates_dir_path
 
         country_name = get_country_by_coordinates(self.map.coordinates).lower()
         self.info["license_plate_country_name"] = country_name

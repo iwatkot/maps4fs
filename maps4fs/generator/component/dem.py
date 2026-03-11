@@ -8,7 +8,7 @@ import numpy as np
 from pydtmdl import DTMProvider
 
 from maps4fs.generator.component.base.component_image import ImageComponent
-from maps4fs.generator.constants import DTM_CACHE_DIR
+from maps4fs.generator.constants import Paths
 from maps4fs.generator.monitor import monitor_performance
 
 
@@ -28,7 +28,7 @@ class DEM(ImageComponent):
     """
 
     def preprocess(self) -> None:
-        self._dem_path = self.game.dem_file_path(self.map_directory)
+        self._dem_path = self.game.dem_file_path
 
         self.logger.debug("Map size: %s x %s.", self.map_size, self.map_size)
         self.logger.debug(
@@ -42,7 +42,7 @@ class DEM(ImageComponent):
             coordinates=self.coordinates,
             user_settings=self.map.dtm_provider_settings,
             size=self.map_rotated_size,
-            directory=DTM_CACHE_DIR,
+            directory=Paths.DTM_CACHE_DIR,
             logger=self.logger,
         )
 
@@ -86,11 +86,11 @@ class DEM(ImageComponent):
         """
         map_size = self.map_size if use_original else self.map_rotated_size
 
-        dem_size = int((map_size / 2) * self.game.dem_multipliyer)
+        dem_size = int((map_size / 2) * 2)
 
         self.logger.debug(
             "DEM size multiplier is %s, DEM size: %sx%s, use original: %s.",
-            self.game.dem_multipliyer,
+            2,
             dem_size,
             dem_size,
             use_original,

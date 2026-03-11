@@ -95,18 +95,10 @@ class GRLE(ImageComponent, XMLComponent):
         """Gets the path to the map I3D file from the game instance and saves it to the instance
         attribute. If the game does not support I3D files, the attribute is set to None."""
         self.preview_paths: dict[str, str] = {}
-        try:
-            self.xml_path = self.game.get_farmlands_xml_path(self.map_directory)
-        except NotImplementedError:
-            self.logger.warning("Farmlands XML file processing is not implemented for this game.")
-            self.xml_path = None
+        self.xml_path = self.game.farmlands_xml_path
 
     def _read_grle_schema(self) -> list[GRLELayer]:
-        try:
-            grle_schema_path = self.game.grle_schema
-        except ValueError:
-            self.logger.warning("GRLE schema processing is not implemented for this game.")
-            return []
+        grle_schema_path = self.game.grle_schema
 
         try:
             with open(grle_schema_path, "r", encoding="utf-8") as file:
@@ -141,9 +133,7 @@ class GRLE(ImageComponent, XMLComponent):
             return
 
         for info_layer in tqdm(grle_schema, desc="Preparing GRLE files", unit="layer"):
-            file_path = os.path.join(
-                self.game.weights_dir_path(self.map_directory), info_layer.name
-            )
+            file_path = os.path.join(self.game.weights_dir_path, info_layer.name)
 
             height = int(self.scaled_size * info_layer.height_multiplier)
             width = int(self.scaled_size * info_layer.width_multiplier)
@@ -162,11 +152,10 @@ class GRLE(ImageComponent, XMLComponent):
         self.grle_schema = grle_schema
 
         self._add_farmlands()
-        if self.game.plants_processing and self.map.grle_settings.add_grass:
+        if self.map.grle_settings.add_grass:
             self._add_plants()
-        if self.game.environment_processing:
-            self._process_environment()
-            self._process_indoor()
+        self._process_environment()
+        self._process_indoor()
 
     def get_info_layer_by_name(self, name: str) -> GRLELayer | None:
         """Returns the GRLELayer object for the given name.
@@ -239,9 +228,7 @@ class GRLE(ImageComponent, XMLComponent):
             self.logger.debug("Fields layer not found in the texture component.")
             return None
 
-        fields_layer_path = fields_layer.get_preview_or_path(
-            self.game.weights_dir_path(self.map_directory)
-        )
+        fields_layer_path = fields_layer.get_preview_or_path(self.game.weights_dir_path)
         if not fields_layer_path or not os.path.isfile(fields_layer_path):
             self.logger.debug("Fields layer not found in the texture component.")
             return None
@@ -273,7 +260,7 @@ class GRLE(ImageComponent, XMLComponent):
             )
             return
 
-        info_layer_farmlands_path = self.game.get_farmlands_path(self.map_directory)
+        info_layer_farmlands_path = self.game.farmlands_path
 
         self.logger.debug(
             "Adding farmlands to the InfoLayer PNG file: %s.", info_layer_farmlands_path
@@ -377,7 +364,7 @@ class GRLE(ImageComponent, XMLComponent):
             self.logger.warning("Grass layer not found in the texture component.")
             return
 
-        weights_directory = self.game.weights_dir_path(self.map_directory)
+        weights_directory = self.game.weights_dir_path
         grass_image_path = grass_layer.get_preview_or_path(weights_directory)
         self.logger.debug("Grass image path: %s.", grass_image_path)
 
@@ -394,7 +381,7 @@ class GRLE(ImageComponent, XMLComponent):
             self.logger.warning("Base image not found in %s.", grass_image_path)
             return
 
-        density_map_fruit_path = self.game.get_density_map_fruits_path(self.map_directory)
+        density_map_fruit_path = self.game.density_map_fruits_path
 
         self.logger.debug("Density map for fruits path: %s.", density_map_fruit_path)
 
@@ -588,7 +575,7 @@ class GRLE(ImageComponent, XMLComponent):
 
     @monitor_performance
     def _process_environment(self) -> None:
-        info_layer_environment_path = self.game.get_environment_path(self.map_directory)
+        info_layer_environment_path = self.game.environment_path
         if not info_layer_environment_path or not os.path.isfile(info_layer_environment_path):
             self.logger.warning(
                 "Environment InfoLayer PNG file not found in %s.", info_layer_environment_path
@@ -717,9 +704,7 @@ class GRLE(ImageComponent, XMLComponent):
         Returns:
             np.ndarray | None: The resized and dilated weight image, or None if the image could not be loaded.
         """
-        weight_image_path = layer.get_preview_or_path(
-            self.game.weights_dir_path(self.map_directory)
-        )
+        weight_image_path = layer.get_preview_or_path(self.game.weights_dir_path)
         self.logger.debug("Weight image path for area type layer: %s.", weight_image_path)
 
         if not weight_image_path or not os.path.isfile(weight_image_path):
@@ -757,7 +742,7 @@ class GRLE(ImageComponent, XMLComponent):
 
     def _process_indoor(self) -> None:
         """Processes the indoor layers."""
-        info_layer_indoor_path = self.game.get_indoor_mask_path(self.map_directory)
+        info_layer_indoor_path = self.game.indoor_mask_path
         if not info_layer_indoor_path or not os.path.isfile(info_layer_indoor_path):
             self.logger.warning(
                 "Indoor InfoLayer PNG file not found in %s.", info_layer_indoor_path

@@ -133,7 +133,7 @@ class XMLComponent(Component):
         """
         height_scale_element = self.get_element_from_tree(
             path=".//Scene/TerrainTransformGroup",
-            xml_path=self.game.i3d_file_path(self.map_directory),
+            xml_path=self.game.i3d_file_path,
         )
         if height_scale_element is None:
             raise ValueError("Height scale element not found in the I3D file.")

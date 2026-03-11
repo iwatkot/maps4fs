@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_xml import XMLComponent
-from maps4fs.generator.constants import get_map_bounds_file_paths
+from maps4fs.generator.constants import Paths
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
@@ -54,7 +54,7 @@ class I3d(XMLComponent, ImageComponent):
     def preprocess(self) -> None:
         """Gets the path to the map I3D file from the game instance and saves it to the instance
         attribute. If the game does not support I3D files, the attribute is set to None."""
-        self.xml_path = self.game.i3d_file_path(self.map_directory)
+        self.xml_path = self.game.i3d_file_path
 
         self.forest_info: dict[str, Any] = {}
         self.field_info: dict[str, Any] = {}
@@ -126,7 +126,7 @@ class I3d(XMLComponent, ImageComponent):
     @monitor_performance
     def _add_splines(self) -> None:
         """Adds splines to the map I3D file."""
-        splines_i3d_path = self.game.splines_file_path(self.map_directory)
+        splines_i3d_path = self.game.splines_file_path
         if not os.path.isfile(splines_i3d_path):
             self.logger.warning("Splines I3D file not found: %s.", splines_i3d_path)
             return
@@ -539,7 +539,7 @@ class I3d(XMLComponent, ImageComponent):
         tree_count = 0
 
         for forest_layer in forest_layers:
-            weights_directory = self.game.weights_dir_path(self.map_directory)
+            weights_directory = self.game.weights_dir_path
             forest_image_path = forest_layer.get_preview_or_path(weights_directory)
 
             if not forest_image_path or not os.path.isfile(forest_image_path):
@@ -1113,7 +1113,7 @@ class I3d(XMLComponent, ImageComponent):
     def insert_map_bounds(self) -> None:
         """Inserts the map bounds into the I3D file by copying the template map bounds files,
         updating their positions, and adding a reference to the main I3D file."""
-        filepaths = get_map_bounds_file_paths()
+        filepaths = Paths.get_map_bounds_file_paths()
         if not filepaths:
             self.logger.warning(
                 "Map bounds file paths could not be found. Skipping map bounds insertion."

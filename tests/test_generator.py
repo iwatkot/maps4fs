@@ -160,7 +160,7 @@ def test_map(
 
     # --- Texture weight files ---
     schema = load_texture_schema(game.texture_schema)
-    weights_dir = game.weights_dir_path(directory)
+    weights_dir = game.weights_dir_path
     for layer in schema:
         if layer.get("exclude_weight") or not layer.get("count"):
             continue
@@ -177,7 +177,7 @@ def test_map(
             assert img.dtype == np.uint8, f"Texture dtype mismatch: {img.dtype}"
 
     # --- DEM: exists, 16-bit grayscale, square, non-trivial ---
-    dem_path = game.dem_file_path(directory)
+    dem_path = game.dem_file_path
     assert os.path.isfile(dem_path), f"DEM not found: {dem_path}"
     dem = cv2.imread(dem_path, cv2.IMREAD_UNCHANGED)
     assert dem is not None, f"DEM unreadable: {dem_path}"
@@ -187,7 +187,7 @@ def test_map(
     assert dem.max() > 0, "DEM is all zeros — elevation data was not written"
 
     # --- I3D: parseable, TerrainTransformGroup present, heightScale > 0 ---
-    i3d_path = game.i3d_file_path(directory)
+    i3d_path = game.i3d_file_path
     assert os.path.isfile(i3d_path), f"map.i3d not found: {i3d_path}"
     i3d_tree = ET.parse(i3d_path)
     terrain = i3d_tree.getroot().find(".//Scene/TerrainTransformGroup")
@@ -198,9 +198,9 @@ def test_map(
 
     # --- GRLE info layer files ---
     grle_paths = [
-        game.get_farmlands_path(directory),
-        game.get_density_map_fruits_path(directory),
-        game.get_environment_path(directory),
+        game.farmlands_path,
+        game.density_map_fruits_path,
+        game.environment_path,
     ]
     for grle_path in grle_paths:
         assert os.path.isfile(grle_path), f"GRLE file not found: {grle_path}"
@@ -216,7 +216,7 @@ def test_map(
     assert not missing, f"generation_info.json missing component keys: {missing}"
 
     # --- overview.dds: required for FS25 in-game minimap ---
-    overview_path = game.overview_file_path(directory)
+    overview_path = game.overview_file_path
     assert os.path.isfile(overview_path), f"overview.dds not found: {overview_path}"
 
 
@@ -311,7 +311,7 @@ def test_dem_plateau_lifts_floor():
     for _ in mp.generate():
         pass
 
-    dem = cv2.imread(game.dem_file_path(directory), cv2.IMREAD_UNCHANGED)
+    dem = cv2.imread(game.dem_file_path, cv2.IMREAD_UNCHANGED)
     assert dem is not None
     assert dem.min() > 0, f"DEM min={dem.min()}: plateau did not lift the terrain floor"
 
@@ -337,7 +337,7 @@ def test_dem_minimum_height_scale_respected():
     for _ in mp.generate():
         pass
 
-    i3d_tree = ET.parse(game.i3d_file_path(directory))
+    i3d_tree = ET.parse(game.i3d_file_path)
     terrain = i3d_tree.getroot().find(".//Scene/TerrainTransformGroup")
     assert terrain is not None
     height_scale = int(float(terrain.get("heightScale", "0")))
@@ -401,7 +401,7 @@ def test_grle_base_price_written_to_farmlands_xml():
     for _ in mp.generate():
         pass
 
-    farmlands_xml = game.get_farmlands_xml_path(directory)
+    farmlands_xml = game.farmlands_xml_path
     assert os.path.isfile(farmlands_xml), f"farmlands.xml not found: {farmlands_xml}"
     root = ET.parse(farmlands_xml).getroot()
     farmlands_node = root.find("farmlands")

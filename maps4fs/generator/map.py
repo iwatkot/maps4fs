@@ -12,17 +12,15 @@ from pydtmdl import DTMProvider
 from pydtmdl.base.dtm import DTMProviderSettings
 
 from maps4fs.generator.component import Background, Component, Layer, Satellite, Texture
-from maps4fs.generator.constants import MFS_DATA_DIR
+from maps4fs.generator.constants import Paths
 from maps4fs.generator.context import MapContext
 from maps4fs.generator.game import Game
 from maps4fs.generator.monitor import Logger, PerformanceMonitor, performance_session
 from maps4fs.generator.osm import check_and_fix_osm
 from maps4fs.generator.settings import GenerationSettings, MainSettings
-from maps4fs.generator.statistics import (
-    send_advanced_settings,
-    send_main_settings,
-    send_performance_report,
-)
+from maps4fs.generator.statistics import StatisticsClient
+
+_stats = StatisticsClient()
 
 
 class Map:
@@ -59,6 +57,7 @@ class Map:
         self.map_directory = map_directory or self.suggest_map_directory(
             coordinates=coordinates, game_code=game.code  # type: ignore
         )
+        game.set_map_directory(self.map_directory)
         self.rotation = rotation
         self.kwargs = kwargs
         # endregion
@@ -191,7 +190,7 @@ class Map:
         Returns:
             str: Map directory path.
         """
-        return os.path.join(MFS_DATA_DIR, Map.suggest_directory_name(coordinates, game_code))
+        return os.path.join(Paths.DATA_DIR, Map.suggest_directory_name(coordinates, game_code))
 
     @staticmethod
     def suggest_directory_name(coordinates: tuple[float, float], game_code: str) -> str:
@@ -325,7 +324,7 @@ class Map:
                     os.path.join(self.map_directory, report_filename), "w", encoding="utf-8"
                 ) as file:
                     json.dump(session_json, file, indent=4)
-                send_performance_report(session_json)
+                _stats.send_performance_report(session_json)
         except Exception as e:
             self.logger.error("Error saving performance report to JSON: %s", e)
 
@@ -341,8 +340,8 @@ class Map:
             # Ensure we preserve the is_public flag and other kwargs
             final_main_settings["is_public"] = self.kwargs.get("is_public", False)
 
-            send_main_settings(final_main_settings)
-            send_advanced_settings(self.generation_settings_json)
+            _stats.send_main_settings(final_main_settings)
+            _stats.send_advanced_settings(self.generation_settings_json)
             self.logger.info("Statistics sent successfully after generation.")
         except Exception as e:
             self.logger.warning("Error sending statistics after generation: %s", e)

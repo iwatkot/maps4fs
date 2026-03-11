@@ -8,7 +8,7 @@ from typing import NamedTuple
 from pygmdl import save_image
 
 from maps4fs.generator.component.base.component_image import ImageComponent
-from maps4fs.generator.constants import SAT_CACHE_DIR, TQDM_DISABLE
+from maps4fs.generator.constants import Paths
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
@@ -88,8 +88,8 @@ class Satellite(ImageComponent):
                     zoom=task.zoom,
                     from_center=True,
                     logger=self.logger,
-                    tiles_dir=SAT_CACHE_DIR,
-                    show_progress=not TQDM_DISABLE,
+                    tiles_dir=Paths.SAT_CACHE_DIR,
+                    show_progress=not Paths.TQDM_DISABLE,
                 )
 
             except Exception as e:

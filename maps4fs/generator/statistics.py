@@ -70,28 +70,3 @@ class StatisticsClient:
 
     def send_performance_report(self, data: dict[str, Any]) -> None:
         self._post(f"{self._host}/receive_performance_report", data)
-
-
-# Module-level singleton + backward-compatible shim functions
-_client = StatisticsClient()
-
-
-def post(endpoint: str, data: dict[str, Any]) -> None:
-    """Backward-compatible shim. Prefer StatisticsClient._post() directly."""
-    _client._post(endpoint, data)
-
-
-def send_main_settings(data: dict[str, Any]) -> None:
-    _client.send_main_settings(data)
-
-
-def send_advanced_settings(data: dict[str, Any]) -> None:
-    _client.send_advanced_settings(data)
-
-
-def send_survey(data: dict[str, Any]) -> None:
-    _client.send_survey(data)
-
-
-def send_performance_report(data: dict[str, Any]) -> None:
-    _client.send_performance_report(data)

@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image, ImageFile
 
 from maps4fs.generator.component.base.component import Component
-from maps4fs.generator.constants import get_texconv_executable_path
+from maps4fs.generator.constants import Paths
 from maps4fs.generator.settings import Parameters
 
 
@@ -300,7 +300,7 @@ class ImageComponent(Component):
         Raises:
             RuntimeError: If the DDS conversion fails.
         """
-        texconv_path = get_texconv_executable_path()
+        texconv_path = Paths.get_texconv_executable_path()
         if texconv_path is None:
             raise RuntimeError("texconv executable not found.")
 

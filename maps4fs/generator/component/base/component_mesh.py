@@ -15,7 +15,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from maps4fs.generator.component.base.component import Component
-from maps4fs.generator.constants import get_i3d_executable_path
+from maps4fs.generator.constants import Paths
 from maps4fs.generator.settings import Parameters
 
 
@@ -507,7 +507,7 @@ class MeshComponent(Component):
         Raises:
             RuntimeError: If the converter executable is not found or returns a non-zero exit code.
         """
-        converter_path = get_i3d_executable_path()
+        converter_path = Paths.get_i3d_executable_path()
         if converter_path is None:
             raise RuntimeError(
                 "i3d_converter executable not found. Cannot convert to binary i3d format."

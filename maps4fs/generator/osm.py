@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import shutil
 from xml.etree import ElementTree as ET
@@ -10,9 +9,18 @@ from xml.etree import ElementTree as ET
 import osmnx as ox
 from osmnx._errors import InsufficientResponseError
 
+# Representative tags — if the file is fundamentally broken it will fail on any of these.
+_CHECK_TAGS = [
+    {"highway": True},
+    {"building": True},
+    {"landuse": True},
+    {"natural": True},
+    {"waterway": True},
+]
+
 
 def check_osm_file(file_path: str) -> bool:
-    """Try to parse the OSM file with OSMnx using all texture schema tag combinations.
+    """Try to parse the OSM file with OSMnx using representative tag queries.
 
     Arguments:
         file_path (str): Path to the OSM file.
@@ -20,14 +28,7 @@ def check_osm_file(file_path: str) -> bool:
     Returns:
         bool: True if the file is valid, False otherwise.
     """
-    from maps4fs.generator.game import FS25
-
-    with open(FS25().texture_schema, encoding="utf-8") as f:
-        schema = json.load(f)
-
-    tags = [element["tags"] for element in schema if element.get("tags")]
-
-    for tag in tags:
+    for tag in _CHECK_TAGS:
         try:
             ox.features_from_xml(file_path, tags=tag)
         except InsufficientResponseError:

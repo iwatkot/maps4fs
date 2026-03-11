@@ -137,28 +137,16 @@ class Background(MeshComponent, ImageComponent):
 
         if self.map.background_settings.generate_background:
             self.generate_obj_files()
-            if self.game.mesh_processing:
-                self.logger.debug("Mesh processing is enabled, will decimate, texture and convert.")
-                self.decimate_background_mesh()
-                self.texture_background_mesh()
-                background_conversion_result = self.convert_background_mesh_to_i3d()
-                if background_conversion_result:
-                    self.add_note_file(asset="background")
-            else:
-                self.logger.warning(
-                    "Mesh processing is disabled for the game, skipping background mesh processing."
-                )
+            self.decimate_background_mesh()
+            self.texture_background_mesh()
+            background_conversion_result = self.convert_background_mesh_to_i3d()
+            if background_conversion_result:
+                self.add_note_file(asset="background")
         if self.map.background_settings.generate_water:
             self.generate_water_resources_obj()
-            if self.game.mesh_processing:
-                self.logger.debug("Mesh processing is enabled, will convert water mesh to i3d.")
-                water_conversion_result = self.convert_water_mesh_to_i3d()
-                if water_conversion_result:
-                    self.add_note_file(asset="water")
-            else:
-                self.logger.warning(
-                    "Mesh processing is disabled for the game, skipping water mesh processing."
-                )
+            water_conversion_result = self.convert_water_mesh_to_i3d()
+            if water_conversion_result:
+                self.add_note_file(asset="water")
 
         self.process_road_masks()
 
@@ -676,7 +664,7 @@ class Background(MeshComponent, ImageComponent):
 
         output_size = self.map_dem_size()
 
-        main_dem_path = self.game.dem_file_path(self.map_directory)
+        main_dem_path = self.game.dem_file_path
 
         try:
             os.remove(main_dem_path)
@@ -766,7 +754,7 @@ class Background(MeshComponent, ImageComponent):
         Returns:
             list[str] -- A list of paths to the previews.
         """
-        preview_paths = self.dem_previews(self.game.dem_file_path(self.map_directory))
+        preview_paths = self.dem_previews(self.game.dem_file_path)
 
         background_dem_preview_path = os.path.join(self.previews_directory, "background_dem.png")
 
@@ -894,7 +882,7 @@ class Background(MeshComponent, ImageComponent):
         self.background_texture.process()
 
         processed_layers = self.background_texture.get_background_layers()
-        weights_directory = self.game.weights_dir_path(self.map_directory)
+        weights_directory = self.game.weights_dir_path
         background_paths = [layer.path(weights_directory) for layer in processed_layers]
         self.logger.debug("Found %s background textures.", len(background_paths))
 
@@ -1415,7 +1403,7 @@ class Background(MeshComponent, ImageComponent):
             dem_image[road_y, road_x] = interpolated_elevations
             full_mask[road_y, road_x] = 255
 
-        main_dem_path = self.game.dem_file_path(self.map_directory)
+        main_dem_path = self.game.dem_file_path
         dem_image = self.blur_by_mask(dem_image, full_mask, blur_radius=5)
         dem_image = self.blur_edges_by_mask(dem_image, full_mask)
 

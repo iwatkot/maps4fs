@@ -360,7 +360,7 @@ class Building(XMLComponent, ImageComponent):
             "Buildings schema loaded successfully with %d objects.", len(self.buildings_schema)
         )
 
-        self.xml_path = self.game.i3d_file_path(self.map_directory)
+        self.xml_path = self.game.i3d_file_path
 
         buildings_directory = os.path.join(self.map.map_directory, "buildings")
         self.buildings_map_path = os.path.join(buildings_directory, "building_categories.png")
@@ -391,7 +391,7 @@ class Building(XMLComponent, ImageComponent):
                 )
                 continue
 
-            layer_path = layer.path(self.game.weights_dir_path(self.map.map_directory))
+            layer_path = layer.path(self.game.weights_dir_path)
             if not layer_path or not os.path.isfile(layer_path):
                 self.logger.warning("Layer texture file not found: %s. Skipping.", layer_path)
                 continue

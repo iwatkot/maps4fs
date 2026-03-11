@@ -40,7 +40,7 @@ class Texture(ImageComponent):
         """Preprocesses the data before the generation."""
         self.read_layers(self.get_schema())
 
-        self._weights_dir = self.game.weights_dir_path(self.map_directory)
+        self._weights_dir = self.game.weights_dir_path
         self.procedural_dir = os.path.join(self._weights_dir, "masks")
         os.makedirs(self.procedural_dir, exist_ok=True)
 
@@ -190,7 +190,7 @@ class Texture(ImageComponent):
             self.scale_textures()
 
         self.add_borders()
-        if self.map.texture_settings.dissolve and self.game.dissolve:
+        if self.map.texture_settings.dissolve:
             self.dissolve()
         self.copy_procedural()
 

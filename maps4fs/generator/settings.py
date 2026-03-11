@@ -7,7 +7,9 @@ from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
 from pydantic import BaseModel, ConfigDict
 
-from maps4fs.generator.bootstrap import PACKAGE_VERSION
+from maps4fs.generator.bootstrap import Bootstrap
+
+PACKAGE_VERSION = Bootstrap.package_version()
 
 if TYPE_CHECKING:
     from maps4fs.generator.map import Map
