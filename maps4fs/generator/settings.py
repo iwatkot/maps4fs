@@ -231,7 +231,7 @@ class GRLESettings(SettingsModel):
     base_price: int = 60000
     price_scale: int = 100
     add_grass: bool = True
-    base_grass: tuple | str = ("smallDenseMix", "meadow")
+    base_grass: str = "smallDenseMix"
     random_plants: bool = True
     fill_empty_farmlands: bool = True
 
@@ -395,26 +395,7 @@ class MainSettings(NamedTuple):
         Returns:
             dict[str, str | float | int | bool | None]: JSON representation of the MainSettings.
         """
-        return {
-            "game": self.game,
-            "latitude": self.latitude,
-            "longitude": self.longitude,
-            "country": self.country,
-            "size": self.size,
-            "output_size": self.output_size,
-            "rotation": self.rotation,
-            "dtm_provider": self.dtm_provider,
-            "custom_osm": self.custom_osm,
-            "custom_dem": self.custom_dem,
-            "is_public": self.is_public,
-            "date": self.date,
-            "time": self.time,
-            "version": self.version,
-            "completed": self.completed,
-            "error": self.error,
-            "origin": self.origin,
-            "platform": self.platform,
-        }
+        return self._asdict()
 
     @classmethod
     def from_map(cls, map: Map) -> MainSettings:
@@ -426,7 +407,7 @@ class MainSettings(NamedTuple):
         Returns:
             MainSettings: Instance of MainSettings.
         """
-        from maps4fs.generator.utils import get_country_by_coordinates
+        from maps4fs.generator.geo import get_country_by_coordinates
 
         return cls(
             game=map.game.code,  # type: ignore

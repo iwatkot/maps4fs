@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from maps4fs.generator.component.i3d import I3d
 from maps4fs.generator.settings import Parameters
-from maps4fs.generator.utils import get_region_by_coordinates
+from maps4fs.generator.geo import get_region_by_coordinates
 
 BUILDINGS_STARTING_NODE_ID = 10000
 DEFAULT_HEIGHT = 200

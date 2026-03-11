@@ -262,8 +262,6 @@ class Background(MeshComponent, ImageComponent):
             dict[str, str, float | int] -- A dictionary with information about the background
                 terrain.
         """
-        self.qgis_sequence()
-
         north, south, east, west = self.dem.bbox
         epsg3857_string = self.dem.get_epsg3857_string()
         epsg3857_string_with_margin = self.dem.get_epsg3857_string(add_margin=True)
@@ -285,15 +283,6 @@ class Background(MeshComponent, ImageComponent):
         data["DEM"] = dem_info_sequence
         data["Mesh"] = self.mesh_info
         return data  # type: ignore
-
-    def qgis_sequence(self) -> None:
-        """Generates QGIS scripts for creating bounding box layers and rasterizing them."""
-        qgis_layer = (f"Background_{Parameters.FULL}", *self.dem.get_espg3857_bbox())
-        qgis_layer_with_margin = (
-            f"Background_{Parameters.FULL}_margin",
-            *self.dem.get_espg3857_bbox(add_margin=True),
-        )
-        self.create_qgis_scripts([qgis_layer, qgis_layer_with_margin])
 
     @monitor_performance
     def generate_obj_files(self) -> None:

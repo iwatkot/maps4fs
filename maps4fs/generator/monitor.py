@@ -37,7 +37,7 @@ class Logger(logging.Logger):
         if log_level not in SUPPORTED_LOG_LEVELS.values():
             log_level = "INFO"
         super().__init__(name)
-        self.setLevel(level)
+        self.setLevel(log_level)
 
         # Standard stdout handler
         self.stdout_handler = logging.StreamHandler(sys.stdout)

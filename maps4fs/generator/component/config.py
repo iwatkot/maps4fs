@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 
 import maps4fs.generator.utils as mfsutils
+from maps4fs.generator.geo import get_country_by_coordinates
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_xml import XMLComponent
 from maps4fs.generator.monitor import monitor_performance
@@ -89,8 +90,6 @@ class Config(XMLComponent, ImageComponent):
         epsg3857_string = self.get_epsg3857_string(bbox=bbox)
         epsg3857_string_with_margin = self.get_epsg3857_string(bbox=bbox, add_margin=True)
 
-        self.qgis_sequence()
-
         overview_data = {
             "epsg3857_string": epsg3857_string,
             "epsg3857_string_with_margin": epsg3857_string_with_margin,
@@ -111,19 +110,6 @@ class Config(XMLComponent, ImageComponent):
         data.update(self.info)
 
         return data  # type: ignore
-
-    def qgis_sequence(self) -> None:
-        """Generates QGIS scripts for creating bounding box layers and rasterizing them."""
-        bbox = self.get_bbox(distance=self.map_size)
-        espg3857_bbox = self.get_espg3857_bbox(bbox=bbox)
-        espg3857_bbox_with_margin = self.get_espg3857_bbox(bbox=bbox, add_margin=True)
-
-        qgis_layers = [("Overview_bbox", *espg3857_bbox)]
-        qgis_layers_with_margin = [("Overview_bbox_with_margin", *espg3857_bbox_with_margin)]
-
-        layers = qgis_layers + qgis_layers_with_margin
-
-        self.create_qgis_scripts(layers)
 
     @monitor_performance
     def _adjust_fog(self) -> None:
@@ -363,7 +349,7 @@ class Config(XMLComponent, ImageComponent):
             self.logger.warning("Game does not support license plates processing.")
             return
 
-        country_name = mfsutils.get_country_by_coordinates(self.map.coordinates).lower()
+        country_name = get_country_by_coordinates(self.map.coordinates).lower()
         self.info["license_plate_country_name"] = country_name
         if country_name not in self.supported_countries:
             self.logger.warning(

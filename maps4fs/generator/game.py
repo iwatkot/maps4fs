@@ -403,50 +403,6 @@ class Game:
         ]
 
 
-class FS22(Game):
-    """Class used to define the game version FS22."""
-
-    code = "FS22"
-    _map_template_file = "fs22-map-template.zip"
-    _texture_schema_file = "fs22-texture-schema.json"
-    _i3d_processing = False
-    _environment_processing = False
-    _fog_processing = False
-    _plants_processing = False
-    _dissolve = False
-    _mesh_processing = False
-
-    def dem_file_path(self, map_directory: str) -> str:
-        """Returns the path to the DEM file.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the DEM file."""
-        return os.path.join(map_directory, "maps", "map", "data", "map_dem.png")
-
-    def weights_dir_path(self, map_directory: str) -> str:
-        """Returns the path to the weights directory.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the weights directory."""
-        return os.path.join(map_directory, "maps", "map", "data")
-
-    def i3d_file_path(self, map_directory: str) -> str:
-        """Returns the path to the i3d file.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the i3d file."""
-        return os.path.join(map_directory, "maps", "map", "map.i3d")
-
-
 class FS25(Game):
     """Class used to define the game version FS25."""
 

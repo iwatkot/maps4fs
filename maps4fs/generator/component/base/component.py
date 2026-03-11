@@ -14,7 +14,6 @@ from pyproj import Transformer
 from shapely.affinity import rotate, translate
 from shapely.geometry import LineString, Polygon, box
 
-from maps4fs.generator.qgis import save_scripts
 
 if TYPE_CHECKING:
     from maps4fs.generator.game import Game
@@ -95,7 +94,6 @@ class Component:
         )
 
         os.makedirs(self.previews_directory, exist_ok=True)
-        os.makedirs(self.scripts_directory, exist_ok=True)
         os.makedirs(self.info_layers_directory, exist_ok=True)
         os.makedirs(self.satellite_directory, exist_ok=True)
 
@@ -142,15 +140,6 @@ class Component:
             str: The directory where the info layers are stored.
         """
         return os.path.join(self.map_directory, "info_layers")
-
-    @property
-    def scripts_directory(self) -> str:
-        """The directory where the scripts are stored.
-
-        Returns:
-            str: The directory where the scripts are stored.
-        """
-        return os.path.join(self.map_directory, "scripts")
 
     @property
     def satellite_directory(self) -> str:
@@ -314,21 +303,6 @@ class Component:
         """
         north, south, east, west = self.get_espg3857_bbox(bbox, add_margin=add_margin)
         return f"{north},{south},{east},{west} [EPSG:3857]"
-
-    def create_qgis_scripts(
-        self, qgis_layers: list[tuple[str, float, float, float, float]]
-    ) -> None:
-        """Creates QGIS scripts from the given layers.
-        Each layer is a tuple where the first element is a name of the layer and the rest are the
-        bounding box coordinates in EPSG:3857.
-        For filenames, the class name is used as a prefix.
-
-        Arguments:
-            qgis_layers (list[tuple[str, float, float, float, float]]): The list of layers to
-                create scripts for.
-        """
-        class_name = self.__class__.__name__.lower()
-        save_scripts(qgis_layers, class_name, self.scripts_directory)
 
     def get_polygon_center(self, polygon_points: list[tuple[int, int]]) -> tuple[int, int]:
         """Calculates the center of a polygon defined by a list of points.
