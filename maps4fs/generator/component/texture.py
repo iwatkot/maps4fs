@@ -511,7 +511,7 @@ class Texture(ImageComponent):
             cv2.imwrite(layer_path, output_image)
             self.logger.debug("Texture %s saved.", layer_path)
 
-        # Save info layer data.
+        # Save info layer data to JSON (debug/backward-compat) AND to map.context.
         if os.path.isfile(self.info_layer_path):
             self.logger.debug(
                 "File %s already exists, will update to avoid overwriting.", self.info_layer_path
@@ -522,6 +522,35 @@ class Texture(ImageComponent):
         with open(self.info_layer_path, "w", encoding="utf-8") as f:
             json.dump(info_layer_data, f, ensure_ascii=False, indent=4)
             self.logger.debug("Info layer data saved to %s.", self.info_layer_path)
+
+        # Populate map.context so later components can skip disk reads.
+        # The background Texture instance writes to background.json and must not
+        # overwrite the main texture's data on the context.
+        ctx = self.map.context
+        if os.path.basename(self.info_layer_path) == "textures.json":
+            ctx.fields = info_layer_data.get("fields", [])  # type: ignore[assignment]
+            ctx.buildings = info_layer_data.get("buildings", [])  # type: ignore[assignment]
+            ctx.farmyards = info_layer_data.get("farmyards", [])  # type: ignore[assignment]
+            ctx.forest = info_layer_data.get("forest", [])  # type: ignore[assignment]
+            ctx.water = info_layer_data.get("water", [])  # type: ignore[assignment]
+            ctx.roads_polylines = info_layer_data.get("roads_polylines", [])  # type: ignore[assignment]
+            ctx.water_polylines = info_layer_data.get("water_polylines", [])  # type: ignore[assignment]
+            self.logger.debug(
+                "Map context populated: %d fields, %d buildings, %d roads, %d water polylines.",
+                len(ctx.fields),
+                len(ctx.buildings),
+                len(ctx.roads_polylines),
+                len(ctx.water_polylines),
+            )
+        else:
+            # Background texture: populate background-specific context fields.
+            ctx.background_water = info_layer_data.get("water", [])  # type: ignore[assignment]
+            ctx.background_water_polylines = info_layer_data.get("water_polylines", [])  # type: ignore[assignment]
+            self.logger.debug(
+                "Background context populated: %d water polygons, %d water polylines.",
+                len(ctx.background_water),
+                len(ctx.background_water_polylines),
+            )
 
         if cumulative_image is not None:
             self.draw_base_layer(cumulative_image)

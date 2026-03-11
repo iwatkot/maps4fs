@@ -9,9 +9,10 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-from maps4fs.generator.component.i3d import I3d
-from maps4fs.generator.settings import Parameters
+from maps4fs.generator.component.base.component_image import ImageComponent
+from maps4fs.generator.component.base.component_xml import XMLComponent
 from maps4fs.generator.geo import get_region_by_coordinates
+from maps4fs.generator.settings import Parameters
 
 BUILDINGS_STARTING_NODE_ID = 10000
 DEFAULT_HEIGHT = 200
@@ -304,7 +305,7 @@ def pixel_value_to_building_category_type(pixel_value: int) -> str:
     return PIXEL_TYPES.get(pixel_value, "residential")
 
 
-class Building(I3d):
+class Building(XMLComponent, ImageComponent):
     """Component for map buildings processing and generation.
 
     Arguments:

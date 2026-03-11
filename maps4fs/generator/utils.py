@@ -11,8 +11,15 @@ from datetime import datetime
 from typing import Any
 
 # Re-export for backward compatibility
-from maps4fs.generator.geo import get_country_by_coordinates, get_region_by_coordinates  # noqa: F401
-from maps4fs.generator.osm import check_and_fix_osm, check_osm_file, fix_osm_file  # noqa: F401
+from maps4fs.generator.geo import (  # noqa: F401
+    get_country_by_coordinates,
+    get_region_by_coordinates,
+)
+from maps4fs.generator.osm import (  # noqa: F401
+    check_and_fix_osm,
+    check_osm_file,
+    fix_osm_file,
+)
 
 
 def get_timestamp() -> str:

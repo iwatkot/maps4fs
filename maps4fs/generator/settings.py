@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
@@ -71,98 +70,12 @@ class Parameters:
     TAGS = "tags"
 
 
-class SharedSettings(BaseModel):
-    """Represents the shared settings for all components."""
-
-    mesh_z_scaling_factor: float | None = None
-    height_scale_multiplier: float | None = None
-    height_scale_value: float | None = None
-    change_height_scale: bool = False
-
-    model_config = ConfigDict(
-        frozen=False,
-    )
-
-
 class SettingsModel(BaseModel):
     """Base class for settings models. It provides methods to convert settings to and from JSON."""
 
     model_config = ConfigDict(
         frozen=False,
     )
-
-    @classmethod
-    def all_settings_to_json(cls) -> dict[str, dict[str, Any]]:
-        """Get all settings of the current class and its subclasses as a dictionary.
-
-        Returns:
-            dict[str, dict[str, Any]]: Dictionary with settings of the current class and its
-                subclasses.
-        """
-        all_settings = {}
-        for subclass in cls.__subclasses__():
-            all_settings[subclass.__name__] = subclass().model_dump()
-
-        return all_settings
-
-    @classmethod
-    def all_settings_from_json(
-        cls, data: dict, flattening: bool = True, from_snake: bool = False, safe: bool = False
-    ) -> dict[str, SettingsModel]:
-        """Create settings instances from JSON data.
-
-        Arguments:
-            data (dict): JSON data.
-            flattening (bool): if set to True will flattet iterables to use the first element
-                of it.
-            from_snake (bool): if set to True will convert snake_case keys to camelCase.
-
-        Returns:
-            dict[str, Type[SettingsModel]]: Dictionary with settings instances.
-        """
-        settings = {}
-        for subclass in cls.__subclasses__():
-            if from_snake:
-                subclass_key = subclass.__name__.replace("Settings", "_settings").lower()
-            else:
-                subclass_key = subclass.__name__
-
-            subclass_data = data.get(subclass_key, {}) if safe else data[subclass_key]
-            if flattening:
-                for key, value in subclass_data.items():
-                    if isinstance(value, (list, tuple)):
-                        subclass_data[key] = value[0]
-
-            settings[cls.camel_to_snake(subclass.__name__)] = subclass(**subclass_data)
-
-        return settings
-
-    @staticmethod
-    def camel_to_snake(camel_string: str) -> str:
-        """Convert a camel case string to snake case.
-
-        Arguments:
-            camel_string (str): Camel case string.
-
-        Returns:
-            str: Snake case string.
-        """
-        splitted = re.split(r"(Settings)", camel_string)
-        joined = "_".join(part.lower() for part in splitted if part)
-        return joined
-
-    @classmethod
-    def all_settings(cls) -> list[SettingsModel]:
-        """Get all settings of the current class and its subclasses.
-
-        Returns:
-            list[SettingsModel]: List with settings of the current class and its subclasses.
-        """
-        settings = []
-        for subclass in cls.__subclasses__():
-            settings.append(subclass())
-
-        return settings
 
 
 class DEMSettings(SettingsModel):
@@ -349,10 +262,22 @@ class GenerationSettings(BaseModel):
         Returns:
             GenerationSettings: Instance of GenerationSettings.
         """
-        all_settings = SettingsModel.all_settings_from_json(
-            data, flattening=False, from_snake=from_snake, safe=safe
+
+        def _get(cls_name: str, snake_name: str) -> dict:
+            key = snake_name if from_snake else cls_name
+            return data.get(key, {}) if safe else data[key]
+
+        return cls(
+            dem_settings=DEMSettings(**_get("DEMSettings", "dem_settings")),
+            background_settings=BackgroundSettings(
+                **_get("BackgroundSettings", "background_settings")
+            ),
+            grle_settings=GRLESettings(**_get("GRLESettings", "grle_settings")),
+            i3d_settings=I3DSettings(**_get("I3DSettings", "i3d_settings")),
+            texture_settings=TextureSettings(**_get("TextureSettings", "texture_settings")),
+            satellite_settings=SatelliteSettings(**_get("SatelliteSettings", "satellite_settings")),
+            building_settings=BuildingSettings(**_get("BuildingSettings", "building_settings")),
         )
-        return cls(**all_settings)  # type: ignore
 
 
 class MainSettings(NamedTuple):

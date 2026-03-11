@@ -16,13 +16,12 @@ from maps4fs.generator.component.base.component_mesh import (
     LineSurfaceEntry,
     MeshComponent,
 )
-from maps4fs.generator.component.i3d import I3d
 from maps4fs.generator.settings import Parameters
 
 PATCH_Z_OFFSET = -0.001
 
 
-class Road(I3d, MeshComponent):
+class Road(MeshComponent):
     """Component for map roads processing and generation.
 
     Arguments:

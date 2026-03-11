@@ -14,9 +14,10 @@ from pydtmdl.base.dtm import DTMProviderSettings
 import maps4fs.generator.config as mfscfg
 import maps4fs.generator.utils as mfsutils
 from maps4fs.generator.component import Background, Component, Layer, Satellite, Texture
+from maps4fs.generator.context import MapContext
 from maps4fs.generator.game import Game
 from maps4fs.generator.monitor import Logger, PerformanceMonitor, performance_session
-from maps4fs.generator.settings import GenerationSettings, MainSettings, SharedSettings
+from maps4fs.generator.settings import GenerationSettings, MainSettings
 from maps4fs.generator.statistics import (
     send_advanced_settings,
     send_main_settings,
@@ -156,8 +157,13 @@ class Map:
         self.assets_directory = os.path.join(self.map_directory, "assets")
         os.makedirs(self.assets_directory, exist_ok=True)
 
-        self.shared_settings = SharedSettings()
+        self.context = MapContext()
         self.components: list[Component] = []
+
+    @property
+    def shared_settings(self) -> MapContext:
+        """Backward-compatible alias for map.context (used by DEM, I3d, component.py)."""
+        return self.context
 
     def process_settings(self) -> None:
         """Checks the settings by predefined rules and updates them accordingly."""

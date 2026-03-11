@@ -9,9 +9,9 @@ import cv2
 import numpy as np
 
 import maps4fs.generator.utils as mfsutils
-from maps4fs.generator.geo import get_country_by_coordinates
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_xml import XMLComponent
+from maps4fs.generator.geo import get_country_by_coordinates
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 

@@ -14,7 +14,6 @@ from pyproj import Transformer
 from shapely.affinity import rotate, translate
 from shapely.geometry import LineString, Polygon, box
 
-
 if TYPE_CHECKING:
     from maps4fs.generator.game import Game
     from maps4fs.generator.map import Map
@@ -461,17 +460,37 @@ class Component:
         return info_layer_path
 
     def get_infolayer_data(self, layer_name: str, layer_key: str) -> Any | None:
-        """Reads the JSON file of the requested info layer and returns the value of the requested
-        key. If the layer or the key does not exist, None is returned.
+        """Return data from a named info layer by key.
+
+        Checks map.context first (populated in-memory by earlier components),
+        then falls back to the JSON file for backward compatibility.
 
         Arguments:
-            layer_name (str): The name of the layer.
-            layer_key (str): The key to get the value of.
+            layer_name (str): Name of the info layer (e.g. "textures", "background").
+            layer_key (str): Key within the layer (e.g. "fields", "buildings").
 
         Returns:
-            Any | None: The value of the requested key or None if the layer or the key does not
-                exist.
+            Any | None: The value or None if not found.
         """
+        # Context-first lookup: avoids disk I/O for components that have already run.
+        _CONTEXT_ATTR: dict[tuple[str, str], str] = {
+            ("textures", "fields"): "fields",
+            ("textures", "buildings"): "buildings",
+            ("textures", "roads_polylines"): "roads_polylines",
+            ("textures", "water_polylines"): "water_polylines",
+            ("textures", "farmyards"): "farmyards",
+            ("textures", "forest"): "forest",
+            ("textures", "water"): "water",
+            ("background", "water"): "background_water",
+            ("background", "water_polylines"): "background_water_polylines",
+        }
+        ctx_attr = _CONTEXT_ATTR.get((layer_name, layer_key))
+        if ctx_attr is not None:
+            value = getattr(self.map.context, ctx_attr, None)
+            if value:
+                return value
+
+        # JSON fallback (maintained for backward compatibility and debug outputs).
         infolayer_path = self.get_infolayer_path(layer_name)
         if not infolayer_path:
             return None
