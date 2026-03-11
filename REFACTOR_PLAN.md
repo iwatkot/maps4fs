@@ -135,7 +135,27 @@ This is purely OSM-to-image rendering. It has no fundamental dependency on FS25 
 
 If extracted, the maps4fs generator would depend on this library and configure it via schemas.
 
+**Multithreading requirement.** The extracted OSM renderer must support parallel layer drawing:
+- The **base layer** (background fill) must be drawn synchronously first
+- All other layers can be drawn concurrently in a `ThreadPoolExecutor` (each into its own buffer)
+- Merge / composite step runs after all threads complete, respecting `layer.priority` order
+- `merge_into` relationships must be resolved post-join, not mid-flight
+- OpenCV/numpy release the GIL for pixel ops, so thread-based parallelism gives real speedup without multiprocessing overhead
+
 **Decision criterion:** Extract if it simplifies maps4fs noticeably and if the extracted library is genuinely reusable outside FS25 map generation.
+
+---
+
+## Cross-Cutting Concern — Performance
+
+**Goal:** The refactor must not regress on generation speed. Treat performance as a first-class constraint throughout every step.
+
+- **Baseline first:** before touching any code, record wall-clock time per component using `PerformanceMonitor` on a consistent set of test coordinates. This is the benchmark every refactored component must meet or beat.
+- **Eliminate unnecessary I/O:** intermediate files exist today only because data can't flow in-memory between components. Once `MapContext` is introduced, these file writes and re-reads disappear. This is the single biggest performance win.
+- **OSM renderer parallelism:** once the OSM drawing logic is cleanly separated, introduce parallel layer drawing (base layer first, then all independent layers concurrently via `ThreadPoolExecutor`). OpenCV releases the GIL, so this is real parallelism.
+- **Numpy in-place ops:** prefer in-place numpy mutations over array copies where correctness allows.
+- **Do not invalidate caches:** OSM and DTM caches are already in place. Ensure no refactoring step changes cache key logic or prematurely clears caches.
+- **Profile after each step:** run the benchmark after each refactoring step (Steps 6–12), not just at the end. Catch regressions early.
 
 ---
 

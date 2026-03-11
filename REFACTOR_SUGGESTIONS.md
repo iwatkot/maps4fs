@@ -570,6 +570,25 @@ All components receive `XmlDocument` instances (or construct them) — no compon
 
 **Important: OSM library must be schema-agnostic.** The future `osm_renderer` extract must not depend on maps4fs's `Layer` class, the FS25 texture schema JSON format, or any game-specific tag sets. Its interface should accept generic inputs — a bounding box or geometry source, a list of tag filters with associated draw parameters (width, color, fill), and a target image size — and return numpy arrays or write to image files. The maps4fs `Texture` component is the adapter layer that translates `Layer` objects and schema data into those generic draw parameters. Keeping this separation clean is what makes the OSM renderer reusable outside maps4fs.
 
+**Multithreading in the OSM renderer.** The current Texture component processes layers sequentially. Since each OSM feature type (roads, fields, water, buildings, forest, etc.) is an independent draw call on a separate image buffer, they are embarrassingly parallel — subject to one constraint: the **base layer** (the fill-everything background texture) must be written first, because other layers are drawn on top of it. The proposed threading model:
+
+```
+1. Draw base layer (synchronous, blocks everything else)
+2. Draw all non-base layers in a thread pool (concurrent, no inter-layer deps)
+3. Merge results in priority order (synchronous, uses layer.priority)
+```
+
+The `merge_into` layer logic (where a layer's output is composited into another named layer) must be resolved after all threads finish — it cannot run concurrently with its target. The priority ordering for final compositing onto the shared canvas is already defined per-layer and is not affected by draw parallelism.
+
+Implementation note: drawing uses `cv2` (OpenCV) and `numpy` operations. OpenCV releases the GIL for most pixel operations, so `ThreadPoolExecutor` provides real parallelism here without needing multiprocessing. Each layer draws into its own `numpy` array and the merge step is single-threaded, avoiding any shared-state races.
+
+**General performance targets for the refactor.** Beyond the OSM renderer, the refactor should treat generation speed as a first-class concern:
+- Eliminate all unnecessary disk I/O (intermediate files that only exist because context isn't in-memory)
+- Profile with `PerformanceMonitor` before and after each refactoring step; do not regress on wall-clock time
+- Prefer in-place `numpy` array mutation over creating copies where correctness allows
+- Avoid re-reading files that were just written (e.g. DEM written then immediately re-read by the next component — context eliminates this)
+- Cache OSM fetches (already done via `oxc` cache) and DTM fetches (already cached) — ensure the cache is preserved and not accidentally invalidated during refactor
+
 ---
 
 ### 5.3 `DEM`
