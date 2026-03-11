@@ -1,4 +1,4 @@
-"""This module contains the Config class for map settings and configuration."""
+"""This module contains the Scene class for FS25 map I3D scene editing."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ import numpy as np
 from tqdm import tqdm
 
 from maps4fs.generator.component.base.component_image import ImageComponent
-from maps4fs.generator.component.base.component_xml import XMLComponent
+from maps4fs.generator.component.base.component_xml import XMLComponent, XmlDocument
 from maps4fs.generator.constants import get_map_bounds_file_paths
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
@@ -37,8 +37,9 @@ FIELDS_ATTRIBUTES = [
 ]
 
 
-class I3d(XMLComponent, ImageComponent):
-    """Component for map i3d file settings and configuration.
+class Scene(XMLComponent, ImageComponent):
+    """Component for FS25 map I3D scene editing: height scale, sun bbox,
+    displacement layer, splines, fields, forests, mesh insertion.
 
     Arguments:
         game (Game): The game instance for which the map is generated.
@@ -47,8 +48,7 @@ class I3d(XMLComponent, ImageComponent):
         map_rotated_size (int): The size of the map in pixels after rotation.
         rotation (int): The rotation angle of the map.
         map_directory (str): The directory where the map files are stored.
-        logger (Any, optional): The logger to use. Must have at least three basic methods: debug,
-            info, warning. If not provided, default logging will be used.
+        logger (Any, optional): The logger to use.
     """
 
     def preprocess(self) -> None:
@@ -93,35 +93,25 @@ class I3d(XMLComponent, ImageComponent):
             else:
                 return
 
-        tree = self.get_tree()
-        root = tree.getroot()
-        path = ".//Scene/TerrainTransformGroup"
-
-        data = {Parameters.HEIGHT_SCALE: str(value)}
-
-        self.get_and_update_element(root, path, data)  # type: ignore
-        self.save_tree(tree)  # type: ignore
+        with XmlDocument(self.xml_path) as doc:  # type: ignore
+            doc.set_attrs(
+                ".//Scene/TerrainTransformGroup",
+                **{Parameters.HEIGHT_SCALE: str(value)},
+            )
 
     def _update_parameters(self) -> None:
-        """Updates the map I3D file with the  sun bounding box and displacement layer size."""
-
-        tree = self.get_tree()
-        root = tree.getroot()
-
-        sun_element_path = ".//Scene/Light[@name='sun']"
+        """Updates the map I3D file with the sun bounding box and displacement layer size."""
         distance = self.map_size // 2
-        data = {
-            "lastShadowMapSplitBboxMin": f"-{distance},-128,-{distance}",
-            "lastShadowMapSplitBboxMax": f"{distance},148,{distance}",
-        }
-
-        self.get_and_update_element(root, sun_element_path, data)  # type: ignore
-
-        displacement_layer_path = ".//Scene/TerrainTransformGroup/Layers/DisplacementLayer"
-        data = {"size": str(int(self.map_size * 8))}
-        self.get_and_update_element(root, displacement_layer_path, data)  # type: ignore
-
-        self.save_tree(tree)
+        with XmlDocument(self.xml_path) as doc:  # type: ignore
+            doc.set_attrs(
+                ".//Scene/Light[@name='sun']",
+                lastShadowMapSplitBboxMin=f"-{distance},-128,-{distance}",
+                lastShadowMapSplitBboxMax=f"{distance},148,{distance}",
+            )
+            doc.set_attrs(
+                ".//Scene/TerrainTransformGroup/Layers/DisplacementLayer",
+                size=str(int(self.map_size * 8)),
+            )
 
     @monitor_performance
     def _add_splines(self) -> None:
@@ -131,7 +121,7 @@ class I3d(XMLComponent, ImageComponent):
             self.logger.warning("Splines I3D file not found: %s.", splines_i3d_path)
             return
 
-        tree = self.get_tree(splines_i3d_path)
+        splines_doc = XmlDocument(splines_i3d_path)
 
         roads_polylines = (
             self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES) or []
@@ -151,7 +141,7 @@ class I3d(XMLComponent, ImageComponent):
             self.logger.warning("Roads polylines data not found in textures info layer.")
             return
 
-        root = tree.getroot()
+        root = splines_doc.root
         # Find <Shapes> element in the I3D file.
         shapes_node = root.find(".//Shapes")  # type: ignore
         # Find <Scene> element in the I3D file.
@@ -254,7 +244,7 @@ class I3d(XMLComponent, ImageComponent):
                     user_attributes_node.append(user_attribute_node)
                 node_id += 1
 
-        tree.write(splines_i3d_path)  # type: ignore
+        splines_doc.save()
         self.logger.debug("Splines I3D file saved to: %s.", splines_i3d_path)
 
         self.assets.splines = splines_i3d_path
@@ -262,7 +252,7 @@ class I3d(XMLComponent, ImageComponent):
     @monitor_performance
     def _add_fields(self) -> None:
         """Adds fields to the map I3D file."""
-        tree = self.get_tree()
+        fields_doc = XmlDocument(self.xml_path)  # type: ignore
 
         border = 0
         fields_layer = self.map.get_texture_layer(by_usage=Parameters.FIELD)
@@ -277,7 +267,7 @@ class I3d(XMLComponent, ImageComponent):
         self.logger.debug("Found %s fields in textures info layer.", len(fields))
         self.logger.debug("Starging to add fields to the I3D file.")
 
-        root = tree.getroot()
+        root = fields_doc.root
         gameplay_node = root.find(".//TransformGroup[@name='gameplay']")  # type: ignore
 
         if gameplay_node is None:
@@ -329,7 +319,7 @@ class I3d(XMLComponent, ImageComponent):
         self.field_info["skipped_fields"] = skipped_fields
         self.field_info["skipped_field_ids"] = skipped_field_ids
 
-        self.save_tree(tree)
+        fields_doc.save()
 
         self.assets.fields = self.xml_path
 
@@ -535,8 +525,13 @@ class I3d(XMLComponent, ImageComponent):
             return
 
         node_id = TREE_NODE_ID_STARTING_VALUE
-
         tree_count = 0
+        forests_doc = XmlDocument(self.xml_path)  # type: ignore
+        forests_root = forests_doc.root
+        scene_node = forests_root.find(".//Scene")  # type: ignore
+        if scene_node is None:
+            self.logger.warning("Scene element not found in I3D file.")
+            return
 
         for forest_layer in forest_layers:
             weights_directory = self.game.weights_dir_path(self.map_directory)
@@ -545,13 +540,6 @@ class I3d(XMLComponent, ImageComponent):
             if not forest_image_path or not os.path.isfile(forest_image_path):
                 self.logger.warning("Forest image not found.")
                 continue
-
-            tree = self.get_tree()
-            root = tree.getroot()
-            scene_node = root.find(".//Scene")  # type: ignore
-            if scene_node is None:
-                self.logger.warning("Scene element not found in I3D file.")
-                return
 
             trees_node = self.create_element(
                 "TransformGroup",
@@ -617,7 +605,8 @@ class I3d(XMLComponent, ImageComponent):
                 tree_count += 1
 
             scene_node.append(trees_node)
-            self.save_tree(tree)
+
+        forests_doc.save()
 
         self.forest_info["tree_count"] = tree_count
         self.forest_info["tree_limit"] = self.map.i3d_settings.tree_limit
@@ -794,6 +783,17 @@ class I3d(XMLComponent, ImageComponent):
 
         file_id = FILE_ID_STARTING_VALUE
         node_id = BINARY_MESHES_NODE_ID_STARTING_VALUE
+
+        # Load the main I3D document once; add all mesh references, then save once.
+        main_doc = XmlDocument(self.xml_path)  # type: ignore
+        main_root = main_doc.root
+        files_node = main_root.find(".//Files")
+        scene_node = main_root.find(".//Scene")
+        if files_node is None or scene_node is None:
+            self.logger.warning("Required nodes (Files, Scene) not found in I3D file.")
+            return
+        i3d_dir = os.path.dirname(self.xml_path)  # type: ignore
+
         for asset_name, asset_path in assets_directories.items():
             if os.path.isfile(asset_path):
                 binary_i3d_path: str | None = asset_path
@@ -810,20 +810,6 @@ class I3d(XMLComponent, ImageComponent):
                 )
                 continue
 
-            tree = self.get_tree()
-            root = tree.getroot()
-            if root is None:
-                self.logger.warning("Could not get root of I3D tree, skipping mesh insertion.")
-                continue
-
-            files_node = root.find(".//Files")
-            scene_node = root.find(".//Scene")
-
-            if files_node is None or scene_node is None:
-                self.logger.warning("Required nodes (Files, Scene) not found in I3D file.")
-                continue
-
-            i3d_dir = os.path.dirname(self.xml_path)  # type: ignore
             self.logger.debug("Inserting mesh %s from file %s.", asset_name, binary_i3d_path)
             binary_rel_path = os.path.relpath(binary_i3d_path, i3d_dir).replace("\\", "/")
             self.logger.debug("Relative path for the binary I3D file: %s.", binary_rel_path)
@@ -838,13 +824,14 @@ class I3d(XMLComponent, ImageComponent):
                 )
             )
 
-            self.save_tree(tree)
             self.logger.debug("Mesh %s inserted into the I3D file.", asset_name)
 
             file_id += 1
             node_id += 1
 
             self._postprocess_i3d(binary_i3d_path, asset_name)
+
+        main_doc.save()
 
     def _postprocess_i3d(self, binary_i3d_path: str, asset_name: str) -> None:
         """Post-processes the I3D file after all modifications are done.
@@ -965,31 +952,19 @@ class I3d(XMLComponent, ImageComponent):
     ) -> None:
         self.logger.debug("Positioning mesh %s at translation: %s.", asset_name, translation)
 
-        binary_tree = self.get_tree(binary_i3d_path)
-        binary_root = binary_tree.getroot()
-        if binary_root is None:
-            self.logger.warning("Could not get root of binary I3D tree for asset %s.", asset_name)
-            return
-
-        shape_node = binary_root.find(".//Shape")
+        doc = XmlDocument(binary_i3d_path)
+        shape_node = doc.root.find(".//Shape")
         if shape_node is None:
             self.logger.warning("Shape node not found in binary I3D for asset %s.", asset_name)
             return
 
         shape_node.set("translation", translation)
-        self.save_tree(binary_tree, binary_i3d_path)
+        doc.save()
 
     def _postprocess_background_terrain(self, binary_i3d_path: str) -> None:
-        """Post-processes the background terrain mesh in the I3D file.
-
-        Arguments:
-            tree (ET.ElementTree): The XML tree of the I3D file.
-        """
-        tree = self.get_tree(binary_i3d_path)
-        root = tree.getroot()
-        if root is None:
-            self.logger.warning("Could not get root of background terrain I3D tree.")
-            return
+        """Post-processes the background terrain mesh in the I3D file."""
+        doc = XmlDocument(binary_i3d_path)
+        root = doc.root
 
         material_node = root.find(".//Material[@name='background_terrain_material']")
         shape_node = root.find(".//Shape[@name='background_terrain_shape']")
@@ -1001,7 +976,7 @@ class I3d(XMLComponent, ImageComponent):
         if shape_node is not None:
             shape_node.set("receiveShadows", "true")
 
-        self.save_tree(tree, binary_i3d_path)
+        doc.save()
 
     def _postprocess_water_resources(self, binary_i3d_path: str) -> None:
         """Post-processes the water resources mesh in the I3D file.
@@ -1009,11 +984,8 @@ class I3d(XMLComponent, ImageComponent):
         Arguments:
             binary_i3d_path (str): The path to the binary I3D file to post-process.
         """
-        tree = self.get_tree(binary_i3d_path)
-        root = tree.getroot()
-        if root is None:
-            self.logger.warning("Could not get root of water resources I3D tree.")
-            return
+        doc = XmlDocument(binary_i3d_path)
+        root = doc.root
 
         # --- Files: bump shader fileId 3 → 4, insert normalmap as fileId 2 ---
         files_node = root.find(".//Files")
@@ -1084,7 +1056,7 @@ class I3d(XMLComponent, ImageComponent):
             )
             user_attrs_node.append(ua)
 
-        self.save_tree(tree, binary_i3d_path)
+        doc.save()
 
     def _postprocess_roads(self, binary_i3d_path: str) -> None:
         """Post-processes a road mesh in the I3D file.
@@ -1092,11 +1064,8 @@ class I3d(XMLComponent, ImageComponent):
         Arguments:
             binary_i3d_path (str): The path to the binary I3D file to post-process.
         """
-        tree = self.get_tree(binary_i3d_path)
-        root = tree.getroot()
-        if root is None:
-            self.logger.warning("Could not get root of road mesh I3D tree.")
-            return
+        doc = XmlDocument(binary_i3d_path)
+        root = doc.root
 
         material_node = root.find(".//Material")
         if material_node is not None:
@@ -1108,7 +1077,7 @@ class I3d(XMLComponent, ImageComponent):
             shape_node.set("collisionFilterMask", "0xfffffbff")
             shape_node.set("receiveShadows", "true")
 
-        self.save_tree(tree, binary_i3d_path)
+        doc.save()
 
     def insert_map_bounds(self) -> None:
         """Inserts the map bounds into the I3D file by copying the template map bounds files,
@@ -1145,14 +1114,8 @@ class I3d(XMLComponent, ImageComponent):
         # 1. Update positions of the map bounds in the map_bounds.i3d file.
         # Translations use half the map size (GE center-origin coordinate system).
         # Scale span (Z) = half, scale height (X after rotation) = quarter (template ratio).
-        bounds_tree = self.get_tree(dest_i3d_path)
-        bounds_root = bounds_tree.getroot()
-
-        if bounds_root is None:
-            self.logger.warning(
-                "Could not get root of map bounds I3D tree. Skipping position update."
-            )
-            return
+        bounds_doc = XmlDocument(dest_i3d_path)
+        bounds_root = bounds_doc.root
 
         tg_node = bounds_root.find(".//Scene/TransformGroup[@name='mapbounds']")
         if tg_node is not None:
@@ -1168,18 +1131,12 @@ class I3d(XMLComponent, ImageComponent):
                     shape_node.set("translation", translation)
                     shape_node.set("scale", scale)
 
-        self.save_tree(bounds_tree, dest_i3d_path)
+        bounds_doc.save()
         self.logger.debug("Map bounds positions updated in %s.", dest_i3d_path)
 
         # 2. Insert file reference into main I3D Files section and a ReferenceNode into Scene.
-        tree = self.get_tree()
-        root = tree.getroot()
-        if root is None:
-            self.logger.warning(
-                "Could not get root of main I3D tree. Skipping map bounds reference insertion."
-            )
-            return
-
+        main_doc = XmlDocument(self.xml_path)  # type: ignore
+        root = main_doc.root
         files_node = root.find(".//Files")
         scene_node = root.find(".//Scene")
 
@@ -1210,5 +1167,5 @@ class I3d(XMLComponent, ImageComponent):
             )
         )
 
-        self.save_tree(tree)
+        main_doc.save()
         self.logger.debug("Map bounds reference inserted into main I3D file.")

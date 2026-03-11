@@ -11,11 +11,11 @@ import shapely
 import trimesh
 from shapely.geometry import Point
 
-import maps4fs.generator.config as mfscfg
 from maps4fs.generator.component.base.component_mesh import (
     LineSurfaceEntry,
     MeshComponent,
 )
+from maps4fs.generator.constants import MFS_TEMPLATES_DIR
 from maps4fs.generator.settings import Parameters
 
 PATCH_Z_OFFSET = -0.001
@@ -263,7 +263,7 @@ class Road(MeshComponent):
         os.makedirs(road_mesh_directory, exist_ok=True)
 
         try:
-            texture_path = self.find_texture_file(mfscfg.MFS_TEMPLATES_DIR, texture)
+            texture_path = self.find_texture_file(MFS_TEMPLATES_DIR, texture)
         except FileNotFoundError as e:
             self.logger.warning("Texture file not found: %s", e)
             return

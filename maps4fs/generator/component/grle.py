@@ -11,7 +11,7 @@ from shapely.geometry import Polygon
 from tqdm import tqdm
 
 from maps4fs.generator.component.base.component_image import ImageComponent
-from maps4fs.generator.component.base.component_xml import XMLComponent
+from maps4fs.generator.component.base.component_xml import XMLComponent, XmlDocument
 from maps4fs.generator.component.layer import Layer
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
@@ -285,8 +285,8 @@ class GRLE(ImageComponent, XMLComponent):
 
         image = cv2.imread(info_layer_farmlands_path, cv2.IMREAD_UNCHANGED)
 
-        tree = self.get_tree()
-        root = tree.getroot()
+        doc = XmlDocument(self.xml_path)  # type: ignore
+        root = doc.root
         farmlands_node = root.find("farmlands")  # type: ignore
         if farmlands_node is None:
             raise ValueError("Farmlands XML element not found in the farmlands XML file.")
@@ -357,7 +357,7 @@ class GRLE(ImageComponent, XMLComponent):
 
             farmland_id += 1
 
-        self.save_tree(tree)
+        doc.save()
 
         # Replace all the zero values on the info layer image with 255.
         if self.map.grle_settings.fill_empty_farmlands:

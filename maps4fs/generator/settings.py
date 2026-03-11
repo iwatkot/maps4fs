@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
 from pydantic import BaseModel, ConfigDict
 
-import maps4fs.generator.config as mfscfg
+from maps4fs.generator.bootstrap import PACKAGE_VERSION
 
 if TYPE_CHECKING:
     from maps4fs.generator.map import Map
@@ -348,7 +348,7 @@ class MainSettings(NamedTuple):
             is_public=map.kwargs.get("is_public", False),
             date=datetime.now().strftime("%Y-%m-%d"),
             time=datetime.now().strftime("%H:%M:%S"),
-            version=mfscfg.PACKAGE_VERSION,
+            version=PACKAGE_VERSION,
             completed=False,
             error=None,
             origin=map.kwargs.get("origin", None),

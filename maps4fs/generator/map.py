@@ -11,12 +11,12 @@ from typing import Any, Generator
 from pydtmdl import DTMProvider
 from pydtmdl.base.dtm import DTMProviderSettings
 
-import maps4fs.generator.config as mfscfg
-import maps4fs.generator.utils as mfsutils
 from maps4fs.generator.component import Background, Component, Layer, Satellite, Texture
+from maps4fs.generator.constants import MFS_DATA_DIR
 from maps4fs.generator.context import MapContext
 from maps4fs.generator.game import Game
 from maps4fs.generator.monitor import Logger, PerformanceMonitor, performance_session
+from maps4fs.generator.osm import check_and_fix_osm
 from maps4fs.generator.settings import GenerationSettings, MainSettings
 from maps4fs.generator.statistics import (
     send_advanced_settings,
@@ -74,7 +74,7 @@ class Map:
         # region custom OSM properties
         if custom_osm and not os.path.isfile(custom_osm):
             raise FileNotFoundError(f"Custom OSM file {custom_osm} does not exist.")
-        mfsutils.check_and_fix_osm(custom_osm, save_directory=self.map_directory)
+        check_and_fix_osm(custom_osm, save_directory=self.map_directory)
         self.custom_osm = custom_osm
         # endregion
 
@@ -129,7 +129,7 @@ class Map:
         }
 
         for filename, data in json_data.items():
-            mfsutils.dump_json(filename, self.map_directory, data)
+            self._dump_json(filename, self.map_directory, data)
         # endregion
 
         # region prepare map working directory
@@ -160,6 +160,17 @@ class Map:
         self.context = MapContext()
         self.components: list[Component] = []
 
+    @staticmethod
+    def _dump_json(filename: str, directory: str, data) -> None:
+        """Write data to a JSON file, silently skipping falsy or empty data."""
+        if not data:
+            return
+        if not isinstance(data, (dict, list)):
+            raise TypeError("Data must be a dictionary or a list.")
+        save_path = os.path.join(directory, filename)
+        with open(save_path, "w", encoding="utf-8") as file:
+            json.dump(data, file, indent=4)
+
     @property
     def shared_settings(self) -> MapContext:
         """Backward-compatible alias for map.context (used by DEM, I3d, component.py)."""
@@ -180,7 +191,7 @@ class Map:
         Returns:
             str: Map directory path.
         """
-        return os.path.join(mfscfg.MFS_DATA_DIR, Map.suggest_directory_name(coordinates, game_code))
+        return os.path.join(MFS_DATA_DIR, Map.suggest_directory_name(coordinates, game_code))
 
     @staticmethod
     def suggest_directory_name(coordinates: tuple[float, float], game_code: str) -> str:
@@ -189,10 +200,13 @@ class Map:
         Returns:
             str: Directory name.
         """
+        from datetime import datetime
+
         lat, lon = coordinates
-        latr = mfsutils.coordinate_to_string(lat)
-        lonr = mfsutils.coordinate_to_string(lon)
-        return f"{mfsutils.get_timestamp()}_{game_code}_{latr}_{lonr}".lower()
+        latr = f"{lat:.3f}".replace(".", "_")
+        lonr = f"{lon:.3f}".replace(".", "_")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        return f"{timestamp}_{game_code}_{latr}_{lonr}".lower()
 
     @property
     def texture_schema(self) -> list[dict[str, Any]] | None:

@@ -12,9 +12,20 @@ from datetime import datetime
 from time import perf_counter
 from typing import Callable, Generator, Literal
 
-from maps4fs.generator.utils import Singleton
-
 _local = threading.local()
+
+
+class Singleton(type):
+    """Metaclass that enforces at-most-one instance per class."""
+
+    _instances: dict = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super().__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
 MFS_LOG_LEVEL = "MFS_LOG_LEVEL"
 SUPPORTED_LOG_LEVELS = {
     10: "DEBUG",

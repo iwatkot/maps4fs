@@ -8,9 +8,8 @@ from typing import Any
 import cv2
 import numpy as np
 
-import maps4fs.generator.utils as mfsutils
 from maps4fs.generator.component.base.component_image import ImageComponent
-from maps4fs.generator.component.base.component_xml import XMLComponent
+from maps4fs.generator.component.base.component_xml import XMLComponent, XmlDocument
 from maps4fs.generator.geo import get_country_by_coordinates
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
@@ -59,11 +58,8 @@ class Config(XMLComponent, ImageComponent):
 
     def _set_map_size(self) -> None:
         """Edits map.xml file to set correct map size."""
-        tree = self.get_tree()
-        if not tree:
-            raise FileNotFoundError(f"Map XML file not found: {self.xml_path}")
-
-        root = tree.getroot()
+        doc = XmlDocument(self.xml_path)  # type: ignore
+        root = doc.root
         data = {
             "width": str(self.scaled_size),
             "height": str(self.scaled_size),
@@ -72,7 +68,7 @@ class Config(XMLComponent, ImageComponent):
         for element in root.iter("map"):  # type: ignore
             self.update_element(element, data)
             break
-        self.save_tree(tree)
+        doc.save()
 
     def info_sequence(self) -> dict[str, dict[str, str | float | int]]:
         """Returns information about the component.
@@ -136,8 +132,8 @@ class Config(XMLComponent, ImageComponent):
             return
         maximum_height, minimum_height = dem_params
 
-        tree = self.get_tree(xml_path=environment_xml_path)
-        root = tree.getroot()
+        doc = XmlDocument(environment_xml_path)
+        root = doc.root
 
         # Find the <latitude>40.6</latitude> element in the XML file.
         latitude_element = root.find("./latitude")  # type: ignore
@@ -173,7 +169,7 @@ class Config(XMLComponent, ImageComponent):
             )
 
         self.logger.debug("Fog adjusted and file will be saved to %s", environment_xml_path)
-        self.save_tree(tree, xml_path=environment_xml_path)
+        doc.save()
 
         self.fog_parameters = {
             "minimum_height": minimum_height,
@@ -410,14 +406,8 @@ class Config(XMLComponent, ImageComponent):
             FileNotFoundError: If the map XML file is not found.
             ValueError: If the map XML root element is None.
         """
-        tree = self.get_tree()
-        if not tree:
-            raise FileNotFoundError(f"Map XML file not found: {self.xml_path}")
-
-        root = tree.getroot()
-
-        if root is None:
-            raise ValueError("Map XML root element is None.")
+        doc = XmlDocument(self.xml_path)  # type: ignore
+        root = doc.root
 
         # Find or create licensePlates element
         license_plates_element = root.find(".//licensePlates")
@@ -430,7 +420,7 @@ class Config(XMLComponent, ImageComponent):
             )
             root.append(license_plates_element)
 
-        self.save_tree(tree)
+        doc.save()
         self.logger.debug("Updated map.xml to use PL license plates")
 
     def _update_license_plates_xml(
@@ -450,10 +440,8 @@ class Config(XMLComponent, ImageComponent):
         if not os.path.isfile(xml_path):
             raise FileNotFoundError(f"License plates XML file not found: {xml_path}.")
 
-        tree = self.get_tree(xml_path=xml_path)
-        root = tree.getroot()
-        if root is None:
-            raise ValueError("License plates XML root element is None.")
+        doc = XmlDocument(xml_path)
+        root = doc.root
 
         # Find licensePlate with node="0"
         license_plate = None
@@ -518,7 +506,7 @@ class Config(XMLComponent, ImageComponent):
                 variation.insert(i, value_elem)
 
         # 5. Save the updated XML.
-        self.save_tree(tree, xml_path=xml_path)
+        doc.save()
         self.logger.debug(
             "Updated licensePlatesPL.xml with license plate prefix: %s", license_plate_prefix
         )
@@ -538,12 +526,8 @@ class Config(XMLComponent, ImageComponent):
         if not os.path.isfile(i3d_path):
             raise FileNotFoundError(f"License plates i3d file not found: {i3d_path}")
 
-        # 1. Load the i3d XML.
-        tree = self.get_tree(xml_path=i3d_path)
-        root = tree.getroot()
-
-        if root is None:
-            raise ValueError("License plates i3d XML root element is None.")
+        doc = XmlDocument(i3d_path)
+        root = doc.root
 
         # 2. Find File element with fileId="12"
         file_element = None
@@ -564,7 +548,7 @@ class Config(XMLComponent, ImageComponent):
         file_element.set("filename", filename)
 
         # 4. Save the updated i3d XML.
-        self.save_tree(tree, xml_path=i3d_path)
+        doc.save()
         self.logger.debug("Updated licensePlatesPL.i3d texture reference to: %s", filename)
 
     @monitor_performance

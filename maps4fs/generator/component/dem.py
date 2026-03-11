@@ -7,8 +7,8 @@ import cv2
 import numpy as np
 from pydtmdl import DTMProvider
 
-import maps4fs.generator.config as mfscfg
 from maps4fs.generator.component.base.component_image import ImageComponent
+from maps4fs.generator.constants import DTM_CACHE_DIR
 from maps4fs.generator.monitor import monitor_performance
 
 
@@ -42,7 +42,7 @@ class DEM(ImageComponent):
             coordinates=self.coordinates,
             user_settings=self.map.dtm_provider_settings,
             size=self.map_rotated_size,
-            directory=mfscfg.DTM_CACHE_DIR,
+            directory=DTM_CACHE_DIR,
             logger=self.logger,
         )
 

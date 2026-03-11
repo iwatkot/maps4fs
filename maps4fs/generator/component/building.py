@@ -10,7 +10,7 @@ import numpy as np
 from tqdm import tqdm
 
 from maps4fs.generator.component.base.component_image import ImageComponent
-from maps4fs.generator.component.base.component_xml import XMLComponent
+from maps4fs.generator.component.base.component_xml import XMLComponent, XmlDocument
 from maps4fs.generator.geo import get_region_by_coordinates
 from maps4fs.generator.settings import Parameters
 
@@ -479,12 +479,8 @@ class Building(XMLComponent, ImageComponent):
         self.logger.debug("Found %d building entries to process.", len(buildings))
 
         # Initialize tracking for XML modifications
-        tree = self.get_tree()
-        root = tree.getroot()
-
-        if root is None:
-            self.logger.warning("Failed to get root element from I3D XML tree.")
-            return
+        doc = XmlDocument(self.xml_path)  # type: ignore
+        root = doc.root
 
         # Find the Scene element
         scene_node = root.find(".//Scene")
@@ -661,7 +657,7 @@ class Building(XMLComponent, ImageComponent):
         self.info["total_buildings_attempted"] = len(buildings)
 
         # Save the modified XML tree
-        self.save_tree(tree)
+        doc.save()
         self.logger.debug("Buildings placement completed and saved to map.i3d")
 
     def _match_category_from_osm_tags(self, building_osm_tags: dict[str, Any]) -> str | None:

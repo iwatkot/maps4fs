@@ -294,6 +294,9 @@ def get_package_version(package_name: str) -> str:
         return "unknown"
 
 
+PACKAGE_VERSION: str = get_package_version("maps4fs")
+
+
 # ---- Bootstrap entry point --------------------------------------------------
 
 

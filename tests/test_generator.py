@@ -45,7 +45,7 @@ SIZE_CASES = [512, 1024, 2048]
 ROTATION_CASES = [-90, -45, 0, 45, 90]
 
 # Component keys expected in generation_info.json after a successful full run.
-EXPECTED_INFO_KEYS = {"Texture", "Background", "GRLE", "Config", "I3d"}
+EXPECTED_INFO_KEYS = {"Texture", "Background", "GRLE", "Config", "Scene"}
 
 dtm_provider_code = "srtm30"
 dtm_provider = DTMProvider.get_provider_by_code(dtm_provider_code)

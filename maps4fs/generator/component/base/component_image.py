@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image, ImageFile
 
 from maps4fs.generator.component.base.component import Component
-from maps4fs.generator.config import get_texconv_executable_path
+from maps4fs.generator.constants import get_texconv_executable_path
 from maps4fs.generator.settings import Parameters
 
 

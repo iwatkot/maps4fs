@@ -15,7 +15,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from maps4fs.generator.component.base.component import Component
-from maps4fs.generator.config import get_i3d_executable_path
+from maps4fs.generator.constants import get_i3d_executable_path
 from maps4fs.generator.settings import Parameters
 
 
