@@ -221,7 +221,6 @@ def test_map(
     assert os.path.isfile(overview_path), f"overview.dds not found: {overview_path}"
 
 
-@pytest.mark.skip(reason="temporarily disabled")
 @pytest.mark.parametrize("coordinates,size,rotation", _PREVIEW_CASES, ids=_PREVIEW_IDS)
 def test_map_preview(coordinates: tuple[float, float], size: int, rotation: int) -> None:
     """Test that preview PNG files are generated and readable."""
@@ -247,7 +246,6 @@ def test_map_preview(coordinates: tuple[float, float], size: int, rotation: int)
         assert img is not None, f"Preview unreadable: {preview_path}"
 
 
-@pytest.mark.skip(reason="temporarily disabled")
 @pytest.mark.parametrize("coordinates,size,rotation", _PACK_CASES, ids=_PACK_IDS)
 def test_map_pack(coordinates: tuple[float, float], size: int, rotation: int) -> None:
     """Test map packing into a zip archive; verifies non-default DEM settings are accepted."""
@@ -289,7 +287,6 @@ _SETTINGS_COORDS = COORDINATE_CASES["balkans"]
 _SETTINGS_SIZE = 512
 
 
-@pytest.mark.skip(reason="temporarily disabled")
 def test_dem_plateau_lifts_floor() -> None:
     """DEMSettings.plateau shifts the minimum DEM value above zero.
 
@@ -320,7 +317,6 @@ def test_dem_plateau_lifts_floor() -> None:
     assert dem.min() > 0, f"DEM min={dem.min()}: plateau did not lift the terrain floor"
 
 
-@pytest.mark.skip(reason="temporarily disabled")
 def test_dem_minimum_height_scale_respected() -> None:
     """DEMSettings.minimum_height_scale is enforced as a floor for heightScale in map.i3d."""
     game = Game.from_code("FS25")
@@ -349,7 +345,6 @@ def test_dem_minimum_height_scale_respected() -> None:
     assert height_scale >= 2000, f"heightScale={height_scale} is below minimum_height_scale=2000"
 
 
-@pytest.mark.skip(reason="temporarily disabled")
 def test_background_terrain_i3d_generated() -> None:
     """BackgroundSettings.generate_background=True produces background_terrain.i3d.
 
@@ -385,7 +380,6 @@ def test_background_terrain_i3d_generated() -> None:
     assert os.path.isfile(bg_i3d), f"background_terrain.i3d not found: {bg_i3d}"
 
 
-@pytest.mark.skip(reason="temporarily disabled")
 def test_grle_base_price_written_to_farmlands_xml() -> None:
     """GRLESettings.base_price is written as the pricePerHa attribute in farmlands.xml."""
     game = Game.from_code("FS25")
@@ -418,13 +412,12 @@ def test_grle_base_price_written_to_farmlands_xml() -> None:
     ), f"pricePerHa={farmlands_node.get('pricePerHa')!r}, expected {custom_price!r}"
 
 
-@pytest.mark.skip(reason="temporarily disabled")
 def test_i3d_no_forest_info_when_trees_disabled() -> None:
     """I3DSettings.add_trees=False leaves Forests info empty in generation_info.json."""
     game = Game.from_code("FS25")
     directory = make_map_directory("FS25_no_trees")
     settings = GenerationSettings(
-        scene_settings=I3DSettings(add_trees=False),
+        i3d_settings=I3DSettings(add_trees=False),
         background_settings=_NO_BG,
     )
     mp = Map(
@@ -442,20 +435,19 @@ def test_i3d_no_forest_info_when_trees_disabled() -> None:
 
     with open(os.path.join(directory, "generation_info.json")) as f:
         info = json.load(f)
-    forest_info = info.get("I3d", {}).get("Forests", {})
+    forest_info = info.get("Scene", {}).get("Forests", {})
     assert (
         forest_info == {}
     ), f"Forests info should be empty when add_trees=False, got: {forest_info}"
 
 
-@pytest.mark.skip(reason="temporarily disabled")
 def test_config_license_plate_prefix_recorded() -> None:
     """I3DSettings.license_plate_prefix is stored in generation_info.json under Config."""
     game = Game.from_code("FS25")
     directory = make_map_directory("FS25_lp_prefix")
     prefix = "TST"
     settings = GenerationSettings(
-        scene_settings=I3DSettings(license_plate_prefix=prefix),
+        i3d_settings=I3DSettings(license_plate_prefix=prefix),
         background_settings=_NO_BG,
     )
     mp = Map(
