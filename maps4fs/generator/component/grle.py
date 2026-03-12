@@ -11,8 +11,8 @@ from shapely.geometry import Polygon
 from tqdm import tqdm
 
 from maps4fs.generator.component.base.component_image import ImageComponent
-from maps4fs.generator.component.base.component_xml import XMLComponent, XmlDocument
 from maps4fs.generator.component.layer import Layer
+from maps4fs.generator.component.xml_document import XmlDocument
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
@@ -35,7 +35,7 @@ class GRLELayer(NamedTuple):
     data_type: str
 
 
-class GRLE(ImageComponent, XMLComponent):
+class GRLE(ImageComponent):
     """Component for to generate InfoLayer PNG files based on GRLE schema.
 
     Arguments:

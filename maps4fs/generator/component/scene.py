@@ -14,13 +14,13 @@ import numpy as np
 from tqdm import tqdm
 
 from maps4fs.generator.component.base.component_image import ImageComponent
-from maps4fs.generator.component.base.component_xml import XMLComponent, XmlDocument
+from maps4fs.generator.component.xml_document import XmlDocument
 from maps4fs.generator.constants import Paths
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
 
-class Scene(XMLComponent, ImageComponent):
+class Scene(ImageComponent):
     """Component for FS25 map I3D scene editing: height scale, sun bbox,
     displacement layer, splines, fields, forests, mesh insertion.
 
@@ -189,7 +189,7 @@ class Scene(XMLComponent, ImageComponent):
                     "shapeId": str(node_id),
                 }
 
-                scene_node.append(self.create_element("Shape", data))
+                scene_node.append(XmlDocument.create_element("Shape", data))
 
                 road_ccs = [self.top_left_coordinates_to_center(point) for point in fitted_road]
 
@@ -199,7 +199,7 @@ class Scene(XMLComponent, ImageComponent):
                     "degree": "3",
                     "form": "open",
                 }
-                nurbs_curve_node = self.create_element("NurbsCurve", data)
+                nurbs_curve_node = XmlDocument.create_element("NurbsCurve", data)
 
                 for point_ccs, point in zip(road_ccs, fitted_road):
                     cx, cy = point_ccs
@@ -207,7 +207,9 @@ class Scene(XMLComponent, ImageComponent):
 
                     z = self.get_z_coordinate_from_dem(not_resized_dem, x, y)
 
-                    nurbs_curve_node.append(self.create_element("cv", {"c": f"{cx}, {z}, {cy}"}))
+                    nurbs_curve_node.append(
+                        XmlDocument.create_element("cv", {"c": f"{cx}, {z}, {cy}"})
+                    )
 
                 shapes_node.append(nurbs_curve_node)
 
@@ -330,11 +332,11 @@ class Scene(XMLComponent, ImageComponent):
             "translation": f"{cx} 0 {cy}",
             "nodeId": str(node_id),
         }
-        field_node = self.create_element("TransformGroup", data)
+        field_node = XmlDocument.create_element("TransformGroup", data)
         node_id += 1
 
         # Creating the polygon points node, which contains the points of the field.
-        polygon_points_node = self.create_element(
+        polygon_points_node = XmlDocument.create_element(
             "TransformGroup", {"name": "polygonPoints", "nodeId": str(node_id)}
         )
         node_id += 1
@@ -343,7 +345,7 @@ class Scene(XMLComponent, ImageComponent):
             rx, ry = self.absolute_to_relative(point, (cx, cy))
 
             node_id += 1
-            point_node = self.create_element(
+            point_node = XmlDocument.create_element(
                 "TransformGroup",
                 {
                     "name": f"point{point_id}",
@@ -362,7 +364,7 @@ class Scene(XMLComponent, ImageComponent):
 
         node_id += 1
         field_node.append(
-            self.create_element(
+            XmlDocument.create_element(
                 "TransformGroup", {"name": "teleportIndicator", "nodeId": str(node_id)}
             )
         )
@@ -380,7 +382,7 @@ class Scene(XMLComponent, ImageComponent):
             tuple[ET.Element, int]: The name indicator node and the updated node ID.
         """
         node_id += 1
-        name_indicator_node = self.create_element(
+        name_indicator_node = XmlDocument.create_element(
             "TransformGroup", {"name": "nameIndicator", "nodeId": str(node_id)}
         )
 
@@ -392,7 +394,7 @@ class Scene(XMLComponent, ImageComponent):
             "color": "4278190080",
             "fixedSize": "true",
         }
-        note_node = self.create_element("Note", data)
+        note_node = XmlDocument.create_element("Note", data)
         name_indicator_node.append(note_node)
 
         return name_indicator_node, node_id
@@ -418,7 +420,7 @@ class Scene(XMLComponent, ImageComponent):
                 "type": attr_type,
                 "value": value,
             }
-            user_attribute_node.append(self.create_element("Attribute", data))
+            user_attribute_node.append(XmlDocument.create_element("Attribute", data))
 
         return user_attribute_node
 
@@ -520,7 +522,7 @@ class Scene(XMLComponent, ImageComponent):
                 self.logger.warning("Forest image not found.")
                 continue
 
-            trees_node = self.create_element(
+            trees_node = XmlDocument.create_element(
                 "TransformGroup",
                 {
                     "name": "trees",
@@ -579,7 +581,7 @@ class Scene(XMLComponent, ImageComponent):
                     "referenceId": str(tree_id),
                     "nodeId": str(node_id),
                 }
-                trees_node.append(self.create_element("ReferenceNode", data))
+                trees_node.append(XmlDocument.create_element("ReferenceNode", data))
 
                 tree_count += 1
 
@@ -794,10 +796,12 @@ class Scene(XMLComponent, ImageComponent):
             self.logger.debug("Relative path for the binary I3D file: %s.", binary_rel_path)
 
             files_node.append(
-                self.create_element("File", {"fileId": str(file_id), "filename": binary_rel_path})
+                XmlDocument.create_element(
+                    "File", {"fileId": str(file_id), "filename": binary_rel_path}
+                )
             )
             scene_node.append(
-                self.create_element(
+                XmlDocument.create_element(
                     "ReferenceNode",
                     {"name": asset_name, "referenceId": str(file_id), "nodeId": str(node_id)},
                 )
@@ -972,7 +976,7 @@ class Scene(XMLComponent, ImageComponent):
             shader_file = files_node.find("File[@fileId='3']")
             if shader_file is not None:
                 shader_file.set("fileId", "4")
-            normalmap_file = self.create_element(
+            normalmap_file = XmlDocument.create_element(
                 "File",
                 {"fileId": "2", "filename": "$data/maps/textures/shared/water_normal.dds"},
             )
@@ -985,17 +989,17 @@ class Scene(XMLComponent, ImageComponent):
             material_node.set("customShaderId", "4")
             material_node.set("customShaderVariation", "simple")
 
-            normalmap_elem = self.create_element("Normalmap", {"fileId": "2"})
+            normalmap_elem = XmlDocument.create_element("Normalmap", {"fileId": "2"})
             material_node.insert(0, normalmap_elem)
 
             material_node.append(
-                self.create_element(
+                XmlDocument.create_element(
                     "CustomParameter",
                     {"name": "underwaterFogColor", "value": "0.12 0.14 0.11 1"},
                 )
             )
             material_node.append(
-                self.create_element(
+                XmlDocument.create_element(
                     "CustomParameter",
                     {"name": "underwaterFogDepth", "value": "1.4 1.2 1 1"},
                 )
@@ -1014,7 +1018,7 @@ class Scene(XMLComponent, ImageComponent):
         if scene_node is not None and shape_node is not None:
             if shape_node in list(scene_node):
                 shape_nodeid = int(shape_node.get("nodeId", "4"))
-                tg = self.create_element(
+                tg = XmlDocument.create_element(
                     "TransformGroup",
                     {"name": shape_node.get("name", "water"), "nodeId": str(shape_nodeid - 1)},
                 )
@@ -1129,13 +1133,13 @@ class Scene(XMLComponent, ImageComponent):
         bounds_rel_path = os.path.relpath(dest_i3d_path, i3d_dir).replace("\\", "/")
 
         files_node.append(
-            self.create_element(
+            XmlDocument.create_element(
                 "File", {"fileId": str(Parameters.BOUNDS_FILE_ID), "filename": bounds_rel_path}
             )
         )
         # Y=1024 is the fixed height above ground in GE's X Z Y coordinate system.
         scene_node.append(
-            self.create_element(
+            XmlDocument.create_element(
                 "ReferenceNode",
                 {
                     "name": "mapbounds",

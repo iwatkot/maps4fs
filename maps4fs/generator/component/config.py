@@ -9,14 +9,14 @@ import cv2
 import numpy as np
 
 from maps4fs.generator.component.base.component_image import ImageComponent
-from maps4fs.generator.component.base.component_xml import XMLComponent, XmlDocument
+from maps4fs.generator.component.xml_document import XmlDocument
 from maps4fs.generator.geo import get_country_by_coordinates
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
 
 # pylint: disable=R0903
-class Config(XMLComponent, ImageComponent):
+class Config(ImageComponent):
     """Component for map settings and configuration.
 
     Arguments:
@@ -175,7 +175,14 @@ class Config(XMLComponent, ImageComponent):
         )
 
         try:
-            height_scale = self.get_height_scale()
+            doc = XmlDocument(self.game.i3d_file_path)
+            terrain_elem = doc.get(".//Scene/TerrainTransformGroup")
+            if terrain_elem is None:
+                raise ValueError("Height scale element not found in the I3D file.")
+            hs = terrain_elem.get(Parameters.HEIGHT_SCALE)
+            if hs is None:
+                raise ValueError("Height scale not found in the I3D file.")
+            height_scale = int(hs)
         except ValueError as e:
             self.logger.warning("Error getting height scale from I3D file: %s", e)
             return None

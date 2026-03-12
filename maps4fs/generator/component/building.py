@@ -10,7 +10,7 @@ import numpy as np
 from tqdm import tqdm
 
 from maps4fs.generator.component.base.component_image import ImageComponent
-from maps4fs.generator.component.base.component_xml import XMLComponent, XmlDocument
+from maps4fs.generator.component.xml_document import XmlDocument
 from maps4fs.generator.geo import get_region_by_coordinates
 from maps4fs.generator.settings import Parameters
 
@@ -262,7 +262,7 @@ class BuildingEntryCollection:
         return self.by_category.get(category, [])
 
 
-class Building(XMLComponent, ImageComponent):
+class Building(ImageComponent):
     """Component for map buildings processing and generation.
 
     Arguments:
@@ -721,7 +721,7 @@ class Building(XMLComponent, ImageComponent):
                 return transform_group
 
         # Create new buildings group if not found using the proper element creation method
-        buildings_group = self.create_element(
+        buildings_group = XmlDocument.create_element(
             "TransformGroup",
             {
                 "name": "buildings",
