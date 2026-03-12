@@ -34,24 +34,6 @@ class LineSurfaceEntry(NamedTuple):
 class MeshComponent(Component):
     """Base class for all components that primarily used to work with meshes."""
 
-    OBJ_INDEX_OFFSET = 1
-    ROAD_MATERIAL_NAME = "RoadMaterial"
-    TERRAIN_MATERIAL_NAME = "TerrainMaterial_XZ"
-    TEXTURE_TILE_SIZE_METERS = 10.0
-    UV_LIMIT = 32.0
-    UV_SPLIT_SAFETY_MARGIN = 30.0
-    INTERPOLATION_TARGET_SEGMENT_LENGTH = 5.0
-    INTERPOLATION_MAX_ANGLE_CHANGE = 30.0
-    I3D_ENCODING = "iso-8859-1"
-    I3D_VERSION = "1.6"
-    I3D_SCHEMA = "http://i3d.giants.ch/schema/i3d-1.6.xsd"
-    I3D_XSI_NAMESPACE = "http://www.w3.org/2001/XMLSchema-instance"
-    I3D_EXPORT_PROGRAM = "maps4fs"
-    I3D_EXPORT_VERSION = "1.0"
-    I3D_WATER_SHADER_PATH = "$data/shaders/oceanShader.xml"
-    I3D_WATER_SHADER_PATH_BINARY_BROKEN = 'filename="data/shaders/oceanShader.xml"'
-    I3D_WATER_SHADER_PATH_BINARY_FIXED = 'filename="$data/shaders/oceanShader.xml"'
-
     @staticmethod
     def validate_np_for_mesh(image_path: str, map_size: int) -> None:
         """Checks if the given image is a valid for mesh generation.
@@ -494,15 +476,15 @@ class MeshComponent(Component):
             for uv in uv_coords:
                 obj_file.write(f"vt {uv[0]:.6f} {uv[1]:.6f}\n")
 
-            obj_file.write(f"usemtl {self.TERRAIN_MATERIAL_NAME}\n")
+            obj_file.write(f"usemtl {Parameters.TERRAIN_MATERIAL_NAME}\n")
             for face in faces:
-                v1, v2, v3 = [idx + self.OBJ_INDEX_OFFSET for idx in face]
+                v1, v2, v3 = [idx + Parameters.OBJ_INDEX_OFFSET for idx in face]
                 obj_file.write(f"f {v1}/{v1} {v2}/{v2} {v3}/{v3}\n")
 
     def _write_terrain_mtl(self, mtl_filepath: str, texture_filename: str) -> None:
         """Write material file for textured terrain mesh."""
         with open(mtl_filepath, "w", encoding="utf-8") as mtl_file:
-            mtl_file.write(f"newmtl {self.TERRAIN_MATERIAL_NAME}\n")
+            mtl_file.write(f"newmtl {Parameters.TERRAIN_MATERIAL_NAME}\n")
             mtl_file.write("Ka 1.0 1.0 1.0\n")
             mtl_file.write("Kd 1.0 1.0 1.0\n")
             mtl_file.write("Ks 0.0 0.0 0.0\n")
@@ -629,8 +611,8 @@ class MeshComponent(Component):
         with open(binary_i3d_path, "r", encoding="utf-8") as f:
             content = f.read()
             content = content.replace(
-                self.I3D_WATER_SHADER_PATH_BINARY_BROKEN,
-                self.I3D_WATER_SHADER_PATH_BINARY_FIXED,
+                Parameters.I3D_WATER_SHADER_PATH_BINARY_BROKEN,
+                Parameters.I3D_WATER_SHADER_PATH_BINARY_FIXED,
             )
         with open(binary_i3d_path, "w", encoding="utf-8") as f:
             f.write(content)
@@ -677,24 +659,24 @@ class MeshComponent(Component):
 
         tree = ET.ElementTree(i3d)
         ET.indent(tree, space="  ")
-        tree.write(output_path, encoding=self.I3D_ENCODING, xml_declaration=True)
+        tree.write(output_path, encoding=Parameters.I3D_ENCODING, xml_declaration=True)
 
     def _create_i3d_root(self, name: str) -> ET.Element:
         return ET.Element(
             "i3D",
             attrib={
                 "name": name,
-                "version": self.I3D_VERSION,
-                "xmlns:xsi": self.I3D_XSI_NAMESPACE,
-                "xsi:noNamespaceSchemaLocation": self.I3D_SCHEMA,
+                "version": Parameters.I3D_VERSION,
+                "xmlns:xsi": Parameters.I3D_XSI_NAMESPACE,
+                "xsi:noNamespaceSchemaLocation": Parameters.I3D_SCHEMA,
             },
         )
 
     def _append_i3d_asset(self, i3d: ET.Element) -> None:
         asset = ET.SubElement(i3d, "Asset")
         export = ET.SubElement(asset, "Export")
-        export.set("program", self.I3D_EXPORT_PROGRAM)
-        export.set("version", self.I3D_EXPORT_VERSION)
+        export.set("program", Parameters.I3D_EXPORT_PROGRAM)
+        export.set("version", Parameters.I3D_EXPORT_VERSION)
         export.set("date", datetime.now().strftime("%Y-%m-%d"))
 
     def _append_i3d_files(
@@ -710,7 +692,7 @@ class MeshComponent(Component):
         file_node = ET.SubElement(files_section, "File")
         if is_water:
             file_node.set("fileId", "4")
-            file_node.set("filename", self.I3D_WATER_SHADER_PATH)
+            file_node.set("filename", Parameters.I3D_WATER_SHADER_PATH)
         else:
             file_node.set("fileId", "1")
             file_node.set("filename", texture_file or "")
@@ -888,9 +870,9 @@ class MeshComponent(Component):
 
             obj_file.write(f"\n# {len(faces)} faces\n")
             if mtl_output_path:
-                obj_file.write(f"usemtl {self.ROAD_MATERIAL_NAME}\n")
+                obj_file.write(f"usemtl {Parameters.ROAD_MATERIAL_NAME}\n")
             for face in faces:
-                v1, v2, v3 = [idx + self.OBJ_INDEX_OFFSET for idx in face]
+                v1, v2, v3 = [idx + Parameters.OBJ_INDEX_OFFSET for idx in face]
                 obj_file.write(f"f {v1}/{v1} " f"{v2}/{v2} " f"{v3}/{v3}\n")
 
         self.logger.debug(
@@ -993,7 +975,7 @@ class MeshComponent(Component):
                 )
             prev_center_3d = current_center_3d
 
-            v_coord_raw = accumulated_distance / self.TEXTURE_TILE_SIZE_METERS
+            v_coord_raw = accumulated_distance / Parameters.TEXTURE_TILE_SIZE_METERS
             strip_uvs.extend([(0.0, v_coord_raw), (1.0, v_coord_raw)])
 
         return strip_vertices, strip_uvs
@@ -1030,7 +1012,7 @@ class MeshComponent(Component):
         """Write MTL file for road/line surface mesh."""
         texture_filename = os.path.basename(texture_path)
         with open(mtl_output_path, "w", encoding="utf-8") as mtl_file:
-            mtl_file.write(f"newmtl {self.ROAD_MATERIAL_NAME}\n")
+            mtl_file.write(f"newmtl {Parameters.ROAD_MATERIAL_NAME}\n")
             mtl_file.write("Ka 1.0 1.0 1.0\n")
             mtl_file.write("Kd 1.0 1.0 1.0\n")
             mtl_file.write("Ks 0.3 0.3 0.3\n")
@@ -1053,7 +1035,7 @@ class MeshComponent(Component):
         Returns:
             (list[LineSurfaceEntry]): List of LineSurfaceEntry objects with long roads split.
         """
-        max_road_length = self.UV_SPLIT_SAFETY_MARGIN * texture_tile_size
+        max_road_length = Parameters.UV_SPLIT_SAFETY_MARGIN * texture_tile_size
         split_entries = []
 
         for linestring, width, z_offset in road_entries:
@@ -1116,8 +1098,8 @@ class MeshComponent(Component):
             (list[LineSurfaceEntry]): List of LineSurfaceEntry objects with interpolated linestrings.
         """
         interpolated_entries = []
-        target_segment_length = self.INTERPOLATION_TARGET_SEGMENT_LENGTH
-        max_angle_change = self.INTERPOLATION_MAX_ANGLE_CHANGE
+        target_segment_length = Parameters.INTERPOLATION_TARGET_SEGMENT_LENGTH
+        max_angle_change = Parameters.INTERPOLATION_MAX_ANGLE_CHANGE
 
         for linestring, width, z_offset in road_entries:
             coords = list(linestring.coords)

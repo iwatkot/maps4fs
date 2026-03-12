@@ -3,8 +3,8 @@
 Zero side effects — safe to import without triggering network requests or
 filesystem mutations. All download/setup logic lives in bootstrap.py.
 """
-from __future__ import annotations
 
+from __future__ import annotations
 
 import os
 
@@ -205,6 +205,26 @@ class Parameters:
     ROAD_INFO_TOTAL_OSM = "total_OSM_roads"
     ROAD_INFO_TOTAL_FITTED = "total_fitted_roads"
     ROAD_INFO_TOTAL_PATCHES = "total_patches_created"
+
+    # ---- Mesh component constants --------------------------------------
+    OBJ_INDEX_OFFSET = 1
+    ROAD_MATERIAL_NAME = "RoadMaterial"
+    TERRAIN_MATERIAL_NAME = "TerrainMaterial_XZ"
+    TEXTURE_TILE_SIZE_METERS = 10.0
+    UV_LIMIT = 32.0
+    UV_SPLIT_SAFETY_MARGIN = 30.0
+    INTERPOLATION_TARGET_SEGMENT_LENGTH = 5.0
+    INTERPOLATION_MAX_ANGLE_CHANGE = 30.0
+
+    I3D_ENCODING = "iso-8859-1"
+    I3D_VERSION = "1.6"
+    I3D_SCHEMA = "http://i3d.giants.ch/schema/i3d-1.6.xsd"
+    I3D_XSI_NAMESPACE = "http://www.w3.org/2001/XMLSchema-instance"
+    I3D_EXPORT_PROGRAM = "maps4fs"
+    I3D_EXPORT_VERSION = "1.0"
+    I3D_WATER_SHADER_PATH = "$data/shaders/oceanShader.xml"
+    I3D_WATER_SHADER_PATH_BINARY_BROKEN = 'filename="data/shaders/oceanShader.xml"'
+    I3D_WATER_SHADER_PATH_BINARY_FIXED = 'filename="$data/shaders/oceanShader.xml"'
 
     # ---- Background/Water file names ------------------------------------
     BACKGROUND_DIRECTORY = "background"
