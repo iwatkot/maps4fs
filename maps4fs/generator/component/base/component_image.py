@@ -17,6 +17,22 @@ class ImageComponent(Component):
     """Base class for all components that primarily used to work with images."""
 
     @staticmethod
+    def _center_square_bounds(shape: tuple[int, ...], half_size: int) -> tuple[int, int, int, int]:
+        """Return center square bounds (x1, x2, y1, y2) for an image-like shape."""
+        center = (shape[0] // 2, shape[1] // 2)
+        x1 = center[0] - half_size
+        x2 = center[0] + half_size
+        y1 = center[1] - half_size
+        y2 = center[1] + half_size
+        return x1, x2, y1, y2
+
+    @staticmethod
+    def _validate_same_spatial_shape(data: np.ndarray, mask: np.ndarray) -> None:
+        """Ensure data and mask have identical spatial dimensions."""
+        if data.shape[:2] != mask.shape[:2]:
+            raise ValueError("Data and mask must have the same dimensions.")
+
+    @staticmethod
     def polygon_points_to_np(
         polygon_points: list[tuple[int, int]], divide: int | None = None
     ) -> np.ndarray:
@@ -49,11 +65,7 @@ class ImageComponent(Component):
         Returns:
             np.ndarray: The image with the cutout or the cutout itself.
         """
-        center = (image.shape[0] // 2, image.shape[1] // 2)
-        x1 = center[0] - half_size
-        x2 = center[0] + half_size
-        y1 = center[1] - half_size
-        y2 = center[1] + half_size
+        x1, x2, y1, y2 = ImageComponent._center_square_bounds(image.shape, half_size)
 
         if return_cutout:
             return image[x1:x2, y1:y2]
@@ -196,8 +208,7 @@ class ImageComponent(Component):
         Returns:
             np.ndarray: The image with the blur applied according to the mask.
         """
-        if data.shape[:2] != mask.shape[:2]:
-            raise ValueError("Data and mask must have the same dimensions.")
+        self._validate_same_spatial_shape(data, mask)
 
         # Create a blurred version of the data
         blurred_data = cv2.GaussianBlur(data, (blur_radius, blur_radius), sigmaX=10)
@@ -228,8 +239,7 @@ class ImageComponent(Component):
         Returns:
             np.ndarray: The image with the edges blurred according to the mask.
         """
-        if data.shape[:2] != mask.shape[:2]:
-            raise ValueError("Data and mask must have the same dimensions.")
+        self._validate_same_spatial_shape(data, mask)
 
         bigger_mask = cv2.dilate(
             mask, np.ones((bigger_kernel, bigger_kernel), np.uint8), iterations=iterations

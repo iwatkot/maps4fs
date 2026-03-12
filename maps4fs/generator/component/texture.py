@@ -5,24 +5,35 @@ from __future__ import annotations
 import json
 import os
 import shutil
-import warnings
 from collections import defaultdict
-from typing import Any, Callable, Generator, Optional
+from dataclasses import dataclass
+from typing import Any, Literal
 
 import cv2
-import geopandas as gpd
 import numpy as np
 import osmnx as ox
-import pandas as pd
-from osmnx import settings as ox_settings
-from shapely import LineString, Point, Polygon
-from shapely.geometry.base import BaseGeometry
 from tqdm import tqdm
 
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.layer import Layer
 from maps4fs.generator.monitor import monitor_performance
+from maps4fs.generator.osm_pipeline import (
+    LatLonProjector,
+    OSMNXFeatureSource,
+    OSMRasterPipeline,
+)
+from maps4fs.generator.osm_pipeline.rasterizer import OSMGeometryRasterizer
 from maps4fs.generator.settings import Parameters
+
+
+@dataclass(frozen=True)
+class TextureOptions:
+    """Runtime options for Texture generation."""
+
+    texture_custom_schema: list[dict[str, Any]] | None = None
+    skip_scaling: bool = False
+    channel: Literal["textures", "background"] = "textures"
+    cap_style: str = "round"
 
 
 class Texture(ImageComponent):
@@ -36,21 +47,32 @@ class Texture(ImageComponent):
         color (tuple[int, int, int]): Color of the layer in BGR format.
     """
 
+    def __init__(
+        self,
+        game,
+        map,
+        *,
+        map_size: int | None = None,
+        map_rotated_size: int | None = None,
+        options: TextureOptions | None = None,
+    ):
+        self.options = options or TextureOptions()
+        self.osm_pipeline: OSMRasterPipeline | None = None
+        super().__init__(
+            game,
+            map,
+            map_size=map_size,
+            map_rotated_size=map_rotated_size,
+        )
+
     def preprocess(self) -> None:
         """Preprocesses the data before the generation."""
-        self.read_layers(self.get_schema())
-
         self._weights_dir = self.game.weights_dir_path
         self.procedural_dir = os.path.join(self._weights_dir, "masks")
         os.makedirs(self.procedural_dir, exist_ok=True)
 
-        self.info_save_path = os.path.join(self.map_directory, "generation_info.json")
-        if not self.kwargs.get("info_layer_path"):
-            self.info_layer_path = os.path.join(self.info_layers_directory, "textures.json")
-        else:
-            self.info_layer_path = self.kwargs["info_layer_path"]  # type: ignore
-
-        self.cap_style = self.kwargs.get("cap_style", "round")
+        self.cap_style = self.options.cap_style
+        self.read_layers(self.get_schema())
 
     def read_layers(self, layers_schema: list[dict[str, Any]]) -> None:
         """Reads layers from the schema.
@@ -63,8 +85,11 @@ class Texture(ImageComponent):
             self.logger.debug("Loaded %s layers.", len(self.layers))
         except Exception as e:
             raise ValueError(f"Error loading texture layers: {e}") from e
-        # Publish layer objects so later components can query them without touching Texture.
-        self.map.context.texture_layers = self.layers
+
+        # Publish layer metadata only for the main texture pass.
+        # Background texture pass uses a reduced schema and must not overwrite these layers.
+        if self.options.channel == "textures":
+            self.map.context.texture_layers = self.layers
 
     def get_schema(self) -> list[dict[str, Any]]:
         """Returns schema with layers for textures.
@@ -77,7 +102,7 @@ class Texture(ImageComponent):
         Returns:
             dict[str, Any]: Schema with layers for textures.
         """
-        custom_schema = self.kwargs.get("texture_custom_schema") or self.map.texture_custom_schema
+        custom_schema = self.options.texture_custom_schema or self.map.texture_custom_schema
         if custom_schema:
             layers_schema = custom_schema
             self.logger.debug("Custom schema loaded with %s layers.", len(layers_schema))
@@ -183,11 +208,12 @@ class Texture(ImageComponent):
         """Processes the data to generate textures."""
         self._prepare_weights()
         self._read_parameters()
+        self._build_osm_pipeline()
         self.draw()
         self.rotate_textures()
         self.merge_into()
 
-        if not self.kwargs.get("skip_scaling", False):
+        if not self.options.skip_scaling:
             self.scale_textures()
 
         self.add_borders()
@@ -366,6 +392,32 @@ class Texture(ImageComponent):
         bbox = ox.utils_geo.bbox_from_point(self.coordinates, dist=self.map_rotated_size / 2)
         self.minimum_x, self.minimum_y, self.maximum_x, self.maximum_y = bbox
 
+    def _build_osm_pipeline(self) -> None:
+        """Create standalone OSM source+rasterizer pipeline for this texture run."""
+        projector = LatLonProjector(
+            minimum_x=self.minimum_x,
+            minimum_y=self.minimum_y,
+            maximum_x=self.maximum_x,
+            maximum_y=self.maximum_y,
+            raster_size=self.map_rotated_size,
+        )
+        source = OSMNXFeatureSource(
+            bbox=self.new_bbox,
+            custom_osm_path=self.map.custom_osm,
+            use_cache=self.map.texture_settings.use_cache,
+            requests_timeout=10,
+            logger=self.logger,
+        )
+        rasterizer = OSMGeometryRasterizer(
+            projector=projector,
+            cap_style=self.cap_style,
+            fields_padding=self.map.texture_settings.fields_padding,
+            logger=self.logger,
+        )
+        self.osm_pipeline = OSMRasterPipeline(
+            source=source, rasterizer=rasterizer, logger=self.logger
+        )
+
     def info_sequence(self) -> dict[str, Any]:
         """Returns the JSON representation of the generation info for textures."""
         useful_attributes = [
@@ -512,23 +564,9 @@ class Texture(ImageComponent):
             cv2.imwrite(layer_path, output_image)
             self.logger.debug("Texture %s saved.", layer_path)
 
-        # Save info layer data to JSON (debug/backward-compat) AND to map.context.
-        if os.path.isfile(self.info_layer_path):
-            self.logger.debug(
-                "File %s already exists, will update to avoid overwriting.", self.info_layer_path
-            )
-            with open(self.info_layer_path, "r", encoding="utf-8") as f:
-                info_layer_data.update(json.load(f))
-
-        with open(self.info_layer_path, "w", encoding="utf-8") as f:
-            json.dump(info_layer_data, f, ensure_ascii=False, indent=4)
-            self.logger.debug("Info layer data saved to %s.", self.info_layer_path)
-
-        # Populate map.context so later components can skip disk reads.
-        # The background Texture instance writes to background.json and must not
-        # overwrite the main texture's data on the context.
+        # Populate map.context so later components consume in-memory data only.
         ctx = self.map.context
-        if os.path.basename(self.info_layer_path) == "textures.json":
+        if self.options.channel == "textures":
             ctx.fields = info_layer_data.get("fields", [])  # type: ignore[assignment]
             ctx.buildings = info_layer_data.get("buildings", [])  # type: ignore[assignment]
             ctx.farmyards = info_layer_data.get("farmyards", [])  # type: ignore[assignment]
@@ -577,7 +615,13 @@ class Texture(ImageComponent):
         if tags is None:
             return
 
-        for polygon, osm_tags, geom_type in self.objects_generator(tags, layer.width, layer.info_layer):  # type: ignore[misc]
+        if self.osm_pipeline is None:
+            raise RuntimeError("OSM pipeline is not initialized. Call process() first.")
+
+        is_fields = layer.info_layer == "fields"
+        for polygon, osm_tags, geom_type in self.osm_pipeline.polygons(
+            tags, layer.width, is_fields
+        ):
             if not len(polygon) > 2:
                 self.logger.debug("Skipping polygon with less than 3 points.")
                 continue
@@ -610,13 +654,15 @@ class Texture(ImageComponent):
             info_layer_data (dict[list[list[int]]]): Dictionary to store info layer data.
         """
         linestring_infolayers = ["roads", "water"]
-        # if self.kwargs.get("info_layer_path", None):
-        #     linestring_infolayers.append("water")
 
         if layer.info_layer in linestring_infolayers:
-            for linestring, _ in self.objects_generator(  # type: ignore[misc]
-                layer.tags, layer.width, layer.info_layer, yield_linestrings=True
-            ):
+            if self.osm_pipeline is None:
+                raise RuntimeError("OSM pipeline is not initialized. Call process() first.")
+
+            if layer.tags is None:
+                return
+
+            for linestring, _ in self.osm_pipeline.linestrings(layer.tags):
                 if self.map.size_scale is not None:
                     linestring = [  # type: ignore
                         (int(x * self.map.size_scale), int(y * self.map.size_scale))
@@ -701,20 +747,6 @@ class Texture(ImageComponent):
             cv2.imwrite(layer_path, img)
             self.logger.debug("Base texture %s saved.", layer_path)
 
-    def latlon_to_pixel(self, lat: float, lon: float) -> tuple[int, int]:
-        """Converts latitude and longitude to pixel coordinates.
-
-        Arguments:
-            lat (float): Latitude.
-            lon (float): Longitude.
-
-        Returns:
-            tuple[int, int]: Pixel coordinates.
-        """
-        x = int((lon - self.minimum_x) / (self.maximum_x - self.minimum_x) * self.map_rotated_size)
-        y = int((lat - self.maximum_y) / (self.minimum_y - self.maximum_y) * self.map_rotated_size)
-        return x, y
-
     def np_to_polygon_points(self, np_array: np.ndarray) -> list[tuple[int, int]]:
         """Converts numpy array of polygon points to list of tuples.
 
@@ -728,276 +760,6 @@ class Texture(ImageComponent):
             (int(x * self.map.size_scale), int(y * self.map.size_scale))
             for x, y in np_array.reshape(-1, 2)
         ]
-
-    def _to_np(self, geometry: Polygon, *args) -> np.ndarray:
-        """Converts Polygon geometry to numpy array of polygon points.
-
-        Arguments:
-            geometry (Polygon): Polygon geometry.
-            *Arguments: Additional arguments:
-                - width (int | None): Width of the polygon in meters.
-
-        Returns:
-            np.ndarray: Numpy array of polygon points.
-        """
-        coords = list(geometry.exterior.coords)
-        pts = np.array(coords, np.int32)
-        pts = pts.reshape((-1, 1, 2))
-        return pts
-
-    def _to_polygon(self, obj: pd.core.series.Series, width: int | None) -> Polygon:
-        """Converts OSM object to numpy array of polygon points and converts coordinates to pixels.
-
-        Arguments:
-            obj (pd.core.series.Series): OSM object.
-            width (int | None): Width of the polygon in meters.
-
-        Returns:
-            Polygon: Polygon geometry with pixel coordinates.
-        """
-        geometry = obj["geometry"]
-        geometry_type = geometry.geom_type
-        converter = self._converters(geometry_type)
-        if not converter:
-            self.logger.debug("Geometry type %s not supported.", geometry_type)
-            return None
-        return converter(geometry, width)
-
-    def polygon_to_pixel_coordinates(self, polygon: Polygon) -> Polygon:
-        """Converts polygon coordinates from lat lon to pixel coordinates.
-
-        Arguments:
-            polygon (Polygon): Polygon geometry.
-
-        Returns:
-            Polygon: Polygon geometry.
-        """
-        coords_pixel = [
-            self.latlon_to_pixel(lat, lon) for lon, lat in list(polygon.exterior.coords)
-        ]
-        return Polygon(coords_pixel)
-
-    def linestring_to_pixel_coordinates(self, linestring: LineString) -> LineString:
-        """Converts LineString coordinates from lat lon to pixel coordinates.
-
-        Arguments:
-            linestring (LineString): LineString geometry.
-
-        Returns:
-            LineString: LineString geometry.
-        """
-        coords_pixel = [self.latlon_to_pixel(lat, lon) for lon, lat in list(linestring.coords)]
-        return LineString(coords_pixel)
-
-    def point_to_pixel_coordinates(self, point: Point) -> Point:
-        """Converts Point coordinates from lat lon to pixel coordinates.
-
-        Arguments:
-            point (Point): Point geometry.
-
-        Returns:
-            Point: Point geometry.
-        """
-        x, y = self.latlon_to_pixel(point.y, point.x)
-        return Point(x, y)
-
-    def _to_pixel(self, geometry: Polygon, *args, **kwargs) -> Polygon:
-        """Returns the same geometry with pixel coordinates.
-
-        Arguments:
-            geometry (Polygon): Polygon geometry.
-
-        Returns:
-            Polygon: Polygon geometry with pixel coordinates.
-        """
-        return self.polygon_to_pixel_coordinates(geometry)
-
-    def _sequence_to_pixel(
-        self,
-        geometry: LineString | Point,
-        width: int | None,
-    ) -> Polygon:
-        """Converts LineString or Point geometry to numpy array of polygon points.
-
-        Arguments:
-            geometry (LineString | Point): LineString or Point geometry.
-            width (int | None): Width of the polygon in meters.
-
-        Raises:
-            ValueError: If the geometry type is not supported
-
-        Returns:
-            Polygon: Polygon geometry.
-        """
-        if isinstance(geometry, LineString):
-            geometry = self.linestring_to_pixel_coordinates(geometry)
-        elif isinstance(geometry, Point):
-            geometry = self.point_to_pixel_coordinates(geometry)
-        else:
-            raise ValueError(f"Geometry type {type(geometry)} not supported.")
-
-        buffered = geometry.buffer(width if width else 0, cap_style=self.cap_style)
-        if not isinstance(buffered, Polygon):
-            raise ValueError("Buffered geometry is not a Polygon.")
-        return buffered
-
-    def _converters(
-        self, geom_type: str
-    ) -> Optional[Callable[[BaseGeometry, Optional[int]], np.ndarray]]:
-        """Returns a converter function for a given geometry type.
-
-        Arguments:
-            geom_type (str): Geometry type.
-
-        Returns:
-            Callable[[shapely.geometry, int | None], np.ndarray]: Converter function.
-        """
-        converters = {
-            "Polygon": self._to_pixel,
-            "LineString": self._sequence_to_pixel,
-            "Point": self._sequence_to_pixel,
-        }
-        return converters.get(geom_type)  # type: ignore
-
-    def objects_generator(
-        self,
-        tags: dict[str, str | list[str] | bool] | None,
-        width: int | None,
-        info_layer: str | None = None,
-        yield_linestrings: bool = False,
-    ) -> Generator[
-        tuple[list[tuple[int, int]], dict[str, Any]] | tuple[np.ndarray, dict[str, Any], str],
-        None,
-        None,
-    ]:
-        """Generator which yields numpy arrays of polygons from OSM data.
-
-        Arguments:
-            tags (dict[str, str | list[str]]): Dictionary of tags to search for.
-            width (int | None): Width of the polygon in meters (only for LineString).
-            info_layer (str | None): Name of the corresponding info layer.
-            yield_linestrings (bool): Flag to determine if the LineStrings should be yielded.
-
-        Yields:
-            Generator[tuple[list[tuple[int, int]], dict] | tuple[np.ndarray, dict], None, None]:
-                Tuple containing geometry data (numpy array or list of points) and OSM tags dict.
-        """
-        if tags is None:
-            return
-        is_fieds = info_layer == "fields"
-
-        ox_settings.use_cache = self.map.texture_settings.use_cache
-        ox_settings.requests_timeout = 10
-
-        objects = self.fetch_osm_data(tags)
-        if objects is None or objects.empty:
-            self.logger.debug("No objects found for tags: %s.", tags)
-            return
-
-        self.logger.debug("Fetched %s elements for tags: %s.", len(objects), tags)
-
-        method = self.linestrings_generator if yield_linestrings else self.polygons_generator
-
-        yield from method(objects, width, is_fieds)
-
-    @monitor_performance
-    def fetch_osm_data(self, tags: dict[str, str | list[str] | bool]) -> gpd.GeoDataFrame | None:
-        """Fetches OSM data for given tags.
-
-        Arguments:
-            tags (dict[str, str | list[str] | bool]): Dictionary of tags to search for.
-
-        Returns:
-            gpd.GeoDataFrame | None: GeoDataFrame with OSM objects or None if no objects found.
-        """
-        try:
-            if self.map.custom_osm is not None:
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", FutureWarning)
-                    objects = ox.features_from_xml(self.map.custom_osm, tags=tags)
-            else:
-                objects = ox.features_from_bbox(bbox=self.new_bbox, tags=tags)
-        except Exception as e:
-            self.logger.debug("Error fetching objects for tags: %s. Error: %s.", tags, e)
-            return None
-
-        return objects
-
-    def linestrings_generator(
-        self, objects: gpd.GeoDataFrame, *args, **kwargs
-    ) -> Generator[tuple[list[tuple[int, int]], dict[str, Any]], None, None]:
-        """Generator which yields lists of point coordinates which represent LineStrings from OSM.
-
-        Arguments:
-            objects (gpd.GeoDataFrame): GeoDataFrame with OSM objects.
-
-        Yields:
-            Generator[tuple[list[tuple[int, int]], dict[str, Any]], None, None]:
-                Tuple containing list of point coordinates and corresponding OSM tags dict.
-        """
-        for _, obj in objects.iterrows():
-            geometry = obj["geometry"]
-            osm_tags = self._get_tags_from_osm_object(obj)
-            if isinstance(geometry, LineString):
-                points = [self.latlon_to_pixel(x, y) for y, x in geometry.coords]
-                yield points, osm_tags
-
-    def _get_tags_from_osm_object(self, obj: pd.core.series.Series) -> dict[str, Any]:
-        """Extracts tags from OSM object.
-
-        Arguments:
-            obj (pd.core.series.Series): OSM object.
-        Returns:
-            dict[str, Any]: Dictionary of tags.
-        """
-        ignored_keys = {"geometry", "osmid", "element_type", "action", "visible"}
-        tags = {}
-        for key in obj.index:
-            if key not in ignored_keys:
-                value = obj[key]
-                if pd.isna(value):
-                    continue
-                tags[key] = value
-        return tags
-
-    def polygons_generator(
-        self, objects: pd.core.frame.DataFrame, width: int | None, is_fieds: bool
-    ) -> Generator[tuple[np.ndarray, dict[str, Any], str], None, None]:
-        """Generator which yields numpy arrays of polygons from OSM data.
-
-        Arguments:
-            objects (pd.core.frame.DataFrame): Dataframe with OSM objects.
-            width (int | None): Width of the polygon in meters (only for LineString).
-            is_fieds (bool): Flag to determine if the fields should be padded.
-
-        Yields:
-            Generator[tuple[np.ndarray, dict[str, Any], str], None, None]:
-                Tuple containing numpy array of polygon points, OSM tags dict, and the original
-                OSM geometry type string (e.g. "Polygon", "LineString").
-        """
-        for _, obj in objects.iterrows():
-            geom_type = obj["geometry"].geom_type
-            osm_tags = self._get_tags_from_osm_object(obj)
-            try:
-                polygon = self._to_polygon(obj, width)
-            except Exception as e:
-                self.logger.warning("Error converting object to polygon: %s.", e)
-                continue
-            if polygon is None:
-                continue
-
-            if is_fieds and self.map.texture_settings.fields_padding > 0:
-                padded_polygon = polygon.buffer(-self.map.texture_settings.fields_padding)
-
-                if not isinstance(padded_polygon, Polygon) or not list(
-                    padded_polygon.exterior.coords
-                ):
-                    self.logger.debug("The padding value is too high, field will not padded.")
-                else:
-                    polygon = padded_polygon
-
-            polygon_np = self._to_np(polygon)
-            yield polygon_np, osm_tags, geom_type
 
     @monitor_performance
     def previews(self) -> list[str]:

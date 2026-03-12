@@ -41,7 +41,7 @@ if os.path.isdir(map_directory):
 os.makedirs(map_directory, exist_ok=True)
 
 # 5️⃣ Optional: use a custom OSM file.
-osm_file = "C:/NewMaps/FS25_Titelski_breg_DEV/custom_osm.osm"
+osm_file = "custom_osm.osm"
 
 # 6️⃣ Optional: advanced settings. You can use the default settings, but
 # it's recommended to change them according to your needs.
@@ -78,11 +78,11 @@ buildings_settings = mfs.settings.BuildingSettings(
 
 # 7️⃣ Optional: define custom tree and textures schemas.
 # Default schemas can be found in the `data` directory of the repository.
-tree_custom_schema_path = "C:/NewMaps/FS25_Titelski_breg_DEV/tree_custom_schema.json"
-tree_custom_schema = json.load(open(tree_custom_schema_path, "r", encoding="utf-8"))
+# tree_custom_schema_path = "tree_custom_schema.json"
+# tree_custom_schema = json.load(open(tree_custom_schema_path, "r", encoding="utf-8"))
 
-texture_custom_schema_path = "templates/fs25-texture-schema.json"
-texture_custom_schema = json.load(open(texture_custom_schema_path, "r", encoding="utf-8"))
+# texture_custom_schema_path = "texture_custom_schema.json"
+# texture_custom_schema = json.load(open(texture_custom_schema_path, "r", encoding="utf-8"))
 
 generation_settings = mfs.GenerationSettings(
     dem_settings=dem_settings,
@@ -106,7 +106,7 @@ mp = mfs.Map(
     custom_osm=osm_file,
     generation_settings=generation_settings,
     # texture_custom_schema=texture_custom_schema,
-    tree_custom_schema=tree_custom_schema,
+    # tree_custom_schema=tree_custom_schema,
 )
 
 # 9️⃣ Launch the generation process.

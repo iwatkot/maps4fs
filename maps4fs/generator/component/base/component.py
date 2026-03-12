@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 from copy import deepcopy
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable
 
 import cv2
@@ -49,6 +50,25 @@ class AttrDict(dict):
         self[name] = value
 
 
+@dataclass(frozen=True)
+class ComponentPaths:
+    """Resolved filesystem paths used by all components."""
+
+    map_directory: str
+
+    @property
+    def previews_directory(self) -> str:
+        return os.path.join(self.map_directory, "previews")
+
+    @property
+    def satellite_directory(self) -> str:
+        return os.path.join(self.map_directory, "satellite")
+
+    @property
+    def generation_info_path(self) -> str:
+        return os.path.join(self.map_directory, "generation_info.json")
+
+
 class Component:
     """Base class for all map generation components.
 
@@ -78,6 +98,7 @@ class Component:
         self.coordinates = map.coordinates
         self.rotation = map.rotation
         self.map_directory = map.map_directory
+        self.paths = ComponentPaths(self.map_directory)
         self.logger = map.logger
         self.kwargs = kwargs
 
@@ -88,14 +109,17 @@ class Component:
             self.map_rotated_size,
         )
 
-        os.makedirs(self.previews_directory, exist_ok=True)
-        os.makedirs(self.info_layers_directory, exist_ok=True)
-        os.makedirs(self.satellite_directory, exist_ok=True)
+        self._prepare_directories()
 
         self.save_bbox()
         self.preprocess()
 
         self.assets = AttrDict()
+
+    def _prepare_directories(self) -> None:
+        """Ensure all shared component output directories exist."""
+        os.makedirs(self.paths.previews_directory, exist_ok=True)
+        os.makedirs(self.paths.satellite_directory, exist_ok=True)
 
     def preprocess(self) -> None:
         """Prepares the component for processing. Must be implemented in the child class."""
@@ -125,16 +149,7 @@ class Component:
         Returns:
             str: The directory where the preview images are stored.
         """
-        return os.path.join(self.map_directory, "previews")
-
-    @property
-    def info_layers_directory(self) -> str:
-        """The directory where the info layers are stored.
-
-        Returns:
-            str: The directory where the info layers are stored.
-        """
-        return os.path.join(self.map_directory, "info_layers")
+        return self.paths.previews_directory
 
     @property
     def satellite_directory(self) -> str:
@@ -143,7 +158,7 @@ class Component:
         Returns:
             str: The directory where the satellite images are stored.
         """
-        return os.path.join(self.map_directory, "satellite")
+        return self.paths.satellite_directory
 
     @property
     def generation_info_path(self) -> str:
@@ -152,7 +167,7 @@ class Component:
         Returns:
             str: The path to the generation info JSON file.
         """
-        return os.path.join(self.map_directory, "generation_info.json")
+        return self.paths.generation_info_path
 
     def info_sequence(self) -> dict[Any, Any]:
         """Returns the information sequence for the component. Must be implemented in the child
@@ -396,23 +411,8 @@ class Component:
             raise ValueError("The fitted osm_object has no points.")
         return as_list
 
-    def get_infolayer_path(self, layer_name: str) -> str | None:
-        """Returns the path to the info layer file.
-
-        Arguments:
-            layer_name (str): The name of the layer.
-
-        Returns:
-            str | None: The path to the info layer file or None if the layer does not exist.
-        """
-        info_layer_path = os.path.join(self.info_layers_directory, f"{layer_name}.json")
-        if not os.path.isfile(info_layer_path):
-            self.logger.warning("Info layer %s does not exist", info_layer_path)
-            return None
-        return info_layer_path
-
     # Maps (layer_name, layer_key) pairs to their map.context attribute names.
-    # Used by get_infolayer_data to prefer in-memory context over disk reads.
+    # Used by get_infolayer_data for direct in-memory lookups.
     _INFO_LAYER_CONTEXT_MAP: dict[tuple[str, str], str] = {
         ("textures", "fields"): "fields",
         ("textures", "buildings"): "buildings",
@@ -428,8 +428,7 @@ class Component:
     def get_infolayer_data(self, layer_name: str, layer_key: str) -> Any | None:
         """Return data from a named info layer by key.
 
-        Checks map.context first (populated in-memory by earlier components),
-        then falls back to the JSON file for backward compatibility.
+        Reads map.context only. Legacy info_layers/*.json channel is removed.
 
         Arguments:
             layer_name (str): Name of the info layer (e.g. "textures", "background").
@@ -440,19 +439,8 @@ class Component:
         """
         ctx_attr = self._INFO_LAYER_CONTEXT_MAP.get((layer_name, layer_key))
         if ctx_attr is not None:
-            value = getattr(self.map.context, ctx_attr, None)
-            if value:
-                return value
-
-        # JSON fallback (maintained for backward compatibility and debug outputs).
-        infolayer_path = self.get_infolayer_path(layer_name)
-        if not infolayer_path:
-            return None
-
-        with open(infolayer_path, "r", encoding="utf-8") as file:
-            data = json.load(file)
-
-        return data.get(layer_key)
+            return getattr(self.map.context, ctx_attr, None)
+        return None
 
     @staticmethod
     def interpolate_points(

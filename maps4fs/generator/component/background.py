@@ -3,7 +3,6 @@ around the map."""
 
 from __future__ import annotations
 
-import json
 import os
 import shutil
 from copy import deepcopy
@@ -22,7 +21,7 @@ from maps4fs.generator.component.base.component_mesh import (
     MeshComponent,
 )
 from maps4fs.generator.component.dem import DEM
-from maps4fs.generator.component.texture import Texture
+from maps4fs.generator.component.texture import Texture, TextureOptions
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
@@ -477,11 +476,10 @@ class Background(MeshComponent, ImageComponent):
             if background_dem is not None:
                 z_factor = self.get_z_scaling_factor(ignore_height_scale_multiplier=True)
                 max_elevation = float(np.max(background_dem) * z_factor)
-                positions_dir = os.path.join(self.map_directory, "positions")
-                os.makedirs(positions_dir, exist_ok=True)
-                position_path = os.path.join(positions_dir, f"{Parameters.BACKGROUND_TERRAIN}.json")
-                with open(position_path, "w", encoding="utf-8") as pf:
-                    json.dump({"mesh_centroid_y": max_elevation}, pf, indent=4)
+                self.map.context.set_mesh_position(
+                    Parameters.BACKGROUND_TERRAIN,
+                    mesh_centroid_y=max_elevation,
+                )
                 self.logger.debug("Background terrain T_y (max elevation): %.4f m", max_elevation)
         except Exception as e:
             self.logger.warning("Could not save background terrain elevation: %s", e)
@@ -567,23 +565,12 @@ class Background(MeshComponent, ImageComponent):
         else:
             elevation = float(center[1])
 
-        positions_dir = os.path.join(self.map_directory, "positions")
-        os.makedirs(positions_dir, exist_ok=True)
-        position_path = os.path.join(positions_dir, f"{Parameters.WATER_RESOURCES}.json")
-        try:
-            with open(position_path, "w", encoding="utf-8") as pf:
-                json.dump(
-                    {
-                        "mesh_centroid_x": float(center[0]),
-                        "mesh_centroid_y": float(elevation),
-                        "mesh_centroid_z": float(center[2]),
-                    },
-                    pf,
-                    ensure_ascii=False,
-                    indent=4,
-                )
-        except Exception as e:
-            self.logger.warning("Could not save water resources centroid: %s", e)
+        self.map.context.set_mesh_position(
+            Parameters.WATER_RESOURCES,
+            mesh_centroid_x=float(center[0]),
+            mesh_centroid_y=float(elevation),
+            mesh_centroid_z=float(center[2]),
+        )
 
         try:
             i3d_water_resources = self.mesh_to_i3d(
@@ -844,10 +831,12 @@ class Background(MeshComponent, ImageComponent):
             self.map,
             map_size=self.background_size,
             map_rotated_size=self.rotated_size,
-            texture_custom_schema=background_layers,  # type: ignore
-            skip_scaling=True,  # type: ignore
-            info_layer_path=os.path.join(self.info_layers_directory, "background.json"),  # type: ignore
-            cap_style="flat",  # type: ignore
+            options=TextureOptions(
+                texture_custom_schema=background_layers,  # type: ignore[arg-type]
+                skip_scaling=True,
+                channel="background",
+                cap_style="flat",
+            ),
         )
 
         self.background_texture.preprocess()
@@ -1074,26 +1063,12 @@ class Background(MeshComponent, ImageComponent):
         center = vertices.mean(axis=0)
         mesh.vertices = vertices - center
 
-        # Save mesh centroid for GE positioning.
-        positions_dir = os.path.join(self.map_directory, "positions")
-        os.makedirs(positions_dir, exist_ok=True)
-        position_path = os.path.join(
-            positions_dir, f"{Parameters.WATER_RESOURCES}_line_surface.json"
+        self.map.context.set_mesh_position(
+            Parameters.WATER_RESOURCES_LINE_SURFACE,
+            mesh_centroid_x=float(center[0]),
+            mesh_centroid_y=float(center[1]),
+            mesh_centroid_z=float(center[2]),
         )
-        try:
-            with open(position_path, "w", encoding="utf-8") as pf:
-                json.dump(
-                    {
-                        "mesh_centroid_x": float(center[0]),
-                        "mesh_centroid_y": float(center[1]),
-                        "mesh_centroid_z": float(center[2]),
-                    },
-                    pf,
-                    ensure_ascii=False,
-                    indent=4,
-                )
-        except Exception as e:
-            self.logger.warning("Could not save water line surface centroid: %s", e)
 
         output_directory = os.path.join(self.map_directory, "assets", "water")
         os.makedirs(output_directory, exist_ok=True)
@@ -1442,31 +1417,13 @@ class Background(MeshComponent, ImageComponent):
             centroid_x = int(np.mean(xs))
             centroid_y = int(np.mean(ys))
 
-            road_data = {
-                "left": left,
-                "top": top,
-                "right": right,
-                "bottom": bottom,
-                "centroid_x": centroid_x,
-                "centroid_y": centroid_y,
-                "min_x": min_x,
-                "min_y": min_y,
-                "min_z": min_z,
-                "min_val": min_val,
-                "max_x": max_x,
-                "max_y": max_y,
-                "max_z": max_z,
-                "max_val": max_val,
-            }
-
             base_filename = os.path.splitext(mask_file)[0].replace("_mask", "")
-            positions_directory = os.path.join(self.map_directory, "positions")
-            os.makedirs(positions_directory, exist_ok=True)
-
-            road_data_path = os.path.join(positions_directory, f"{base_filename}.json")
-            with open(road_data_path, "w", encoding="utf-8") as f:
-                json.dump(road_data, f, ensure_ascii=False, indent=4)
-                self.logger.debug("Road data saved to %s.", road_data_path)
+            self.map.context.set_mesh_position(
+                base_filename,
+                mesh_centroid_x=float(centroid_x),
+                mesh_centroid_y=float((min_z + max_z) / 2),
+                mesh_centroid_z=float(centroid_y),
+            )
 
             try:
                 os.remove(mask_path)

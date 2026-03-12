@@ -841,92 +841,50 @@ class Scene(ImageComponent):
         self.position_inserted_mesh(binary_i3d_path, asset_name)
 
     def position_inserted_mesh(self, binary_i3d_path: str, asset_name: str) -> None:
-        """Reads the saved position data for the given asset and sets its translation in the
-        binary I3D file.
+        """Reads mesh position data from map context and sets translation in the binary I3D file.
 
         Arguments:
             binary_i3d_path (str): Path to the binary I3D file to position.
             asset_name (str): Name of the asset to position.
         """
-        # We only need to lift it by its mean elevation so it aligns with the GE terrain.
+        position_data = self.map.context.get_mesh_position(asset_name)
+
+        # Background terrain only needs elevation offset.
         if asset_name == Parameters.BACKGROUND_TERRAIN:
-            positions_directory = os.path.join(self.map_directory, "positions")
-            position_file_path = os.path.join(
-                positions_directory, f"{Parameters.BACKGROUND_TERRAIN}.json"
-            )
             elevation = 0.0
-            if os.path.isfile(position_file_path):
-                try:
-                    with open(position_file_path, "r", encoding="utf-8") as pf:
-                        pos_data = json.load(pf)
-                    elevation = float(pos_data.get("mesh_centroid_y", 0.0))
-                except Exception as e:
-                    self.logger.warning(
-                        "Could not read background terrain elevation: %s. Using 0.", e
-                    )
+            if position_data is not None:
+                elevation = float(position_data.get("mesh_centroid_y", 0.0))
             self._set_mesh_translation(binary_i3d_path, f"0 {elevation} 0", asset_name)
             return
 
-        positions_directory = os.path.join(self.map_directory, "positions")
-        position_file_path = os.path.join(positions_directory, f"{asset_name}.json")
-        if not os.path.isfile(position_file_path):
+        if not position_data:
             self.logger.warning(
-                "Position file not found for asset %s at path: %s. Skipping positioning.",
+                "Position data not found in context for asset %s. Skipping positioning.",
                 asset_name,
-                position_file_path,
             )
             return
-
-        try:
-            with open(position_file_path, "r", encoding="utf-8") as position_file:
-                position_data = json.load(position_file)  # type: ignore
-        except json.JSONDecodeError as e:
-            self.logger.warning(
-                "Could not load position data for asset %s from file %s with error: %s. Skipping positioning.",
-                asset_name,
-                position_file_path,
-                e,
-            )
-            return
-
-        min_z = position_data.get("min_z", 0.0)
-        max_z = position_data.get("max_z", 0.0)
 
         # Prefer the exact mesh vertex centroid saved by road.py (post-rotation, pre-centering).
-        # This matches vertices -= center exactly, unlike mask pixel centroid.
         mesh_centroid_x = position_data.get("mesh_centroid_x")
         mesh_centroid_z = position_data.get("mesh_centroid_z")
-
-        if mesh_centroid_x is not None and mesh_centroid_z is not None:
-            # Water meshes are generated over the full background canvas
-            # (map_size + 2 * BACKGROUND_DISTANCE), so their pixel coordinates must be
-            # offset by half the background canvas size, not half the map size.
-            water_assets = {Parameters.WATER_RESOURCES, Parameters.WATER_RESOURCES_LINE_SURFACE}
-            if asset_name in water_assets:
-                canvas_half = (self.scaled_size + Parameters.BACKGROUND_DISTANCE * 2) // 2
-            else:
-                canvas_half = self.scaled_size // 2
-
-            ge_x = float(mesh_centroid_x) - canvas_half
-            ge_y = float(mesh_centroid_z) - canvas_half
-            mesh_centroid_y = position_data.get("mesh_centroid_y")
-            ge_elevation = (
-                float(mesh_centroid_y) if mesh_centroid_y is not None else (min_z + max_z) / 2
+        if mesh_centroid_x is None or mesh_centroid_z is None:
+            self.logger.warning(
+                "Mesh centroid X/Z is missing for asset %s. Skipping positioning.", asset_name
             )
+            return
+
+        # Water meshes are generated over the full background canvas.
+        water_assets = {Parameters.WATER_RESOURCES, Parameters.WATER_RESOURCES_LINE_SURFACE}
+        if asset_name in water_assets:
+            canvas_half = (self.scaled_size + Parameters.BACKGROUND_DISTANCE * 2) // 2
         else:
-            centroid_x = position_data.get("centroid_x")
-            centroid_y = position_data.get("centroid_y")
-            if centroid_x is not None and centroid_y is not None:
-                ge_x, ge_y = self.top_left_coordinates_to_center((centroid_x, centroid_y))
-            else:
-                left = position_data.get("left", 0)
-                top = position_data.get("top", 0)
-                right = position_data.get("right", 0)
-                bottom = position_data.get("bottom", 0)
-                center_pixel_x = int(left + (self.scaled_size - left - right) / 2)
-                center_pixel_y = int(top + (self.scaled_size - top - bottom) / 2)
-                ge_x, ge_y = self.top_left_coordinates_to_center((center_pixel_x, center_pixel_y))
-            ge_elevation = (min_z + max_z) / 2
+            canvas_half = self.scaled_size // 2
+
+        ge_x = float(mesh_centroid_x) - canvas_half
+        ge_y = float(mesh_centroid_z) - canvas_half
+
+        mesh_centroid_y = position_data.get("mesh_centroid_y")
+        ge_elevation = float(mesh_centroid_y) if mesh_centroid_y is not None else 0.0
 
         # GE translation string order: X (east-west), Y (elevation), Z (north-south).
         translation = f"{ge_x} {ge_elevation} {ge_y}"
