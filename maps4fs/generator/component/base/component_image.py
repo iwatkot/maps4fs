@@ -299,7 +299,7 @@ class ImageComponent(Component):
 
                 img.save(output_dds_path, format="DDS")
         except Exception as e:
-            raise RuntimeError(f"DDS conversion failed: {e}")
+            raise RuntimeError(f"DDS conversion failed: {e}") from e
 
     @staticmethod
     def convert_png_to_dds_texconv(input_png_path: str, output_dds_path: str) -> None:

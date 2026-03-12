@@ -59,6 +59,11 @@ class XmlDocument:
 
     @property
     def root(self) -> ET.Element:
+        """Return XML root element for direct ElementTree operations.
+
+        Returns:
+            ET.Element: Parsed XML root element.
+        """
         return self._root
 
     # ------------------------------------------------------------------

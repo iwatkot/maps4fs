@@ -17,8 +17,7 @@ except Exception as e:
 import pydtmdl.providers as dtm
 from pydtmdl import DTMProvider
 
-import maps4fs.generator.component as component
-import maps4fs.generator.settings as settings
+from maps4fs.generator import component, settings
 from maps4fs.generator.bootstrap import Bootstrap
 from maps4fs.generator.game import FS25, Game
 from maps4fs.generator.map import Map

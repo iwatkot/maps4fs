@@ -11,7 +11,7 @@ from typing import Any, Generator
 from pydtmdl import DTMProvider
 from pydtmdl.base.dtm import DTMProviderSettings
 
-from maps4fs.generator.component import Background, Component, Layer, Satellite, Texture
+from maps4fs.generator.component import Component
 from maps4fs.generator.constants import Paths
 from maps4fs.generator.context import MapContext
 from maps4fs.generator.game import Game

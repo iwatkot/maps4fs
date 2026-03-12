@@ -8,15 +8,13 @@ from typing import TYPE_CHECKING, Any, Literal, NamedTuple, cast
 from pydantic import BaseModel, ConfigDict
 
 from maps4fs.generator.bootstrap import Bootstrap
+from maps4fs.generator.constants import Parameters
 
 PACKAGE_VERSION = Bootstrap.package_version()
+__all__ = ["Parameters"]
 
 if TYPE_CHECKING:
     from maps4fs.generator.map import Map
-
-
-# Re-exported for backward compatibility — Parameters now lives in constants.
-from maps4fs.generator.constants import Parameters as Parameters  # noqa: F401
 
 
 class SettingsModel(BaseModel):
@@ -302,6 +300,8 @@ class MainSettings(NamedTuple):
         """
         from maps4fs.generator.geo import get_country_by_coordinates
 
+        telemetry = getattr(map, "_telemetry", {})
+
         return cls(
             game=map.game.code,
             latitude=map.coordinates[0],
@@ -313,12 +313,12 @@ class MainSettings(NamedTuple):
             dtm_provider=map.dtm_provider.name(),
             custom_osm=bool(map.custom_osm),
             custom_dem=bool(map.custom_background_path),
-            is_public=map._telemetry.get("is_public", False),
+            is_public=telemetry.get("is_public", False),
             date=datetime.now().strftime("%Y-%m-%d"),
             time=datetime.now().strftime("%H:%M:%S"),
             version=PACKAGE_VERSION,
             completed=False,
             error=None,
-            origin=map._telemetry.get("origin", None),
-            platform=map._telemetry.get("platform", None),
+            origin=telemetry.get("origin", None),
+            platform=telemetry.get("platform", None),
         )

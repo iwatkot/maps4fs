@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 from random import choice, randint
-from typing import Any, NamedTuple
+from typing import NamedTuple
 
 import cv2
 import numpy as np

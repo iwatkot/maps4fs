@@ -16,6 +16,7 @@ class OSMFeatureSource(Protocol):
 
     def fetch(self, tags: dict[str, str | list[str] | bool]) -> gpd.GeoDataFrame | None:
         """Fetch features for provided tag filter."""
+        raise NotImplementedError
 
 
 @dataclass

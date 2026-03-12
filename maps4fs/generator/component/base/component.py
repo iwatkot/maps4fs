@@ -58,14 +58,17 @@ class ComponentPaths:
 
     @property
     def previews_directory(self) -> str:
+        """Return directory path where component previews are stored."""
         return os.path.join(self.map_directory, "previews")
 
     @property
     def satellite_directory(self) -> str:
+        """Return directory path where downloaded satellite tiles are stored."""
         return os.path.join(self.map_directory, "satellite")
 
     @property
     def generation_info_path(self) -> str:
+        """Return path to component generation info JSON file."""
         return os.path.join(self.map_directory, "generation_info.json")
 
 

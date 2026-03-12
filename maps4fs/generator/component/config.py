@@ -78,7 +78,7 @@ class Config(ImageComponent):
             "Overview": overview_data,
         }
         if self.fog_parameters:
-            data["Fog"] = {k: v for k, v in self.fog_parameters.items()}
+            data["Fog"] = dict(self.fog_parameters)
 
         data.update(self.info)
 

@@ -14,14 +14,13 @@ from tqdm import tqdm
 
 from maps4fs.generator.constants import Paths
 from maps4fs.generator.osm_pipeline.rasterizer import OSMGeometryRasterizer
-from maps4fs.generator.osm_pipeline.source import OSMFeatureSource
 
 
 @dataclass
 class OSMRasterPipeline:
     """Coordinates feature fetching and geometry rasterization."""
 
-    source: OSMFeatureSource
+    source: Any
     rasterizer: OSMGeometryRasterizer
     logger: Any
 
