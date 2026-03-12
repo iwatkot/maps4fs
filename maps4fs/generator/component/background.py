@@ -85,12 +85,8 @@ class Background(MeshComponent, ImageComponent):
         self.dem = DEM(
             self.game,
             self.map,
-            self.coordinates,
-            self.background_size,
-            self.rotated_size,
-            self.rotation,
-            self.map_directory,
-            self.logger,
+            map_size=self.background_size,
+            map_rotated_size=self.rotated_size,
         )
         self.dem.preprocess()
         self.dem.set_output_resolution((self.rotated_size, self.rotated_size))
@@ -378,12 +374,7 @@ class Background(MeshComponent, ImageComponent):
     @monitor_performance
     def texture_background_mesh(self) -> None:
         """Textures the background mesh using satellite imagery."""
-        satellite_component = self.map.get_satellite_component()
-        if not satellite_component:
-            self.logger.warning("Satellite component not found, cannot texture background mesh.")
-            return
-
-        background_texture_path = satellite_component.assets.background
+        background_texture_path = self.map.context.satellite_background_path
 
         if not background_texture_path or not os.path.isfile(background_texture_path):
             self.logger.warning("Background texture not found, cannot texture background mesh.")
@@ -851,12 +842,8 @@ class Background(MeshComponent, ImageComponent):
         self.background_texture = Texture(
             self.game,
             self.map,
-            self.coordinates,
-            self.background_size,
-            self.rotated_size,
-            rotation=self.rotation,
-            map_directory=self.map_directory,
-            logger=self.logger,
+            map_size=self.background_size,
+            map_rotated_size=self.rotated_size,
             texture_custom_schema=background_layers,  # type: ignore
             skip_scaling=True,  # type: ignore
             info_layer_path=os.path.join(self.info_layers_directory, "background.json"),  # type: ignore

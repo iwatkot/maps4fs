@@ -181,7 +181,7 @@ class GRLE(ImageComponent):
         Returns:
             np.ndarray | None: The farmlands preview image with fields overlayed on top of it.
         """
-        fields_layer = self.map.get_texture_layer(by_usage="field")
+        fields_layer = self.map.context.get_layer_by_usage("field")
         if not fields_layer:
             self.logger.debug("Fields layer not found in the texture component.")
             return None
@@ -316,7 +316,7 @@ class GRLE(ImageComponent):
     @monitor_performance
     def _add_plants(self) -> None:
         """Adds plants to the InfoLayer PNG file."""
-        grass_layer = self.map.get_texture_layer(by_usage="grass")
+        grass_layer = self.map.context.get_layer_by_usage("grass")
         if not grass_layer:
             self.logger.warning("Grass layer not found in the texture component.")
             return
@@ -325,7 +325,7 @@ class GRLE(ImageComponent):
         grass_image_path = grass_layer.get_preview_or_path(weights_directory)
         self.logger.debug("Grass image path: %s.", grass_image_path)
 
-        forest_layer = self.map.get_texture_layer(by_usage="forest")
+        forest_layer = self.map.context.get_layer_by_usage("forest")
         forest_image = None
         if forest_layer:
             forest_image_path = forest_layer.get_preview_or_path(weights_directory)
@@ -561,9 +561,9 @@ class GRLE(ImageComponent):
         # 7. Same as resize, dilate, etc.
         # 8. Sum the current pixel value with the WATER_AREA_PIXEL_VALUE.
 
-        texture_component = self.map.get_texture_component()
-        if not texture_component:
-            self.logger.warning("Texture component not found in the map.")
+        texture_component = self.map.context
+        if not texture_component.texture_layers:
+            self.logger.warning("Texture layers not found in context.")
             return
 
         for layer in texture_component.get_area_type_layers():
@@ -575,14 +575,13 @@ class GRLE(ImageComponent):
             environment_image[weight_image > 0] = pixel_value  # type: ignore
 
         for layer in texture_component.get_water_area_layers():
-            pixel_value = Parameters.WATER_AREA_PIXEL_VALUE
             weight_image = self.get_resized_weight(layer, environment_size)
             if weight_image is None:
                 self.logger.warning(
                     "Weight image for water area layer not found in %s.", layer.name
                 )
                 continue
-            environment_image[weight_image > 0] += pixel_value  # type: ignore
+            environment_image[weight_image > 0] += Parameters.WATER_AREA_PIXEL_VALUE  # type: ignore
 
         cv2.imwrite(info_layer_environment_path, environment_image)
         self.logger.debug("Environment InfoLayer PNG file saved: %s.", info_layer_environment_path)
@@ -657,12 +656,12 @@ class GRLE(ImageComponent):
         indoor_mask_size = int(indoor_mask_image.shape[0])
         self.logger.debug("Indoor InfoLayer PNG file loaded, shape: %s.", indoor_mask_image.shape)
 
-        texture_component = self.map.get_texture_component()
-        if not texture_component:
-            self.logger.warning("Texture component not found in the map.")
+        texture_context = self.map.context
+        if not texture_context.texture_layers:
+            self.logger.warning("Texture layers not found in context.")
             return
 
-        for layer in texture_component.get_indoor_layers():
+        for layer in texture_context.get_indoor_layers():
             weight_image = self.get_resized_weight(layer, indoor_mask_size, dilations=0)
             if weight_image is None:
                 self.logger.warning("Weight image for indoor layer not found in %s.", layer.name)

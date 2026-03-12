@@ -238,7 +238,7 @@ class Scene(ImageComponent):
         fields_doc = XmlDocument(self.xml_path)  # type: ignore
 
         border = 0
-        fields_layer = self.map.get_texture_layer(by_usage=Parameters.FIELD)
+        fields_layer = self.map.context.get_layer_by_usage(Parameters.FIELD)
         if fields_layer and fields_layer.border:
             border = fields_layer.border
 
@@ -433,7 +433,7 @@ class Scene(ImageComponent):
             list[dict[str, int | str]] | None: The tree schema or None if the schema could not be
                 read.
         """
-        custom_schema = self.kwargs.get("tree_custom_schema")
+        custom_schema = self.kwargs.get("tree_custom_schema") or self.map.tree_custom_schema
         if custom_schema:
             tree_schema = custom_schema
         else:
@@ -499,9 +499,9 @@ class Scene(ImageComponent):
             return
 
         if self.map.texture_settings.use_precise_tags:
-            forest_layers = self.map.get_texture_layers(by_usage=Parameters.FOREST)
+            forest_layers = self.map.context.get_layers_by_usage(Parameters.FOREST)
         else:
-            layer = self.map.get_texture_layer(by_usage=Parameters.FOREST)
+            layer = self.map.context.get_layer_by_usage(Parameters.FOREST)
             forest_layers = [layer] if layer else []
         if not forest_layers:
             self.logger.warning("Forest layer not found.")

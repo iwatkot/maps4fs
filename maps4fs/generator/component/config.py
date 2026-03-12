@@ -199,23 +199,21 @@ class Config(ImageComponent):
         """Generates and sets the overview image for the map."""
         overview_image_path = self.game.overview_file_path
 
-        satellite_component = self.map.get_satellite_component()
-        if not satellite_component:
+        overview_path = self.map.context.satellite_overview_path
+        if not overview_path:
             self.logger.warning(
-                "Satellite component not found, overview generation will be skipped."
+                "Satellite overview path not set in context, overview generation will be skipped."
             )
             return
 
-        if not satellite_component.assets.overview or not os.path.isfile(
-            satellite_component.assets.overview
-        ):
+        if not os.path.isfile(overview_path):
             self.logger.warning(
                 "Satellite overview image not found, overview generation will be skipped."
             )
             return
 
-        satellite_images_directory = os.path.dirname(satellite_component.assets.overview)
-        overview_image = cv2.imread(satellite_component.assets.overview, cv2.IMREAD_UNCHANGED)
+        satellite_images_directory = os.path.dirname(overview_path)
+        overview_image = cv2.imread(overview_path, cv2.IMREAD_UNCHANGED)
 
         if overview_image is None:
             self.logger.warning(

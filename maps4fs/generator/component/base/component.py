@@ -55,35 +55,30 @@ class Component:
     Arguments:
         game (Game): The game instance for which the map is generated.
         map (Map): The map instance for which the component is generated.
-        coordinates (tuple[float, float]): The latitude and longitude of the center of the map.
-        map_size (int): The size of the map in pixels.
-        map_rotated_size (int): The size of the map in pixels after rotation.
-        rotation (int): The rotation angle of the map.
-        map_directory (str): The directory where the map files are stored.
-        logger (Any, optional): The logger to use. Must have at least three basic methods: debug,
-            info, warning. If not provided, default logging will be used.
+        map_size (int, optional): Override the map canvas size (default: map.size).
+        map_rotated_size (int, optional): Override the rotated canvas size
+            (default: map.rotated_size). Used by Background to pass a larger canvas.
     """
 
     def __init__(
         self,
         game: Game,
         map: Map,
-        coordinates: tuple[float, float],
-        map_size: int,
-        map_rotated_size: int,
-        rotation: int,
-        map_directory: str,
-        logger: Any = None,
-        **kwargs: dict[str, Any],
+        *,
+        map_size: int | None = None,
+        map_rotated_size: int | None = None,
+        **kwargs: Any,
     ):
         self.game = game
         self.map = map
-        self.coordinates = coordinates
-        self.map_size = map_size
-        self.map_rotated_size = map_rotated_size
-        self.rotation = rotation
-        self.map_directory = map_directory
-        self.logger = logger
+        self.map_size = map_size if map_size is not None else map.size
+        self.map_rotated_size = (
+            map_rotated_size if map_rotated_size is not None else map.rotated_size
+        )
+        self.coordinates = map.coordinates
+        self.rotation = map.rotation
+        self.map_directory = map.map_directory
+        self.logger = map.logger
         self.kwargs = kwargs
 
         self.logger.debug(
@@ -595,19 +590,12 @@ class Component:
         Returns:
             np.ndarray | None: The DEM image or None if not found.
         """
-        background_component = self.map.get_background_component()
-        if not background_component:
-            self.logger.warning("Background component not found.")
-            return None
-
-        items = background_component.not_resized_paths()
-        result = self.get_item_with_fallback(
-            items,
-            self.get_image_safely,
-            start_at,
-            end_on,
-        )
-        return result
+        background_directory = os.path.join(self.map_directory, "background")
+        items = [
+            os.path.join(background_directory, dem_type)
+            for dem_type in Parameters.SUPPORTED_DEM_TYPES
+        ]
+        return self.get_item_with_fallback(items, self.get_image_safely, start_at, end_on)
 
     def get_non_zero_bounds(self, image: np.ndarray) -> tuple[int, int, int, int] | None:
         """Gets the distance from each edge of the image to the nearest non-zero pixel.

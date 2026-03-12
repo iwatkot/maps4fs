@@ -68,6 +68,10 @@ class Satellite(ImageComponent):
 
         self.assets.background = background_path
 
+        # Publish paths to context so later components need no reference to this component.
+        self.map.context.satellite_overview_path = overwiew_path
+        self.map.context.satellite_background_path = background_path
+
         sizes = [overview_size, background_size]
         self.image_paths = [overwiew_path, background_path]
 

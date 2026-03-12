@@ -63,6 +63,8 @@ class Texture(ImageComponent):
             self.logger.debug("Loaded %s layers.", len(self.layers))
         except Exception as e:
             raise ValueError(f"Error loading texture layers: {e}") from e
+        # Publish layer objects so later components can query them without touching Texture.
+        self.map.context.texture_layers = self.layers
 
     def get_schema(self) -> list[dict[str, Any]]:
         """Returns schema with layers for textures.
@@ -75,7 +77,7 @@ class Texture(ImageComponent):
         Returns:
             dict[str, Any]: Schema with layers for textures.
         """
-        custom_schema = self.kwargs.get("texture_custom_schema")
+        custom_schema = self.kwargs.get("texture_custom_schema") or self.map.texture_custom_schema
         if custom_schema:
             layers_schema = custom_schema
             self.logger.debug("Custom schema loaded with %s layers.", len(layers_schema))
@@ -93,7 +95,6 @@ class Texture(ImageComponent):
 
         if not isinstance(layers_schema, list):
             raise ValueError("Texture layers schema must be a list of dictionaries.")
-
         return layers_schema
 
     def get_base_layer(self) -> Layer | None:

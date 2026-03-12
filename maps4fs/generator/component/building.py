@@ -323,9 +323,9 @@ class Building(ImageComponent):
         self.buildings_map_path = os.path.join(buildings_directory, "building_categories.png")
         os.makedirs(buildings_directory, exist_ok=True)
 
-        texture_component = self.map.get_texture_component()
-        if not texture_component:
-            self.logger.warning("Texture component not found in the map.")
+        texture_layers = self.map.context
+        if not texture_layers.texture_layers:
+            self.logger.warning("Texture layers not found in context.")
             return
 
         map_size = self.map.output_size or self.map.size
@@ -333,7 +333,7 @@ class Building(ImageComponent):
         # Creating empty single-channel image for building categories.
         buildings_map_image = np.zeros((map_size, map_size), dtype=np.uint8)
 
-        for layer in texture_component.get_building_category_layers():
+        for layer in texture_layers.get_building_category_layers():
             self.logger.debug(
                 "Processing building category layer: %s (%s)",
                 layer.name,
@@ -628,11 +628,7 @@ class Building(ImageComponent):
         Returns:
             str | None: Matched building category or None if no match found
         """
-        texture_component = self.map.get_texture_component()
-        if not texture_component:
-            return None
-
-        building_category_layers = texture_component.get_building_category_layers()
+        building_category_layers = self.map.context.get_building_category_layers()
 
         for layer in building_category_layers:
             if not layer.tags:
