@@ -155,6 +155,23 @@ class Parameters:
     # ---- GRLE pixel values ----------------------------------------------
     WATER_AREA_PIXEL_VALUE = 8
 
+    # ---- Environment area type pixel values -----------------------------
+    ENVIRONMENT_AREA_TYPES: dict[str, int] = {
+        "open_land": 0,
+        "city": 1,
+        "village": 2,
+        "harbor": 3,
+        "industrial": 4,
+        "open_water": 5,
+    }
+
+    # ---- Plant / grass pixel values -------------------------------------
+    PLANT_PIXEL_VALUES: dict[str, int] = {
+        "smallDenseMix": 33,
+        "meadow": 131,
+    }
+    DEFAULT_GRASS_PIXEL_VALUE = 131
+
     # ---- Road Z-offset --------------------------------------------------
     PATCH_Z_OFFSET = -0.001
 

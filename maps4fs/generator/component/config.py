@@ -64,12 +64,8 @@ class Config(ImageComponent):
         # That's why the distance is set to the map height not as a half of it.
         bbox = self.get_bbox(distance=self.map_size)
         south, west, north, east = bbox
-        epsg3857_string = self.get_epsg3857_string(bbox=bbox)
-        epsg3857_string_with_margin = self.get_epsg3857_string(bbox=bbox, add_margin=True)
 
         overview_data = {
-            "epsg3857_string": epsg3857_string,
-            "epsg3857_string_with_margin": epsg3857_string_with_margin,
             "south": south,
             "west": west,
             "north": north,

@@ -49,28 +49,6 @@ class GRLE(ImageComponent):
             info, warning. If not provided, default logging will be used.
     """
 
-    @staticmethod
-    def plant_to_pixel_value(plant_name: str) -> int | None:
-        """Returns the pixel value for the given plant name, or None if not found."""
-        plants = {
-            "smallDenseMix": 33,
-            "meadow": 131,
-        }
-        return plants.get(plant_name)
-
-    @staticmethod
-    def area_type_to_pixel_value(area_type: str) -> int | None:
-        """Returns the pixel value for the given area type name, or None if not found."""
-        area_types = {
-            "open_land": 0,
-            "city": 1,
-            "village": 2,
-            "harbor": 3,
-            "industrial": 4,
-            "open_water": 5,
-        }
-        return area_types.get(area_type)
-
     def preprocess(self) -> None:
         """Gets the path to the map I3D file from the game instance and saves it to the instance
         attribute. If the game does not support I3D files, the attribute is set to None."""
@@ -406,9 +384,10 @@ class GRLE(ImageComponent):
             grass_image[forest_image != 0] = 255
 
         base_grass = self.map.grle_settings.base_grass
-        base_layer_pixel_value = self.plant_to_pixel_value(str(base_grass))
-        if not base_layer_pixel_value:
-            base_layer_pixel_value = 131
+        base_layer_pixel_value = (
+            Parameters.PLANT_PIXEL_VALUES.get(str(base_grass))
+            or Parameters.DEFAULT_GRASS_PIXEL_VALUE
+        )
 
         grass_image_copy = grass_image.copy()
         if forest_image is not None:
@@ -588,18 +567,7 @@ class GRLE(ImageComponent):
             return
 
         for layer in texture_component.get_area_type_layers():
-            pixel_value = self.area_type_to_pixel_value(layer.area_type)  # type: ignore
-            # * Not enabled for now.
-            # * If the layer is invisible, we need to draw the mask from the info layer.
-            # if layer.invisible:
-            #     self.logger.debug("Processing invisible area type layer: %s.", layer.name)
-            #     if layer.info_layer:
-            #         self.logger.debug("Info layer available: %s.", layer.info_layer)
-            #         weight_image = self.draw_invisible_layer_mask(layer, environment_size)
-            #     else:
-            #         self.logger.debug("No info layer available for layer: %s.", layer.name)
-            #         continue
-            # else:
+            pixel_value = Parameters.ENVIRONMENT_AREA_TYPES.get(layer.area_type)  # type: ignore
             weight_image = self.get_resized_weight(layer, environment_size)  # type: ignore
             if weight_image is None:
                 self.logger.warning("Weight image for area type layer not found in %s.", layer.name)
@@ -619,52 +587,6 @@ class GRLE(ImageComponent):
         cv2.imwrite(info_layer_environment_path, environment_image)
         self.logger.debug("Environment InfoLayer PNG file saved: %s.", info_layer_environment_path)
         self.preview_paths["environment"] = info_layer_environment_path
-
-    # def draw_invisible_layer_mask(self, layer: Layer, resize_to: int) -> np.ndarray:
-    #     """Draw the mask for the invisible layer.
-
-    #     Arguments:
-    #         layer (Layer): The layer for which to draw the mask.
-    #         resize_to (int): The size to which the mask should be resized.
-
-    #     Returns:
-    #         np.ndarray: The resized mask.
-    #     """
-    #     mask = np.zeros((self.map.size, self.map.size), dtype=np.uint8)
-    #     polygons = self.get_infolayer_data(Parameters.TEXTURES, layer.info_layer)
-    #     self.logger.debug("Found %d polygons in info layer %s.", len(polygons), layer.info_layer)
-
-    #     for polygon in polygons:
-    #         try:
-    #             fitted_polygon = self.fit_object_into_bounds(
-    #                 polygon_points=polygon,
-    #                 # margin=self.map.grle_settings.farmland_margin,
-    #                 angle=self.rotation,
-    #             )
-    #         except ValueError as e:
-    #             self.logger.debug(
-    #                 "Polygon could not be fitted into the map bounds with error: %s",
-    #                 e,
-    #             )
-    #             continue
-    #         polygon_np = self.polygon_points_to_np(fitted_polygon)
-
-    #         try:
-    #             cv2.fillPoly(mask, [polygon_np], (float(255),))  # type: ignore
-    #         except Exception as e:
-    #             self.logger.debug(
-    #                 "Polygon could not be added to the mask with error: %s",
-    #                 e,
-    #             )
-    #             continue
-
-    #     resized_mask = cv2.resize(
-    #         mask,
-    #         (resize_to, resize_to),
-    #         interpolation=cv2.INTER_NEAREST,
-    #     )
-
-    #     return resized_mask
 
     @monitor_performance
     def get_resized_weight(

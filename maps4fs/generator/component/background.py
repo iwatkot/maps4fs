@@ -240,14 +240,10 @@ class Background(MeshComponent, ImageComponent):
                 terrain.
         """
         north, south, east, west = self.dem.bbox
-        epsg3857_string = self.dem.get_epsg3857_string()
-        epsg3857_string_with_margin = self.dem.get_epsg3857_string(add_margin=True)
 
         data = {
             "center_latitude": self.dem.coordinates[0],
             "center_longitude": self.dem.coordinates[1],
-            "epsg3857_string": epsg3857_string,
-            "epsg3857_string_with_margin": epsg3857_string_with_margin,
             "height": self.dem.map_size,
             "width": self.dem.map_size,
             "north": north,

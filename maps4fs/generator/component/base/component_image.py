@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+import sys
 
 import cv2
 import numpy as np
@@ -309,15 +310,15 @@ class ImageComponent(Component):
 
         cmd = [texconv_path, "-f", "BC1_UNORM", "-m", "1", "-y", "-o", output_dir, input_png_path]
 
-        # PyInstaller windowed apps have no console, so we must:
-        #   - set stdin=DEVNULL (parent stdin is None in windowed mode, child must not inherit it)
-        #   - use CREATE_NO_WINDOW so texconv doesn't try to open a console of its own
+        # PyInstaller windowed apps have no console: stdin must be DEVNULL and on Windows
+        # we suppress any new console window so texconv doesn't open one of its own.
         run_kwargs: dict = {
             "stdin": subprocess.DEVNULL,
             "capture_output": True,
             "text": True,
-            "creationflags": subprocess.CREATE_NO_WINDOW,  # type: ignore[attr-defined]
         }
+        if sys.platform == "win32":
+            run_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW  # type: ignore[attr-defined]
 
         result = subprocess.run(cmd, **run_kwargs)  # pylint: disable=subprocess-run-check
 

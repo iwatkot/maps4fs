@@ -10,9 +10,10 @@ from typing import TYPE_CHECKING, Any, Callable
 import cv2
 import numpy as np
 import osmnx as ox
-from pyproj import Transformer
 from shapely.affinity import rotate, translate
 from shapely.geometry import LineString, Polygon, box
+
+from maps4fs.generator.settings import Parameters
 
 if TYPE_CHECKING:
     from maps4fs.generator.game import Game
@@ -259,50 +260,6 @@ class Component:
         north, south, east, west = self.bbox
         return west, south, east, north
 
-    def get_espg3857_bbox(
-        self, bbox: tuple[float, float, float, float] | None = None, add_margin: bool = False
-    ) -> tuple[float, float, float, float]:
-        """Converts the bounding box to EPSG:3857.
-        If the bounding box is not provided, the instance variable is used.
-
-        Arguments:
-            bbox (tuple[float, float, float, float], optional): The bounding box to convert.
-            add_margin (bool, optional): Whether to add a margin to the bounding box.
-
-        Returns:
-            tuple[float, float, float, float]: The bounding box in EPSG:3857.
-        """
-        bbox = bbox or self.bbox
-        north, south, east, west = bbox
-        transformer = Transformer.from_crs("epsg:4326", "epsg:3857")
-        epsg3857_north, epsg3857_west = transformer.transform(north, west)
-        epsg3857_south, epsg3857_east = transformer.transform(south, east)
-
-        if add_margin:
-            margin = 500
-            epsg3857_north = int(epsg3857_north - margin)
-            epsg3857_south = int(epsg3857_south + margin)
-            epsg3857_east = int(epsg3857_east - margin)
-            epsg3857_west = int(epsg3857_west + margin)
-
-        return epsg3857_north, epsg3857_south, epsg3857_east, epsg3857_west
-
-    def get_epsg3857_string(
-        self, bbox: tuple[float, float, float, float] | None = None, add_margin: bool = False
-    ) -> str:
-        """Converts the bounding box to EPSG:3857 string.
-        If the bounding box is not provided, the instance variable is used.
-
-        Arguments:
-            bbox (tuple[float, float, float, float], optional): The bounding box to convert.
-            add_margin (bool, optional): Whether to add a margin to the bounding box.
-
-        Returns:
-            str: The bounding box in EPSG:3857 string.
-        """
-        north, south, east, west = self.get_espg3857_bbox(bbox, add_margin=add_margin)
-        return f"{north},{south},{east},{west} [EPSG:3857]"
-
     def get_polygon_center(self, polygon_points: list[tuple[int, int]]) -> tuple[int, int]:
         """Calculates the center of a polygon defined by a list of points.
 
@@ -459,6 +416,20 @@ class Component:
             return None
         return info_layer_path
 
+    # Maps (layer_name, layer_key) pairs to their map.context attribute names.
+    # Used by get_infolayer_data to prefer in-memory context over disk reads.
+    _INFO_LAYER_CONTEXT_MAP: dict[tuple[str, str], str] = {
+        ("textures", "fields"): "fields",
+        ("textures", "buildings"): "buildings",
+        ("textures", "roads_polylines"): "roads_polylines",
+        ("textures", "water_polylines"): "water_polylines",
+        ("textures", "farmyards"): "farmyards",
+        ("textures", "forest"): "forest",
+        ("textures", "water"): "water",
+        ("background", "water"): "background_water",
+        ("background", "water_polylines"): "background_water_polylines",
+    }
+
     def get_infolayer_data(self, layer_name: str, layer_key: str) -> Any | None:
         """Return data from a named info layer by key.
 
@@ -472,19 +443,7 @@ class Component:
         Returns:
             Any | None: The value or None if not found.
         """
-        # Context-first lookup: avoids disk I/O for components that have already run.
-        _CONTEXT_ATTR: dict[tuple[str, str], str] = {
-            ("textures", "fields"): "fields",
-            ("textures", "buildings"): "buildings",
-            ("textures", "roads_polylines"): "roads_polylines",
-            ("textures", "water_polylines"): "water_polylines",
-            ("textures", "farmyards"): "farmyards",
-            ("textures", "forest"): "forest",
-            ("textures", "water"): "water",
-            ("background", "water"): "background_water",
-            ("background", "water_polylines"): "background_water_polylines",
-        }
-        ctx_attr = _CONTEXT_ATTR.get((layer_name, layer_key))
+        ctx_attr = self._INFO_LAYER_CONTEXT_MAP.get((layer_name, layer_key))
         if ctx_attr is not None:
             value = getattr(self.map.context, ctx_attr, None)
             if value:
