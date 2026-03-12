@@ -23,6 +23,12 @@ class XmlDocument:
         self._path = path
         self._tree = ET.parse(path)
         self._root = self._tree.getroot()
+        # Capture original XML declaration so it is preserved verbatim on save.
+        self._xml_declaration: str | None = None
+        with open(path, "r", encoding="utf-8") as fh:
+            first_line = fh.readline().rstrip("\n").rstrip("\r")
+            if first_line.startswith("<?xml"):
+                self._xml_declaration = first_line
 
     # ------------------------------------------------------------------
     # Static factory helpers (no parsed document required)
@@ -117,8 +123,20 @@ class XmlDocument:
     # ------------------------------------------------------------------
 
     def save(self) -> None:
-        """Write the tree back to the file it was loaded from."""
-        self._tree.write(self._path, encoding="utf-8", xml_declaration=True)
+        """Write the tree back to the file it was loaded from.
+
+        The output is pretty-printed with 2-space indentation.
+        The original XML declaration (if any) is preserved verbatim so that
+        quote style and encoding attributes remain unchanged.
+        """
+        ET.indent(self._tree, space="  ")
+        if self._xml_declaration is not None:
+            content = ET.tostring(self._root, encoding="unicode")
+            with open(self._path, "w", encoding="utf-8") as fh:
+                fh.write(self._xml_declaration + "\n")
+                fh.write(content)
+        else:
+            self._tree.write(self._path, encoding="utf-8", xml_declaration=True)
 
     # ------------------------------------------------------------------
     # Context manager
