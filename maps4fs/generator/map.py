@@ -275,7 +275,7 @@ class Map:
         try:
             start = perf_counter()
             component.process()
-            self.logger.info(
+            self.logger.debug(
                 "Component %s processed in %.2f seconds.", name, perf_counter() - start
             )
             component.commit_generation_info()

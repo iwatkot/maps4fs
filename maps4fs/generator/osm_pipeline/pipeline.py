@@ -68,7 +68,7 @@ class OSMRasterPipeline:
             return
 
         workers = max(1, min(max_workers, len(pending_by_key)))
-        self.logger.info(
+        self.logger.debug(
             "Prefetching OSM data: %d unique queries with %d workers.",
             len(pending_by_key),
             workers,
@@ -96,7 +96,7 @@ class OSMRasterPipeline:
                         self._cache[key] = objects
                     progress.update(1)
 
-        self.logger.info(
+        self.logger.debug(
             "OSM prefetch completed: %d unique tag queries with %d workers.",
             len(pending_by_key),
             workers,
