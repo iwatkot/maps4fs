@@ -6,6 +6,7 @@ import dataclasses
 import os
 import re
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass
@@ -54,11 +55,11 @@ class Layer:
         return {k: v for k, v in raw.items() if v is not None}
 
     @classmethod
-    def from_json(cls, data: dict[str, str | list[str] | bool]) -> Layer:
+    def from_json(cls, data: dict[str, Any]) -> Layer:
         """Creates a new instance of the class from dictionary.
 
         Arguments:
-            data (dict[str, str | list[str] | bool]): Dictionary with layer data.
+            data (dict[str, Any]): Dictionary with layer data.
 
         Returns:
             Layer: New instance of the class.

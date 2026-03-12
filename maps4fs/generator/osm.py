@@ -4,13 +4,16 @@ from __future__ import annotations
 
 import os
 import shutil
+from typing import TypeAlias
 from xml.etree import ElementTree as ET
 
 import osmnx as ox
 from osmnx._errors import InsufficientResponseError
 
 # Representative tags — if the file is fundamentally broken it will fail on any of these.
-_CHECK_TAGS = [
+OSMTagValue: TypeAlias = bool | str | list[str]
+
+_CHECK_TAGS: list[dict[str, OSMTagValue]] = [
     {"highway": True},
     {"building": True},
     {"landuse": True},

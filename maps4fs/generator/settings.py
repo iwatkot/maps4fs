@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Literal, NamedTuple
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, cast
 
 from pydantic import BaseModel, ConfigDict
 
@@ -261,7 +261,26 @@ class MainSettings(NamedTuple):
         Returns:
             MainSettings: Instance of MainSettings.
         """
-        return cls(**data)
+        return cls(
+            game=cast(str, data["game"]),
+            latitude=cast(float, data["latitude"]),
+            longitude=cast(float, data["longitude"]),
+            country=cast(str, data["country"]),
+            size=cast(int, data["size"]),
+            output_size=cast(int | None, data["output_size"]),
+            rotation=cast(int, data["rotation"]),
+            dtm_provider=cast(str, data["dtm_provider"]),
+            custom_osm=cast(bool, data["custom_osm"]),
+            custom_dem=cast(bool, data["custom_dem"]),
+            is_public=cast(bool, data["is_public"]),
+            date=cast(str, data["date"]),
+            time=cast(str, data["time"]),
+            version=cast(str, data["version"]),
+            completed=cast(bool, data["completed"]),
+            error=cast(str | None, data.get("error")),
+            origin=cast(str | None, data.get("origin")),
+            platform=cast(str | None, data.get("platform")),
+        )
 
     def to_json(self) -> dict[str, str | float | int | bool | None]:
         """Convert the MainSettings instance to JSON format.

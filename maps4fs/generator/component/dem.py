@@ -357,7 +357,7 @@ class DEM(ImageComponent):
             output_width=output_width,
         )
 
-    def info_sequence(self) -> dict[Any, Any] | None:
+    def info_sequence(self) -> dict[Any, Any]:
         """Returns the information sequence for the component.
 
         Returns:

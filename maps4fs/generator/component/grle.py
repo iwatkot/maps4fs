@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 from random import choice, randint
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 import cv2
 import numpy as np
@@ -99,6 +99,7 @@ class GRLE(ImageComponent):
             width = int(self.scaled_size * info_layer.width_multiplier)
             channels = info_layer.channels
             data_type = info_layer.data_type
+            info_layer_data: np.ndarray
 
             # Create the InfoLayer PNG file with zeros.
             if channels == 1:
@@ -146,6 +147,9 @@ class GRLE(ImageComponent):
             save_path = os.path.join(self.previews_directory, f"{preview_name}.png")
             # Resize the preview image to the maximum size allowed for previews.
             image = cv2.imread(preview_path, cv2.IMREAD_GRAYSCALE)
+            if image is None:
+                self.logger.warning("Preview source could not be loaded: %s", preview_path)
+                continue
             if (
                 image.shape[0] > Parameters.PREVIEW_MAXIMUM_SIZE
                 or image.shape[1] > Parameters.PREVIEW_MAXIMUM_SIZE
@@ -193,6 +197,9 @@ class GRLE(ImageComponent):
             self.logger.debug("Fields layer not found in the texture component.")
             return None
         fields_np = cv2.imread(fields_layer_path)
+        if fields_np is None:
+            self.logger.debug("Fields preview image could not be loaded: %s", fields_layer_path)
+            return None
         # Resize fields_np to the same size as farmlands_np.
         fields_np = cv2.resize(fields_np, (farmlands_np.shape[1], farmlands_np.shape[0]))
 
@@ -231,6 +238,11 @@ class GRLE(ImageComponent):
             return
 
         image = cv2.imread(info_layer_farmlands_path, cv2.IMREAD_UNCHANGED)
+        if image is None:
+            self.logger.warning(
+                "Could not read farmlands info layer image: %s", info_layer_farmlands_path
+            )
+            return
 
         doc = XmlDocument(self.xml_path)
         if doc.get("farmlands") is None:
@@ -350,6 +362,9 @@ class GRLE(ImageComponent):
 
         # Single channeled 8-bit image, where non-zero values (255) are where the grass is.
         grass_image = cv2.imread(grass_image_path, cv2.IMREAD_UNCHANGED)
+        if grass_image is None:
+            self.logger.warning("Could not load grass mask image: %s", grass_image_path)
+            return
 
         grle_density_map_fruits = self.get_info_layer_by_name(Parameters.DENSITY_MAP_FRUITS)
         if not grle_density_map_fruits:
@@ -418,6 +433,9 @@ class GRLE(ImageComponent):
         # Three channeled 8-bit image, where non-zero values are the
         # different types of plants (only in the R channel).
         density_map_fruits = cv2.imread(density_map_fruit_path, cv2.IMREAD_UNCHANGED)
+        if density_map_fruits is None:
+            self.logger.warning("Could not load density map for fruits: %s", density_map_fruit_path)
+            return
         self.logger.debug("Density map for fruits loaded, shape: %s.", density_map_fruits.shape)
 
         # Put the updated base image as the B channel in the density map.
@@ -570,6 +588,8 @@ class GRLE(ImageComponent):
 
         for layer in texture_component.get_area_type_layers():
             pixel_value = Parameters.ENVIRONMENT_AREA_TYPES.get(layer.area_type)
+            if pixel_value is None:
+                continue
             weight_image = self.get_resized_weight(layer, environment_size)
             if weight_image is None:
                 self.logger.warning("Weight image for area type layer not found in %s.", layer.name)
@@ -583,7 +603,10 @@ class GRLE(ImageComponent):
                     "Weight image for water area layer not found in %s.", layer.name
                 )
                 continue
-            environment_image[weight_image > 0] += Parameters.WATER_AREA_PIXEL_VALUE
+            water_mask = weight_image > 0
+            environment_image[water_mask] = environment_image[water_mask] + int(
+                Parameters.WATER_AREA_PIXEL_VALUE
+            )
 
         cv2.imwrite(info_layer_environment_path, environment_image)
         self.logger.debug("Environment InfoLayer PNG file saved: %s.", info_layer_environment_path)

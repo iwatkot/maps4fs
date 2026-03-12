@@ -117,7 +117,9 @@ class Water(MeshComponent, ImageComponent):
             self.logger.warning("No rendered background texture layers found for water mask.")
             return
 
-        background_image = np.zeros((self.background_size, self.background_size), dtype=np.uint8)
+        background_image: np.ndarray = np.zeros(
+            (self.background_size, self.background_size), dtype=np.uint8
+        )
         for path in background_paths:
             layer_image = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
             if layer_image is not None:
@@ -370,11 +372,14 @@ class Water(MeshComponent, ImageComponent):
         self, polygons: list[shapely.Polygon], single_z_value: int | None = None
     ) -> Trimesh | None:
         """Create one mesh from fitted water polygons."""
-        all_vertices = []
-        all_faces = []
+        all_vertices: list[np.ndarray] = []
+        all_faces: list[np.ndarray] = []
         vertex_offset = 0
 
         not_resized_dem = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
+        if not_resized_dem is None:
+            self.logger.warning("Could not read non-subtracted DEM: %s", self.not_substracted_path)
+            return None
 
         for polygon in polygons:
             exterior_coords = np.array(polygon.exterior.coords)
@@ -386,7 +391,7 @@ class Water(MeshComponent, ImageComponent):
 
             vertices_2d, faces = trimesh.creation.triangulate_polygon(poly_2d)
 
-            vertices_3d = []
+            vertices_3d: list[list[float]] = []
             for v in vertices_2d:
                 dists = np.linalg.norm(exterior_2d - v[:2], axis=1)
                 idx = np.argmin(dists)
@@ -399,13 +404,13 @@ class Water(MeshComponent, ImageComponent):
                     z = -z
                 else:
                     z = single_z_value
-                vertices_3d.append([v[0], v[1], z])
-            vertices_3d = np.array(vertices_3d)
+                vertices_3d.append([float(v[0]), float(v[1]), float(z)])
+            vertices_3d_np = np.array(vertices_3d)
 
             faces = faces + vertex_offset
-            all_vertices.append(vertices_3d)
+            all_vertices.append(vertices_3d_np)
             all_faces.append(faces)
-            vertex_offset += len(vertices_3d)
+            vertex_offset += len(vertices_3d_np)
 
         if not all_vertices:
             return None

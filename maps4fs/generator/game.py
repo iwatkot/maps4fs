@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
+from typing import Any
 
 from maps4fs.generator.component.background import Background
 from maps4fs.generator.component.building import Building
@@ -154,7 +155,18 @@ class Game:
 
     # Order matters — some components depend on earlier ones.
     # Subclasses may override to use a different component list.
-    components = [Satellite, Texture, DEM, Water, Background, GRLE, Config, Road, Scene, Building]
+    components: list[type[Any]] = [
+        Satellite,
+        Texture,
+        DEM,
+        Water,
+        Background,
+        GRLE,
+        Config,
+        Road,
+        Scene,
+        Building,
+    ]
 
     # Subclasses must set a non-empty code.
     code: str = ""
@@ -209,19 +221,19 @@ class Game:
         self.buildings_schema: str = os.path.join(templates_dir, self._BUILDINGS_SCHEMA)
 
         # Map-relative paths — populated by set_map_directory()
-        self.dem_file_path: str | None = None
-        self.weights_dir_path: str | None = None
-        self.i3d_file_path: str | None = None
-        self.splines_file_path: str | None = None
-        self.map_xml_path: str | None = None
-        self.farmlands_xml_path: str | None = None
-        self.environment_xml_path: str | None = None
-        self.overview_file_path: str | None = None
-        self.license_plates_dir_path: str | None = None
-        self.farmlands_path: str | None = None
-        self.environment_path: str | None = None
-        self.indoor_mask_path: str | None = None
-        self.density_map_fruits_path: str | None = None
+        self.dem_file_path: str = ""
+        self.weights_dir_path: str = ""
+        self.i3d_file_path: str = ""
+        self.splines_file_path: str = ""
+        self.map_xml_path: str = ""
+        self.farmlands_xml_path: str = ""
+        self.environment_xml_path: str = ""
+        self.overview_file_path: str = ""
+        self.license_plates_dir_path: str = ""
+        self.farmlands_path: str = ""
+        self.environment_path: str = ""
+        self.indoor_mask_path: str = ""
+        self.density_map_fruits_path: str = ""
 
     @classmethod
     def from_code(cls, code: str, map_template_path: str | None = None) -> Game:

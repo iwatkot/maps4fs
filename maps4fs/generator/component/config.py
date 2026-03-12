@@ -65,7 +65,7 @@ class Config(ImageComponent):
         bbox = self.get_bbox(distance=self.map_size)
         south, west, north, east = bbox
 
-        overview_data = {
+        overview_data: dict[str, str | float | int] = {
             "south": south,
             "west": west,
             "north": north,
@@ -74,11 +74,11 @@ class Config(ImageComponent):
             "width": self.map_size * 2,
         }
 
-        data = {
+        data: dict[str, dict[str, str | float | int]] = {
             "Overview": overview_data,
         }
         if self.fog_parameters:
-            data["Fog"] = self.fog_parameters
+            data["Fog"] = {k: v for k, v in self.fog_parameters.items()}
 
         data.update(self.info)
 

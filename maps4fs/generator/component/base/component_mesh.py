@@ -7,7 +7,7 @@ import shutil
 import subprocess
 import xml.etree.ElementTree as ET
 from datetime import datetime
-from typing import NamedTuple
+from typing import Any, Callable, NamedTuple
 
 import cv2
 import numpy as np
@@ -211,7 +211,7 @@ class MeshComponent(Component):
         """
         mesh_copy = mesh.copy()
 
-        fix_methods = [
+        fix_methods: list[Callable[[trimesh.Trimesh], Any]] = [
             trimesh.repair.fill_holes,
             trimesh.repair.fix_normals,
             trimesh.repair.fix_winding,

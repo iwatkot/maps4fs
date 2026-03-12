@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from typing import cast
 
 import cv2
 import numpy as np
@@ -29,7 +30,9 @@ class ImageComponent(Component):
     @staticmethod
     def np_array_to_scaled_points(np_array: np.ndarray, scale: float) -> list[tuple[int, int]]:
         """Convert Nx1x2 or Nx2 point array to scaled integer point tuples."""
-        points = [tuple(map(int, point)) for point in np_array.reshape(-1, 2)]
+        points = [
+            cast(tuple[int, int], tuple(map(int, point))) for point in np_array.reshape(-1, 2)
+        ]
         return ImageComponent.scale_point_tuples(points, scale)
 
     @staticmethod

@@ -7,7 +7,7 @@ import os
 import shutil
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import cv2
 import numpy as np
@@ -67,7 +67,7 @@ class Texture(ImageComponent):
 
     def preprocess(self) -> None:
         """Preprocesses the data before the generation."""
-        self._weights_dir = self.game.weights_dir_path
+        self._weights_dir: str = self.game.weights_dir_path
         self.procedural_dir = os.path.join(self._weights_dir, Parameters.MASKS_DIRECTORY)
         os.makedirs(self.procedural_dir, exist_ok=True)
 
@@ -267,6 +267,8 @@ class Texture(ImageComponent):
             # Where the pixel value is 255 - set it to 255 in base layer image.
             # And set it to 0 in the current layer image.
             layer_image = cv2.imread(layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED)
+            if layer_image is None:
+                continue
             border = layer.border
             if not border:
                 continue
@@ -276,7 +278,7 @@ class Texture(ImageComponent):
             cv2.imwrite(layer.path(self._weights_dir), layer_image)
             self.logger.debug("Borders added to layer %s.", layer.name)
 
-        if base_layer_image is not None:
+        if base_layer and base_layer_image is not None:
             cv2.imwrite(base_layer.path(self._weights_dir), base_layer_image)
 
     def copy_procedural(self) -> None:
@@ -363,6 +365,8 @@ class Texture(ImageComponent):
 
     def _merge_single_layer(self, layer: Layer) -> None:
         """Merge one layer into its configured target and clear source content."""
+        if layer.merge_into is None:
+            return
         target_layer = self.get_layer_by_name(layer.merge_into)
         if target_layer is None:
             self.logger.debug("Target layer %s not found for %s.", layer.merge_into, layer.name)
@@ -583,7 +587,7 @@ class Texture(ImageComponent):
         layers = [layer for layer in self.layers_by_priority() if self._is_drawable_layer(layer)]
         self._prefetch_osm_data(layers)
 
-        info_layer_data: dict[str, list[list[int]]] = defaultdict(list)
+        info_layer_data: dict[str, list[Any]] = defaultdict(list)
         cumulative_image: np.ndarray | None = None
 
         for layer in tqdm(layers, desc="Drawing textures", unit="layer"):
@@ -629,7 +633,7 @@ class Texture(ImageComponent):
     def _draw_single_layer(
         self,
         layer: Layer,
-        info_layer_data: dict[str, list[list[int]]],
+        info_layer_data: dict[str, list[Any]],
         cumulative_image: np.ndarray | None,
     ) -> np.ndarray | None:
         """Draw one layer and update cumulative mask image."""
@@ -671,17 +675,29 @@ class Texture(ImageComponent):
         self.logger.debug("Texture %s saved.", layer_path)
         return cumulative_image
 
-    def _publish_info_layer_data(self, info_layer_data: dict[str, list[list[int]]]) -> None:
+    def _publish_info_layer_data(self, info_layer_data: dict[str, list[Any]]) -> None:
         """Publish drawn info-layer data into map context."""
         ctx = self.map.context
         if self.options.channel == Parameters.TEXTURE_CHANNEL_TEXTURES:
-            ctx.fields = info_layer_data.get(Parameters.FIELDS, [])
-            ctx.buildings = info_layer_data.get(Parameters.BUILDINGS, [])
-            ctx.farmyards = info_layer_data.get(Parameters.FARMYARDS, [])
-            ctx.forest = info_layer_data.get(Parameters.FOREST, [])
-            ctx.water = info_layer_data.get(Parameters.WATER, [])
-            ctx.roads_polylines = info_layer_data.get(Parameters.ROADS_POLYLINES, [])
-            ctx.water_polylines = info_layer_data.get(Parameters.WATER_POLYLINES, [])
+            ctx.fields = cast(
+                list[list[tuple[int, int]]], info_layer_data.get(Parameters.FIELDS, [])
+            )
+            ctx.buildings = cast(
+                list[list[tuple[int, int]]], info_layer_data.get(Parameters.BUILDINGS, [])
+            )
+            ctx.farmyards = cast(
+                list[list[tuple[int, int]]], info_layer_data.get(Parameters.FARMYARDS, [])
+            )
+            ctx.forest = cast(
+                list[list[tuple[int, int]]], info_layer_data.get(Parameters.FOREST, [])
+            )
+            ctx.water = cast(list[list[tuple[int, int]]], info_layer_data.get(Parameters.WATER, []))
+            ctx.roads_polylines = cast(
+                list[dict[str, Any]], info_layer_data.get(Parameters.ROADS_POLYLINES, [])
+            )
+            ctx.water_polylines = cast(
+                list[dict[str, Any]], info_layer_data.get(Parameters.WATER_POLYLINES, [])
+            )
             self.logger.debug(
                 "Map context populated: %d fields, %d buildings, %d roads, %d water polylines.",
                 len(ctx.fields),
@@ -691,8 +707,12 @@ class Texture(ImageComponent):
             )
             return
 
-        ctx.background_water = info_layer_data.get(Parameters.WATER, [])
-        ctx.background_water_polylines = info_layer_data.get(Parameters.WATER_POLYLINES, [])
+        ctx.background_water = cast(
+            list[list[tuple[int, int]]], info_layer_data.get(Parameters.WATER, [])
+        )
+        ctx.background_water_polylines = cast(
+            list[dict[str, Any]], info_layer_data.get(Parameters.WATER_POLYLINES, [])
+        )
         self.logger.debug(
             "Background context populated: %d water polygons, %d water polylines.",
             len(ctx.background_water),
@@ -700,7 +720,7 @@ class Texture(ImageComponent):
         )
 
     def _draw_layer(
-        self, layer: Layer, info_layer_data: dict[str, list[list[int]]], layer_image: np.ndarray
+        self, layer: Layer, info_layer_data: dict[str, list[Any]], layer_image: np.ndarray
     ) -> None:
         """Draws polygons from OSM data on the layer image and updates the info layer data.
 
@@ -742,7 +762,7 @@ class Texture(ImageComponent):
         polygon: np.ndarray,
         osm_tags: dict[str, Any],
         geom_type: str,
-        info_layer_data: dict[str, list[list[int]]],
+        info_layer_data: dict[str, list[Any]],
     ) -> None:
         """Append a polygon entry to info layer collection if layer requires it."""
         if not layer.info_layer:
@@ -753,6 +773,7 @@ class Texture(ImageComponent):
             return
 
         scaled_points = self.np_array_to_scaled_points(polygon, self.map.size_scale)
+        entry: Any
         if layer.save_tags:
             entry = {Parameters.POINTS: scaled_points, Parameters.TAGS: osm_tags}
         else:
@@ -771,7 +792,7 @@ class Texture(ImageComponent):
         except Exception as e:
             self.logger.warning("Error drawing polygon: %s.", repr(e))
 
-    def _add_roads(self, layer: Layer, info_layer_data: dict[str, list[list[int]]]) -> None:
+    def _add_roads(self, layer: Layer, info_layer_data: dict[str, list[Any]]) -> None:
         """Adds roads to the info layer data.
 
         Arguments:
@@ -910,19 +931,23 @@ class Texture(ImageComponent):
         self.logger.debug("Following layers have tag textures: %s.", len(active_layers))
 
         images = [
-            cv2.resize(
-                cv2.imread(layer.get_preview_or_path(self._weights_dir), cv2.IMREAD_UNCHANGED),
-                preview_size,
-            )
+            cv2.resize(image, preview_size)
             for layer in active_layers
+            for image in [
+                cv2.imread(layer.get_preview_or_path(self._weights_dir), cv2.IMREAD_UNCHANGED)
+            ]
+            if image is not None
         ]
         colors = [layer.color for layer in active_layers]
         color_images = []
         for img, color in zip(images, colors):
             color_img = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)
-            color_img[img > 0] = color
+            color_img[img > 0] = cast(tuple[int, int, int] | list[int], color)
             color_images.append(color_img)
-        merged = np.sum(color_images, axis=0, dtype=np.uint8)
+        if color_images:
+            merged = cast(np.ndarray, np.sum(color_images, axis=0, dtype=np.uint8))
+        else:
+            merged = np.zeros((preview_size[1], preview_size[0], 3), dtype=np.uint8)
         self.logger.debug(
             "Merged layers into one image. Shape: %s, dtype: %s.",
             merged.shape,

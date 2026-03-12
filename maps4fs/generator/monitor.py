@@ -88,7 +88,8 @@ class Logger(logging.Logger):
             session_id = get_current_session()
             if session_id:
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
-                formatted_msg = msg % args if args else str(msg)
+                msg_text = str(msg)
+                formatted_msg = msg_text % args if args else msg_text
                 level_name = SUPPORTED_LOG_LEVELS.get(level, "INFO")
                 log_entry = {"level": level_name, "timestamp": timestamp, "message": formatted_msg}
                 self.session_logs[session_id].append(log_entry)

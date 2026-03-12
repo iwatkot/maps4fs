@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import os
 import shutil
-from typing import Any
+from typing import Any, Sequence
 
 import cv2
 import numpy as np
@@ -165,7 +165,9 @@ class Background(MeshComponent, ImageComponent):
             if mask is None:
                 continue
 
-            mean_value = np.round(cv2.mean(dem_image, mask=mask)[0]).astype(dem_image.dtype)
+            mean = cv2.mean(dem_image, mask=mask)
+            mean_scalar = float(mean[0]) if isinstance(mean, Sequence) else float(mean)
+            mean_value = np.array(round(mean_scalar), dtype=dem_image.dtype).item()
             dem_image[mask == 255] = mean_value
 
         return dem_image
@@ -208,7 +210,7 @@ class Background(MeshComponent, ImageComponent):
         shutil.copyfile(dem_path, additional_dem_path)
         self.logger.debug("Additional DEM data was copied to %s.", additional_dem_path)
 
-    def info_sequence(self) -> dict[str, str | float | int]:
+    def info_sequence(self) -> dict[str, Any]:
         """Returns a dictionary with information about the background terrain.
         Adds the EPSG:3857 string to the data for convenient usage in QGIS.
 
@@ -218,7 +220,7 @@ class Background(MeshComponent, ImageComponent):
         """
         north, south, east, west = self.bbox
 
-        data = {
+        data: dict[str, Any] = {
             "center_latitude": self.coordinates[0],
             "center_longitude": self.coordinates[1],
             "height": self.map_size,
@@ -251,6 +253,9 @@ class Background(MeshComponent, ImageComponent):
         self.assets.background_mesh = save_path
 
         dem_data = cv2.imread(self.output_path, cv2.IMREAD_UNCHANGED)
+        if dem_data is None:
+            self.logger.warning("Failed to read DEM file for OBJ generation: %s", self.output_path)
+            return
 
         if self.map.output_size is not None:
             scaled_background_size = int(self.background_size * self.map.size_scale)
@@ -498,6 +503,8 @@ class Background(MeshComponent, ImageComponent):
             str -- The path to the cutout DEM file.
         """
         dem_data = cv2.imread(dem_path, cv2.IMREAD_UNCHANGED)
+        if dem_data is None:
+            raise ValueError(f"Could not load DEM image: {dem_path}")
         half_size = self.map_size // 2
         dem_data = self.cut_out_np(dem_data, half_size, return_cutout=True)
 
@@ -615,6 +622,9 @@ class Background(MeshComponent, ImageComponent):
             return []
 
         background_dem_preview_image = cv2.imread(self.output_path, cv2.IMREAD_UNCHANGED)
+        if background_dem_preview_image is None:
+            self.logger.warning("Could not read DEM preview source: %s", self.output_path)
+            return preview_paths
 
         background_dem_preview_image = cv2.resize(
             background_dem_preview_image, (0, 0), fx=1 / 4, fy=1 / 4
@@ -666,6 +676,8 @@ class Background(MeshComponent, ImageComponent):
         self.logger.debug("Creating grayscale preview of DEM data in %s.", grayscale_dem_path)
 
         dem_data = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+        if dem_data is None:
+            raise ValueError(f"Could not read DEM image for grayscale preview: {image_path}")
         dem_data_rgb = cv2.cvtColor(dem_data, cv2.COLOR_GRAY2RGB)
         cv2.imwrite(grayscale_dem_path, dem_data_rgb)
         return grayscale_dem_path
@@ -685,6 +697,8 @@ class Background(MeshComponent, ImageComponent):
         self.logger.debug("Creating colored preview of DEM data in %s.", colored_dem_path)
 
         dem_data = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+        if dem_data is None:
+            raise ValueError(f"Could not read DEM image for colored preview: {image_path}")
 
         # Create an empty array with the same shape and type as dem_data.
         dem_data_normalized = np.empty_like(dem_data)

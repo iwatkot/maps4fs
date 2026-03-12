@@ -617,6 +617,9 @@ class Scene(ImageComponent):
                 )
 
             forest_image = cv2.imread(forest_image_path, cv2.IMREAD_UNCHANGED)
+            if forest_image is None:
+                self.logger.warning("Forest image not found: %s", forest_image_path)
+                continue
 
             step = self.get_step_by_limit(
                 forest_image,
