@@ -74,6 +74,39 @@ class GameConfig:
     i3d_attr_node_id: str = "nodeId"
     i3d_zero_translation: str = "0 0 0"
 
+    # --- Scene XML tag/attribute names ---
+    i3d_shape_tag: str = "Shape"
+    i3d_nurbs_curve_tag: str = "NurbsCurve"
+    i3d_cv_tag: str = "cv"
+    i3d_note_tag: str = "Note"
+    i3d_user_attributes_tag: str = "UserAttributes"
+    i3d_user_attribute_tag: str = "UserAttribute"
+    i3d_attribute_tag: str = "Attribute"
+    i3d_custom_parameter_tag: str = "CustomParameter"
+    i3d_normalmap_tag: str = "Normalmap"
+
+    i3d_attr_shape_id: str = "shapeId"
+    i3d_attr_degree: str = "degree"
+    i3d_attr_form: str = "form"
+    i3d_attr_point: str = "c"
+    i3d_attr_text: str = "text"
+    i3d_attr_color: str = "color"
+    i3d_attr_fixed_size: str = "fixedSize"
+    i3d_attr_type: str = "type"
+    i3d_attr_value: str = "value"
+    i3d_attr_last_shadow_min: str = "lastShadowMapSplitBboxMin"
+    i3d_attr_last_shadow_max: str = "lastShadowMapSplitBboxMax"
+    i3d_attr_size: str = "size"
+    i3d_attr_receive_shadows: str = "receiveShadows"
+    i3d_attr_specular_color: str = "specularColor"
+    i3d_attr_custom_shader_id: str = "customShaderId"
+    i3d_attr_custom_shader_variation: str = "customShaderVariation"
+    i3d_attr_static: str = "static"
+    i3d_attr_collision_filter_group: str = "collisionFilterGroup"
+    i3d_attr_collision_filter_mask: str = "collisionFilterMask"
+    i3d_attr_casts_shadows: str = "castsShadows"
+    i3d_attr_scale: str = "scale"
+
     # --- I3D tuning values ---
     sun_bbox_y_min: int = -128
     sun_bbox_y_max: int = 148

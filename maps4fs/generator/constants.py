@@ -192,6 +192,75 @@ class Parameters:
 
     # ---- Road Z-offset --------------------------------------------------
     PATCH_Z_OFFSET = -0.001
+    ROAD_INTERSECTION_TOLERANCE = 1.0
+    ROAD_PATCH_SEGMENT_PADDING = 2
+    ROAD_TEXTURE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".dds")
+    ROAD_MESH_FILENAME_PREFIX = "roads_"
+    ASSETS_DIRECTORY = "assets"
+
+    # ---- Road processing info keys --------------------------------------
+    ROAD_INFO_TEXTURES = "road_textures"
+    ROAD_INFO_TOTAL_OSM = "total_OSM_roads"
+    ROAD_INFO_TOTAL_FITTED = "total_fitted_roads"
+    ROAD_INFO_TOTAL_PATCHES = "total_patches_created"
+
+    # ---- Scene component runtime constants ------------------------------
+    SCENE_INFO_FORESTS = "Forests"
+    SCENE_INFO_FIELDS = "Fields"
+    SPLINE_TAG_FIELD = "field"
+    SPLINE_DIRECTION_ORIGINAL = "original"
+    SPLINE_DIRECTION_REVERSED = "reversed"
+    SPLINE_NAME_PREFIX = "spline"
+    NURBS_DEGREE = "3"
+    NURBS_FORM_OPEN = "open"
+    DEFAULT_TRANSLATION = "0 0 0"
+
+    FIELD_NAME_PREFIX = "field"
+    FIELD_POLYGON_POINTS_NAME = "polygonPoints"
+    FIELD_POINT_PREFIX = "point"
+    FIELD_NAME_INDICATOR = "nameIndicator"
+    FIELD_TELEPORT_INDICATOR = "teleportIndicator"
+    FIELD_NOTE_NAME = "Note"
+    FIELD_NOTE_TEXT_TEMPLATE = "{name}&#xA;0.00 ha"
+    FIELD_NOTE_COLOR = "4278190080"
+    FIELD_NOTE_FIXED_SIZE = "true"
+
+    SPLINE_USER_ATTRIBUTES = [
+        ("maxSpeedScale", "integer", "1"),
+        ("speedLimit", "integer", "100"),
+    ]
+    WATER_ONCREATE_ATTRIBUTE = [("onCreate", "scriptCallback", "Environment.onCreateWater")]
+    TREE_GROUP_NAME = "trees"
+
+    MESH_CENTROID_X = "mesh_centroid_x"
+    MESH_CENTROID_Y = "mesh_centroid_y"
+    MESH_CENTROID_Z = "mesh_centroid_z"
+
+    BINARY_I3D_SUFFIX = "_binary.i3d"
+    BACKGROUND_ASSET_DIRNAME = "background"
+    WATER_ASSET_DIRNAME = "water"
+    MAP_BOUNDS_DIRNAME = "map_bounds"
+    MAP_BOUNDS_I3D_FILENAME = "map_bounds.i3d"
+    MAP_BOUNDS_SHAPES_FILENAME = "map_bounds.i3d.shapes"
+    MAP_BOUNDS_REFERENCE_NAME = "mapbounds"
+    MAP_BOUNDS_REFERENCE_HEIGHT = 1024
+
+    # ---- I3D postprocess constants --------------------------------------
+    I3D_TRUE = "true"
+    I3D_FALSE = "false"
+    I3D_WATER_SHADER_FILE_ID = "4"
+    I3D_NORMALMAP_FILE_ID = "2"
+    I3D_NORMALMAP_FILENAME = "$data/maps/textures/shared/water_normal.dds"
+    I3D_WATER_SPECULAR = "1 1 1"
+    I3D_WATER_SHADER_VARIATION = "simple"
+    I3D_WATER_PARAM_FOG_COLOR_NAME = "underwaterFogColor"
+    I3D_WATER_PARAM_FOG_DEPTH_NAME = "underwaterFogDepth"
+    I3D_WATER_UNDERWATER_FOG_COLOR = "0.12 0.14 0.11 1"
+    I3D_WATER_UNDERWATER_FOG_DEPTH = "1.4 1.2 1 1"
+    I3D_ROAD_COLLISION_FILTER_GROUP = "0x601c"
+    I3D_ROAD_COLLISION_FILTER_MASK = "0xfffffbff"
+    I3D_WATER_COLLISION_FILTER_GROUP = "0x80000000"
+    I3D_WATER_COLLISION_FILTER_MASK = "0x1"
 
     # ---- License-plate image crop coordinates ---------------------------
     COUNTRY_CODE_TOP = 169

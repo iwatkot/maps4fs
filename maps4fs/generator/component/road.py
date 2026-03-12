@@ -45,91 +45,102 @@ class Road(MeshComponent):
 
     def generate_roads(self) -> None:
         """Generate roads for the map based on the info layer data."""
-        road_infos = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
-        if not road_infos:
+        road_infos = self._load_road_infos()
+        if road_infos is None:
             self.logger.warning("Roads polylines data not found in textures info layer.")
             return
 
-        roads_by_texture = defaultdict(list)
-        for road_info in road_infos:  # type: ignore
-            road_texture = road_info.get("road_texture")
-            if road_texture:
-                roads_by_texture[road_texture].append(road_info)
-
-        self.info["road_textures"] = list(roads_by_texture.keys())
-        self.info["total_OSM_roads"] = len(road_infos)
+        roads_by_texture = self._group_roads_by_texture(road_infos)
+        self.info[Parameters.ROAD_INFO_TEXTURES] = list(roads_by_texture.keys())
+        self.info[Parameters.ROAD_INFO_TOTAL_OSM] = len(road_infos)
 
         fitted_roads_count = 0
         patches_created_count = 0
         for texture, roads_polylines in roads_by_texture.items():
-            self.logger.debug("Processing roads with texture: %s", texture)
+            texture_fitted, texture_patches = self._process_texture_roads(texture, roads_polylines)
+            fitted_roads_count += texture_fitted
+            patches_created_count += texture_patches
 
-            # The texture name is represents the name of texture file without extension
-            # for easy reference if the texture uses various extensions.
-            # E.g. 'asphalt', 'gravel' -> 'asphalt.png', 'gravel.jpg', etc.
+        self.info[Parameters.ROAD_INFO_TOTAL_FITTED] = fitted_roads_count
+        self.info[Parameters.ROAD_INFO_TOTAL_PATCHES] = patches_created_count
 
-            road_entries: list[LineSurfaceEntry] = []
-            for road_id, road_info in enumerate(roads_polylines, start=1):  # type: ignore
-                if isinstance(road_info, dict):
-                    points: list[int | float] = road_info.get("points")  # type: ignore
-                    width: int = road_info.get("width")  # type: ignore
-                else:
-                    continue
+    def _load_road_infos(self) -> list[dict[str, Any]] | None:
+        """Load road polyline info records from context."""
+        road_infos = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
+        if not road_infos:
+            return None
+        return [info for info in road_infos if isinstance(info, dict)]
 
-                if not points or len(points) < 2 or not width:
-                    self.logger.debug("Invalid road data for road ID %s: %s", road_id, road_info)
-                    continue
+    def _group_roads_by_texture(
+        self,
+        road_infos: list[dict[str, Any]],
+    ) -> dict[str, list[dict[str, Any]]]:
+        """Group road records by texture key."""
+        roads_by_texture: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for road_info in road_infos:
+            road_texture = road_info.get(Parameters.ROAD_TEXTURE)
+            if isinstance(road_texture, str) and road_texture:
+                roads_by_texture[road_texture].append(road_info)
+        return roads_by_texture
 
-                try:
-                    fitted_road = self.fit_object_into_bounds(
-                        linestring_points=points, angle=self.rotation  # type: ignore
-                    )
-                except ValueError as e:
-                    self.logger.debug(
-                        "Road %s could not be fitted into the map bounds with error: %s",
-                        road_id,
-                        e,
-                    )
-                    continue
+    def _process_texture_roads(
+        self,
+        texture: str,
+        roads_polylines: list[dict[str, Any]],
+    ) -> tuple[int, int]:
+        """Process roads for one texture and return (fitted_roads, created_patches)."""
+        self.logger.debug("Processing roads with texture: %s", texture)
+        road_entries = self._build_road_entries(roads_polylines)
+        self.logger.debug("Total found for mesh generation: %d", len(road_entries))
+        if not road_entries:
+            return 0, 0
 
-                try:
-                    linestring = shapely.LineString(fitted_road)
-                except ValueError as e:
-                    self.logger.debug(
-                        "Road %s could not be converted to a LineString with error: %s",
-                        road_id,
-                        e,
-                    )
-                    continue
+        interpolated_entries = self.smart_interpolation(road_entries)
+        split_entries = self.split_long_line_surfaces(interpolated_entries)
+        patch_entries = self.get_patches_linestrings(split_entries)
+        split_entries.extend(patch_entries)
+        self.generate_line_surface_mesh(split_entries, texture)
+        return len(road_entries), len(patch_entries)
 
-                road_entries.append(LineSurfaceEntry(linestring=linestring, width=width))
+    def _build_road_entries(self, roads_polylines: list[dict[str, Any]]) -> list[LineSurfaceEntry]:
+        """Convert raw road records to fitted linestring entries."""
+        road_entries: list[LineSurfaceEntry] = []
+        for road_id, road_info in enumerate(roads_polylines, start=1):
+            road_entry = self._build_road_entry(road_info, road_id)
+            if road_entry is not None:
+                road_entries.append(road_entry)
+        return road_entries
 
-            self.logger.debug("Total found for mesh generation: %d", len(road_entries))
+    def _build_road_entry(self, road_info: dict[str, Any], road_id: int) -> LineSurfaceEntry | None:
+        """Build one fitted road entry from source info record."""
+        points = road_info.get(Parameters.POINTS)
+        width = road_info.get(Parameters.WIDTH)
 
-            if road_entries:
-                fitted_roads_count += len(road_entries)
-                # 1. Apply smart interpolation to make linestrings smoother,
-                # but carefully, ensuring that points are not too close to each other.
-                # Otherwise it may lead to artifacts in the mesh.
-                interpolated_road_entries: list[LineSurfaceEntry] = self.smart_interpolation(
-                    road_entries
-                )
+        if not points or not isinstance(points, list) or len(points) < 2 or not width:
+            self.logger.debug("Invalid road data for road ID %s: %s", road_id, road_info)
+            return None
 
-                # 2. Split line surfaces that exceed Giants Engine's UV coordinate limits
-                # Giants Engine requires UV coordinates in [-32, 32] range
-                split_line_surface_entries: list[LineSurfaceEntry] = self.split_long_line_surfaces(
-                    interpolated_road_entries
-                )
+        try:
+            fitted_road = self.fit_object_into_bounds(linestring_points=points, angle=self.rotation)
+        except ValueError as e:
+            self.logger.debug(
+                "Road %s could not be fitted into the map bounds with error: %s",
+                road_id,
+                e,
+            )
+            return None
 
-                patches_line_surface_entries: list[LineSurfaceEntry] = self.get_patches_linestrings(
-                    split_line_surface_entries
-                )
-                patches_created_count += len(patches_line_surface_entries)
-                split_line_surface_entries.extend(patches_line_surface_entries)
-                self.generate_line_surface_mesh(split_line_surface_entries, texture)
+        try:
+            linestring = shapely.LineString(fitted_road)
+        except ValueError as e:
+            self.logger.debug(
+                "Road %s could not be converted to a LineString with error: %s",
+                road_id,
+                e,
+            )
+            return None
 
-        self.info["total_fitted_roads"] = fitted_roads_count
-        self.info["total_patches_created"] = patches_created_count
+        return LineSurfaceEntry(linestring=linestring, width=int(width))
 
     def get_patches_linestrings(
         self, road_entries: list[LineSurfaceEntry]
@@ -146,8 +157,8 @@ class Road(MeshComponent):
         Returns:
             (list[LineSurfaceEntry]): List of patch LineSurfaceEntry objects to be added.
         """
-        patches = []
-        tolerance = 1.0  # Distance tolerance for endpoint intersection detection
+        patches: list[LineSurfaceEntry] = []
+        tolerance = Parameters.ROAD_INTERSECTION_TOLERANCE
         cumulative_offset = Parameters.PATCH_Z_OFFSET
 
         # Process each road to find T-junctions
@@ -163,71 +174,105 @@ class Road(MeshComponent):
 
                 # Check both endpoints
                 for endpoint in [start_point, end_point]:
-                    # Check if endpoint is near the other road (but not at its endpoints)
-                    distance = endpoint.distance(other_road)
+                    patch_entry, cumulative_offset = self._build_t_junction_patch(
+                        endpoint,
+                        other_road,
+                        other_width,
+                        other_z_offset,
+                        cumulative_offset,
+                        tolerance,
+                    )
+                    if patch_entry is None:
+                        continue
 
-                    if distance < tolerance:
-                        # This is a potential T-junction
-                        # Make sure it's not connecting at the other road's endpoints
-                        other_start = Point(other_road.coords[0])
-                        other_end = Point(other_road.coords[-1])
-
-                        # Skip if connecting at endpoints (this is a proper intersection, not T)
-                        if (
-                            endpoint.distance(other_start) < tolerance
-                            or endpoint.distance(other_end) < tolerance
-                        ):
-                            continue
-
-                        # Find the closest point on the other road
-                        intersection_point = other_road.interpolate(other_road.project(endpoint))
-
-                        # Find which segment of other_road contains this intersection
-                        coords = list(other_road.coords)
-                        segment_idx = None
-
-                        for i in range(len(coords) - 1):
-                            segment = shapely.LineString([coords[i], coords[i + 1]])
-                            if segment.distance(intersection_point) < tolerance:
-                                segment_idx = i
-                                break
-
-                        if segment_idx is None:
-                            continue
-
-                        # Create patch: take 2 points before and 2 points after the intersection
-                        # Ensure we don't go out of bounds
-                        start_idx = max(0, segment_idx - 2)
-                        end_idx = min(len(coords) - 1, segment_idx + 3)
-
-                        # Need at least 2 points for a valid linestring
-                        if end_idx - start_idx < 1:
-                            continue
-
-                        # Extract the patch segment
-                        patch_coords = coords[start_idx : end_idx + 1]
-
-                        try:
-                            patch_linestring = shapely.LineString(patch_coords)
-                            patch_z_offset = other_z_offset + cumulative_offset
-                            cumulative_offset += Parameters.PATCH_Z_OFFSET
-                            path_road_entry = LineSurfaceEntry(
-                                linestring=patch_linestring,
-                                width=other_width,
-                                z_offset=patch_z_offset,
-                            )
-                            patches.append(path_road_entry)
-                            self.logger.debug(
-                                "Created patch for T-junction: road %d intersects road %d",
-                                idx,
-                                other_idx,
-                            )
-                        except Exception as e:
-                            self.logger.debug("Failed to create patch linestring: %s", e)
-                            continue
+                    patches.append(patch_entry)
+                    self.logger.debug(
+                        "Created patch for T-junction: road %d intersects road %d",
+                        idx,
+                        other_idx,
+                    )
 
         self.logger.debug("Generated %d patch segments for T-junctions", len(patches))
         return patches
+
+    def _build_t_junction_patch(
+        self,
+        endpoint: Point,
+        other_road: shapely.LineString,
+        other_width: int,
+        other_z_offset: float,
+        cumulative_offset: float,
+        tolerance: float,
+    ) -> tuple[LineSurfaceEntry | None, float]:
+        """Build one patch entry for a T-junction endpoint, returning updated offset."""
+        if endpoint.distance(other_road) >= tolerance:
+            return None, cumulative_offset
+        if self._is_other_road_endpoint(endpoint, other_road, tolerance):
+            return None, cumulative_offset
+
+        intersection_point = other_road.interpolate(other_road.project(endpoint))
+        coords = list(other_road.coords)
+        segment_idx = self._find_segment_index(coords, intersection_point, tolerance)
+        if segment_idx is None:
+            return None, cumulative_offset
+
+        patch_coords = self._extract_patch_coords(coords, segment_idx)
+        if patch_coords is None:
+            return None, cumulative_offset
+
+        try:
+            patch_linestring = shapely.LineString(patch_coords)
+        except Exception as e:
+            self.logger.debug("Failed to create patch linestring: %s", e)
+            return None, cumulative_offset
+
+        patch_z_offset = other_z_offset + cumulative_offset
+        next_offset = cumulative_offset + Parameters.PATCH_Z_OFFSET
+        return (
+            LineSurfaceEntry(
+                linestring=patch_linestring,
+                width=other_width,
+                z_offset=patch_z_offset,
+            ),
+            next_offset,
+        )
+
+    @staticmethod
+    def _is_other_road_endpoint(
+        endpoint: Point, other_road: shapely.LineString, tolerance: float
+    ) -> bool:
+        """Return True when endpoint intersects near either end of the other road."""
+        other_start = Point(other_road.coords[0])
+        other_end = Point(other_road.coords[-1])
+        return (
+            endpoint.distance(other_start) < tolerance or endpoint.distance(other_end) < tolerance
+        )
+
+    @staticmethod
+    def _find_segment_index(
+        coords: list[tuple[float, float]],
+        intersection_point: Point,
+        tolerance: float,
+    ) -> int | None:
+        """Return index of segment that contains intersection point within tolerance."""
+        for idx in range(len(coords) - 1):
+            segment = shapely.LineString([coords[idx], coords[idx + 1]])
+            if segment.distance(intersection_point) < tolerance:
+                return idx
+        return None
+
+    @staticmethod
+    def _extract_patch_coords(
+        coords: list[tuple[float, float]],
+        segment_idx: int,
+    ) -> list[tuple[float, float]] | None:
+        """Extract bounded patch coordinates around segment index."""
+        padding = Parameters.ROAD_PATCH_SEGMENT_PADDING
+        start_idx = max(0, segment_idx - padding)
+        end_idx = min(len(coords) - 1, segment_idx + padding + 1)
+        if end_idx - start_idx < 1:
+            return None
+        return coords[start_idx : end_idx + 1]
 
     def find_texture_file(self, templates_directory: str, texture_base_name: str) -> str:
         """Finds the texture file with supported extensions in the templates directory.
@@ -239,7 +284,7 @@ class Road(MeshComponent):
         Returns:
             (str): The full path to the found texture file.
         """
-        for ext in [".png", ".jpg", ".jpeg", ".dds"]:
+        for ext in Parameters.ROAD_TEXTURE_EXTENSIONS:
             texture_path = os.path.join(templates_directory, texture_base_name + ext).lower()
             if os.path.isfile(texture_path):
                 return texture_path
@@ -256,7 +301,7 @@ class Road(MeshComponent):
             road_entries (list[LineSurfaceEntry]): List of LineSurfaceEntry objects to generate the mesh from.
             texture (str): The base name of the texture file to use for the roads.
         """
-        road_mesh_directory = os.path.join(self.map_directory, "roads", texture)
+        road_mesh_directory = os.path.join(self.map_directory, Parameters.ROADS_DIRECTORY, texture)
         os.makedirs(road_mesh_directory, exist_ok=True)
 
         try:
@@ -273,8 +318,14 @@ class Road(MeshComponent):
         shutil.copyfile(texture_path, dst_texture_path)
         self.logger.debug("Texture copied to %s", dst_texture_path)
 
-        obj_output_path = os.path.join(road_mesh_directory, f"roads_{texture}.obj")
-        mtl_output_path = os.path.join(road_mesh_directory, f"roads_{texture}.mtl")
+        obj_output_path = os.path.join(
+            road_mesh_directory,
+            f"{Parameters.ROAD_MESH_FILENAME_PREFIX}{texture}.obj",
+        )
+        mtl_output_path = os.path.join(
+            road_mesh_directory,
+            f"{Parameters.ROAD_MESH_FILENAME_PREFIX}{texture}.mtl",
+        )
 
         self.create_textured_linestrings_mesh(
             road_entries=road_entries,
@@ -302,13 +353,18 @@ class Road(MeshComponent):
             mesh_centroid_z=float(center[2]),
         )
 
-        output_directory = os.path.join(self.map_directory, "assets", "roads", texture)
+        output_directory = os.path.join(
+            self.map_directory,
+            Parameters.ASSETS_DIRECTORY,
+            Parameters.ROADS_DIRECTORY,
+            texture,
+        )
         os.makedirs(output_directory, exist_ok=True)
 
         self.mesh_to_i3d(
             mesh,
             output_directory,
-            f"roads_{texture}",
+            f"{Parameters.ROAD_MESH_FILENAME_PREFIX}{texture}",
             texture_path=dst_texture_path,
             # center_mesh=True,
         )

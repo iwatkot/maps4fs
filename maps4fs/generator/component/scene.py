@@ -83,15 +83,22 @@ class Scene(ImageComponent):
         distance = self.map_size // 2
         y_min = self.game.config.sun_bbox_y_min
         y_max = self.game.config.sun_bbox_y_max
+        cfg = self.game.config
         with XmlDocument(self.xml_path) as doc:  # type: ignore
             doc.set_attrs(
-                self.game.config.i3d_sun_xpath,
-                lastShadowMapSplitBboxMin=f"-{distance},{y_min},-{distance}",
-                lastShadowMapSplitBboxMax=f"{distance},{y_max},{distance}",
+                cfg.i3d_sun_xpath,
+                **{
+                    cfg.i3d_attr_last_shadow_min: f"-{distance},{y_min},-{distance}",
+                    cfg.i3d_attr_last_shadow_max: f"{distance},{y_max},{distance}",
+                },
             )
             doc.set_attrs(
-                self.game.config.i3d_displacement_layer_xpath,
-                size=str(int(self.map_size * self.game.config.displacement_size_multiplier)),
+                cfg.i3d_displacement_layer_xpath,
+                **{
+                    cfg.i3d_attr_size: str(
+                        int(self.map_size * self.game.config.displacement_size_multiplier)
+                    )
+                },
             )
 
     @monitor_performance
@@ -104,29 +111,14 @@ class Scene(ImageComponent):
 
         splines_doc = XmlDocument(splines_i3d_path)
 
-        roads_polylines = (
-            self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES) or []
-        )
-
-        water_polylines = (
-            self.get_infolayer_data(Parameters.TEXTURES, Parameters.WATER_POLYLINES) or []
-        )
-        roads_polylines.extend(water_polylines)
-
-        if self.map.i3d_settings.field_splines:
-            fields_polygons = self.get_infolayer_data(Parameters.TEXTURES, Parameters.FIELDS)
-            if isinstance(roads_polylines, list) and isinstance(fields_polygons, list):
-                roads_polylines.extend(fields_polygons)
-
-        if not roads_polylines:
+        spline_sources = self._collect_spline_sources()
+        if not spline_sources:
             self.logger.warning("Roads polylines data not found in textures info layer.")
             return
 
         root = splines_doc.root
-        # Find <Shapes> element in the I3D file.
-        shapes_node = root.find(self.game.config.i3d_shapes_xpath)  # type: ignore
-        # Find <Scene> element in the I3D file.
-        scene_node = root.find(self.game.config.i3d_scene_xpath)  # type: ignore
+        shapes_node = root.find(self.game.config.i3d_shapes_xpath)
+        scene_node = root.find(self.game.config.i3d_scene_xpath)
 
         if shapes_node is None or scene_node is None:
             self.logger.warning("Shapes or Scene node not found in I3D file.")
@@ -137,100 +129,161 @@ class Scene(ImageComponent):
             self.logger.warning("Not resized DEM not found.")
             return
 
-        if self.map.output_size is not None:
-            not_resized_dem = cv2.resize(
-                not_resized_dem,
-                (self.map.output_size, self.map.output_size),
-                interpolation=cv2.INTER_NEAREST,
-            )
+        not_resized_dem = self._resize_dem_if_needed(not_resized_dem)
 
-        user_attributes_node = root.find(self.game.config.i3d_user_attributes_xpath)  # type: ignore
+        user_attributes_node = root.find(self.game.config.i3d_user_attributes_xpath)
         if user_attributes_node is None:
             self.logger.warning("UserAttributes node not found in I3D file.")
             return
 
         node_id = Parameters.SPLINES_NODE_ID_STARTING_VALUE
-        for road_id, road_info in enumerate(roads_polylines, start=1):
-            if isinstance(road_info, dict):
-                points = road_info.get("points")
-                tags = road_info.get("tags")
-                is_field = False
-            else:
-                points = road_info
-                tags = "field"
-                is_field = True
-
-            try:
-                fitted_road = self.fit_object_into_bounds(
-                    linestring_points=points, angle=self.rotation
-                )
-            except ValueError as e:
-                self.logger.debug(
-                    "Road %s could not be fitted into the map bounds with error: %s",
-                    road_id,
-                    e,
-                )
+        for road_id, road_info in enumerate(spline_sources, start=1):
+            points, tags, is_field = self._resolve_spline_source(road_info)
+            fitted_road = self._fit_spline_points(road_id, points)
+            if fitted_road is None:
                 continue
 
             fitted_road = self.interpolate_points(
-                fitted_road, num_points=self.map.i3d_settings.spline_density
+                fitted_road,
+                num_points=self.map.i3d_settings.spline_density,
             )
-            fitted_roads = [(fitted_road, "original")]
 
-            if self.map.i3d_settings.add_reversed_splines:
-                reversed_fitted_road = fitted_road[::-1]
-                fitted_roads.append((reversed_fitted_road, "reversed"))
-
-            for fitted_road, direction in fitted_roads:
-                spline_name = f"spline_{road_id}_{direction}_{tags}"
-
-                data = {
-                    "name": spline_name,
-                    "translation": "0 0 0",
-                    "nodeId": str(node_id),
-                    "shapeId": str(node_id),
-                }
-
-                scene_node.append(XmlDocument.create_element("Shape", data))
-
-                road_ccs = [self.top_left_coordinates_to_center(point) for point in fitted_road]
-
-                data = {
-                    "name": spline_name,
-                    "shapeId": str(node_id),
-                    "degree": "3",
-                    "form": "open",
-                }
-                nurbs_curve_node = XmlDocument.create_element("NurbsCurve", data)
-
-                for point_ccs, point in zip(road_ccs, fitted_road):
-                    cx, cy = point_ccs
-                    x, y = point
-
-                    z = self.get_z_coordinate_from_dem(not_resized_dem, x, y)
-
-                    nurbs_curve_node.append(
-                        XmlDocument.create_element("cv", {"c": f"{cx}, {z}, {cy}"})
-                    )
-
-                shapes_node.append(nurbs_curve_node)
-
-                if not is_field:
-                    user_attribute_node = self.get_user_attribute_node(
-                        node_id,
-                        attributes=[
-                            ("maxSpeedScale", "integer", "1"),
-                            ("speedLimit", "integer", "100"),
-                        ],
-                    )
-
-                    user_attributes_node.append(user_attribute_node)
-                node_id += 1
+            node_id = self._append_spline_variants(
+                road_id,
+                tags,
+                is_field,
+                fitted_road,
+                node_id,
+                scene_node,
+                shapes_node,
+                user_attributes_node,
+                not_resized_dem,
+            )
 
         splines_doc.save()
         self.logger.debug("Splines I3D file saved to: %s.", splines_i3d_path)
 
         self.assets.splines = splines_i3d_path
+
+    def _collect_spline_sources(self) -> list[Any]:
+        """Collect all polyline/polygon sources that should become splines."""
+        roads_polylines = (
+            self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES) or []
+        )
+        water_polylines = (
+            self.get_infolayer_data(Parameters.TEXTURES, Parameters.WATER_POLYLINES) or []
+        )
+        roads_polylines.extend(water_polylines)
+
+        if self.map.i3d_settings.field_splines:
+            fields_polygons = self.get_infolayer_data(Parameters.TEXTURES, Parameters.FIELDS)
+            if isinstance(roads_polylines, list) and isinstance(fields_polygons, list):
+                roads_polylines.extend(fields_polygons)
+        return roads_polylines
+
+    def _resize_dem_if_needed(self, not_resized_dem: np.ndarray) -> np.ndarray:
+        """Resize DEM to output size when output rendering uses scaled map size."""
+        if self.map.output_size is None:
+            return not_resized_dem
+        return cv2.resize(
+            not_resized_dem,
+            (self.map.output_size, self.map.output_size),
+            interpolation=cv2.INTER_NEAREST,
+        )
+
+    def _resolve_spline_source(self, road_info: Any) -> tuple[Any, Any, bool]:
+        """Normalize spline source record into (points, tags, is_field)."""
+        if isinstance(road_info, dict):
+            return road_info.get(Parameters.POINTS), road_info.get(Parameters.TAGS), False
+        return road_info, Parameters.SPLINE_TAG_FIELD, True
+
+    def _fit_spline_points(self, road_id: int, points: Any) -> list[tuple[int, int]] | None:
+        """Fit spline points into map bounds and return transformed polyline."""
+        try:
+            return self.fit_object_into_bounds(linestring_points=points, angle=self.rotation)
+        except ValueError as e:
+            self.logger.debug(
+                "Road %s could not be fitted into the map bounds with error: %s",
+                road_id,
+                e,
+            )
+            return None
+
+    def _append_spline_variants(
+        self,
+        road_id: int,
+        tags: Any,
+        is_field: bool,
+        fitted_road: list[tuple[int, int]],
+        node_id: int,
+        scene_node: ET.Element,
+        shapes_node: ET.Element,
+        user_attributes_node: ET.Element,
+        not_resized_dem: np.ndarray,
+    ) -> int:
+        """Append original/reversed spline variants and return updated node ID."""
+        fitted_roads: list[tuple[list[tuple[int, int]], str]] = [
+            (fitted_road, Parameters.SPLINE_DIRECTION_ORIGINAL)
+        ]
+        if self.map.i3d_settings.add_reversed_splines:
+            fitted_roads.append((fitted_road[::-1], Parameters.SPLINE_DIRECTION_REVERSED))
+
+        for spline_points, direction in fitted_roads:
+            spline_name = f"{Parameters.SPLINE_NAME_PREFIX}_{road_id}_{direction}_{tags}"
+            self._append_spline_shape(scene_node, spline_name, node_id)
+            self._append_spline_curve(
+                shapes_node, spline_name, node_id, spline_points, not_resized_dem
+            )
+
+            if not is_field:
+                user_attributes_node.append(
+                    self.get_user_attribute_node(
+                        node_id, attributes=Parameters.SPLINE_USER_ATTRIBUTES
+                    )
+                )
+            node_id += 1
+
+        return node_id
+
+    def _append_spline_shape(self, scene_node: ET.Element, spline_name: str, node_id: int) -> None:
+        """Append spline shape reference to Scene node."""
+        cfg = self.game.config
+        data = {
+            cfg.i3d_attr_name: spline_name,
+            cfg.i3d_attr_translation: Parameters.DEFAULT_TRANSLATION,
+            cfg.i3d_attr_node_id: str(node_id),
+            cfg.i3d_attr_shape_id: str(node_id),
+        }
+        scene_node.append(XmlDocument.create_element(cfg.i3d_shape_tag, data))
+
+    def _append_spline_curve(
+        self,
+        shapes_node: ET.Element,
+        spline_name: str,
+        node_id: int,
+        spline_points: list[tuple[int, int]],
+        not_resized_dem: np.ndarray,
+    ) -> None:
+        """Append NurbsCurve node for spline points."""
+        cfg = self.game.config
+        curve_data = {
+            cfg.i3d_attr_name: spline_name,
+            cfg.i3d_attr_shape_id: str(node_id),
+            cfg.i3d_attr_degree: Parameters.NURBS_DEGREE,
+            cfg.i3d_attr_form: Parameters.NURBS_FORM_OPEN,
+        }
+        nurbs_curve_node = XmlDocument.create_element(cfg.i3d_nurbs_curve_tag, curve_data)
+
+        spline_ccs = [self.top_left_coordinates_to_center(point) for point in spline_points]
+        for point_ccs, point in zip(spline_ccs, spline_points):
+            cx, cy = point_ccs
+            x, y = point
+            z = self.get_z_coordinate_from_dem(not_resized_dem, x, y)
+            nurbs_curve_node.append(
+                XmlDocument.create_element(cfg.i3d_cv_tag, {cfg.i3d_attr_point: f"{cx}, {z}, {cy}"})
+            )
+
+        shapes_node.append(nurbs_curve_node)
 
     @monitor_performance
     def _add_fields(self) -> None:
@@ -330,16 +383,20 @@ class Scene(ImageComponent):
 
         # Creating the main field node.
         data = {
-            "name": f"field{field_id}",
-            "translation": f"{cx} 0 {cy}",
-            "nodeId": str(node_id),
+            self.game.config.i3d_attr_name: f"{Parameters.FIELD_NAME_PREFIX}{field_id}",
+            self.game.config.i3d_attr_translation: f"{cx} 0 {cy}",
+            self.game.config.i3d_attr_node_id: str(node_id),
         }
-        field_node = XmlDocument.create_element("TransformGroup", data)
+        field_node = XmlDocument.create_element(self.game.config.i3d_transform_group_tag, data)
         node_id += 1
 
         # Creating the polygon points node, which contains the points of the field.
         polygon_points_node = XmlDocument.create_element(
-            "TransformGroup", {"name": "polygonPoints", "nodeId": str(node_id)}
+            self.game.config.i3d_transform_group_tag,
+            {
+                self.game.config.i3d_attr_name: Parameters.FIELD_POLYGON_POINTS_NAME,
+                self.game.config.i3d_attr_node_id: str(node_id),
+            },
         )
         node_id += 1
 
@@ -348,11 +405,11 @@ class Scene(ImageComponent):
 
             node_id += 1
             point_node = XmlDocument.create_element(
-                "TransformGroup",
+                self.game.config.i3d_transform_group_tag,
                 {
-                    "name": f"point{point_id}",
-                    "translation": f"{rx} 0 {ry}",
-                    "nodeId": str(node_id),
+                    self.game.config.i3d_attr_name: f"{Parameters.FIELD_POINT_PREFIX}{point_id}",
+                    self.game.config.i3d_attr_translation: f"{rx} 0 {ry}",
+                    self.game.config.i3d_attr_node_id: str(node_id),
                 },
             )
 
@@ -367,7 +424,11 @@ class Scene(ImageComponent):
         node_id += 1
         field_node.append(
             XmlDocument.create_element(
-                "TransformGroup", {"name": "teleportIndicator", "nodeId": str(node_id)}
+                self.game.config.i3d_transform_group_tag,
+                {
+                    self.game.config.i3d_attr_name: Parameters.FIELD_TELEPORT_INDICATOR,
+                    self.game.config.i3d_attr_node_id: str(node_id),
+                },
             )
         )
 
@@ -385,18 +446,24 @@ class Scene(ImageComponent):
         """
         node_id += 1
         name_indicator_node = XmlDocument.create_element(
-            "TransformGroup", {"name": "nameIndicator", "nodeId": str(node_id)}
+            self.game.config.i3d_transform_group_tag,
+            {
+                self.game.config.i3d_attr_name: Parameters.FIELD_NAME_INDICATOR,
+                self.game.config.i3d_attr_node_id: str(node_id),
+            },
         )
 
         node_id += 1
         data = {
-            "name": "Note",
-            "nodeId": str(node_id),
-            "text": f"field{field_id}&#xA;0.00 ha",
-            "color": "4278190080",
-            "fixedSize": "true",
+            self.game.config.i3d_attr_name: Parameters.FIELD_NOTE_NAME,
+            self.game.config.i3d_attr_node_id: str(node_id),
+            self.game.config.i3d_attr_text: Parameters.FIELD_NOTE_TEXT_TEMPLATE.format(
+                name=f"{Parameters.FIELD_NAME_PREFIX}{field_id}"
+            ),
+            self.game.config.i3d_attr_color: Parameters.FIELD_NOTE_COLOR,
+            self.game.config.i3d_attr_fixed_size: Parameters.FIELD_NOTE_FIXED_SIZE,
         }
-        note_node = XmlDocument.create_element("Note", data)
+        note_node = XmlDocument.create_element(self.game.config.i3d_note_tag, data)
         name_indicator_node.append(note_node)
 
         return name_indicator_node, node_id
@@ -413,16 +480,19 @@ class Scene(ImageComponent):
         Returns:
             ET.Element: The created user attribute node.
         """
-        user_attribute_node = ET.Element("UserAttribute")
-        user_attribute_node.set("nodeId", str(node_id))
+        cfg = self.game.config
+        user_attribute_node = XmlDocument.create_element(
+            cfg.i3d_user_attribute_tag,
+            {cfg.i3d_attr_node_id: str(node_id)},
+        )
 
         for name, attr_type, value in attributes:
             data = {
-                "name": name,
-                "type": attr_type,
-                "value": value,
+                cfg.i3d_attr_name: name,
+                cfg.i3d_attr_type: attr_type,
+                cfg.i3d_attr_value: value,
             }
-            user_attribute_node.append(XmlDocument.create_element("Attribute", data))
+            user_attribute_node.append(XmlDocument.create_element(cfg.i3d_attribute_tag, data))
 
         return user_attribute_node
 
@@ -525,11 +595,11 @@ class Scene(ImageComponent):
                 continue
 
             trees_node = XmlDocument.create_element(
-                "TransformGroup",
+                self.game.config.i3d_transform_group_tag,
                 {
-                    "name": "trees",
-                    "translation": "0 0 0",
-                    "nodeId": str(node_id),
+                    self.game.config.i3d_attr_name: Parameters.TREE_GROUP_NAME,
+                    self.game.config.i3d_attr_translation: Parameters.DEFAULT_TRANSLATION,
+                    self.game.config.i3d_attr_node_id: str(node_id),
                 },
             )
             node_id += 1
@@ -577,13 +647,15 @@ class Scene(ImageComponent):
                 tree_id = random_tree["reference_id"]
 
                 data = {
-                    "name": tree_name,
-                    "translation": f"{xcs} {z} {ycs}",
-                    "rotation": f"0 {rotation} 0",
-                    "referenceId": str(tree_id),
-                    "nodeId": str(node_id),
+                    self.game.config.i3d_attr_name: tree_name,
+                    self.game.config.i3d_attr_translation: f"{xcs} {z} {ycs}",
+                    self.game.config.i3d_attr_rotation: f"0 {rotation} 0",
+                    self.game.config.i3d_attr_reference_id: str(tree_id),
+                    self.game.config.i3d_attr_node_id: str(node_id),
                 }
-                trees_node.append(XmlDocument.create_element("ReferenceNode", data))
+                trees_node.append(
+                    XmlDocument.create_element(self.game.config.i3d_reference_node_tag, data)
+                )
 
                 tree_count += 1
 
@@ -686,8 +758,8 @@ class Scene(ImageComponent):
             dict[str, dict[str, str | float | int]]: Information about the component.
         """
         data = {
-            "Forests": self.forest_info,
-            "Fields": self.field_info,
+            Parameters.SCENE_INFO_FORESTS: self.forest_info,
+            Parameters.SCENE_INFO_FIELDS: self.field_info,
         }
 
         return data
@@ -702,7 +774,7 @@ class Scene(ImageComponent):
             str | None: The path to the binary I3D file if found, otherwise None.
         """
         for file in os.listdir(directory):
-            if file.endswith("_binary.i3d"):
+            if file.endswith(Parameters.BINARY_I3D_SUFFIX):
                 return os.path.join(directory, file)
         return None
 
@@ -717,8 +789,8 @@ class Scene(ImageComponent):
         """
         result: dict[str, str] = {}
         for file in os.listdir(directory):
-            if file.endswith("_binary.i3d"):
-                name = file[: -len("_binary.i3d")]
+            if file.endswith(Parameters.BINARY_I3D_SUFFIX):
+                name = file[: -len(Parameters.BINARY_I3D_SUFFIX)]
                 result[name] = os.path.join(directory, file)
         return result
 
@@ -748,21 +820,7 @@ class Scene(ImageComponent):
             "Inserting meshes into the I3D file using assets from: %s.", assets_directory
         )
 
-        background_assets_directory = os.path.join(assets_directory, "background")
-        roads_assets_directory = os.path.join(assets_directory, "roads")
-        water_assets_directory = os.path.join(assets_directory, "water")
-
-        assets_directories: dict[str, str] = {
-            Parameters.BACKGROUND_TERRAIN: background_assets_directory
-        }
-        if os.path.isdir(water_assets_directory):
-            assets_directories.update(
-                self._find_flat_binary_i3d_in_directory(water_assets_directory)
-            )
-        if os.path.isdir(roads_assets_directory):
-            assets_directories.update(
-                self._find_nested_binary_i3d_in_directory(roads_assets_directory)
-            )
+        assets_directories = self._collect_mesh_assets(assets_directory)
 
         file_id = Parameters.FILE_ID_STARTING_VALUE
         node_id = Parameters.BINARY_MESHES_NODE_ID_STARTING_VALUE
@@ -778,13 +836,7 @@ class Scene(ImageComponent):
         i3d_dir = os.path.dirname(self.xml_path)  # type: ignore
 
         for asset_name, asset_path in assets_directories.items():
-            if os.path.isfile(asset_path):
-                binary_i3d_path: str | None = asset_path
-            elif os.path.isdir(asset_path):
-                binary_i3d_path = self._find_binary_i3d_in_directory(asset_path)
-            else:
-                self.logger.warning("Asset path not found: %s.", asset_path)
-                continue
+            binary_i3d_path = self._resolve_binary_asset_path(asset_path)
 
             if not binary_i3d_path:
                 self.logger.warning(
@@ -797,16 +849,13 @@ class Scene(ImageComponent):
             binary_rel_path = os.path.relpath(binary_i3d_path, i3d_dir).replace("\\", "/")
             self.logger.debug("Relative path for the binary I3D file: %s.", binary_rel_path)
 
-            files_node.append(
-                XmlDocument.create_element(
-                    "File", {"fileId": str(file_id), "filename": binary_rel_path}
-                )
-            )
-            scene_node.append(
-                XmlDocument.create_element(
-                    "ReferenceNode",
-                    {"name": asset_name, "referenceId": str(file_id), "nodeId": str(node_id)},
-                )
+            self._append_mesh_reference(
+                files_node,
+                scene_node,
+                asset_name,
+                binary_rel_path,
+                file_id,
+                node_id,
             )
 
             self.logger.debug("Mesh %s inserted into the I3D file.", asset_name)
@@ -817,6 +866,67 @@ class Scene(ImageComponent):
             self._postprocess_i3d(binary_i3d_path, asset_name)
 
         main_doc.save()
+
+    def _collect_mesh_assets(self, assets_directory: str) -> dict[str, str]:
+        """Collect all mesh asset names and their candidate file/directory paths."""
+        background_assets_directory = os.path.join(
+            assets_directory,
+            Parameters.BACKGROUND_ASSET_DIRNAME,
+        )
+        roads_assets_directory = os.path.join(assets_directory, Parameters.ROADS_DIRECTORY)
+        water_assets_directory = os.path.join(assets_directory, Parameters.WATER_ASSET_DIRNAME)
+
+        assets_directories: dict[str, str] = {
+            Parameters.BACKGROUND_TERRAIN: background_assets_directory
+        }
+        if os.path.isdir(water_assets_directory):
+            assets_directories.update(
+                self._find_flat_binary_i3d_in_directory(water_assets_directory)
+            )
+        if os.path.isdir(roads_assets_directory):
+            assets_directories.update(
+                self._find_nested_binary_i3d_in_directory(roads_assets_directory)
+            )
+        return assets_directories
+
+    def _resolve_binary_asset_path(self, asset_path: str) -> str | None:
+        """Resolve binary i3d path from direct file path or asset directory path."""
+        if os.path.isfile(asset_path):
+            return asset_path
+        if os.path.isdir(asset_path):
+            return self._find_binary_i3d_in_directory(asset_path)
+        self.logger.warning("Asset path not found: %s.", asset_path)
+        return None
+
+    def _append_mesh_reference(
+        self,
+        files_node: ET.Element,
+        scene_node: ET.Element,
+        asset_name: str,
+        binary_rel_path: str,
+        file_id: int,
+        node_id: int,
+    ) -> None:
+        """Append file and reference nodes for a single inserted mesh asset."""
+        files_node.append(
+            XmlDocument.create_element(
+                self.game.config.i3d_file_tag,
+                {
+                    self.game.config.i3d_attr_file_id: str(file_id),
+                    self.game.config.i3d_attr_filename: binary_rel_path,
+                },
+            )
+        )
+        scene_node.append(
+            XmlDocument.create_element(
+                self.game.config.i3d_reference_node_tag,
+                {
+                    self.game.config.i3d_attr_name: asset_name,
+                    self.game.config.i3d_attr_reference_id: str(file_id),
+                    self.game.config.i3d_attr_node_id: str(node_id),
+                },
+            )
+        )
 
     def _postprocess_i3d(self, binary_i3d_path: str, asset_name: str) -> None:
         """Post-processes the I3D file after all modifications are done.
@@ -853,7 +963,7 @@ class Scene(ImageComponent):
         if asset_name == Parameters.BACKGROUND_TERRAIN:
             elevation = 0.0
             if position_data is not None:
-                elevation = float(position_data.get("mesh_centroid_y", 0.0))
+                elevation = float(position_data.get(Parameters.MESH_CENTROID_Y, 0.0))
             self._set_mesh_translation(binary_i3d_path, f"0 {elevation} 0", asset_name)
             return
 
@@ -865,8 +975,8 @@ class Scene(ImageComponent):
             return
 
         # Prefer the exact mesh vertex centroid saved by road.py (post-rotation, pre-centering).
-        mesh_centroid_x = position_data.get("mesh_centroid_x")
-        mesh_centroid_z = position_data.get("mesh_centroid_z")
+        mesh_centroid_x = position_data.get(Parameters.MESH_CENTROID_X)
+        mesh_centroid_z = position_data.get(Parameters.MESH_CENTROID_Z)
         if mesh_centroid_x is None or mesh_centroid_z is None:
             self.logger.warning(
                 "Mesh centroid X/Z is missing for asset %s. Skipping positioning.", asset_name
@@ -883,7 +993,7 @@ class Scene(ImageComponent):
         ge_x = float(mesh_centroid_x) - canvas_half
         ge_y = float(mesh_centroid_z) - canvas_half
 
-        mesh_centroid_y = position_data.get("mesh_centroid_y")
+        mesh_centroid_y = position_data.get(Parameters.MESH_CENTROID_Y)
         ge_elevation = float(mesh_centroid_y) if mesh_centroid_y is not None else 0.0
 
         # GE translation string order: X (east-west), Y (elevation), Z (north-south).
@@ -901,7 +1011,7 @@ class Scene(ImageComponent):
             self.logger.warning("Shape node not found in binary I3D for asset %s.", asset_name)
             return
 
-        shape_node.set("translation", translation)
+        shape_node.set(self.game.config.i3d_attr_translation, translation)
         doc.save()
 
     def _postprocess_background_terrain(self, binary_i3d_path: str) -> None:
@@ -913,11 +1023,11 @@ class Scene(ImageComponent):
         shape_node = root.find(self.game.config.i3d_bg_terrain_shape_xpath)
 
         if material_node is not None:
-            if "specularColor" in material_node.attrib:
-                del material_node.attrib["specularColor"]
+            if self.game.config.i3d_attr_specular_color in material_node.attrib:
+                del material_node.attrib[self.game.config.i3d_attr_specular_color]
 
         if shape_node is not None:
-            shape_node.set("receiveShadows", "true")
+            shape_node.set(self.game.config.i3d_attr_receive_shadows, Parameters.I3D_TRUE)
 
         doc.save()
 
@@ -935,52 +1045,90 @@ class Scene(ImageComponent):
         if files_node is not None:
             shader_file = files_node.find(self.game.config.i3d_water_shader_file_xpath)
             if shader_file is not None:
-                shader_file.set("fileId", "4")
+                shader_file.set(
+                    self.game.config.i3d_attr_file_id, Parameters.I3D_WATER_SHADER_FILE_ID
+                )
             normalmap_file = XmlDocument.create_element(
-                "File",
-                {"fileId": "2", "filename": "$data/maps/textures/shared/water_normal.dds"},
+                self.game.config.i3d_file_tag,
+                {
+                    self.game.config.i3d_attr_file_id: Parameters.I3D_NORMALMAP_FILE_ID,
+                    self.game.config.i3d_attr_filename: Parameters.I3D_NORMALMAP_FILENAME,
+                },
             )
             files_node.insert(0, normalmap_file)
 
         # --- Material: update attributes and add children ---
         material_node = root.find(self.game.config.i3d_ocean_material_xpath)
         if material_node is not None:
-            material_node.set("specularColor", "1 1 1")
-            material_node.set("customShaderId", "4")
-            material_node.set("customShaderVariation", "simple")
+            material_node.set(
+                self.game.config.i3d_attr_specular_color, Parameters.I3D_WATER_SPECULAR
+            )
+            material_node.set(
+                self.game.config.i3d_attr_custom_shader_id, Parameters.I3D_WATER_SHADER_FILE_ID
+            )
+            material_node.set(
+                self.game.config.i3d_attr_custom_shader_variation,
+                Parameters.I3D_WATER_SHADER_VARIATION,
+            )
 
-            normalmap_elem = XmlDocument.create_element("Normalmap", {"fileId": "2"})
+            normalmap_elem = XmlDocument.create_element(
+                self.game.config.i3d_normalmap_tag,
+                {self.game.config.i3d_attr_file_id: Parameters.I3D_NORMALMAP_FILE_ID},
+            )
             material_node.insert(0, normalmap_elem)
 
             material_node.append(
                 XmlDocument.create_element(
-                    "CustomParameter",
-                    {"name": "underwaterFogColor", "value": "0.12 0.14 0.11 1"},
+                    self.game.config.i3d_custom_parameter_tag,
+                    {
+                        self.game.config.i3d_attr_name: Parameters.I3D_WATER_PARAM_FOG_COLOR_NAME,
+                        self.game.config.i3d_attr_value: Parameters.I3D_WATER_UNDERWATER_FOG_COLOR,
+                    },
                 )
             )
             material_node.append(
                 XmlDocument.create_element(
-                    "CustomParameter",
-                    {"name": "underwaterFogDepth", "value": "1.4 1.2 1 1"},
+                    self.game.config.i3d_custom_parameter_tag,
+                    {
+                        self.game.config.i3d_attr_name: Parameters.I3D_WATER_PARAM_FOG_DEPTH_NAME,
+                        self.game.config.i3d_attr_value: Parameters.I3D_WATER_UNDERWATER_FOG_DEPTH,
+                    },
                 )
             )
 
         # --- Shape: add static/collision attrs, fix castsShadows ---
         shape_node = root.find(self.game.config.i3d_shape_xpath)
         if shape_node is not None:
-            shape_node.set("static", "true")
-            shape_node.set("collisionFilterGroup", "0x80000000")
-            shape_node.set("collisionFilterMask", "0x1")
-            shape_node.set("castsShadows", "false")
+            shape_node.set(self.game.config.i3d_attr_static, Parameters.I3D_TRUE)
+            shape_node.set(
+                self.game.config.i3d_attr_collision_filter_group,
+                Parameters.I3D_WATER_COLLISION_FILTER_GROUP,
+            )
+            shape_node.set(
+                self.game.config.i3d_attr_collision_filter_mask,
+                Parameters.I3D_WATER_COLLISION_FILTER_MASK,
+            )
+            shape_node.set(self.game.config.i3d_attr_casts_shadows, Parameters.I3D_FALSE)
 
         # --- Wrap bare Shape (direct Scene child) in a TransformGroup so GE respects translation ---
         scene_node = root.find(self.game.config.i3d_scene_xpath)
         if scene_node is not None and shape_node is not None:
             if shape_node in list(scene_node):
-                shape_nodeid = int(shape_node.get("nodeId", "4"))
+                shape_nodeid = int(
+                    shape_node.get(
+                        self.game.config.i3d_attr_node_id,
+                        Parameters.I3D_WATER_SHADER_FILE_ID,
+                    )
+                )
                 tg = XmlDocument.create_element(
-                    "TransformGroup",
-                    {"name": shape_node.get("name", "water"), "nodeId": str(shape_nodeid - 1)},
+                    self.game.config.i3d_transform_group_tag,
+                    {
+                        self.game.config.i3d_attr_name: shape_node.get(
+                            self.game.config.i3d_attr_name,
+                            Parameters.WATER,
+                        ),
+                        self.game.config.i3d_attr_node_id: str(shape_nodeid - 1),
+                    },
                 )
                 scene_node.remove(shape_node)
                 tg.append(shape_node)
@@ -989,13 +1137,16 @@ class Scene(ImageComponent):
         # --- UserAttributes: add onCreate callback ---
         user_attrs_node = root.find(self.game.config.i3d_user_attributes_xpath)
         if user_attrs_node is None:
-            user_attrs_node = ET.SubElement(root, "UserAttributes")
+            user_attrs_node = XmlDocument.create_element(self.game.config.i3d_user_attributes_tag)
+            root.append(user_attrs_node)
 
-        shape_node_id = shape_node.get("nodeId") if shape_node is not None else None
+        shape_node_id = (
+            shape_node.get(self.game.config.i3d_attr_node_id) if shape_node is not None else None
+        )
         if shape_node_id is not None:
             ua = self.get_user_attribute_node(
                 int(shape_node_id),
-                [("onCreate", "scriptCallback", "Environment.onCreateWater")],
+                Parameters.WATER_ONCREATE_ATTRIBUTE,
             )
             user_attrs_node.append(ua)
 
@@ -1012,13 +1163,19 @@ class Scene(ImageComponent):
 
         material_node = root.find(self.game.config.i3d_material_xpath)
         if material_node is not None:
-            material_node.attrib.pop("specularColor", None)
+            material_node.attrib.pop(self.game.config.i3d_attr_specular_color, None)
 
         shape_node = root.find(self.game.config.i3d_shape_xpath)
         if shape_node is not None:
-            shape_node.set("collisionFilterGroup", "0x601c")
-            shape_node.set("collisionFilterMask", "0xfffffbff")
-            shape_node.set("receiveShadows", "true")
+            shape_node.set(
+                self.game.config.i3d_attr_collision_filter_group,
+                Parameters.I3D_ROAD_COLLISION_FILTER_GROUP,
+            )
+            shape_node.set(
+                self.game.config.i3d_attr_collision_filter_mask,
+                Parameters.I3D_ROAD_COLLISION_FILTER_MASK,
+            )
+            shape_node.set(self.game.config.i3d_attr_receive_shadows, Parameters.I3D_TRUE)
 
         doc.save()
 
@@ -1037,10 +1194,14 @@ class Scene(ImageComponent):
         # Copy both files to map_directory/assets/map_bounds/
         # e.g. result: map_directory/assets/map_bounds/map_bounds.i3d
         # and map_directory/assets/map_bounds/map_bounds.i3d.shapes
-        dest_dir = os.path.join(self.map_directory, "assets", "map_bounds")
+        dest_dir = os.path.join(
+            self.map_directory,
+            Parameters.ASSETS_DIRECTORY,
+            Parameters.MAP_BOUNDS_DIRNAME,
+        )
         os.makedirs(dest_dir, exist_ok=True)
-        dest_i3d_path = os.path.join(dest_dir, "map_bounds.i3d")
-        dest_shapes_path = os.path.join(dest_dir, "map_bounds.i3d.shapes")
+        dest_i3d_path = os.path.join(dest_dir, Parameters.MAP_BOUNDS_I3D_FILENAME)
+        dest_shapes_path = os.path.join(dest_dir, Parameters.MAP_BOUNDS_SHAPES_FILENAME)
         try:
             shutil.copy(i3d_path, dest_i3d_path)
             shutil.copy(shapes_path, dest_shapes_path)
@@ -1071,8 +1232,8 @@ class Scene(ImageComponent):
             for shape_name, (translation, scale) in shape_configs.items():
                 shape_node = tg_node.find(f"Shape[@name='{shape_name}']")
                 if shape_node is not None:
-                    shape_node.set("translation", translation)
-                    shape_node.set("scale", scale)
+                    shape_node.set(self.game.config.i3d_attr_translation, translation)
+                    shape_node.set(self.game.config.i3d_attr_scale, scale)
 
         bounds_doc.save()
         self.logger.debug("Map bounds positions updated in %s.", dest_i3d_path)
@@ -1094,18 +1255,24 @@ class Scene(ImageComponent):
 
         files_node.append(
             XmlDocument.create_element(
-                "File", {"fileId": str(Parameters.BOUNDS_FILE_ID), "filename": bounds_rel_path}
+                self.game.config.i3d_file_tag,
+                {
+                    self.game.config.i3d_attr_file_id: str(Parameters.BOUNDS_FILE_ID),
+                    self.game.config.i3d_attr_filename: bounds_rel_path,
+                },
             )
         )
         # Y=1024 is the fixed height above ground in GE's X Z Y coordinate system.
         scene_node.append(
             XmlDocument.create_element(
-                "ReferenceNode",
+                self.game.config.i3d_reference_node_tag,
                 {
-                    "name": "mapbounds",
-                    "translation": "0 1024 0",
-                    "referenceId": str(Parameters.BOUNDS_FILE_ID),
-                    "nodeId": str(Parameters.BOUNDS_NODE_ID),
+                    self.game.config.i3d_attr_name: Parameters.MAP_BOUNDS_REFERENCE_NAME,
+                    self.game.config.i3d_attr_translation: (
+                        f"0 {Parameters.MAP_BOUNDS_REFERENCE_HEIGHT} 0"
+                    ),
+                    self.game.config.i3d_attr_reference_id: str(Parameters.BOUNDS_FILE_ID),
+                    self.game.config.i3d_attr_node_id: str(Parameters.BOUNDS_NODE_ID),
                 },
             )
         )
