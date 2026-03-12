@@ -30,6 +30,7 @@
 
 ## 🧑‍💻 For Developers
 * [Python Package Deployment](python_package_deployment.md)
+* [How Maps4FS Works](how_maps4fs_works.md)
 * [Migration to 3.0](migration_to_3_0.md)
 
 ## ⚡ Additional Features

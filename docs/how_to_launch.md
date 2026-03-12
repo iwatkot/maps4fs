@@ -139,6 +139,7 @@ pip install -e .
 
 ### 📖 Developer Resources
 - 📚 [Python Package Deployment](python_package_deployment.md)
+- 🧠 [How Maps4FS Works](how_maps4fs_works.md)
 - 🔄 [Migration to 3.0](migration_to_3_0.md)
 - 🐙 [GitHub Repository](https://github.com/iwatkot/maps4fs)
 - 📝 [API Documentation](https://github.com/iwatkot/maps4fsapi)
