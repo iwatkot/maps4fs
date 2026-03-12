@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from typing import Any, Callable, NamedTuple
@@ -537,8 +538,9 @@ class MeshComponent(Component):
             "stdin": subprocess.DEVNULL,
             "capture_output": True,
             "text": True,
-            "creationflags": subprocess.CREATE_NO_WINDOW,
         }
+        if sys.platform == "win32":
+            run_kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
         result = subprocess.run(cmd, **run_kwargs)  # pylint: disable=subprocess-run-check
 

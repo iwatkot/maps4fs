@@ -10,6 +10,7 @@ from typing import cast
 import cv2
 import numpy as np
 from PIL import Image, ImageFile
+from PIL.Image import Image as PILImage
 
 from maps4fs.generator.component.base.component import Component
 from maps4fs.generator.constants import Paths
@@ -289,15 +290,16 @@ class ImageComponent(Component):
 
             with Image.open(input_png_path) as img:
                 # Convert to RGB if needed (DDS works better with RGB)
+                image_to_save: PILImage = img.copy()
                 if img.mode == "RGBA":
                     # Create RGB version on white background
                     rgb_img = Image.new("RGB", img.size, (255, 255, 255))
                     rgb_img.paste(img, mask=img.split()[-1])  # Use alpha as mask
-                    img = rgb_img
+                    image_to_save = rgb_img
                 elif img.mode != "RGB":
-                    img = img.convert("RGB")
+                    image_to_save = image_to_save.convert("RGB")
 
-                img.save(output_dds_path, format="DDS")
+                image_to_save.save(output_dds_path, format="DDS")
         except Exception as e:
             raise RuntimeError(f"DDS conversion failed: {e}") from e
 
