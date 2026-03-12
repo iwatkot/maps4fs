@@ -74,22 +74,24 @@ class Scene(ImageComponent):
 
         with XmlDocument(self.xml_path) as doc:  # type: ignore
             doc.set_attrs(
-                ".//Scene/TerrainTransformGroup",
+                self.game.config.i3d_terrain_xpath,
                 **{Parameters.HEIGHT_SCALE: str(value)},
             )
 
     def _update_parameters(self) -> None:
         """Updates the map I3D file with the sun bounding box and displacement layer size."""
         distance = self.map_size // 2
+        y_min = self.game.config.sun_bbox_y_min
+        y_max = self.game.config.sun_bbox_y_max
         with XmlDocument(self.xml_path) as doc:  # type: ignore
             doc.set_attrs(
-                ".//Scene/Light[@name='sun']",
-                lastShadowMapSplitBboxMin=f"-{distance},-128,-{distance}",
-                lastShadowMapSplitBboxMax=f"{distance},148,{distance}",
+                self.game.config.i3d_sun_xpath,
+                lastShadowMapSplitBboxMin=f"-{distance},{y_min},-{distance}",
+                lastShadowMapSplitBboxMax=f"{distance},{y_max},{distance}",
             )
             doc.set_attrs(
-                ".//Scene/TerrainTransformGroup/Layers/DisplacementLayer",
-                size=str(int(self.map_size * 8)),
+                self.game.config.i3d_displacement_layer_xpath,
+                size=str(int(self.map_size * self.game.config.displacement_size_multiplier)),
             )
 
     @monitor_performance
@@ -122,9 +124,9 @@ class Scene(ImageComponent):
 
         root = splines_doc.root
         # Find <Shapes> element in the I3D file.
-        shapes_node = root.find(".//Shapes")  # type: ignore
+        shapes_node = root.find(self.game.config.i3d_shapes_xpath)  # type: ignore
         # Find <Scene> element in the I3D file.
-        scene_node = root.find(".//Scene")  # type: ignore
+        scene_node = root.find(self.game.config.i3d_scene_xpath)  # type: ignore
 
         if shapes_node is None or scene_node is None:
             self.logger.warning("Shapes or Scene node not found in I3D file.")
@@ -142,7 +144,7 @@ class Scene(ImageComponent):
                 interpolation=cv2.INTER_NEAREST,
             )
 
-        user_attributes_node = root.find(".//UserAttributes")  # type: ignore
+        user_attributes_node = root.find(self.game.config.i3d_user_attributes_xpath)  # type: ignore
         if user_attributes_node is None:
             self.logger.warning("UserAttributes node not found in I3D file.")
             return
@@ -249,12 +251,12 @@ class Scene(ImageComponent):
         self.logger.debug("Starging to add fields to the I3D file.")
 
         root = fields_doc.root
-        gameplay_node = root.find(".//TransformGroup[@name='gameplay']")  # type: ignore
+        gameplay_node = root.find(self.game.config.i3d_gameplay_xpath)  # type: ignore
 
         if gameplay_node is None:
             return
-        fields_node = gameplay_node.find(".//TransformGroup[@name='fields']")
-        user_attributes_node = root.find(".//UserAttributes")  # type: ignore
+        fields_node = gameplay_node.find(self.game.config.i3d_fields_xpath)
+        user_attributes_node = root.find(self.game.config.i3d_user_attributes_xpath)  # type: ignore
 
         if fields_node is None or user_attributes_node is None:
             return
@@ -509,7 +511,7 @@ class Scene(ImageComponent):
         tree_count = 0
         forests_doc = XmlDocument(self.xml_path)  # type: ignore
         forests_root = forests_doc.root
-        scene_node = forests_root.find(".//Scene")  # type: ignore
+        scene_node = forests_root.find(self.game.config.i3d_scene_xpath)  # type: ignore
         if scene_node is None:
             self.logger.warning("Scene element not found in I3D file.")
             return
@@ -768,8 +770,8 @@ class Scene(ImageComponent):
         # Load the main I3D document once; add all mesh references, then save once.
         main_doc = XmlDocument(self.xml_path)  # type: ignore
         main_root = main_doc.root
-        files_node = main_root.find(".//Files")
-        scene_node = main_root.find(".//Scene")
+        files_node = main_root.find(self.game.config.i3d_files_xpath)
+        scene_node = main_root.find(self.game.config.i3d_scene_xpath)
         if files_node is None or scene_node is None:
             self.logger.warning("Required nodes (Files, Scene) not found in I3D file.")
             return
@@ -936,7 +938,7 @@ class Scene(ImageComponent):
         self.logger.debug("Positioning mesh %s at translation: %s.", asset_name, translation)
 
         doc = XmlDocument(binary_i3d_path)
-        shape_node = doc.root.find(".//Shape")
+        shape_node = doc.root.find(self.game.config.i3d_shape_xpath)
         if shape_node is None:
             self.logger.warning("Shape node not found in binary I3D for asset %s.", asset_name)
             return
@@ -949,8 +951,8 @@ class Scene(ImageComponent):
         doc = XmlDocument(binary_i3d_path)
         root = doc.root
 
-        material_node = root.find(".//Material[@name='background_terrain_material']")
-        shape_node = root.find(".//Shape[@name='background_terrain_shape']")
+        material_node = root.find(self.game.config.i3d_bg_terrain_material_xpath)
+        shape_node = root.find(self.game.config.i3d_bg_terrain_shape_xpath)
 
         if material_node is not None:
             if "specularColor" in material_node.attrib:
@@ -971,9 +973,9 @@ class Scene(ImageComponent):
         root = doc.root
 
         # --- Files: bump shader fileId 3 → 4, insert normalmap as fileId 2 ---
-        files_node = root.find(".//Files")
+        files_node = root.find(self.game.config.i3d_files_xpath)
         if files_node is not None:
-            shader_file = files_node.find("File[@fileId='3']")
+            shader_file = files_node.find(self.game.config.i3d_water_shader_file_xpath)
             if shader_file is not None:
                 shader_file.set("fileId", "4")
             normalmap_file = XmlDocument.create_element(
@@ -983,7 +985,7 @@ class Scene(ImageComponent):
             files_node.insert(0, normalmap_file)
 
         # --- Material: update attributes and add children ---
-        material_node = root.find(".//Material[@name='OceanShader']")
+        material_node = root.find(self.game.config.i3d_ocean_material_xpath)
         if material_node is not None:
             material_node.set("specularColor", "1 1 1")
             material_node.set("customShaderId", "4")
@@ -1006,7 +1008,7 @@ class Scene(ImageComponent):
             )
 
         # --- Shape: add static/collision attrs, fix castsShadows ---
-        shape_node = root.find(".//Shape")
+        shape_node = root.find(self.game.config.i3d_shape_xpath)
         if shape_node is not None:
             shape_node.set("static", "true")
             shape_node.set("collisionFilterGroup", "0x80000000")
@@ -1014,7 +1016,7 @@ class Scene(ImageComponent):
             shape_node.set("castsShadows", "false")
 
         # --- Wrap bare Shape (direct Scene child) in a TransformGroup so GE respects translation ---
-        scene_node = root.find(".//Scene")
+        scene_node = root.find(self.game.config.i3d_scene_xpath)
         if scene_node is not None and shape_node is not None:
             if shape_node in list(scene_node):
                 shape_nodeid = int(shape_node.get("nodeId", "4"))
@@ -1027,7 +1029,7 @@ class Scene(ImageComponent):
                 scene_node.append(tg)
 
         # --- UserAttributes: add onCreate callback ---
-        user_attrs_node = root.find(".//UserAttributes")
+        user_attrs_node = root.find(self.game.config.i3d_user_attributes_xpath)
         if user_attrs_node is None:
             user_attrs_node = ET.SubElement(root, "UserAttributes")
 
@@ -1050,11 +1052,11 @@ class Scene(ImageComponent):
         doc = XmlDocument(binary_i3d_path)
         root = doc.root
 
-        material_node = root.find(".//Material")
+        material_node = root.find(self.game.config.i3d_material_xpath)
         if material_node is not None:
             material_node.attrib.pop("specularColor", None)
 
-        shape_node = root.find(".//Shape")
+        shape_node = root.find(self.game.config.i3d_shape_xpath)
         if shape_node is not None:
             shape_node.set("collisionFilterGroup", "0x601c")
             shape_node.set("collisionFilterMask", "0xfffffbff")
@@ -1100,7 +1102,7 @@ class Scene(ImageComponent):
         bounds_doc = XmlDocument(dest_i3d_path)
         bounds_root = bounds_doc.root
 
-        tg_node = bounds_root.find(".//Scene/TransformGroup[@name='mapbounds']")
+        tg_node = bounds_root.find(self.game.config.i3d_mapbounds_tg_xpath)
         if tg_node is not None:
             shape_configs = {
                 "mapbound_W": (f"-{half} 0 0", f"{quarter} 1 {half}"),
@@ -1120,8 +1122,8 @@ class Scene(ImageComponent):
         # 2. Insert file reference into main I3D Files section and a ReferenceNode into Scene.
         main_doc = XmlDocument(self.xml_path)  # type: ignore
         root = main_doc.root
-        files_node = root.find(".//Files")
-        scene_node = root.find(".//Scene")
+        files_node = root.find(self.game.config.i3d_files_xpath)
+        scene_node = root.find(self.game.config.i3d_scene_xpath)
 
         if files_node is None or scene_node is None:
             self.logger.warning(

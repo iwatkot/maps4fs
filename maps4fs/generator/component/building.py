@@ -439,13 +439,13 @@ class Building(ImageComponent):
         doc = XmlDocument(self.xml_path)  # type: ignore
 
         # Find the Scene element
-        scene_node = doc.get(".//Scene")
+        scene_node = doc.get(self.game.config.i3d_scene_xpath)
         if scene_node is None:
             self.logger.warning("Scene element not found in I3D file.")
             return
 
         # Find or create the Files section
-        files_section = doc.get("Files")
+        files_section = doc.get(self.game.config.i3d_files_xpath)
         if files_section is None:
             files_section = doc.append_child(".", "Files")
 

@@ -14,6 +14,7 @@ without passing a directory argument.
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass, field
 
 from maps4fs.generator.component.background import Background
 from maps4fs.generator.component.building import Building
@@ -25,6 +26,67 @@ from maps4fs.generator.component.scene import Scene
 from maps4fs.generator.component.texture import Texture
 from maps4fs.generator.constants import Paths
 from maps4fs.generator.settings import Parameters
+
+
+@dataclass
+class GameConfig:
+    """Game-specific XML paths and tuning values.
+
+    Components read these instead of embedding literals, so a new game requires
+    only a new ``Game`` subclass that passes a customised ``GameConfig`` —
+    no changes to component code.
+    """
+
+    # --- I3D XPaths ---
+    i3d_terrain_xpath: str = ".//Scene/TerrainTransformGroup"
+    i3d_sun_xpath: str = ".//Scene/Light[@name='sun']"
+    i3d_displacement_layer_xpath: str = ".//Scene/TerrainTransformGroup/Layers/DisplacementLayer"
+    i3d_gameplay_xpath: str = ".//TransformGroup[@name='gameplay']"
+    i3d_fields_xpath: str = ".//TransformGroup[@name='fields']"
+
+    # --- I3D structural element XPaths ---
+    i3d_scene_xpath: str = ".//Scene"
+    i3d_shapes_xpath: str = ".//Shapes"
+    i3d_files_xpath: str = ".//Files"
+    i3d_user_attributes_xpath: str = ".//UserAttributes"
+    i3d_shape_xpath: str = ".//Shape"
+    i3d_material_xpath: str = ".//Material"
+
+    # --- I3D named element XPaths ---
+    i3d_bg_terrain_material_xpath: str = ".//Material[@name='background_terrain_material']"
+    i3d_bg_terrain_shape_xpath: str = ".//Shape[@name='background_terrain_shape']"
+    i3d_ocean_material_xpath: str = ".//Material[@name='OceanShader']"
+    i3d_water_shader_file_xpath: str = "File[@fileId='3']"
+    i3d_mapbounds_tg_xpath: str = ".//Scene/TransformGroup[@name='mapbounds']"
+
+    # --- I3D tuning values ---
+    sun_bbox_y_min: int = -128
+    sun_bbox_y_max: int = 148
+    displacement_size_multiplier: int = 8
+
+    # --- Environment XML XPaths ---
+    env_latitude_xpath: str = "./latitude"
+    env_seasons_xpath: str = ".//weather/season"
+    env_fog_max_height_xpath: str = "./fog/heightFog/maxHeight"
+
+    # --- Map XML ---
+    map_xml_license_plates_xpath: str = ".//licensePlates"
+    map_xml_license_plates_filename: str = "map/licensePlates/licensePlatesPL.xml"
+
+    # --- License plate XML structure ---
+    lp_xml_license_plate_xpath: str = ".//licensePlate"
+    lp_xml_variations_xpath: str = "variations"
+    lp_xml_variation_xpath: str = "variation"
+    lp_xml_value_xpath: str = "value"
+    lp_xml_char_pos_x_values: list[str] = field(
+        default_factory=lambda: ["-0.1712", "-0.1172", "-0.0632"]
+    )
+
+    # --- License plate I3D ---
+    lp_i3d_file_elements_xpath: str = ".//File"
+    lp_i3d_texture_file_id: str = "12"
+    lp_i3d_eu_texture_filename: str = "licensePlates_diffuseEU.png"
+    lp_i3d_default_texture_filename: str = "licensePlates_diffuse.png"
 
 
 class Game:
@@ -65,6 +127,10 @@ class Game:
     _TREE_SCHEMA: str = ""
     _BUILDINGS_SCHEMA: str = ""
     _MAP_TEMPLATE: str = ""
+
+    # Game-specific XML paths and tuning values.
+    # Subclasses may replace this with a customised GameConfig instance.
+    config: GameConfig = GameConfig()
 
     def __init_subclass__(cls, **kwargs: object) -> None:
         super().__init_subclass__(**kwargs)

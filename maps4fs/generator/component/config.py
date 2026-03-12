@@ -110,7 +110,7 @@ class Config(ImageComponent):
         doc = XmlDocument(environment_xml_path)
 
         # Find the <latitude>40.6</latitude> element in the XML file.
-        latitude_element = doc.get("./latitude")
+        latitude_element = doc.get(self.game.config.env_latitude_xpath)
         if latitude_element is not None:
             map_latitude = round(self.map.coordinates[0], 1)
             latitude_element.text = str(map_latitude)
@@ -122,14 +122,14 @@ class Config(ImageComponent):
         # The XML file contains 4 <fog> entries in different sections of <weather> representing
         # different seasons, such as <season name="spring">, <season name="summer">, etc.
         # We need to find them all and adjust the parameters accordingly.
-        for season in doc.find_all(".//weather/season"):
+        for season in doc.find_all(self.game.config.env_seasons_xpath):
             # Example of the <heightFog> element:
             # <heightFog>
             #     <groundLevelDensity min="0.05" max="0.2" />
             #     <maxHeight min="420" max="600" />
             # </heightFog>
             # We need to adjust the maxheight min and max attributes.
-            max_height_element = season.find("./fog/heightFog/maxHeight")
+            max_height_element = season.find(self.game.config.env_fog_max_height_xpath)
             if max_height_element is not None:
                 max_height_element.set("min", str(minimum_height))
                 max_height_element.set("max", str(maximum_height))
@@ -176,7 +176,7 @@ class Config(ImageComponent):
 
         try:
             doc = XmlDocument(self.game.i3d_file_path)
-            terrain_elem = doc.get(".//Scene/TerrainTransformGroup")
+            terrain_elem = doc.get(self.game.config.i3d_terrain_xpath)
             if terrain_elem is None:
                 raise ValueError("Height scale element not found in the I3D file.")
             hs = terrain_elem.get(Parameters.HEIGHT_SCALE)
@@ -379,13 +379,12 @@ class Config(ImageComponent):
         root = doc.root
 
         # Find or create licensePlates element
-        license_plates_element = root.find(".//licensePlates")
+        license_plates_element = root.find(self.game.config.map_xml_license_plates_xpath)
         if license_plates_element is not None:
-            license_plates_element.set("filename", "map/licensePlates/licensePlatesPL.xml")
+            license_plates_element.set("filename", self.game.config.map_xml_license_plates_filename)
         else:
-            # Create new licensePlates element if it doesn't exist
             license_plates_element = root.makeelement(
-                "licensePlates", {"filename": "map/licensePlates/licensePlatesPL.xml"}
+                "licensePlates", {"filename": self.game.config.map_xml_license_plates_filename}
             )
             root.append(license_plates_element)
 
@@ -414,7 +413,7 @@ class Config(ImageComponent):
 
         # Find licensePlate with node="0"
         license_plate = None
-        for plate in root.findall(".//licensePlate"):
+        for plate in root.findall(self.game.config.lp_xml_license_plate_xpath):
             if plate.get("node") == "0":
                 license_plate = plate
                 break
@@ -423,11 +422,11 @@ class Config(ImageComponent):
             raise ValueError("Could not find licensePlate element with node='0'")
 
         # Find first variations/variation element
-        variations = license_plate.find("variations")
+        variations = license_plate.find(self.game.config.lp_xml_variations_xpath)
         if variations is None:
             raise ValueError("Could not find variations element")
 
-        variation = variations.find("variation")
+        variation = variations.find(self.game.config.lp_xml_variation_xpath)
         if variation is None:
             raise ValueError("Could not find first variation element")
 
@@ -439,7 +438,7 @@ class Config(ImageComponent):
         self.info["license_plate_prefix"] = license_plate_prefix
 
         # 3. Position X values for the letters.
-        pos_x_values = ["-0.1712", "-0.1172", "-0.0632"]  # ? DO WE REALLY NEED THEM?
+        pos_x_values = self.game.config.lp_xml_char_pos_x_values
 
         # 4. Update all 3 positions (0|0, 0|1, 0|2) to ensure proper formatting.
         # Always process exactly 3 positions, padding with spaces as needed.
@@ -448,7 +447,7 @@ class Config(ImageComponent):
             target_node = f"0|{i}"
             # Find existing value with this node ID.
             existing_value = None
-            for value in variation.findall("value"):
+            for value in variation.findall(self.game.config.lp_xml_value_xpath):
                 if value.get("node") == target_node:
                     existing_value = value
                     break
@@ -500,8 +499,8 @@ class Config(ImageComponent):
 
         # 2. Find File element with fileId="12"
         file_element = None
-        for file_elem in root.findall(".//File"):
-            if file_elem.get("fileId") == "12":
+        for file_elem in root.findall(self.game.config.lp_i3d_file_elements_xpath):
+            if file_elem.get("fileId") == self.game.config.lp_i3d_texture_file_id:
                 file_element = file_elem
                 break
 
@@ -510,9 +509,9 @@ class Config(ImageComponent):
 
         # 3. Update filename to point to local map directory (relative path).
         if eu_format:
-            filename = "licensePlates_diffuseEU.png"
+            filename = self.game.config.lp_i3d_eu_texture_filename
         else:
-            filename = "licensePlates_diffuse.png"
+            filename = self.game.config.lp_i3d_default_texture_filename
 
         file_element.set("filename", filename)
 
@@ -548,9 +547,9 @@ class Config(ImageComponent):
         """
         # 1. Define the path to the base texture depending on EU format.
         if eu_format:
-            texture_filename = "licensePlates_diffuseEU.png"
+            texture_filename = self.game.config.lp_i3d_eu_texture_filename
         else:
-            texture_filename = "licensePlates_diffuse.png"
+            texture_filename = self.game.config.lp_i3d_default_texture_filename
 
         # 2. Check if the base texture file exists.
         texture_path = os.path.join(license_plates_directory, texture_filename)
