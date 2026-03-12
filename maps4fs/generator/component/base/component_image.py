@@ -17,6 +17,20 @@ class ImageComponent(Component):
     """Base class for all components that primarily used to work with images."""
 
     @staticmethod
+    def scale_point_tuples(
+        points: list[tuple[int, int]],
+        scale: float,
+    ) -> list[tuple[int, int]]:
+        """Scale 2D integer point tuples by a factor and round to int coordinates."""
+        return [(int(x * scale), int(y * scale)) for x, y in points]
+
+    @staticmethod
+    def np_array_to_scaled_points(np_array: np.ndarray, scale: float) -> list[tuple[int, int]]:
+        """Convert Nx1x2 or Nx2 point array to scaled integer point tuples."""
+        points = [tuple(map(int, point)) for point in np_array.reshape(-1, 2)]
+        return ImageComponent.scale_point_tuples(points, scale)
+
+    @staticmethod
     def _center_square_bounds(shape: tuple[int, ...], half_size: int) -> tuple[int, int, int, int]:
         """Return center square bounds (x1, x2, y1, y2) for an image-like shape."""
         center = (shape[0] // 2, shape[1] // 2)

@@ -99,6 +99,7 @@ class Parameters:
     TEXTURES = "textures"
     BACKGROUND = "background"
     FOREST = "forest"
+    ROADS = "roads"
     ROADS_POLYLINES = "roads_polylines"
     WATER_POLYLINES = "water_polylines"
     WATER = "water"
@@ -106,6 +107,23 @@ class Parameters:
 
     POINTS = "points"
     TAGS = "tags"
+    WIDTH = "width"
+    ROAD_TEXTURE = "road_texture"
+    DRAIN = "drain"
+
+    # ---- Texture channels / runtime keys -------------------------------
+    TEXTURE_CHANNEL_TEXTURES = "textures"
+    TEXTURE_CHANNEL_BACKGROUND = "background"
+    OSM_REQUESTS_TIMEOUT = 10
+    OSM_PREFETCH_WORKERS = 3
+
+    # ---- Texture file/path fragments -----------------------------------
+    MASKS_DIRECTORY = "masks"
+    ROADS_DIRECTORY = "roads"
+    BLOCKMASK_FILENAME = "BLOCKMASK.png"
+    TEXTURES_OSM_PREVIEW_FILENAME = "textures_osm.png"
+    PNG_EXTENSION = ".png"
+    WEIGHT_FILE_POSTFIX = "_weight.png"
 
     # ---- Image / texture sizes ------------------------------------------
     MAXIMUM_BACKGROUND_TEXTURE_SIZE = 4096

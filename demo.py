@@ -103,7 +103,7 @@ mp = mfs.Map(
     size,
     rotation,
     map_directory,
-    custom_osm=osm_file,
+    # custom_osm=osm_file,
     generation_settings=generation_settings,
     # texture_custom_schema=texture_custom_schema,
     # tree_custom_schema=tree_custom_schema,
