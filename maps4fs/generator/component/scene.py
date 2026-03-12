@@ -72,7 +72,7 @@ class Scene(ImageComponent):
             else:
                 return
 
-        with XmlDocument(self.xml_path) as doc:  # type: ignore
+        with XmlDocument(self.xml_path) as doc:
             doc.set_attrs(
                 self.game.config.i3d_terrain_xpath,
                 **{Parameters.HEIGHT_SCALE: str(value)},
@@ -84,7 +84,7 @@ class Scene(ImageComponent):
         y_min = self.game.config.sun_bbox_y_min
         y_max = self.game.config.sun_bbox_y_max
         cfg = self.game.config
-        with XmlDocument(self.xml_path) as doc:  # type: ignore
+        with XmlDocument(self.xml_path) as doc:
             doc.set_attrs(
                 cfg.i3d_sun_xpath,
                 **{
@@ -288,7 +288,7 @@ class Scene(ImageComponent):
     @monitor_performance
     def _add_fields(self) -> None:
         """Adds fields to the map I3D file."""
-        fields_doc = XmlDocument(self.xml_path)  # type: ignore
+        fields_doc = XmlDocument(self.xml_path)
 
         border = 0
         fields_layer = self.map.context.get_layer_by_usage(Parameters.FIELD)
@@ -304,12 +304,12 @@ class Scene(ImageComponent):
         self.logger.debug("Starging to add fields to the I3D file.")
 
         root = fields_doc.root
-        gameplay_node = root.find(self.game.config.i3d_gameplay_xpath)  # type: ignore
+        gameplay_node = root.find(self.game.config.i3d_gameplay_xpath)
 
         if gameplay_node is None:
             return
         fields_node = gameplay_node.find(self.game.config.i3d_fields_xpath)
-        user_attributes_node = root.find(self.game.config.i3d_user_attributes_xpath)  # type: ignore
+        user_attributes_node = root.find(self.game.config.i3d_user_attributes_xpath)
 
         if fields_node is None or user_attributes_node is None:
             return
@@ -519,14 +519,14 @@ class Scene(ImageComponent):
 
             try:
                 with open(tree_schema_path, "r", encoding="utf-8") as tree_schema_file:
-                    tree_schema = json.load(tree_schema_file)  # type: ignore
+                    tree_schema = json.load(tree_schema_file)
             except json.JSONDecodeError as e:
                 self.logger.warning(
                     "Could not load tree schema from %s with error: %s", tree_schema_path, e
                 )
                 return None
 
-        return tree_schema  # type: ignore
+        return tree_schema
 
     def _get_random_tree(
         self, tree_schema: list[dict[str, str]], leaf_type: str | None = None
@@ -579,9 +579,9 @@ class Scene(ImageComponent):
 
         node_id = Parameters.TREE_NODE_ID_STARTING_VALUE
         tree_count = 0
-        forests_doc = XmlDocument(self.xml_path)  # type: ignore
+        forests_doc = XmlDocument(self.xml_path)
         forests_root = forests_doc.root
-        scene_node = forests_root.find(self.game.config.i3d_scene_xpath)  # type: ignore
+        scene_node = forests_root.find(self.game.config.i3d_scene_xpath)
         if scene_node is None:
             self.logger.warning("Scene element not found in I3D file.")
             return
@@ -619,7 +619,7 @@ class Scene(ImageComponent):
             forest_image = cv2.imread(forest_image_path, cv2.IMREAD_UNCHANGED)
 
             step = self.get_step_by_limit(
-                forest_image,  # type: ignore
+                forest_image,
                 self.map.i3d_settings.tree_limit,
                 self.map.i3d_settings.forest_density,
             )
@@ -630,7 +630,7 @@ class Scene(ImageComponent):
                 / 100
             )
 
-            for x, y in self.non_empty_pixels(forest_image, step=step):  # type: ignore
+            for x, y in self.non_empty_pixels(forest_image, step=step):
                 shifted_x, shifted_y = self.randomize_coordinates((x, y), shift)
 
                 shifted_x, shifted_y = int(shifted_x), int(shifted_y)
@@ -826,14 +826,14 @@ class Scene(ImageComponent):
         node_id = Parameters.BINARY_MESHES_NODE_ID_STARTING_VALUE
 
         # Load the main I3D document once; add all mesh references, then save once.
-        main_doc = XmlDocument(self.xml_path)  # type: ignore
+        main_doc = XmlDocument(self.xml_path)
         main_root = main_doc.root
         files_node = main_root.find(self.game.config.i3d_files_xpath)
         scene_node = main_root.find(self.game.config.i3d_scene_xpath)
         if files_node is None or scene_node is None:
             self.logger.warning("Required nodes (Files, Scene) not found in I3D file.")
             return
-        i3d_dir = os.path.dirname(self.xml_path)  # type: ignore
+        i3d_dir = os.path.dirname(self.xml_path)
 
         for asset_name, asset_path in assets_directories.items():
             binary_i3d_path = self._resolve_binary_asset_path(asset_path)
@@ -1239,7 +1239,7 @@ class Scene(ImageComponent):
         self.logger.debug("Map bounds positions updated in %s.", dest_i3d_path)
 
         # 2. Insert file reference into main I3D Files section and a ReferenceNode into Scene.
-        main_doc = XmlDocument(self.xml_path)  # type: ignore
+        main_doc = XmlDocument(self.xml_path)
         root = main_doc.root
         files_node = root.find(self.game.config.i3d_files_xpath)
         scene_node = root.find(self.game.config.i3d_scene_xpath)
@@ -1250,7 +1250,7 @@ class Scene(ImageComponent):
             )
             return
 
-        i3d_dir = os.path.dirname(self.xml_path)  # type: ignore
+        i3d_dir = os.path.dirname(self.xml_path)
         bounds_rel_path = os.path.relpath(dest_i3d_path, i3d_dir).replace("\\", "/")
 
         files_node.append(

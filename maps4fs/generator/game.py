@@ -183,11 +183,22 @@ class Game:
     config: GameConfig = GameConfig()
 
     def __init_subclass__(cls, **kwargs: object) -> None:
+        """Register subclasses by game code for dynamic lookup.
+
+        Arguments:
+            cls (type[Game]): Newly created subclass.
+            **kwargs (object): Additional subclass initialization arguments.
+        """
         super().__init_subclass__(**kwargs)
         if cls.code:
             Game._registry[cls.code.upper()] = cls
 
     def __init__(self, map_template_path: str | None = None) -> None:
+        """Initialize schema/template paths and map-relative placeholders.
+
+        Arguments:
+            map_template_path (str | None): Optional override for the map template archive path.
+        """
         templates_dir = Paths.TEMPLATES_DIR
         self.template_path: str = map_template_path or os.path.join(
             templates_dir, self._MAP_TEMPLATE
@@ -213,12 +224,15 @@ class Game:
         self.density_map_fruits_path: str | None = None
 
     @classmethod
-    def from_code(cls, code: str, map_template_path: str | None = None) -> "Game":
+    def from_code(cls, code: str, map_template_path: str | None = None) -> Game:
         """Return a Game instance for the given game code.
 
         Arguments:
             code (str): The game code, e.g. ``"FS25"``.
             map_template_path (str, optional): Override for the map template zip.
+
+        Returns:
+            Game: Instantiated game definition for the requested code.
 
         Raises:
             ValueError: If the code is not recognised.
@@ -250,10 +264,6 @@ class Game:
         self.environment_path = os.path.join(weights_dir, Parameters.INFO_LAYER_ENVIRONMENT)
         self.indoor_mask_path = os.path.join(weights_dir, "infoLayer_indoorMask.png")
         self.density_map_fruits_path = os.path.join(weights_dir, Parameters.DENSITY_MAP_FRUITS)
-
-    def set_components_by_names(self, component_names: list[str]) -> None:
-        """Filter the component list to only those whose class names are given."""
-        self.components = [c for c in self.components if c.__name__ in component_names]
 
 
 class FS25(Game):

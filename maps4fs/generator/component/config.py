@@ -48,7 +48,7 @@ class Config(ImageComponent):
 
     def _set_map_size(self) -> None:
         """Edits map.xml file to set correct map size."""
-        with XmlDocument(self.xml_path) as doc:  # type: ignore
+        with XmlDocument(self.xml_path) as doc:
             doc.set_attrs(".", width=str(self.scaled_size), height=str(self.scaled_size))
 
     def info_sequence(self) -> dict[str, dict[str, str | float | int]]:
@@ -78,11 +78,11 @@ class Config(ImageComponent):
             "Overview": overview_data,
         }
         if self.fog_parameters:
-            data["Fog"] = self.fog_parameters  # type: ignore
+            data["Fog"] = self.fog_parameters
 
         data.update(self.info)
 
-        return data  # type: ignore
+        return data
 
     @monitor_performance
     def _adjust_fog(self) -> None:
@@ -304,7 +304,7 @@ class Config(ImageComponent):
         }
 
     @monitor_performance
-    def update_license_plates(self):
+    def update_license_plates(self) -> None:
         """Updates license plates for the specified country."""
         license_plates_directory = self.game.license_plates_dir_path
 
@@ -369,7 +369,7 @@ class Config(ImageComponent):
             FileNotFoundError: If the map XML file is not found.
             ValueError: If the map XML root element is None.
         """
-        doc = XmlDocument(self.xml_path)  # type: ignore
+        doc = XmlDocument(self.xml_path)
         root = doc.root
 
         # Find or create licensePlates element

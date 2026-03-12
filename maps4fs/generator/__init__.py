@@ -1,1 +1,3 @@
-# pylint: disable=missing-module-docstring
+"""Generator package namespace."""
+
+from __future__ import annotations

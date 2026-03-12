@@ -1,1 +1,3 @@
-# pylint: disable=missing-module-docstring
+"""Base classes for generation components."""
+
+from __future__ import annotations

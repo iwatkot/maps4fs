@@ -271,13 +271,13 @@ class Texture(ImageComponent):
             if not border:
                 continue
 
-            self.transfer_border(layer_image, base_layer_image, border)  # type: ignore
+            self.transfer_border(layer_image, base_layer_image, border)
 
-            cv2.imwrite(layer.path(self._weights_dir), layer_image)  # type: ignore
+            cv2.imwrite(layer.path(self._weights_dir), layer_image)
             self.logger.debug("Borders added to layer %s.", layer.name)
 
         if base_layer_image is not None:
-            cv2.imwrite(base_layer.path(self._weights_dir), base_layer_image)  # type: ignore
+            cv2.imwrite(base_layer.path(self._weights_dir), base_layer_image)
 
     def copy_procedural(self) -> None:
         """Copies some of the textures to use them as mask for procedural generation.
@@ -489,7 +489,7 @@ class Texture(ImageComponent):
         return {attr: getattr(self, attr, None) for attr in useful_attributes}
 
     @monitor_performance
-    def _prepare_weights(self):
+    def _prepare_weights(self) -> None:
         self.logger.debug("Starting preparing weights from %s layers.", len(self.layers))
 
         for layer in tqdm(self.layers, desc="Preparing weights", unit="layer"):
@@ -675,13 +675,13 @@ class Texture(ImageComponent):
         """Publish drawn info-layer data into map context."""
         ctx = self.map.context
         if self.options.channel == Parameters.TEXTURE_CHANNEL_TEXTURES:
-            ctx.fields = info_layer_data.get(Parameters.FIELDS, [])  # type: ignore[assignment]
-            ctx.buildings = info_layer_data.get(Parameters.BUILDINGS, [])  # type: ignore[assignment]
-            ctx.farmyards = info_layer_data.get(Parameters.FARMYARDS, [])  # type: ignore[assignment]
-            ctx.forest = info_layer_data.get(Parameters.FOREST, [])  # type: ignore[assignment]
-            ctx.water = info_layer_data.get(Parameters.WATER, [])  # type: ignore[assignment]
-            ctx.roads_polylines = info_layer_data.get(Parameters.ROADS_POLYLINES, [])  # type: ignore[assignment]
-            ctx.water_polylines = info_layer_data.get(Parameters.WATER_POLYLINES, [])  # type: ignore[assignment]
+            ctx.fields = info_layer_data.get(Parameters.FIELDS, [])
+            ctx.buildings = info_layer_data.get(Parameters.BUILDINGS, [])
+            ctx.farmyards = info_layer_data.get(Parameters.FARMYARDS, [])
+            ctx.forest = info_layer_data.get(Parameters.FOREST, [])
+            ctx.water = info_layer_data.get(Parameters.WATER, [])
+            ctx.roads_polylines = info_layer_data.get(Parameters.ROADS_POLYLINES, [])
+            ctx.water_polylines = info_layer_data.get(Parameters.WATER_POLYLINES, [])
             self.logger.debug(
                 "Map context populated: %d fields, %d buildings, %d roads, %d water polylines.",
                 len(ctx.fields),
@@ -691,8 +691,8 @@ class Texture(ImageComponent):
             )
             return
 
-        ctx.background_water = info_layer_data.get(Parameters.WATER, [])  # type: ignore[assignment]
-        ctx.background_water_polylines = info_layer_data.get(Parameters.WATER_POLYLINES, [])  # type: ignore[assignment]
+        ctx.background_water = info_layer_data.get(Parameters.WATER, [])
+        ctx.background_water_polylines = info_layer_data.get(Parameters.WATER_POLYLINES, [])
         self.logger.debug(
             "Background context populated: %d water polygons, %d water polylines.",
             len(ctx.background_water),
@@ -758,7 +758,7 @@ class Texture(ImageComponent):
         else:
             entry = scaled_points
 
-        info_layer_data[layer.info_layer].append(entry)  # type: ignore[arg-type]
+        info_layer_data[layer.info_layer].append(entry)
 
     def _fill_layer_polygon(
         self, layer: Layer, layer_image: np.ndarray, polygon: np.ndarray
@@ -767,7 +767,7 @@ class Texture(ImageComponent):
         if layer.invisible:
             return
         try:
-            cv2.fillPoly(layer_image, [polygon], color=255)  # type: ignore[list-item]
+            cv2.fillPoly(layer_image, [polygon], color=255)
         except Exception as e:
             self.logger.warning("Error drawing polygon: %s.", repr(e))
 
@@ -788,14 +788,14 @@ class Texture(ImageComponent):
                 return
 
             for linestring, _ in self.osm_pipeline.linestrings(layer.tags):
-                linestring = self.scale_point_tuples(linestring, self.map.size_scale)  # type: ignore[arg-type]
+                linestring = self.scale_point_tuples(linestring, self.map.size_scale)
                 linestring_entry = {
                     Parameters.POINTS: linestring,
                     Parameters.TAGS: str(layer.tags),
                     Parameters.WIDTH: layer.width,
                     Parameters.ROAD_TEXTURE: layer.road_texture,
                 }
-                info_layer_data[f"{layer.info_layer}_polylines"].append(linestring_entry)  # type: ignore
+                info_layer_data[f"{layer.info_layer}_polylines"].append(linestring_entry)
 
     @monitor_performance
     def dissolve(self) -> None:
@@ -832,7 +832,7 @@ class Texture(ImageComponent):
             )
             return
 
-        cv2.imwrite(layer.path_preview(self._weights_dir), layer_image.copy())  # type: ignore[arg-type]
+        cv2.imwrite(layer.path_preview(self._weights_dir), layer_image.copy())
         sublayers = self._build_dissolved_sublayers(layer_image, layer.count)
         self._write_sublayers(sublayers, layer_paths)
 
@@ -911,7 +911,7 @@ class Texture(ImageComponent):
 
         images = [
             cv2.resize(
-                cv2.imread(layer.get_preview_or_path(self._weights_dir), cv2.IMREAD_UNCHANGED),  # type: ignore
+                cv2.imread(layer.get_preview_or_path(self._weights_dir), cv2.IMREAD_UNCHANGED),
                 preview_size,
             )
             for layer in active_layers
@@ -933,6 +933,6 @@ class Texture(ImageComponent):
             Parameters.TEXTURES_OSM_PREVIEW_FILENAME,
         )
 
-        cv2.imwrite(preview_path, merged)  # type: ignore
+        cv2.imwrite(preview_path, merged)
         self.logger.debug("Preview saved to %s.", preview_path)
         return preview_path

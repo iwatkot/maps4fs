@@ -386,9 +386,9 @@ class Component:
                 center_x = center_y = rotated_canvas_size // 2
                 offset = limit // 2 - rotated_canvas_size // 2
             else:
-                center_x = center_y = self.map_rotated_size * self.map.size_scale // 2  # type: ignore
+                center_x = center_y = self.map_rotated_size * self.map.size_scale // 2
                 offset = (
-                    int((self.map_size / 2) - (self.map_rotated_size / 2)) * self.map.size_scale  # type: ignore
+                    int((self.map_size / 2) - (self.map_rotated_size / 2)) * self.map.size_scale
                 )
             self.logger.debug(
                 "Rotating the osm_object by %s degrees with center at %sx%s",

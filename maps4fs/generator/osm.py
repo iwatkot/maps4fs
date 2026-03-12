@@ -60,8 +60,8 @@ def fix_osm_file(input_file_path: str, output_file_path: str | None = None) -> t
             root.remove(element)
             fixed_errors += 1
 
-    tree.write(output_file_path)  # type: ignore
-    result = check_osm_file(output_file_path)  # type: ignore
+    tree.write(output_file_path)
+    result = check_osm_file(output_file_path)
 
     return result, fixed_errors
 

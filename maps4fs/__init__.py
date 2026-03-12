@@ -1,4 +1,8 @@
-# pylint: disable=missing-module-docstring, wrong-import-position
+"""Public package exports and startup bootstrap for maps4fs."""
+
+from __future__ import annotations
+
+# pylint: disable=wrong-import-position
 import cv2
 
 # Increase OpenCV image size limit for large map generation
@@ -6,9 +10,10 @@ import cv2
 # Setting to 4x larger: 4096 * 1024 * 1024 = ~4 billion pixels (65,536 x 65,536 images)
 
 try:
-    cv2.CV_IO_MAX_IMAGE_PIXELS = 4096 * 1024 * 1024 * 2  # type: ignore
+    cv2.CV_IO_MAX_IMAGE_PIXELS = 4096 * 1024 * 1024 * 2
 except Exception as e:
     print(f"Warning: Could not set CV_IO_MAX_IMAGE_PIXELS: {e}")
+
 import pydtmdl.providers as dtm
 from pydtmdl import DTMProvider
 

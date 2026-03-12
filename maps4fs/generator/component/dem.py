@@ -1,5 +1,7 @@
 """This module contains DEM class for processing Digital Elevation Model data."""
 
+from __future__ import annotations
+
 import math
 import os
 import shutil
@@ -49,7 +51,7 @@ class DEM(ImageComponent):
         self.output_resolution = self.get_output_resolution()
         self.logger.debug("Output resolution for DEM data: %s.", self.output_resolution)
 
-        self.dtm_provider: DTMProvider = self.map.dtm_provider(  # type: ignore
+        self.dtm_provider: DTMProvider = self.map.dtm_provider(
             coordinates=self.coordinates,
             user_settings=self.map.dtm_provider_settings,
             size=self.map_rotated_size,
@@ -263,10 +265,10 @@ class DEM(ImageComponent):
         else:
             adjusted_height_scale = height_scale
 
-        self.map.context.height_scale_value = adjusted_height_scale  # type: ignore
+        self.map.context.height_scale_value = adjusted_height_scale
         self.map.context.mesh_z_scaling_factor = 65535 / adjusted_height_scale
         self.map.context.height_scale_multiplier = adjusted_height_scale / 255
-        self.map.context.change_height_scale = True  # type: ignore
+        self.map.context.change_height_scale = True
 
         try:
             entry = {
@@ -355,7 +357,7 @@ class DEM(ImageComponent):
             output_width=output_width,
         )
 
-    def info_sequence(self) -> dict[Any, Any] | None:  # type: ignore
+    def info_sequence(self) -> dict[Any, Any] | None:
         """Returns the information sequence for the component.
 
         Returns:

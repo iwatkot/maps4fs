@@ -165,7 +165,7 @@ class Background(MeshComponent, ImageComponent):
             if mask is None:
                 continue
 
-            mean_value = np.round(cv2.mean(dem_image, mask=mask)[0]).astype(dem_image.dtype)  # type: ignore
+            mean_value = np.round(cv2.mean(dem_image, mask=mask)[0]).astype(dem_image.dtype)
             dem_image[mask == 255] = mean_value
 
         return dem_image
@@ -188,7 +188,7 @@ class Background(MeshComponent, ImageComponent):
         building_np = self.polygon_points_to_np(fitted_building)
         mask = np.zeros(dem_shape, dtype=np.uint8)
         try:
-            cv2.fillPoly(mask, [building_np], 255)  # type: ignore
+            cv2.fillPoly(mask, [building_np], 255)
             return mask
         except Exception as e:
             self.logger.debug("Could not create building mask: %s", e)
@@ -229,7 +229,7 @@ class Background(MeshComponent, ImageComponent):
             "west": west,
         }
         data["Mesh"] = self.mesh_info
-        return data  # type: ignore
+        return data
 
     @monitor_performance
     def generate_obj_files(self) -> None:
@@ -255,13 +255,13 @@ class Background(MeshComponent, ImageComponent):
         if self.map.output_size is not None:
             scaled_background_size = int(self.background_size * self.map.size_scale)
             dem_data = cv2.resize(
-                dem_data,  # type: ignore
+                dem_data,
                 (scaled_background_size, scaled_background_size),
                 interpolation=cv2.INTER_NEAREST,
             )
 
         self.plane_from_np(
-            dem_data,  # type: ignore
+            dem_data,
             save_path,
             create_preview=True,
             remove_center=self.map.background_settings.remove_center,
@@ -402,7 +402,7 @@ class Background(MeshComponent, ImageComponent):
             return None
 
         resized_texture_image = cv2.resize(
-            source_image,  # type: ignore
+            source_image,
             (resolution, resolution),
             interpolation=cv2.INTER_AREA,
         )
@@ -499,7 +499,7 @@ class Background(MeshComponent, ImageComponent):
         """
         dem_data = cv2.imread(dem_path, cv2.IMREAD_UNCHANGED)
         half_size = self.map_size // 2
-        dem_data = self.cut_out_np(dem_data, half_size, return_cutout=True)  # type: ignore
+        dem_data = self.cut_out_np(dem_data, half_size, return_cutout=True)
 
         if save_path:
             cv2.imwrite(save_path, dem_data)
@@ -617,7 +617,7 @@ class Background(MeshComponent, ImageComponent):
         background_dem_preview_image = cv2.imread(self.output_path, cv2.IMREAD_UNCHANGED)
 
         background_dem_preview_image = cv2.resize(
-            background_dem_preview_image, (0, 0), fx=1 / 4, fy=1 / 4  # type: ignore
+            background_dem_preview_image, (0, 0), fx=1 / 4, fy=1 / 4
         )
         background_dem_preview_image = cv2.normalize(
             background_dem_preview_image,
@@ -666,7 +666,7 @@ class Background(MeshComponent, ImageComponent):
         self.logger.debug("Creating grayscale preview of DEM data in %s.", grayscale_dem_path)
 
         dem_data = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-        dem_data_rgb = cv2.cvtColor(dem_data, cv2.COLOR_GRAY2RGB)  # type: ignore
+        dem_data_rgb = cv2.cvtColor(dem_data, cv2.COLOR_GRAY2RGB)
         cv2.imwrite(grayscale_dem_path, dem_data_rgb)
         return grayscale_dem_path
 
@@ -690,7 +690,7 @@ class Background(MeshComponent, ImageComponent):
         dem_data_normalized = np.empty_like(dem_data)
 
         # Normalize the DEM data to the range [0, 255]
-        cv2.normalize(dem_data, dem_data_normalized, 0, 255, cv2.NORM_MINMAX)  # type: ignore
+        cv2.normalize(dem_data, dem_data_normalized, 0, 255, cv2.NORM_MINMAX)
         dem_data_colored = cv2.applyColorMap(dem_data_normalized, cv2.COLORMAP_JET)
 
         cv2.imwrite(colored_dem_path, dem_data_colored)

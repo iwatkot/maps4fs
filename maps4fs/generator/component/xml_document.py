@@ -1,5 +1,7 @@
 """XmlDocument: fluent, safe wrapper around ElementTree for XML file manipulation."""
 
+from __future__ import annotations
+
 from xml.etree import ElementTree as ET
 
 
@@ -86,7 +88,7 @@ class XmlDocument:
     # Write helpers
     # ------------------------------------------------------------------
 
-    def set_attrs(self, xpath: str, **attrs: str) -> "XmlDocument":
+    def set_attrs(self, xpath: str, **attrs: str) -> XmlDocument:
         """Set attributes on the element at *xpath*. Fluent — returns self.
 
         Raises:
@@ -109,7 +111,7 @@ class XmlDocument:
             child.set(key, value)
         return child
 
-    def remove_element(self, xpath: str) -> "XmlDocument":
+    def remove_element(self, xpath: str) -> XmlDocument:
         """Remove all elements matching *xpath* from their parents. Fluent."""
         for elem in self._root.findall(xpath):
             parent_xpath = xpath.rsplit("/", 1)[0] or "."
@@ -142,7 +144,7 @@ class XmlDocument:
     # Context manager
     # ------------------------------------------------------------------
 
-    def __enter__(self) -> "XmlDocument":
+    def __enter__(self) -> XmlDocument:
         return self
 
     def __exit__(self, *_) -> None:

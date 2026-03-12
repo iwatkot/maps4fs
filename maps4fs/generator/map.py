@@ -69,7 +69,7 @@ class Map:
         self.rotated_size = int(size * 1.5) if rotation else size
 
         self.map_directory = map_directory or self.suggest_map_directory(
-            coordinates=coordinates, game_code=game.code  # type: ignore
+            coordinates=coordinates, game_code=game.code
         )
         game.set_map_directory(self.map_directory)
         os.makedirs(self.map_directory, exist_ok=True)

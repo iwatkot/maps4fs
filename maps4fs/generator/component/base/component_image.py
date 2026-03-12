@@ -1,5 +1,7 @@
 """Base class for all components that primarily used to work with images."""
 
+from __future__ import annotations
+
 import os
 import subprocess
 import sys
@@ -249,7 +251,7 @@ class ImageComponent(Component):
         return self.blur_by_mask(data, edge_mask)
 
     @staticmethod
-    def convert_png_to_dds(input_png_path: str, output_dds_path: str):
+    def convert_png_to_dds(input_png_path: str, output_dds_path: str) -> None:
         """Convert a PNG file to DDS format.
 
         Arguments:
@@ -269,7 +271,7 @@ class ImageComponent(Component):
             ImageComponent.convert_png_to_dds_pil(input_png_path, output_dds_path)
 
     @staticmethod
-    def convert_png_to_dds_pil(input_png_path: str, output_dds_path: str):
+    def convert_png_to_dds_pil(input_png_path: str, output_dds_path: str) -> None:
         """Convert a PNG file to DDS format using PIL
 
         Arguments:
@@ -288,16 +290,16 @@ class ImageComponent(Component):
                     # Create RGB version on white background
                     rgb_img = Image.new("RGB", img.size, (255, 255, 255))
                     rgb_img.paste(img, mask=img.split()[-1])  # Use alpha as mask
-                    img = rgb_img  # type: ignore
+                    img = rgb_img
                 elif img.mode != "RGB":
-                    img = img.convert("RGB")  # type: ignore
+                    img = img.convert("RGB")
 
                 img.save(output_dds_path, format="DDS")
         except Exception as e:
             raise RuntimeError(f"DDS conversion failed: {e}")
 
     @staticmethod
-    def convert_png_to_dds_texconv(input_png_path: str, output_dds_path: str):
+    def convert_png_to_dds_texconv(input_png_path: str, output_dds_path: str) -> None:
         """Convert a PNG file to DDS format using texconv
 
         Arguments:
@@ -324,7 +326,7 @@ class ImageComponent(Component):
             "text": True,
         }
         if sys.platform == "win32":
-            run_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW  # type: ignore[attr-defined]
+            run_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
 
         result = subprocess.run(cmd, **run_kwargs)  # pylint: disable=subprocess-run-check
 

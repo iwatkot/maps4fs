@@ -1,3 +1,7 @@
+"""Integration and settings-focused tests for map generation."""
+
+from __future__ import annotations
+
 import itertools
 import json
 import os
@@ -219,7 +223,7 @@ def test_map(
 
 @pytest.mark.skip(reason="temporarily disabled")
 @pytest.mark.parametrize("coordinates,size,rotation", _PREVIEW_CASES, ids=_PREVIEW_IDS)
-def test_map_preview(coordinates: tuple[float, float], size: int, rotation: int):
+def test_map_preview(coordinates: tuple[float, float], size: int, rotation: int) -> None:
     """Test that preview PNG files are generated and readable."""
     game = Game.from_code("FS25")
     directory = make_map_directory(f"FS25_preview_{size}")
@@ -245,7 +249,7 @@ def test_map_preview(coordinates: tuple[float, float], size: int, rotation: int)
 
 @pytest.mark.skip(reason="temporarily disabled")
 @pytest.mark.parametrize("coordinates,size,rotation", _PACK_CASES, ids=_PACK_IDS)
-def test_map_pack(coordinates: tuple[float, float], size: int, rotation: int):
+def test_map_pack(coordinates: tuple[float, float], size: int, rotation: int) -> None:
     """Test map packing into a zip archive; verifies non-default DEM settings are accepted."""
     game = Game.from_code("FS25")
     pack_settings = GenerationSettings(
@@ -286,7 +290,7 @@ _SETTINGS_SIZE = 512
 
 
 @pytest.mark.skip(reason="temporarily disabled")
-def test_dem_plateau_lifts_floor():
+def test_dem_plateau_lifts_floor() -> None:
     """DEMSettings.plateau shifts the minimum DEM value above zero.
 
     plateau=500 + default water_depth=40 pushes the minimum raw elevation to 540 m.
@@ -317,7 +321,7 @@ def test_dem_plateau_lifts_floor():
 
 
 @pytest.mark.skip(reason="temporarily disabled")
-def test_dem_minimum_height_scale_respected():
+def test_dem_minimum_height_scale_respected() -> None:
     """DEMSettings.minimum_height_scale is enforced as a floor for heightScale in map.i3d."""
     game = Game.from_code("FS25")
     directory = make_map_directory("FS25_dem_mhs")
@@ -346,7 +350,7 @@ def test_dem_minimum_height_scale_respected():
 
 
 @pytest.mark.skip(reason="temporarily disabled")
-def test_background_terrain_i3d_generated():
+def test_background_terrain_i3d_generated() -> None:
     """BackgroundSettings.generate_background=True produces background_terrain.i3d.
 
     Satellite images are required to texture the background mesh before it can be
@@ -382,7 +386,7 @@ def test_background_terrain_i3d_generated():
 
 
 @pytest.mark.skip(reason="temporarily disabled")
-def test_grle_base_price_written_to_farmlands_xml():
+def test_grle_base_price_written_to_farmlands_xml() -> None:
     """GRLESettings.base_price is written as the pricePerHa attribute in farmlands.xml."""
     game = Game.from_code("FS25")
     directory = make_map_directory("FS25_grle_price")
@@ -415,7 +419,7 @@ def test_grle_base_price_written_to_farmlands_xml():
 
 
 @pytest.mark.skip(reason="temporarily disabled")
-def test_i3d_no_forest_info_when_trees_disabled():
+def test_i3d_no_forest_info_when_trees_disabled() -> None:
     """I3DSettings.add_trees=False leaves Forests info empty in generation_info.json."""
     game = Game.from_code("FS25")
     directory = make_map_directory("FS25_no_trees")
@@ -445,7 +449,7 @@ def test_i3d_no_forest_info_when_trees_disabled():
 
 
 @pytest.mark.skip(reason="temporarily disabled")
-def test_config_license_plate_prefix_recorded():
+def test_config_license_plate_prefix_recorded() -> None:
     """I3DSettings.license_plate_prefix is stored in generation_info.json under Config."""
     game = Game.from_code("FS25")
     directory = make_map_directory("FS25_lp_prefix")

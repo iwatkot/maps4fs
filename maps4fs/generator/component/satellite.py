@@ -1,5 +1,7 @@
 """This module contains the Satellite class for the maps4fs package to download satellite images
 for the map."""
+from __future__ import annotations
+
 
 import os
 import shutil

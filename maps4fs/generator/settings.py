@@ -261,7 +261,7 @@ class MainSettings(NamedTuple):
         Returns:
             MainSettings: Instance of MainSettings.
         """
-        return cls(**data)  # type: ignore
+        return cls(**data)
 
     def to_json(self) -> dict[str, str | float | int | bool | None]:
         """Convert the MainSettings instance to JSON format.
@@ -284,7 +284,7 @@ class MainSettings(NamedTuple):
         from maps4fs.generator.geo import get_country_by_coordinates
 
         return cls(
-            game=map.game.code,  # type: ignore
+            game=map.game.code,
             latitude=map.coordinates[0],
             longitude=map.coordinates[1],
             country=get_country_by_coordinates(map.coordinates),

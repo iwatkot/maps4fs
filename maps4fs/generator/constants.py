@@ -3,6 +3,8 @@
 Zero side effects — safe to import without triggering network requests or
 filesystem mutations. All download/setup logic lives in bootstrap.py.
 """
+from __future__ import annotations
+
 
 import os
 

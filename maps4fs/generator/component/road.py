@@ -1,5 +1,7 @@
 """Component for map roads processing and generation."""
 
+from __future__ import annotations
+
 import os
 import shutil
 from collections import defaultdict
@@ -36,7 +38,7 @@ class Road(MeshComponent):
         """Preprocess the road data before generation."""
         self.info: dict[str, Any] = {}
 
-    def process(self):
+    def process(self) -> None:
         """Process and generate roads for the map."""
         try:
             self.generate_roads()

@@ -6,6 +6,8 @@ mutations, global osmnx settings), so they are isolated from pure constants.
 Call ``Bootstrap.run()`` once at application start-up.
 """
 
+from __future__ import annotations
+
 import importlib.metadata
 import io
 import os
@@ -36,7 +38,14 @@ class Bootstrap:
 
     @staticmethod
     def package_version(package_name: str = "maps4fs") -> str:
-        """Return the installed version of *package_name*, or ``"unknown"``."""
+        """Return the installed version of a package, or ``"unknown"``.
+
+        Arguments:
+            package_name (str): Name of the installed Python package.
+
+        Returns:
+            str: Installed package version or ``"unknown"`` on lookup failure.
+        """
         try:
             return importlib.metadata.version(package_name)
         except Exception:
@@ -46,7 +55,17 @@ class Bootstrap:
 
     @staticmethod
     def _fetch(url: str) -> bytes:
-        """Fetch *url*, retrying without SSL verification on certificate errors."""
+        """Fetch remote content as bytes with SSL fallback handling.
+
+        Arguments:
+            url (str): Absolute URL to fetch.
+
+        Returns:
+            bytes: Response body.
+
+        Raises:
+            URLError: If the request fails after retry attempts.
+        """
         try:
             with urlopen(url) as response:
                 return response.read()
@@ -100,7 +119,12 @@ class Bootstrap:
 
     @staticmethod
     def _prepare_data(repo_dir: str, output_dir: str) -> None:
-        """Copy top-level files and zip subdirectories from a checked-out data repo."""
+        """Copy files and package subdirectories from a data repository checkout.
+
+        Arguments:
+            repo_dir (str): Path to extracted repository root.
+            output_dir (str): Destination templates directory.
+        """
         fs_dirs = [
             d
             for d in os.listdir(repo_dir)
@@ -132,6 +156,10 @@ class Bootstrap:
         """Ensure templates directory exists and is populated.
 
         Downloads the maps4fsdata repository if the directory is empty or absent.
+
+        Raises:
+            FileNotFoundError: If expected extracted repository paths are missing.
+            Exception: Propagates unexpected download/extraction/copy errors.
         """
         if os.path.exists(Paths.TEMPLATES_DIR):
             _logger.info("Templates directory already exists: %s", Paths.TEMPLATES_DIR)
@@ -202,7 +230,12 @@ class Bootstrap:
 
     @staticmethod
     def ensure_locale() -> None:
-        """Ensure locale directory is populated with up-to-date language files."""
+        """Ensure locale directory is populated with up-to-date language files.
+
+        Raises:
+            FileNotFoundError: If expected extracted locale paths are missing.
+            Exception: Propagates unexpected download/extraction/copy errors.
+        """
         _logger.info("Ensuring locale files are up-to-date...")
 
         if os.path.exists(Paths.LOCALE_DIR):

@@ -1,4 +1,7 @@
-# pylint: disable=missing-module-docstring
+"""Component package exports."""
+
+from __future__ import annotations
+
 from maps4fs.generator.component.background import Background
 from maps4fs.generator.component.base.component import Component
 from maps4fs.generator.component.config import Config

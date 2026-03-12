@@ -1,5 +1,7 @@
 """Module for sending settings to the statistics server."""
 
+from __future__ import annotations
+
 import os
 import threading
 from typing import Any
@@ -60,13 +62,33 @@ class StatisticsClient:
         threading.Thread(target=_thread, daemon=True).start()
 
     def send_main_settings(self, data: dict[str, Any]) -> None:
+        """Send main settings telemetry payload.
+
+        Arguments:
+            data (dict[str, Any]): Main settings payload.
+        """
         self._post(f"{self._host}/receive_main_settings", data)
 
     def send_advanced_settings(self, data: dict[str, Any]) -> None:
+        """Send advanced settings telemetry payload.
+
+        Arguments:
+            data (dict[str, Any]): Advanced settings payload.
+        """
         self._post(f"{self._host}/receive_advanced_settings", data)
 
     def send_survey(self, data: dict[str, Any]) -> None:
+        """Send survey telemetry payload.
+
+        Arguments:
+            data (dict[str, Any]): Survey payload.
+        """
         self._post(f"{self._host}/receive_survey", data)
 
     def send_performance_report(self, data: dict[str, Any]) -> None:
+        """Send performance report telemetry payload.
+
+        Arguments:
+            data (dict[str, Any]): Performance report payload.
+        """
         self._post(f"{self._host}/receive_performance_report", data)

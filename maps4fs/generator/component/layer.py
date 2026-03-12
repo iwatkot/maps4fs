@@ -40,17 +40,18 @@ class Layer:
     save_tags: bool = False
 
     def __post_init__(self) -> None:
+        """Normalize optional defaults after dataclass initialization."""
         if self.color is None:
             self.color = (255, 255, 255)
 
-    def to_json(self) -> dict[str, str | list[str] | bool]:  # type: ignore
+    def to_json(self) -> dict[str, str | list[str] | bool]:
         """Returns dictionary with layer data, omitting None values.
 
         Returns:
             dict: Dictionary with layer data.
         """
         raw = dataclasses.asdict(self)
-        return {k: v for k, v in raw.items() if v is not None}  # type: ignore
+        return {k: v for k, v in raw.items() if v is not None}
 
     @classmethod
     def from_json(cls, data: dict[str, str | list[str] | bool]) -> Layer:
@@ -62,7 +63,7 @@ class Layer:
         Returns:
             Layer: New instance of the class.
         """
-        return cls(**data)  # type: ignore
+        return cls(**data)
 
     def path(self, weights_directory: str) -> str:
         """Returns path to the first texture of the layer.

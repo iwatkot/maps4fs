@@ -1,5 +1,7 @@
 """Base class for all components that primarily used to work with meshes."""
 
+from __future__ import annotations
+
 import os
 import shutil
 import subprocess
@@ -219,7 +221,7 @@ class MeshComponent(Component):
         ]
 
         for method in tqdm(fix_methods, desc="Fixing mesh", unit="method"):
-            method(mesh_copy)  # type: ignore
+            method(mesh_copy)
 
         return mesh_copy
 
@@ -328,7 +330,7 @@ class MeshComponent(Component):
             trimesh.Trimesh: A new mesh with inverted faces.
         """
         mesh_copy = mesh.copy()
-        mesh_copy.faces = mesh_copy.faces[:, ::-1]  # type: ignore
+        mesh_copy.faces = mesh_copy.faces[:, ::-1]
         return mesh_copy
 
     # @staticmethod
@@ -535,7 +537,7 @@ class MeshComponent(Component):
             "stdin": subprocess.DEVNULL,
             "capture_output": True,
             "text": True,
-            "creationflags": subprocess.CREATE_NO_WINDOW,  # type: ignore[attr-defined]
+            "creationflags": subprocess.CREATE_NO_WINDOW,
         }
 
         result = subprocess.run(cmd, **run_kwargs)  # pylint: disable=subprocess-run-check
@@ -900,7 +902,7 @@ class MeshComponent(Component):
         """Resolve DEM source for linestring-based mesh generation."""
         if dem_override is not None:
             return dem_override
-        not_resized_dem = self.get_dem_image_with_fallback()  # type: ignore
+        not_resized_dem = self.get_dem_image_with_fallback()
         if not_resized_dem is None:
             self.logger.warning(
                 "Not resized DEM with flattened roads is not available. Cannot generate road mesh."

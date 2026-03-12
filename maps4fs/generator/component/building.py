@@ -1,5 +1,7 @@
 """Component for map buildings processing and generation."""
 
+from __future__ import annotations
+
 import json
 import os
 from typing import Any, NamedTuple
@@ -385,7 +387,7 @@ class Building(MeshComponent):
             layer.building_category,
         )
 
-        pixel_value = Parameters.AREA_TYPES.get(layer.building_category)  # type: ignore[arg-type]
+        pixel_value = Parameters.AREA_TYPES.get(layer.building_category)
         if pixel_value is None:
             self.logger.warning(
                 "Unknown building category '%s' for layer '%s'. Skipping.",
@@ -605,7 +607,7 @@ class Building(MeshComponent):
 
     def _prepare_i3d_targets(self) -> tuple[XmlDocument, ET.Element, ET.Element] | None:
         """Open map I3D XML and return document sections required for building placement."""
-        doc = XmlDocument(self.xml_path)  # type: ignore[arg-type]
+        doc = XmlDocument(self.xml_path)
         scene_node = doc.get(self.game.config.i3d_scene_xpath)
         if scene_node is None:
             self.logger.warning("Scene element not found in I3D file.")

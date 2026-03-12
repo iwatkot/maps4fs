@@ -1,5 +1,7 @@
 """This module contains the GRLE class for generating InfoLayer PNG files based on GRLE schema."""
 
+from __future__ import annotations
+
 import json
 import os
 from random import choice, randint
@@ -102,7 +104,7 @@ class GRLE(ImageComponent):
             if channels == 1:
                 info_layer_data = np.zeros((height, width), dtype=data_type)
             else:
-                info_layer_data = np.zeros((height, width, channels), dtype=data_type)  # type: ignore
+                info_layer_data = np.zeros((height, width, channels), dtype=data_type)
             self.logger.debug("Shape of %s: %s.", info_layer.name, info_layer_data.shape)
             cv2.imwrite(file_path, info_layer_data)
             self.logger.debug("InfoLayer PNG file %s created.", file_path)
@@ -145,14 +147,14 @@ class GRLE(ImageComponent):
             # Resize the preview image to the maximum size allowed for previews.
             image = cv2.imread(preview_path, cv2.IMREAD_GRAYSCALE)
             if (
-                image.shape[0] > Parameters.PREVIEW_MAXIMUM_SIZE  # type: ignore
-                or image.shape[1] > Parameters.PREVIEW_MAXIMUM_SIZE  # type: ignore
+                image.shape[0] > Parameters.PREVIEW_MAXIMUM_SIZE
+                or image.shape[1] > Parameters.PREVIEW_MAXIMUM_SIZE
             ):
                 image = cv2.resize(
-                    image, (Parameters.PREVIEW_MAXIMUM_SIZE, Parameters.PREVIEW_MAXIMUM_SIZE)  # type: ignore
+                    image, (Parameters.PREVIEW_MAXIMUM_SIZE, Parameters.PREVIEW_MAXIMUM_SIZE)
                 )
             image_normalized = np.empty_like(image)
-            cv2.normalize(image, image_normalized, 0, 255, cv2.NORM_MINMAX)  # type: ignore
+            cv2.normalize(image, image_normalized, 0, 255, cv2.NORM_MINMAX)
             image_colored = cv2.applyColorMap(image_normalized, cv2.COLORMAP_JET)
             cv2.imwrite(save_path, image_colored)
             preview_paths.append(save_path)
@@ -192,7 +194,7 @@ class GRLE(ImageComponent):
             return None
         fields_np = cv2.imread(fields_layer_path)
         # Resize fields_np to the same size as farmlands_np.
-        fields_np = cv2.resize(fields_np, (farmlands_np.shape[1], farmlands_np.shape[0]))  # type: ignore
+        fields_np = cv2.resize(fields_np, (farmlands_np.shape[1], farmlands_np.shape[0]))
 
         # use fields_np as base layer and overlay farmlands_np on top of it with 50% alpha blending.
         return cv2.addWeighted(fields_np, 0.5, farmlands_np, 0.5, 0)
@@ -230,7 +232,7 @@ class GRLE(ImageComponent):
 
         image = cv2.imread(info_layer_farmlands_path, cv2.IMREAD_UNCHANGED)
 
-        doc = XmlDocument(self.xml_path)  # type: ignore
+        doc = XmlDocument(self.xml_path)
         if doc.get("farmlands") is None:
             raise ValueError("Farmlands XML element not found in the farmlands XML file.")
 
@@ -282,7 +284,7 @@ class GRLE(ImageComponent):
                 break
 
             try:
-                cv2.fillPoly(image, [farmland_np], (float(farmland_id),))  # type: ignore
+                cv2.fillPoly(image, [farmland_np], (float(farmland_id),))
             except Exception as e:
                 self.logger.debug(
                     "Farmland %s could not be added to the InfoLayer PNG file with error: %s",
@@ -305,9 +307,9 @@ class GRLE(ImageComponent):
 
         # Replace all the zero values on the info layer image with 255.
         if self.map.grle_settings.fill_empty_farmlands:
-            image[image == 0] = 255  # type: ignore
+            image[image == 0] = 255
 
-        cv2.imwrite(info_layer_farmlands_path, image)  # type: ignore
+        cv2.imwrite(info_layer_farmlands_path, image)
 
         self.assets.farmlands = info_layer_farmlands_path
 
@@ -366,8 +368,8 @@ class GRLE(ImageComponent):
         # Density map of the fruits by default is 2X size of the base image, so we need to resize it.
         # However, it's possible to customize the values in the schema, so we need to take that into account.
         grass_image = cv2.resize(
-            grass_image,  # type: ignore
-            (grass_image.shape[1] * width_multiplier, grass_image.shape[0] * height_multiplier),  # type: ignore
+            grass_image,
+            (grass_image.shape[1] * width_multiplier, grass_image.shape[0] * height_multiplier),
             interpolation=cv2.INTER_NEAREST,
         )
         if forest_image is not None:
@@ -416,15 +418,15 @@ class GRLE(ImageComponent):
         # Three channeled 8-bit image, where non-zero values are the
         # different types of plants (only in the R channel).
         density_map_fruits = cv2.imread(density_map_fruit_path, cv2.IMREAD_UNCHANGED)
-        self.logger.debug("Density map for fruits loaded, shape: %s.", density_map_fruits.shape)  # type: ignore
+        self.logger.debug("Density map for fruits loaded, shape: %s.", density_map_fruits.shape)
 
         # Put the updated base image as the B channel in the density map.
-        density_map_fruits[:, :, 0] = grass_image_copy  # type: ignore
+        density_map_fruits[:, :, 0] = grass_image_copy
         self.logger.debug("Updated base image added as the B channel in the density map.")
 
         # Save the updated density map.
         # Ensure that order of channels is correct because CV2 uses BGR and we need RGB.
-        density_map_fruits = cv2.cvtColor(density_map_fruits, cv2.COLOR_BGR2RGB)  # type: ignore
+        density_map_fruits = cv2.cvtColor(density_map_fruits, cv2.COLOR_BGR2RGB)
         cv2.imwrite(density_map_fruit_path, density_map_fruits)
 
         self.assets.plants = density_map_fruit_path
@@ -567,12 +569,12 @@ class GRLE(ImageComponent):
             return
 
         for layer in texture_component.get_area_type_layers():
-            pixel_value = Parameters.ENVIRONMENT_AREA_TYPES.get(layer.area_type)  # type: ignore
-            weight_image = self.get_resized_weight(layer, environment_size)  # type: ignore
+            pixel_value = Parameters.ENVIRONMENT_AREA_TYPES.get(layer.area_type)
+            weight_image = self.get_resized_weight(layer, environment_size)
             if weight_image is None:
                 self.logger.warning("Weight image for area type layer not found in %s.", layer.name)
                 continue
-            environment_image[weight_image > 0] = pixel_value  # type: ignore
+            environment_image[weight_image > 0] = pixel_value
 
         for layer in texture_component.get_water_area_layers():
             weight_image = self.get_resized_weight(layer, environment_size)
@@ -581,7 +583,7 @@ class GRLE(ImageComponent):
                     "Weight image for water area layer not found in %s.", layer.name
                 )
                 continue
-            environment_image[weight_image > 0] += Parameters.WATER_AREA_PIXEL_VALUE  # type: ignore
+            environment_image[weight_image > 0] += Parameters.WATER_AREA_PIXEL_VALUE
 
         cv2.imwrite(info_layer_environment_path, environment_image)
         self.logger.debug("Environment InfoLayer PNG file saved: %s.", info_layer_environment_path)
@@ -632,7 +634,9 @@ class GRLE(ImageComponent):
             return weight_image
 
         dilated_weight_image = cv2.dilate(
-            weight_image.astype(np.uint8), np.ones((dilations, dilations), np.uint8), iterations=dilations  # type: ignore
+            weight_image.astype(np.uint8),
+            np.ones((dilations, dilations), np.uint8),
+            iterations=dilations,
         )
 
         return dilated_weight_image

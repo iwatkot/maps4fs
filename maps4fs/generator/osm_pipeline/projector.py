@@ -18,7 +18,7 @@ class LatLonProjector:
     @classmethod
     def from_bbox(
         cls, bbox: tuple[float, float, float, float], raster_size: int
-    ) -> "LatLonProjector":
+    ) -> LatLonProjector:
         """Build projector from osmnx bbox tuple (west, south, east, north)."""
         minimum_x, minimum_y, maximum_x, maximum_y = bbox
         return cls(
