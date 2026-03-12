@@ -13,7 +13,6 @@ The Digital Elevation Model (DEM) serves as the **fundamental terrain foundation
 | Game Version | Image Dimensions | File Path | Data Format |
 |--------------|------------------|-----------|-------------|
 | **FS25** | (map_size + 1) × (map_size + 1) | `map_directory/data/dem.png` | 16-bit PNG |
-| **FS22** | (map_size ÷ 2 + 1) × (map_size ÷ 2 + 1) | `map_directory/data/map_dem.png` | 16-bit PNG |
 
 **Data Structure:**
 - **Channels**: Single channel (grayscale)
@@ -25,10 +24,9 @@ The Digital Elevation Model (DEM) serves as the **fundamental terrain foundation
 
 **FS25 Standard Sizes:**
 - 2048m map → 2049×2049 DEM
-- 4096m map → 4097×4097 DEM  
+- 4096m map → 4097×4097 DEM
 - 8192m map → 8193×8193 DEM
 
-**FS22 Legacy Sizes:**
 - 2048m map → 1025×1025 DEM
 - 4096m map → 2049×2049 DEM
 
@@ -42,22 +40,22 @@ The Digital Elevation Model (DEM) serves as the **fundamental terrain foundation
 
 ### Height Scale Configuration
 
-**Default Value**: 255 (in Giants Editor maps)  
-**Maximum Terrain Height**: `65,535 × (heightScale ÷ 65,535) = heightScale meters`  
+**Default Value**: 255 (in Giants Editor maps)
+**Maximum Terrain Height**: `65,535 × (heightScale ÷ 65,535) = heightScale meters`
 **With Default Settings**: Maximum possible elevation = 255 meters
 
 **Example Calculations:**
 ```
 heightScale = 255  → Max height: 255m
-heightScale = 512  → Max height: 512m  
+heightScale = 512  → Max height: 512m
 heightScale = 1000 → Max height: 1000m
 ```
 
 ### Practical Height Scale Selection
 
-**For Flat Terrain (plains, farmland)**: 128-255m  
-**For Moderate Hills**: 256-512m  
-**For Mountain Regions**: 513-1000m+  
+**For Flat Terrain (plains, farmland)**: 128-255m
+**For Moderate Hills**: 256-512m
+**For Mountain Regions**: 513-1000m+
 **For Extreme Terrain**: 1000m+ (with performance considerations)
 
 ### Giants Editor Configuration
@@ -75,8 +73,7 @@ heightScale = 1000 → Max height: 1000m
 The `unitsPerPixel` parameter defines the **terrain resolution** by specifying how many meters each DEM pixel represents.
 
 **Game Version Defaults:**
-- **FS25**: `unitsPerPixel = 1` (1 meter per pixel - highest detail)
-- **FS22**: `unitsPerPixel = 2` (2 meters per pixel - moderate detail)
+- **Available**: `unitsPerPixel = 1` (1 meter per pixel - highest detail)
 
 ### Resolution Impact
 
@@ -126,3 +123,7 @@ The `unitsPerPixel` parameter defines the **terrain resolution** by specifying h
 6. **Iterative Refinement**: Adjust parameters based on visual and performance results
 
 **Pro Tip**: Always maintain some headroom in your height scale to accommodate manual terrain sculpting in Giants Editor without reaching the maximum elevation limit.
+
+
+
+

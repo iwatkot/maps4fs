@@ -45,8 +45,12 @@ Maps4fs is licensed under the **Creative Commons Attribution-NonCommercial 4.0 I
 
 ## Key License Terms
 
-**License**: CC BY-NC 4.0  
-**Copyright**: © 2025 iwatkot  
+**License**: CC BY-NC 4.0
+**Copyright**: © 2025 iwatkot
 **Official Repository**: [https://github.com/iwatkot/maps4fs](https://github.com/iwatkot/maps4fs)
 
 For detailed legal terms, please refer to the [full license text](https://github.com/iwatkot/maps4fs/blob/main/LICENSE.md).
+
+
+
+

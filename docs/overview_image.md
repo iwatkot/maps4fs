@@ -1,6 +1,6 @@
 # Overview Image Configuration
 
-> 🎉 **NEW for FS25**: Overview images are now fully automated! When **Download Satellite Images** is enabled, Maps4FS automatically generates perfect `overview.dds` files - no manual editing required!
+> 🎉 **New**: Overview images are now fully automated! When **Download Satellite Images** is enabled, Maps4FS automatically generates perfect `overview.dds` files - no manual editing required!
 
 ## Purpose: Creating Your In-Game Map Display
 
@@ -9,14 +9,14 @@ The overview image serves as the **in-game map display** that players see when o
 ## Image Structure & Specifications
 
 ### Fixed Dimensions
-**Final Format**: Always `4096×4096 pixels` regardless of your actual map size  
+**Final Format**: Always `4096×4096 pixels` regardless of your actual map size
 **File Format**: `.dds` (DirectDraw Surface) for optimal game engine compatibility
 
 ### Layout Architecture
 
 ![Overview Image Structure](https://github.com/iwatkot/maps4fsui/releases/download/0.0.1/overview.png)
 
-**Playable Area**: `2048×2048 pixels` centered within the overview image  
+**Playable Area**: `2048×2048 pixels` centered within the overview image
 **Border Region**: Surrounding area outside the playable zone
 
 **Critical Understanding**: The playable map area occupies only the center quarter of the overview image. The remaining space provides visual context and immersive boundaries.
@@ -25,8 +25,8 @@ The overview image serves as the **in-game map display** that players see when o
 
 ## Content Options & Strategies
 
-### Option 1: Automated Satellite Integration (FS25) ⭐ **RECOMMENDED**
-**Fully Automated for Farming Simulator 25**
+### Option 1: Automated Satellite Integration  ⭐ **RECOMMENDED**
+**Fully Automated**
 
 When **Download Satellite Images** is enabled in Maps4FS:
 - 🚀 **Completely Automatic**: `overview.dds` generated without any manual work
@@ -35,9 +35,8 @@ When **Download Satellite Images** is enabled in Maps4FS:
 - ✅ **Game-Ready Format**: Pre-compressed to DDS with optimal settings
 - 🔄 **Seamless Integration**: Perfect alignment with your generated terrain
 
-**For FS22 or Custom Designs**: Manual satellite integration still available (see below)
 - **Seamless Integration**: Perfect alignment with your generated terrain
-- **Realistic Context**: Actual satellite imagery showing surrounding geographic features  
+- **Realistic Context**: Actual satellite imagery showing surrounding geographic features
 - **Professional Results**: Consistent visual quality matching your map's real-world location
 
 ### Option 2: Custom Creative Content
@@ -68,16 +67,16 @@ When **Download Satellite Images** is enabled in Maps4FS:
 
 ## Technical Requirements
 
-**Resolution**: Exactly `4096×4096 pixels` (non-negotiable)  
-**Format**: DDS with DXT compression for optimal performance  
-**Color Space**: RGB with optional alpha channel for transparency effects  
+**Resolution**: Exactly `4096×4096 pixels` (non-negotiable)
+**Format**: DDS with DXT compression for optimal performance
+**Color Space**: RGB with optional alpha channel for transparency effects
 **File Size**: Typically 2-8MB depending on compression and detail level
 
 ## Best Practices
 
-**Preserve Scale**: Never resize the central playable area—maintain its exact proportions  
-**Quality Balance**: Use sufficient detail for clarity without creating oversized files  
-**Visual Consistency**: Match the overview's visual style with your map's terrain and atmosphere  
+**Preserve Scale**: Never resize the central playable area—maintain its exact proportions
+**Quality Balance**: Use sufficient detail for clarity without creating oversized files
+**Visual Consistency**: Match the overview's visual style with your map's terrain and atmosphere
 **Performance Optimization**: Apply appropriate DDS compression to minimize loading times
 
 **Strategic Tip**: The overview image significantly impacts players' first impression of your map. Invest time in creating a polished, professional result that showcases your map's unique character and geographic setting.
@@ -89,3 +88,7 @@ Want to show that your map was created with Maps4FS? You can use an **optional a
 **📦 Download**: [Attribution Pack](https://1drv.ms/u/c/a4f172ed55b8f7e1/IQDVdINs6vmMQYzXqabkL3w6AaF8ePwYx423W9e4RftVzFc?e=c5BgvK) - *Completely optional, not required*
 
 These graphics are provided for users who want to credit the tool, but there's **no obligation** to use them. Use them if you'd like to show support or let others know how your map was created!
+
+
+
+

@@ -1,5 +1,7 @@
 """Module for performance monitoring during map generation."""
 
+from __future__ import annotations
+
 import functools
 import logging
 import os
@@ -10,11 +12,35 @@ from collections import defaultdict
 from contextlib import contextmanager
 from datetime import datetime
 from time import perf_counter
-from typing import Callable, Generator, Literal
+from typing import Any, Callable, Generator, Literal, ParamSpec, TypeVar
 
-from maps4fs.generator.utils import Singleton
+P = ParamSpec("P")
+R = TypeVar("R")
 
 _local = threading.local()
+
+
+class Singleton(type):
+    """Metaclass that enforces at-most-one instance per class."""
+
+    _instances: dict[type[Any], Any] = {}
+
+    def __call__(cls, *args: Any, **kwargs: Any) -> Any:
+        """Return a cached class instance or create one on first access.
+
+        Arguments:
+            cls (type[Any]): Class being instantiated.
+            *args (Any): Positional constructor arguments.
+            **kwargs (Any): Keyword constructor arguments.
+
+        Returns:
+            Any: Singleton instance for the class.
+        """
+        if cls not in cls._instances:
+            cls._instances[cls] = super().__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
 MFS_LOG_LEVEL = "MFS_LOG_LEVEL"
 SUPPORTED_LOG_LEVELS = {
     10: "DEBUG",
@@ -31,13 +57,20 @@ class Logger(logging.Logger):
         self,
         name: str = "MAPS4FS",
         level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO",
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
+        """Initialize logger handlers and in-memory session storage.
+
+        Arguments:
+            name (str): Logger name prefix shown in output.
+            level (Literal["DEBUG", "INFO", "WARNING", "ERROR"]): Default log level.
+            **kwargs (Any): Extra keyword arguments reserved for compatibility.
+        """
         log_level = os.getenv(MFS_LOG_LEVEL, level)
         if log_level not in SUPPORTED_LOG_LEVELS.values():
             log_level = "INFO"
         super().__init__(name)
-        self.setLevel(level)
+        self.setLevel(log_level)
 
         # Standard stdout handler
         self.stdout_handler = logging.StreamHandler(sys.stdout)
@@ -49,35 +82,36 @@ class Logger(logging.Logger):
         # Session storage - simple dict of lists
         self.session_logs: dict[str, list[dict[str, str]]] = defaultdict(list)
 
-    def _capture_to_session(self, level: int, msg, args):
+    def _capture_to_session(self, level: int, msg: object, args: tuple[Any, ...]) -> None:
         """Capture log to session storage regardless of logger level."""
         try:
             session_id = get_current_session()
             if session_id:
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
-                formatted_msg = msg % args if args else str(msg)
+                msg_text = str(msg)
+                formatted_msg = msg_text % args if args else msg_text
                 level_name = SUPPORTED_LOG_LEVELS.get(level, "INFO")
                 log_entry = {"level": level_name, "timestamp": timestamp, "message": formatted_msg}
                 self.session_logs[session_id].append(log_entry)
         except Exception:
             pass
 
-    def debug(self, msg, *args, **kwargs):
+    def debug(self, msg: object, *args: Any, **kwargs: Any) -> None:
         """Override debug to always capture in session storage."""
         self._capture_to_session(logging.DEBUG, msg, args)
         super().debug(msg, *args, **kwargs)
 
-    def info(self, msg, *args, **kwargs):
+    def info(self, msg: object, *args: Any, **kwargs: Any) -> None:
         """Override info to always capture in session storage."""
         self._capture_to_session(logging.INFO, msg, args)
         super().info(msg, *args, **kwargs)
 
-    def warning(self, msg, *args, **kwargs):
+    def warning(self, msg: object, *args: Any, **kwargs: Any) -> None:
         """Override warning to always capture in session storage."""
         self._capture_to_session(logging.WARNING, msg, args)
         super().warning(msg, *args, **kwargs)
 
-    def error(self, msg, *args, **kwargs):
+    def error(self, msg: object, *args: Any, **kwargs: Any) -> None:
         """Override error to always capture in session storage."""
         self._capture_to_session(logging.ERROR, msg, args)
         super().error(msg, *args, **kwargs)
@@ -116,7 +150,11 @@ logger = Logger(name="MAPS4FS_MONITOR")
 
 
 def get_current_session() -> str | None:
-    """Get the current session name from thread-local storage."""
+    """Get the current performance session id from thread-local storage.
+
+    Returns:
+        str | None: Active session id, or None when no session is active.
+    """
     return getattr(_local, "current_session", None)
 
 
@@ -126,6 +164,9 @@ def performance_session(session_id: str | None = None) -> Generator[str, None, N
 
     Arguments:
         session_id (str, optional): Custom session ID. If None, generates UUID.
+
+    Returns:
+        Generator[str, None, None]: Context manager yielding the active session id.
     """
     if session_id is None:
         session_id = str(uuid.uuid4())
@@ -169,7 +210,7 @@ class PerformanceMonitor(metaclass=Singleton):
         return self.sessions.pop(session, {})
 
 
-def monitor_performance(func: Callable) -> Callable:
+def monitor_performance(func: Callable[P, R]) -> Callable[P, R]:
     """Decorator to monitor performance of methods/functions.
 
     Arguments:
@@ -180,7 +221,7 @@ def monitor_performance(func: Callable) -> Callable:
     """
 
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         if args and hasattr(args[0], "__class__"):
             class_name = args[0].__class__.__name__
         elif args and hasattr(args[0], "__name__"):

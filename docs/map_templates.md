@@ -7,7 +7,7 @@ Map templates are pre-configured Farming Simulator map structures that serve as 
 Map templates are **incomplete Farming Simulator maps** - they contain the structural framework without the actual terrain, fields, or other procedurally generated components. Think of them as blueprints that define:
 
 - **Available textures** and their properties
-- **Tree species** and placement rules  
+- **Tree species** and placement rules
 - **Game-specific configurations** and settings
 - **Core map structure** and file organization
 - **Compatibility layers** for different FS versions
@@ -19,9 +19,7 @@ Templates are stored in your **Data Directory** under the `templates/` folder:
 ```
 📁 Data Directory/
 └── 📂 templates/
-    ├── 📄 fs22-map-template.zip     ← Farming Simulator 22
     ├── 📄 fs25-map-template.zip     ← Farming Simulator 25
-    ├── 📄 fs22-texture-schema.json
     ├── 📄 fs25-texture-schema.json
     ├── 📄 fs25-grle-schema.json
     └── 📄 fs25-tree-schema.json
@@ -55,8 +53,7 @@ Templates are stored in your **Data Directory** under the `templates/` folder:
 1. **Navigate to Data Directory**: `templates/` folder
 2. **Backup original**: Rename existing template (e.g., `fs25-map-template-backup.zip`)
 3. **Replace template**: Copy your custom template with **exact filename**:
-   - For FS22: `fs22-map-template.zip`
-   - For FS25: `fs25-map-template.zip`
+   - For  `fs25-map-template.zip`
 4. **Verify placement**: Ensure file is directly in `templates/` folder
 
 ### **Step 3: Generate Maps**
@@ -69,7 +66,7 @@ Templates are stored in your **Data Directory** under the `templates/` folder:
 Templates allow extensive customization of core game elements:
 
 - **🎨 Texture Libraries** - Add custom ground textures, modify existing ones
-- **🌲 Tree Collections** - Define available tree species and growth patterns  
+- **🌲 Tree Collections** - Define available tree species and growth patterns
 - **⚙️ Game Settings** - Modify core gameplay parameters and restrictions
 - **🏗️ Map Structure** - Alter file organization and component relationships
 - **🔧 Schema Definitions** - Customize data formats and validation rules
@@ -97,7 +94,6 @@ This repository contains:
 - **Test thoroughly** before committing to large map projects
 
 ### **Compatibility Considerations**
-- **Match FS version** - FS22 templates won't work with FS25 generation
 - **Validate structure** - Ensure internal folder organization matches expected format
 - **Check dependencies** - Verify all referenced assets are included
 - **Monitor updates** - Keep templates current with game patches
@@ -117,3 +113,7 @@ This repository contains:
 **Missing Features**: Confirm your custom template includes all necessary schema definitions
 
 **Version Conflicts**: Ensure template version matches your target Farming Simulator game version
+
+
+
+

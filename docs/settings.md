@@ -23,11 +23,10 @@ Settings are organized by Farming Simulator version with different capabilities:
 
 **Farming Simulator 25:**
 - ✅ Texture Schemas
-- ✅ Tree Schemas  
+- ✅ Tree Schemas
 - ✅ Building Settings
 - ✅ Map Templates
 
-**Farming Simulator 22:**
 - ✅ Texture Schemas
 - ✅ Map Templates
 - ❌ Tree Schemas *(not supported)*
@@ -43,19 +42,15 @@ Settings are stored in the `templates/` folder within your [Data Directory](data
 │   │   ├── 📄 default.json     # Default texture schema
 │   │   ├── 📄 realistic.json   # Custom realistic textures
 │   │   └── 📄 simplified.json  # Simplified texture set
-│   ├── 📂 tree_schemas/        # FS25 tree configurations  
+│   ├── 📂 tree_schemas/        # FS25 tree configurations
 │   │   ├── 📄 default.json     # Default tree selection
 │   │   ├── 📄 european.json    # European tree species
 │   │   └── 📄 minimal.json     # Minimal tree variety
 │   └── 📂 map_templates/       # FS25 map templates
 │       ├── 📄 standard.zip     # Standard FS25 template
 │       └── 📄 custom.zip       # Custom map template
-└── 📂 fs22/                    # Farming Simulator 22 settings
-    ├── 📂 texture_schemas/     # FS22 texture configurations
     │   ├── 📄 default.json     # Default texture schema
     │   └── 📄 custom.json      # Custom texture set
-    └── 📂 map_templates/       # FS22 map templates
-        ├── 📄 standard.zip     # Standard FS22 template  
         └── 📄 modded.zip       # Modded map template
 ```
 
@@ -70,7 +65,7 @@ The Settings tab provides intuitive management similar to the [Presets](presets.
 
 ### ⚙️ **Management Actions**
 - **👁️ View** - Preview setting content without editing
-- **✏️ Rename** - Give descriptive names to your configurations  
+- **✏️ Rename** - Give descriptive names to your configurations
 - **🗑️ Delete** - Remove unwanted settings (with safety confirmations)
 - **⭐ Set Default** - Mark settings as default for new map generations
 
@@ -86,7 +81,7 @@ Control how OpenStreetMap features become Farming Simulator terrain textures.
 
 **What they define:**
 - Road surface types and widths
-- Field and farmland appearances  
+- Field and farmland appearances
 - Forest and vegetation textures
 - Water and shoreline materials
 - Building and structure surfaces
@@ -98,7 +93,7 @@ Control how OpenStreetMap features become Farming Simulator terrain textures.
 
 **Learn more:** [Texture Schema Documentation](texture_schema.md)
 
-### 🌳 **Tree Schemas** *(FS25 Only)*
+### 🌳 **Tree Schemas** **
 Define which tree species are available for procedural forest generation.
 
 **What they control:**
@@ -130,7 +125,7 @@ Provide the foundational structure and assets for generated maps.
 
 **Learn more:** [Map Templates Documentation](map_templates.md)
 
-### 🏢 **Building Settings** *(FS25 Only)*
+### 🏢 **Building Settings** **
 Control how buildings are placed on your maps.
 
 **Available Settings:**
@@ -156,7 +151,7 @@ Control how buildings are placed on your maps.
 
 **How Tolerance Factor Works:**
 - **Lower values (5-15%)** - More precise size matching, fewer buildings placed, better visual accuracy
-- **Medium values (20-40%)** - Balanced approach with good coverage and reasonable accuracy  
+- **Medium values (20-40%)** - Balanced approach with good coverage and reasonable accuracy
 - **Higher values (50-70%)** - More buildings placed, but with potentially significant size differences
 
 ⚠️ **Important:** Very low tolerance values may result in some building areas being left empty if no suitable matches are found.
@@ -172,11 +167,11 @@ Control how buildings are placed on your maps.
 ### 1️⃣ **Access Settings**
 Navigate to the Settings tab in your local Maps4FS interface.
 
-### 2️⃣ **Select Game Version**  
-Choose between Farming Simulator 25 or Farming Simulator 22.
+### 2️⃣ **Select Game Version**
+Select Farming Simulator 25.
 
 ### 3️⃣ **Browse Categories**
-Explore Texture Schemas, Tree Schemas (FS25), Building Settings (FS25), and Map Templates.
+Explore Texture Schemas, Tree Schemas, Building Settings, and Map Templates.
 
 ### 4️⃣ **Manage Your Settings**
 - View existing configurations
@@ -214,7 +209,7 @@ Settings work seamlessly with the [Presets](presets.md) system:
 - **Consistent Workflow** - Similar management interface for both features
 - **Complete Configuration** - Combine data presets with settings for full map control
 
-### 🗂️ **Data Directory Integration**  
+### 🗂️ **Data Directory Integration**
 Settings are part of the [Data Directory](data_directory.md) structure:
 - **Persistent Storage** - Settings survive container updates and restarts
 - **File System Access** - Direct file manipulation when needed
@@ -270,7 +265,7 @@ Future improvements planned:
 
 **Settings not appearing:**
 - Ensure files are in the correct directory structure
-- Check file permissions in the Data Directory  
+- Check file permissions in the Data Directory
 - Verify JSON syntax in configuration files
 
 **Default settings not applying:**
@@ -287,7 +282,7 @@ Future improvements planned:
 
 - **[Texture Schema](texture_schema.md)** - Detailed texture configuration guide
 - **[Tree Schema](tree_schema.md)** - Complete tree schema reference
-- **[Data Directory](data_directory.md)** - Understanding the data structure  
+- **[Data Directory](data_directory.md)** - Understanding the data structure
 - **[Presets](presets.md)** - Complementary data management system
 - **[Schemas Editor](schemas_editor.md)** - Visual editing tools for schemas
 - **[Local Deployment](local_deployment.md)** - Setting up your local environment
@@ -295,3 +290,6 @@ Future improvements planned:
 ---
 
 **Master your map generation workflow** with comprehensive Settings management. Organize your configurations, establish reliable defaults, and create maps with consistent, professional results every time!
+
+
+

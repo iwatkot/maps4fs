@@ -1,5 +1,7 @@
 """Module for sending settings to the statistics server."""
 
+from __future__ import annotations
+
 import os
 import threading
 from typing import Any
@@ -8,8 +10,6 @@ import requests
 
 from maps4fs.generator.monitor import Logger
 
-logger = Logger(name="MAPS4FS.STATISTICS")
-
 try:
     from dotenv import load_dotenv
 
@@ -17,83 +17,78 @@ try:
 except Exception:
     pass
 
-STATS_HOST = os.getenv("STATS_HOST")
-if not STATS_HOST:
-    logger.debug("STATS_HOST not set in environment")
-API_TOKEN = os.getenv("API_TOKEN")
-if not API_TOKEN:
-    logger.debug("API_TOKEN not set in environment")
 
+class StatisticsClient:
+    """Client for sending telemetry to the statistics server.
 
-def post(endpoint: str, data: dict[str, Any]) -> None:
-    """Make a POST request to the statistics server in a separate thread.
-
-    Arguments:
-        endpoint (str): The endpoint to send the request to.
-        data (dict[str, Any]): The data to send.
+    Credentials are read from environment variables at construction time.
+    All requests are fire-and-forget daemon threads — never blocking generation.
     """
 
-    def _post_thread():
-        try:
-            if not STATS_HOST or not API_TOKEN:
-                logger.debug("STATS_HOST or API_TOKEN not set in environment, can't send settings.")
-                return
+    def __init__(self) -> None:
+        self._host = os.getenv("STATS_HOST")
+        self._token = os.getenv("API_TOKEN")
+        self._logger = Logger(name="MAPS4FS.STATISTICS")
+        if not self._host:
+            self._logger.debug("STATS_HOST not set in environment")
+        if not self._token:
+            self._logger.debug("API_TOKEN not set in environment")
 
-            headers = {"Authorization": f"Bearer {API_TOKEN}", "Content-Type": "application/json"}
-            response = requests.post(endpoint, headers=headers, json=data, timeout=10)
-            if response.status_code != 200:
-                logger.warning("Failed to send settings: %s", response.text)
-                return
-            logger.debug("Settings sent successfully")
-        except Exception as e:
-            logger.warning("Error while trying to send settings: %s", e)
+    def _post(self, endpoint: str, data: dict[str, Any]) -> None:
+        """Fire-and-forget POST in a daemon thread.
 
-    # Use non-daemon thread and wait for completion to ensure critical data is sent
-    thread = threading.Thread(target=_post_thread, daemon=False)
-    thread.start()
-    # Wait up to 15 seconds for the request to complete
-    thread.join(timeout=15)
+        Arguments:
+            endpoint (str): Full URL of the endpoint.
+            data (dict[str, Any]): JSON body.
+        """
 
-    # If thread is still alive, log a warning but don't block
-    if thread.is_alive():
-        logger.warning("Statistics request taking longer than expected, continuing without waiting")
+        def _thread() -> None:
+            try:
+                if not self._host or not self._token:
+                    self._logger.debug("STATS_HOST or API_TOKEN not set, can't send settings.")
+                    return
+                headers = {
+                    "Authorization": f"Bearer {self._token}",
+                    "Content-Type": "application/json",
+                }
+                response = requests.post(endpoint, headers=headers, json=data, timeout=10)
+                if response.status_code != 200:
+                    self._logger.warning("Failed to send settings: %s", response.text)
+                    return
+                self._logger.debug("Settings sent successfully")
+            except Exception as e:
+                self._logger.warning("Error while trying to send settings: %s", e)
 
+        threading.Thread(target=_thread, daemon=True).start()
 
-def send_main_settings(data: dict[str, Any]) -> None:
-    """Send main settings to the statistics server.
+    def send_main_settings(self, data: dict[str, Any]) -> None:
+        """Send main settings telemetry payload.
 
-    Arguments:
-        data (dict[str, Any]): The main settings to send.
-    """
-    endpoint = f"{STATS_HOST}/receive_main_settings"
-    post(endpoint, data)
+        Arguments:
+            data (dict[str, Any]): Main settings payload.
+        """
+        self._post(f"{self._host}/receive_main_settings", data)
 
+    def send_advanced_settings(self, data: dict[str, Any]) -> None:
+        """Send advanced settings telemetry payload.
 
-def send_advanced_settings(data: dict[str, Any]) -> None:
-    """Send advanced settings to the statistics server.
+        Arguments:
+            data (dict[str, Any]): Advanced settings payload.
+        """
+        self._post(f"{self._host}/receive_advanced_settings", data)
 
-    Arguments:
-        data (dict[str, Any]): The advanced settings to send.
-    """
-    endpoint = f"{STATS_HOST}/receive_advanced_settings"
-    post(endpoint, data)
+    def send_survey(self, data: dict[str, Any]) -> None:
+        """Send survey telemetry payload.
 
+        Arguments:
+            data (dict[str, Any]): Survey payload.
+        """
+        self._post(f"{self._host}/receive_survey", data)
 
-def send_survey(data: dict[str, Any]) -> None:
-    """Send survey data to the statistics server.
+    def send_performance_report(self, data: dict[str, Any]) -> None:
+        """Send performance report telemetry payload.
 
-    Arguments:
-        data (dict[str, Any]): The survey data to send.
-    """
-    endpoint = f"{STATS_HOST}/receive_survey"
-    post(endpoint, data)
-
-
-def send_performance_report(data: dict[str, Any]) -> None:
-    """Send performance report to the statistics server.
-
-    Arguments:
-        data (dict[str, Any]): The performance report data to send.
-    """
-    endpoint = f"{STATS_HOST}/receive_performance_report"
-    post(endpoint, data)
+        Arguments:
+            data (dict[str, Any]): Performance report payload.
+        """
+        self._post(f"{self._host}/receive_performance_report", data)

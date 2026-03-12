@@ -43,7 +43,7 @@ For flexible management of multiple OSM configurations:
 └── 📂 defaults/
     └── 📂 osm/
         ├── 📄 germany_rural.osm      ← Rural German roads
-        ├── 📄 france_vineyards.osm   ← French vineyard region  
+        ├── 📄 france_vineyards.osm   ← French vineyard region
         ├── 📄 mountain_roads.osm     ← Mountain terrain roads
         └── 📄 [your_files].osm       ← Multiple OSM presets
 ```
@@ -139,6 +139,10 @@ If your custom OSM file isn't working, throws errors, or generates a blank map, 
 - **How**: Enable Expert Mode → Right-click → **Purge** (not Delete)
 
 **Problem: Combining Ways**
-- **Issue**: Using **Combine Way** (Ctrl+C) creates problematic merge artifacts  
+- **Issue**: Using **Combine Way** (Ctrl+C) creates problematic merge artifacts
 - **Solution**: Manual cleanup required - locate and remove marked elements from OSM file
 - **Prevention**: Avoid combining ways when possible, or prepare for manual fixes
+
+
+
+

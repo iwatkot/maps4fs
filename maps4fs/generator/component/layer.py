@@ -2,138 +2,69 @@
 
 from __future__ import annotations
 
+import dataclasses
 import os
 import re
+from dataclasses import dataclass
+from typing import Any
 
 
+@dataclass
 class Layer:
     """Class which represents a layer with textures and tags.
     It's using to obtain data from OSM using tags and make changes into corresponding textures.
-
-    Arguments:
-        name (str): Name of the layer.
-        tags (dict[str, str | list[str]]): Dictionary of tags to search for.
-        width (int | None): Width of the polygon in meters (only for LineString).
-        color (tuple[int, int, int]): Color of the layer in BGR format.
-        exclude_weight (bool): Flag to exclude weight from the texture.
-        priority (int | None): Priority of the layer.
-        info_layer (str | None): Name of the corresnponding info layer.
-        usage (str | None): Usage of the layer.
-        background (bool): Flag to determine if the layer is a background.
-        invisible (bool): Flag to determine if the layer is invisible.
-        procedural (list[str] | None): List of procedural textures to apply.
-        border (int | None): Border size in pixels.
-        precise_tags (dict[str, str | list[str]] | None): Dictionary of precise tags to search for.
-        precise_usage (str | None): Precise usage of the layer.
-        area_type (str | None): Type of the area (e.g., residential, commercial).
-        area_water (bool): Flag to determine if the area is water.
-        indoor (bool): Flag to determine if the layer is indoor.
-        merge_into (str | None): Name of the layer to merge into.
-        building_category (str | None): Category of the building.
-        external (bool): External layers not being used by the game directly.
-
-    Attributes:
-        name (str): Name of the layer.
-        tags (dict[str, str | list[str]]): Dictionary of tags to search for.
-        width (int | None): Width of the polygon in meters (only for LineString).
     """
 
-    # pylint: disable=R0913
-    def __init__(  # pylint: disable=R0917
-        self,
-        name: str,
-        count: int,
-        tags: dict[str, str | list[str] | bool] | None = None,
-        width: int | None = None,
-        color: tuple[int, int, int] | list[int] | None = None,
-        exclude_weight: bool = False,
-        priority: int | None = None,
-        info_layer: str | None = None,
-        usage: str | None = None,
-        background: bool = False,
-        invisible: bool = False,
-        procedural: list[str] | None = None,
-        border: int | None = None,
-        precise_tags: dict[str, str | list[str] | bool] | None = None,
-        precise_usage: str | None = None,
-        area_type: str | None = None,
-        area_water: bool = False,
-        indoor: bool = False,
-        merge_into: str | None = None,
-        building_category: str | None = None,
-        external: bool = False,
-        road_texture: str | None = None,
-        save_tags: bool = False,
-    ):
-        self.name = name
-        self.count = count
-        self.tags = tags
-        self.width = width
-        self.color = color if color else (255, 255, 255)
-        self.exclude_weight = exclude_weight
-        self.priority = priority
-        self.info_layer = info_layer
-        self.usage = usage
-        self.background = background
-        self.invisible = invisible
-        self.procedural = procedural
-        self.border = border
-        self.precise_tags = precise_tags
-        self.precise_usage = precise_usage
-        self.area_type = area_type
-        self.area_water = area_water
-        self.indoor = indoor
-        self.merge_into = merge_into
-        self.building_category = building_category
-        self.external = external
-        self.road_texture = road_texture
-        self.save_tags = save_tags
+    name: str
+    count: int
+    tags: dict[str, str | list[str] | bool] | None = None
+    width: int | None = None
+    # None means "use default white"; resolved to (255,255,255) in __post_init__
+    color: tuple[int, int, int] | list[int] | None = None
+    exclude_weight: bool = False
+    priority: int | None = None
+    info_layer: str | None = None
+    usage: str | None = None
+    background: bool = False
+    invisible: bool = False
+    procedural: list[str] | None = None
+    border: int | None = None
+    precise_tags: dict[str, str | list[str] | bool] | None = None
+    precise_usage: str | None = None
+    area_type: str | None = None
+    area_water: bool = False
+    indoor: bool = False
+    merge_into: str | None = None
+    building_category: str | None = None
+    external: bool = False
+    road_texture: str | None = None
+    save_tags: bool = False
 
-    def to_json(self) -> dict[str, str | list[str] | bool]:  # type: ignore
-        """Returns dictionary with layer data.
+    def __post_init__(self) -> None:
+        """Normalize optional defaults after dataclass initialization."""
+        if self.color is None:
+            self.color = (255, 255, 255)
+
+    def to_json(self) -> dict[str, str | list[str] | bool]:
+        """Returns dictionary with layer data, omitting None values.
 
         Returns:
-            dict: Dictionary with layer data."""
-        data = {
-            "name": self.name,
-            "count": self.count,
-            "tags": self.tags,
-            "width": self.width,
-            "color": list(self.color),
-            "exclude_weight": self.exclude_weight,
-            "priority": self.priority,
-            "info_layer": self.info_layer,
-            "usage": self.usage,
-            "background": self.background,
-            "invisible": self.invisible,
-            "procedural": self.procedural,
-            "border": self.border,
-            "precise_tags": self.precise_tags,
-            "precise_usage": self.precise_usage,
-            "area_type": self.area_type,
-            "area_water": self.area_water,
-            "indoor": self.indoor,
-            "merge_into": self.merge_into,
-            "building_category": self.building_category,
-            "external": self.external,
-            "road_texture": self.road_texture,
-            "save_tags": self.save_tags,
-        }
-
-        data = {k: v for k, v in data.items() if v is not None}
-        return data  # type: ignore
+            dict: Dictionary with layer data.
+        """
+        raw = dataclasses.asdict(self)
+        return {k: v for k, v in raw.items() if v is not None}
 
     @classmethod
-    def from_json(cls, data: dict[str, str | list[str] | bool]) -> Layer:
+    def from_json(cls, data: dict[str, Any]) -> Layer:
         """Creates a new instance of the class from dictionary.
 
         Arguments:
-            data (dict[str, str | list[str] | bool]): Dictionary with layer data.
+            data (dict[str, Any]): Dictionary with layer data.
 
         Returns:
             Layer: New instance of the class.
         """
-        return cls(**data)  # type: ignore
+        return cls(**data)
 
     def path(self, weights_directory: str) -> str:
         """Returns path to the first texture of the layer.

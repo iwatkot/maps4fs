@@ -11,17 +11,16 @@ from typing import Any, Generator
 from pydtmdl import DTMProvider
 from pydtmdl.base.dtm import DTMProviderSettings
 
-import maps4fs.generator.config as mfscfg
-import maps4fs.generator.utils as mfsutils
-from maps4fs.generator.component import Background, Component, Layer, Satellite, Texture
+from maps4fs.generator.component import Component
+from maps4fs.generator.constants import Paths
+from maps4fs.generator.context import MapContext
 from maps4fs.generator.game import Game
 from maps4fs.generator.monitor import Logger, PerformanceMonitor, performance_session
-from maps4fs.generator.settings import GenerationSettings, MainSettings, SharedSettings
-from maps4fs.generator.statistics import (
-    send_advanced_settings,
-    send_main_settings,
-    send_performance_report,
-)
+from maps4fs.generator.osm import check_and_fix_osm
+from maps4fs.generator.settings import GenerationSettings, MainSettings
+from maps4fs.generator.statistics import StatisticsClient
+
+_stats = StatisticsClient()
 
 
 class Map:
@@ -47,57 +46,35 @@ class Map:
         logger: Any = None,
         custom_osm: str | None = None,
         generation_settings: GenerationSettings = GenerationSettings(),
+        output_size: int | None = None,
+        texture_custom_schema: list[dict] | None = None,
+        tree_custom_schema: list[dict] | None = None,
+        buildings_custom_schema: list[dict] | None = None,
+        custom_template_path: str | None = None,
+        custom_background_path: str | None = None,
         **kwargs,
     ):
 
-        # region main properties
         self.game = game
         self.dtm_provider = dtm_provider
         self.dtm_provider_settings = dtm_provider_settings
         self.coordinates = coordinates
-        self.map_directory = map_directory or self.suggest_map_directory(
-            coordinates=coordinates, game_code=game.code  # type: ignore
-        )
-        self.rotation = rotation
-        self.kwargs = kwargs
-        # endregion
-
-        # region size properties
         self.size = size
-        rotation_multiplier = 1.5 if rotation else 1
-        self.rotated_size = int(size * rotation_multiplier)
-        self.output_size = kwargs.get("output_size", None)
-        self.size_scale = 1.0 if not self.output_size else self.output_size / size
-        # endregion
+        self.rotation = rotation
+        self.output_size = output_size
+        self._telemetry = kwargs
+        self.logger = logger if logger else Logger()
 
-        # region custom OSM properties
-        if custom_osm and not os.path.isfile(custom_osm):
-            raise FileNotFoundError(f"Custom OSM file {custom_osm} does not exist.")
-        mfsutils.check_and_fix_osm(custom_osm, save_directory=self.map_directory)
-        self.custom_osm = custom_osm
-        # endregion
+        # When rotation is applied the raster canvas must be larger to cover the rotated area.
+        self.rotated_size = int(size * 1.5) if rotation else size
 
-        # region custom DEM handling
-        self.custom_background_path: str | None = None
-        custom_dem = kwargs.get("custom_background_path", None)
-        if custom_dem and not os.path.isfile(custom_dem):
-            raise FileNotFoundError(f"Custom DEM file {custom_dem} does not exist.")
+        self.map_directory = map_directory or self.suggest_map_directory(
+            coordinates=coordinates, game_code=game.code
+        )
+        game.set_map_directory(self.map_directory)
+        os.makedirs(self.map_directory, exist_ok=True)
 
-        # Make a copy of the custom DEM to the map directory.
-        if custom_dem:
-            save_path = os.path.join(self.map_directory, os.path.basename(custom_dem))
-            shutil.copyfile(custom_dem, save_path)
-            self.custom_background_path = save_path
-        # endregion
-
-        # region main settings
-        main_settings = MainSettings.from_map(self)
-        main_settings_json = main_settings.to_json()
-        self.main_settings_path = os.path.join(self.map_directory, "main_settings.json")
-        self._update_main_settings(main_settings_json)
-        # endregion
-
-        # region generation settings
+        # Domain-specific settings unpacked for convenient component access.
         self.dem_settings = generation_settings.dem_settings
         self.background_settings = generation_settings.background_settings
         self.grle_settings = generation_settings.grle_settings
@@ -105,67 +82,113 @@ class Map:
         self.texture_settings = generation_settings.texture_settings
         self.satellite_settings = generation_settings.satellite_settings
         self.building_settings = generation_settings.building_settings
-        self.process_settings()
+        self._apply_settings_constraints()
 
-        self.logger = logger if logger else Logger()
         self.generation_settings_json = generation_settings.to_json()
 
-        # Store data for statistics sending after generation
-        self.initial_main_settings_json = main_settings_json.copy()
-        # endregion
+        # Custom inputs.
+        if custom_osm and not os.path.isfile(custom_osm):
+            raise FileNotFoundError(f"Custom OSM file {custom_osm} does not exist.")
+        check_and_fix_osm(custom_osm, save_directory=self.map_directory)
+        self.custom_osm = custom_osm
 
-        # region JSON data saving
-        os.makedirs(self.map_directory, exist_ok=True)
-        self.texture_custom_schema = kwargs.get("texture_custom_schema", None)
-        self.tree_custom_schema = kwargs.get("tree_custom_schema", None)
-        self.buildings_custom_schema = kwargs.get("buildings_custom_schema", None)
+        self.custom_background_path = self._copy_custom_dem(custom_background_path)
 
-        json_data = {
+        # Custom schemas.
+        self.texture_custom_schema = texture_custom_schema
+        self.tree_custom_schema = tree_custom_schema
+        self.buildings_custom_schema = buildings_custom_schema
+
+        # Persist settings to disk.
+        self.main_settings_path = os.path.join(self.map_directory, "main_settings.json")
+        main_settings = MainSettings.from_map(self)
+        self._update_main_settings(main_settings.to_json())
+        self._initial_main_settings = main_settings.to_json()
+
+        self._save_json_files()
+
+        # Unpack map template.
+        self._unpack_template(custom_template_path or game.template_path)
+
+        self.assets_directory = os.path.join(self.map_directory, "assets")
+        os.makedirs(self.assets_directory, exist_ok=True)
+
+        self.context = MapContext()
+        self.components: list[Component] = []
+
+    @staticmethod
+    def _dump_json(filename: str, directory: str, data) -> None:
+        """Write data to a JSON file, silently skipping falsy or empty data."""
+        if not data:
+            return
+        if not isinstance(data, (dict, list)):
+            raise TypeError("Data must be a dictionary or a list.")
+        save_path = os.path.join(directory, filename)
+        with open(save_path, "w", encoding="utf-8") as file:
+            json.dump(data, file, indent=4)
+
+    @property
+    def size_scale(self) -> float:
+        """Scale factor applied when output_size differs from size.
+
+        Returns:
+            float: Scale factor (1.0 when no output_size override).
+        """
+        return self.output_size / self.size if self.output_size else 1.0
+
+    def _apply_settings_constraints(self) -> None:
+        """Enforces inter-setting constraints (e.g. plateau must cover water depth)."""
+        if self.dem_settings.water_depth > 0:
+            self.dem_settings.plateau = max(
+                self.dem_settings.plateau, self.dem_settings.water_depth
+            )
+
+    def _copy_custom_dem(self, custom_dem_path: str | None) -> str | None:
+        """Copy a custom DEM file into the map directory.
+
+        Arguments:
+            custom_dem_path (str | None): Source path, or None to skip.
+
+        Returns:
+            str | None: Destination path, or None.
+        """
+        if not custom_dem_path:
+            return None
+        if not os.path.isfile(custom_dem_path):
+            raise FileNotFoundError(f"Custom DEM file {custom_dem_path} does not exist.")
+        save_path = os.path.join(self.map_directory, os.path.basename(custom_dem_path))
+        shutil.copyfile(custom_dem_path, save_path)
+        return save_path
+
+    def _save_json_files(self) -> None:
+        """Write generation settings and custom schemas to the map directory."""
+        json_files = {
             "generation_settings.json": self.generation_settings_json,
             "texture_custom_schema.json": self.texture_custom_schema,
             "tree_custom_schema.json": self.tree_custom_schema,
             "buildings_custom_schema.json": self.buildings_custom_schema,
         }
+        for filename, data in json_files.items():
+            self._dump_json(filename, self.map_directory, data)
 
-        for filename, data in json_data.items():
-            mfsutils.dump_json(filename, self.map_directory, data)
-        # endregion
+    def _unpack_template(self, template_path: str) -> None:
+        """Unpack the game map template archive into the map directory.
 
-        # region prepare map working directory
-        custom_template_path = kwargs.get("custom_template_path", None)
-        if custom_template_path:
-            self.logger.info("Using custom map template: %s", custom_template_path)
-            if not os.path.isfile(custom_template_path):
-                self.logger.error(
-                    "Custom map template file %s does not exist.", custom_template_path
-                )
-                raise FileNotFoundError(
-                    f"Custom map template file {custom_template_path} does not exist."
-                )
-            template_path = custom_template_path
-        else:
-            self.logger.info("Using default map template: %s", game.template_path)
-            template_path = game.template_path
+        Arguments:
+            template_path (str): Path to the template archive.
+
+        Raises:
+            FileNotFoundError: If the template file does not exist.
+            RuntimeError: If unpacking fails.
+        """
+        if not os.path.isfile(template_path):
+            raise FileNotFoundError(f"Map template file {template_path} does not exist.")
+        self.logger.info("Unpacking map template: %s", template_path)
         try:
             shutil.unpack_archive(template_path, self.map_directory)
             self.logger.debug("Map template unpacked to %s", self.map_directory)
         except Exception as e:
             raise RuntimeError(f"Can not unpack map template due to error: {e}") from e
-        # endregion
-
-        self.assets_directory = os.path.join(self.map_directory, "assets")
-        os.makedirs(self.assets_directory, exist_ok=True)
-
-        self.shared_settings = SharedSettings()
-        self.components: list[Component] = []
-
-    def process_settings(self) -> None:
-        """Checks the settings by predefined rules and updates them accordingly."""
-        if self.dem_settings.water_depth > 0:
-            # Make sure that the plateau value is >= water_depth
-            self.dem_settings.plateau = max(
-                self.dem_settings.plateau, self.dem_settings.water_depth
-            )
 
     @staticmethod
     def suggest_map_directory(coordinates: tuple[float, float], game_code: str) -> str:
@@ -174,7 +197,7 @@ class Map:
         Returns:
             str: Map directory path.
         """
-        return os.path.join(mfscfg.MFS_DATA_DIR, Map.suggest_directory_name(coordinates, game_code))
+        return os.path.join(Paths.DATA_DIR, Map.suggest_directory_name(coordinates, game_code))
 
     @staticmethod
     def suggest_directory_name(coordinates: tuple[float, float], game_code: str) -> str:
@@ -183,10 +206,13 @@ class Map:
         Returns:
             str: Directory name.
         """
+        from datetime import datetime
+
         lat, lon = coordinates
-        latr = mfsutils.coordinate_to_string(lat)
-        lonr = mfsutils.coordinate_to_string(lon)
-        return f"{mfsutils.get_timestamp()}_{game_code}_{latr}_{lonr}".lower()
+        latr = f"{lat:.3f}".replace(".", "_")
+        lonr = f"{lon:.3f}".replace(".", "_")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        return f"{timestamp}_{game_code}_{latr}_{lonr}".lower()
 
     @property
     def texture_schema(self) -> list[dict[str, Any]] | None:
@@ -208,7 +234,7 @@ class Map:
         """
         with performance_session() as session_id:
             self.logger.info(
-                "Starting map generation. Game code: %s. Coordinates: %s, size: %s. Rotation: %s.",
+                "Starting map generation. Game: %s, coords: %s, size: %s, rotation: %s.",
                 self.game.code,
                 self.coordinates,
                 self.size,
@@ -218,59 +244,14 @@ class Map:
 
             try:
                 for game_component in self.game.components:
-                    component = game_component(
-                        self.game,
-                        self,
-                        self.coordinates,
-                        self.size,
-                        self.rotated_size,
-                        self.rotation,
-                        self.map_directory,
-                        self.logger,
-                        texture_custom_schema=self.texture_custom_schema,  # type: ignore
-                        tree_custom_schema=self.tree_custom_schema,  # type: ignore
-                    )
+                    component = game_component(self.game, self)
                     self.components.append(component)
-                    component_name = component.__class__.__name__
-                    self.logger.debug("Processing component: %s", component_name)
+                    yield component.__class__.__name__
+                    self._run_component(component)
 
-                    yield component_name
-
-                    try:
-                        component_start = perf_counter()
-                        component.process()
-                        component_finish = perf_counter()
-                        self.logger.info(
-                            "Component %s processed in %.2f seconds.",
-                            component_name,
-                            component_finish - component_start,
-                        )
-                        component.commit_generation_info()
-                    except Exception as e:
-                        self.logger.error(
-                            "Error processing or committing generation info for component %s: %s",
-                            component_name,
-                            e,
-                        )
-                        self._update_main_settings({"error": f"{component_name} error: {repr(e)}"})
-                        raise e
-
-                generation_finish = perf_counter()
-                self.logger.info(
-                    "Map generation completed in %.2f seconds.",
-                    generation_finish - generation_start,
-                )
-
+                elapsed = perf_counter() - generation_start
+                self.logger.info("Map generation completed in %.2f seconds.", elapsed)
                 self._update_main_settings({"completed": True})
-
-                self.logger.info(
-                    "Map generation completed. Game code: %s. Coordinates: %s, size: %s. Rotation: %s.",
-                    self.game.code,
-                    self.coordinates,
-                    self.size,
-                    self.rotation,
-                )
-
             finally:
                 self._save_metrics(session_id)
 
@@ -279,6 +260,29 @@ class Map:
                 "Self-clear is enabled. Clearing map directory: %s", self.map_directory
             )
             self.self_clear(self.map_directory)
+
+    def _run_component(self, component: Component) -> None:
+        """Process a single component and commit its generation info.
+
+        Arguments:
+            component (Component): The component to run.
+
+        Raises:
+            Exception: Re-raises any exception from component processing.
+        """
+        name = component.__class__.__name__
+        self.logger.debug("Processing component: %s", name)
+        try:
+            start = perf_counter()
+            component.process()
+            self.logger.debug(
+                "Component %s processed in %.2f seconds.", name, perf_counter() - start
+            )
+            component.commit_generation_info()
+        except Exception as e:
+            self.logger.error("Error processing component %s: %s", name, e)
+            self._update_main_settings({"error": f"{name} error: {repr(e)}"})
+            raise
 
     def _save_metrics(self, session_id: str) -> None:
         """Save logs and performance metrics to JSON files.
@@ -305,24 +309,22 @@ class Map:
                     os.path.join(self.map_directory, report_filename), "w", encoding="utf-8"
                 ) as file:
                     json.dump(session_json, file, indent=4)
-                send_performance_report(session_json)
+                _stats.send_performance_report(session_json)
         except Exception as e:
             self.logger.error("Error saving performance report to JSON: %s", e)
 
         # Send statistics after generation is complete
         try:
-            # Read the current main settings (which may have been updated during generation)
             if os.path.exists(self.main_settings_path):
                 with open(self.main_settings_path, "r", encoding="utf-8") as file:
                     final_main_settings = json.load(file)
             else:
-                final_main_settings = self.initial_main_settings_json.copy()
+                final_main_settings = self._initial_main_settings.copy()
 
-            # Ensure we preserve the is_public flag and other kwargs
-            final_main_settings["is_public"] = self.kwargs.get("is_public", False)
+            final_main_settings["is_public"] = self._telemetry.get("is_public", False)
 
-            send_main_settings(final_main_settings)
-            send_advanced_settings(self.generation_settings_json)
+            _stats.send_main_settings(final_main_settings)
+            _stats.send_advanced_settings(self.generation_settings_json)
             self.logger.info("Statistics sent successfully after generation.")
         except Exception as e:
             self.logger.warning("Error sending statistics after generation: %s", e)
@@ -358,74 +360,6 @@ class Map:
         for component in self.components:
             if component.__class__.__name__ == component_name:
                 return component
-        return None
-
-    def get_texture_component(self) -> Texture | None:
-        """Get texture component.
-
-        Returns:
-            Texture | None: Texture instance or None if not found.
-        """
-        component = self.get_component("Texture")
-        if not isinstance(component, Texture):
-            return None
-        return component
-
-    def get_background_component(self) -> Background | None:
-        """Get background component.
-
-        Returns:
-            Background | None: Background instance or None if not found.
-        """
-        component = self.get_component("Background")
-        if not isinstance(component, Background):
-            return None
-        return component
-
-    def get_satellite_component(self) -> Satellite | None:
-        """Get satellite component.
-
-        Returns:
-            Satellite | None: Satellite instance or None if not found.
-        """
-        component = self.get_component("Satellite")
-        if not isinstance(component, Satellite):
-            return None
-        return component
-
-    def get_texture_layer(self, by_usage: str | None = None) -> Layer | None:
-        """Get texture layer by usage.
-
-        Arguments:
-            by_usage (str, optional): Texture usage.
-
-        Returns:
-            Layer | None: Texture layer instance or None if not found.
-        """
-        texture_component = self.get_texture_component()
-        if not texture_component:
-            return None
-        if by_usage:
-            return texture_component.get_layer_by_usage(by_usage)
-        return None
-
-    def get_texture_layers(
-        self,
-        by_usage: str | None = None,
-    ) -> None | list[Layer]:
-        """Get texture layers by usage.
-
-        Arguments:
-            by_usage (str, optional): Texture usage.
-
-        Returns:
-            None | list[Layer]: List of texture layers.
-        """
-        texture_component = self.get_texture_component()
-        if not texture_component:
-            return None
-        if by_usage:
-            return texture_component.get_layers_by_usage(by_usage)
         return None
 
     def previews(self) -> list[str]:

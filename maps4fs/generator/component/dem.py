@@ -1,15 +1,20 @@
 """This module contains DEM class for processing Digital Elevation Model data."""
 
+from __future__ import annotations
+
 import math
+import os
+import shutil
 from typing import Any
 
 import cv2
 import numpy as np
 from pydtmdl import DTMProvider
 
-import maps4fs.generator.config as mfscfg
 from maps4fs.generator.component.base.component_image import ImageComponent
+from maps4fs.generator.constants import Paths
 from maps4fs.generator.monitor import monitor_performance
+from maps4fs.generator.settings import Parameters
 
 
 # pylint: disable=R0903, R0902
@@ -28,7 +33,15 @@ class DEM(ImageComponent):
     """
 
     def preprocess(self) -> None:
-        self._dem_path = self.game.dem_file_path(self.map_directory)
+        output_size_multiplier = 1.5 if self.rotation else 1
+        self.map_size = self.map_size + Parameters.BACKGROUND_DISTANCE * 2
+        self.map_rotated_size = int(self.map_size * output_size_multiplier)
+        self.save_bbox()
+
+        background_directory = os.path.join(self.map_directory, Parameters.BACKGROUND_DIRECTORY)
+        os.makedirs(background_directory, exist_ok=True)
+        self._dem_path = os.path.join(background_directory, f"{Parameters.FULL}.png")
+        self.map.context.dem_path = self._dem_path
 
         self.logger.debug("Map size: %s x %s.", self.map_size, self.map_size)
         self.logger.debug(
@@ -38,11 +51,11 @@ class DEM(ImageComponent):
         self.output_resolution = self.get_output_resolution()
         self.logger.debug("Output resolution for DEM data: %s.", self.output_resolution)
 
-        self.dtm_provider: DTMProvider = self.map.dtm_provider(  # type: ignore
+        self.dtm_provider: DTMProvider = self.map.dtm_provider(
             coordinates=self.coordinates,
             user_settings=self.map.dtm_provider_settings,
             size=self.map_rotated_size,
-            directory=mfscfg.DTM_CACHE_DIR,
+            directory=Paths.DTM_CACHE_DIR,
             logger=self.logger,
         )
 
@@ -86,11 +99,11 @@ class DEM(ImageComponent):
         """
         map_size = self.map_size if use_original else self.map_rotated_size
 
-        dem_size = int((map_size / 2) * self.game.dem_multipliyer)
+        dem_size = int((map_size / 2) * 2)
 
         self.logger.debug(
             "DEM size multiplier is %s, DEM size: %sx%s, use original: %s.",
-            self.game.dem_multipliyer,
+            2,
             dem_size,
             dem_size,
             use_original,
@@ -120,6 +133,15 @@ class DEM(ImageComponent):
     def process(self) -> None:
         """Reads DTM file, crops it to map size, normalizes and blurs it,
         saves to map directory."""
+
+        if self.map.custom_background_path:
+            custom_dem_data = cv2.imread(self.map.custom_background_path, cv2.IMREAD_UNCHANGED)
+            if custom_dem_data is None:
+                raise ValueError(f"Custom DEM could not be read: {self.map.custom_background_path}")
+            shutil.copyfile(self.map.custom_background_path, self._dem_path)
+            self.determine_height_scale(custom_dem_data, adjust=False)
+            self.logger.debug("Custom DEM copied to %s.", self._dem_path)
+            return
 
         dem_output_resolution = self.output_resolution
         self.logger.debug("DEM output resolution: %s.", dem_output_resolution)
@@ -243,17 +265,17 @@ class DEM(ImageComponent):
         else:
             adjusted_height_scale = height_scale
 
-        self.map.shared_settings.height_scale_value = adjusted_height_scale  # type: ignore
-        self.map.shared_settings.mesh_z_scaling_factor = 65535 / adjusted_height_scale
-        self.map.shared_settings.height_scale_multiplier = adjusted_height_scale / 255
-        self.map.shared_settings.change_height_scale = True  # type: ignore
+        self.map.context.height_scale_value = adjusted_height_scale
+        self.map.context.mesh_z_scaling_factor = 65535 / adjusted_height_scale
+        self.map.context.height_scale_multiplier = adjusted_height_scale / 255
+        self.map.context.change_height_scale = True
 
         try:
             entry = {
                 "height_scale_from_settings": height_scale,
                 "adjusted_height_scale": adjusted_height_scale,
-                "mesh_z_scaling_factor": self.map.shared_settings.mesh_z_scaling_factor,
-                "height_scale_multiplier": self.map.shared_settings.height_scale_multiplier,
+                "mesh_z_scaling_factor": self.map.context.mesh_z_scaling_factor,
+                "height_scale_multiplier": self.map.context.height_scale_multiplier,
             }
             self.info["height_scale"] = entry
         except Exception as e:
@@ -335,7 +357,7 @@ class DEM(ImageComponent):
             output_width=output_width,
         )
 
-    def info_sequence(self) -> dict[Any, Any] | None:  # type: ignore
+    def info_sequence(self) -> dict[Any, Any]:
         """Returns the information sequence for the component.
 
         Returns:

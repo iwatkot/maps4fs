@@ -5,24 +5,35 @@ from __future__ import annotations
 import json
 import os
 import shutil
-import warnings
 from collections import defaultdict
-from typing import Any, Callable, Generator, Optional
+from dataclasses import dataclass
+from typing import Any, Literal, cast
 
 import cv2
-import geopandas as gpd
 import numpy as np
 import osmnx as ox
-import pandas as pd
-from osmnx import settings as ox_settings
-from shapely import LineString, Point, Polygon
-from shapely.geometry.base import BaseGeometry
 from tqdm import tqdm
 
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.layer import Layer
 from maps4fs.generator.monitor import monitor_performance
+from maps4fs.generator.osm_pipeline import (
+    LatLonProjector,
+    OSMNXFeatureSource,
+    OSMRasterPipeline,
+)
+from maps4fs.generator.osm_pipeline.rasterizer import OSMGeometryRasterizer
 from maps4fs.generator.settings import Parameters
+
+
+@dataclass(frozen=True)
+class TextureOptions:
+    """Runtime options for Texture generation."""
+
+    texture_custom_schema: list[dict[str, Any]] | None = None
+    skip_scaling: bool = False
+    channel: Literal["textures", "background"] = "textures"
+    cap_style: str = "round"
 
 
 class Texture(ImageComponent):
@@ -36,21 +47,32 @@ class Texture(ImageComponent):
         color (tuple[int, int, int]): Color of the layer in BGR format.
     """
 
+    def __init__(
+        self,
+        game,
+        map,
+        *,
+        map_size: int | None = None,
+        map_rotated_size: int | None = None,
+        options: TextureOptions | None = None,
+    ):
+        self.options = options or TextureOptions()
+        self.osm_pipeline: OSMRasterPipeline | None = None
+        super().__init__(
+            game,
+            map,
+            map_size=map_size,
+            map_rotated_size=map_rotated_size,
+        )
+
     def preprocess(self) -> None:
         """Preprocesses the data before the generation."""
-        self.read_layers(self.get_schema())
-
-        self._weights_dir = self.game.weights_dir_path(self.map_directory)
-        self.procedural_dir = os.path.join(self._weights_dir, "masks")
+        self._weights_dir: str = self.game.weights_dir_path
+        self.procedural_dir = os.path.join(self._weights_dir, Parameters.MASKS_DIRECTORY)
         os.makedirs(self.procedural_dir, exist_ok=True)
 
-        self.info_save_path = os.path.join(self.map_directory, "generation_info.json")
-        if not self.kwargs.get("info_layer_path"):
-            self.info_layer_path = os.path.join(self.info_layers_directory, "textures.json")
-        else:
-            self.info_layer_path = self.kwargs["info_layer_path"]  # type: ignore
-
-        self.cap_style = self.kwargs.get("cap_style", "round")
+        self.cap_style = self.options.cap_style
+        self.read_layers(self.get_schema())
 
     def read_layers(self, layers_schema: list[dict[str, Any]]) -> None:
         """Reads layers from the schema.
@@ -64,6 +86,11 @@ class Texture(ImageComponent):
         except Exception as e:
             raise ValueError(f"Error loading texture layers: {e}") from e
 
+        # Publish layer metadata only for the main texture pass.
+        # Background texture pass uses a reduced schema and must not overwrite these layers.
+        if self.options.channel == Parameters.TEXTURE_CHANNEL_TEXTURES:
+            self.map.context.texture_layers = self.layers
+
     def get_schema(self) -> list[dict[str, Any]]:
         """Returns schema with layers for textures.
 
@@ -75,7 +102,7 @@ class Texture(ImageComponent):
         Returns:
             dict[str, Any]: Schema with layers for textures.
         """
-        custom_schema = self.kwargs.get("texture_custom_schema")
+        custom_schema = self.options.texture_custom_schema or self.map.texture_custom_schema
         if custom_schema:
             layers_schema = custom_schema
             self.logger.debug("Custom schema loaded with %s layers.", len(layers_schema))
@@ -93,7 +120,6 @@ class Texture(ImageComponent):
 
         if not isinstance(layers_schema, list):
             raise ValueError("Texture layers schema must be a list of dictionaries.")
-
         return layers_schema
 
     def get_base_layer(self) -> Layer | None:
@@ -182,20 +208,45 @@ class Texture(ImageComponent):
         """Processes the data to generate textures."""
         self._prepare_weights()
         self._read_parameters()
+        self._build_osm_pipeline()
         self.draw()
         self.rotate_textures()
         self.merge_into()
 
-        if not self.kwargs.get("skip_scaling", False):
+        if not self.options.skip_scaling:
             self.scale_textures()
 
         self.add_borders()
-        if self.map.texture_settings.dissolve and self.game.dissolve:
+        if self.map.texture_settings.dissolve:
             self.dissolve()
         self.copy_procedural()
 
         for layer in self.layers:
             self.assets[layer.name] = layer.path(self._weights_dir)
+
+    def _iter_layer_output_paths(self, layer: Layer, include_preview: bool = False) -> list[str]:
+        """Return generated file paths for a layer, optionally including preview image."""
+        paths = layer.paths(self._weights_dir)
+        if include_preview:
+            paths.append(layer.path_preview(self._weights_dir))
+        return paths
+
+    @staticmethod
+    def _is_drawable_layer(layer: Layer) -> bool:
+        """Return whether a layer has OSM tags and should be drawn."""
+        return layer.tags is not None or layer.precise_tags is not None
+
+    @staticmethod
+    def _has_tag_textures(layer: Layer) -> bool:
+        """Return whether a layer has tag-based textures that can be rotated."""
+        return bool(layer.tags or layer.precise_tags)
+
+    def _load_layer_image(self, layer_path: str) -> np.ndarray | None:
+        """Read a layer image and log if it cannot be loaded."""
+        image = cv2.imread(layer_path, cv2.IMREAD_UNCHANGED)
+        if image is None:
+            self.logger.warning("Could not read layer image: %s", layer_path)
+        return image
 
     @monitor_performance
     def add_borders(self) -> None:
@@ -216,59 +267,79 @@ class Texture(ImageComponent):
             # Where the pixel value is 255 - set it to 255 in base layer image.
             # And set it to 0 in the current layer image.
             layer_image = cv2.imread(layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED)
+            if layer_image is None:
+                continue
             border = layer.border
             if not border:
                 continue
 
-            self.transfer_border(layer_image, base_layer_image, border)  # type: ignore
+            self.transfer_border(layer_image, base_layer_image, border)
 
-            cv2.imwrite(layer.path(self._weights_dir), layer_image)  # type: ignore
+            cv2.imwrite(layer.path(self._weights_dir), layer_image)
             self.logger.debug("Borders added to layer %s.", layer.name)
 
-        if base_layer_image is not None:
-            cv2.imwrite(base_layer.path(self._weights_dir), base_layer_image)  # type: ignore
+        if base_layer and base_layer_image is not None:
+            cv2.imwrite(base_layer.path(self._weights_dir), base_layer_image)
 
     def copy_procedural(self) -> None:
         """Copies some of the textures to use them as mask for procedural generation.
         Creates an empty blockmask if it does not exist."""
-        blockmask_path = os.path.join(self.procedural_dir, "BLOCKMASK.png")
-        if not os.path.isfile(blockmask_path):
-            self.logger.debug("BLOCKMASK.png not found, creating an empty file.")
-            img = np.zeros((self.scaled_size, self.scaled_size), dtype=np.uint8)
-            cv2.imwrite(blockmask_path, img)
-
-        pg_layers_by_type = defaultdict(list)
-        for layer in self.layers:
-            if layer.procedural:
-                # Get path to the original file.
-                texture_path = layer.get_preview_or_path(self._weights_dir)
-                for procedural_layer_name in layer.procedural:
-                    pg_layers_by_type[procedural_layer_name].append(texture_path)
+        self._ensure_blockmask()
+        pg_layers_by_type = self._collect_procedural_sources()
 
         if not pg_layers_by_type:
             self.logger.debug("No procedural layers found.")
             return
 
         for procedural_layer_name, texture_paths in pg_layers_by_type.items():
-            procedural_save_path = os.path.join(self.procedural_dir, f"{procedural_layer_name}.png")
-            if len(texture_paths) > 1:
-                # If there are more than one texture, merge them.
-                merged_texture = np.zeros((self.scaled_size, self.scaled_size), dtype=np.uint8)
-                for texture_path in texture_paths:
-                    texture = cv2.imread(texture_path, cv2.IMREAD_UNCHANGED)
-                    merged_texture[texture == 255] = 255
-                cv2.imwrite(procedural_save_path, merged_texture)
-                self.logger.debug(
-                    "Procedural file %s merged from %s textures.",
-                    procedural_save_path,
-                    len(texture_paths),
-                )
-            elif len(texture_paths) == 1:
-                # Otherwise, copy the texture.
-                shutil.copyfile(texture_paths[0], procedural_save_path)
-                self.logger.debug(
-                    "Procedural file %s copied from %s.", procedural_save_path, texture_paths[0]
-                )
+            self._save_procedural_layer(procedural_layer_name, texture_paths)
+
+    def _ensure_blockmask(self) -> None:
+        """Ensure procedural BLOCKMASK file exists."""
+        blockmask_path = os.path.join(self.procedural_dir, Parameters.BLOCKMASK_FILENAME)
+        if os.path.isfile(blockmask_path):
+            return
+        self.logger.debug("%s not found, creating an empty file.", Parameters.BLOCKMASK_FILENAME)
+        img = np.zeros((self.scaled_size, self.scaled_size), dtype=np.uint8)
+        cv2.imwrite(blockmask_path, img)
+
+    def _collect_procedural_sources(self) -> dict[str, list[str]]:
+        """Collect source texture paths grouped by procedural layer name."""
+        pg_layers_by_type: dict[str, list[str]] = defaultdict(list)
+        for layer in self.layers:
+            if not layer.procedural:
+                continue
+            texture_path = layer.get_preview_or_path(self._weights_dir)
+            for procedural_layer_name in layer.procedural:
+                pg_layers_by_type[procedural_layer_name].append(texture_path)
+        return pg_layers_by_type
+
+    def _save_procedural_layer(self, procedural_layer_name: str, texture_paths: list[str]) -> None:
+        """Write a procedural layer from one or multiple source textures."""
+        procedural_save_path = os.path.join(
+            self.procedural_dir,
+            f"{procedural_layer_name}{Parameters.PNG_EXTENSION}",
+        )
+        if len(texture_paths) > 1:
+            merged_texture = np.zeros((self.scaled_size, self.scaled_size), dtype=np.uint8)
+            for texture_path in texture_paths:
+                texture = cv2.imread(texture_path, cv2.IMREAD_UNCHANGED)
+                if texture is None:
+                    continue
+                merged_texture[texture == 255] = 255
+            cv2.imwrite(procedural_save_path, merged_texture)
+            self.logger.debug(
+                "Procedural file %s merged from %s textures.",
+                procedural_save_path,
+                len(texture_paths),
+            )
+            return
+
+        if len(texture_paths) == 1:
+            shutil.copyfile(texture_paths[0], procedural_save_path)
+            self.logger.debug(
+                "Procedural file %s copied from %s.", procedural_save_path, texture_paths[0]
+            )
 
     def get_layer_by_name(self, layer_name: str) -> Layer | None:
         """Returns the layer with the given name.
@@ -288,50 +359,62 @@ class Texture(ImageComponent):
     def merge_into(self) -> None:
         """Merges the content of layers into their target layers."""
         for layer in self.layers:
-            if layer.merge_into:
-                target_layer = self.get_layer_by_name(layer.merge_into)
-                if target_layer:
-                    target_layer_image = cv2.imread(
-                        target_layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED
-                    )
-                    layer_image = cv2.imread(layer.path(self._weights_dir), cv2.IMREAD_UNCHANGED)
-                    if target_layer_image is not None and layer_image is not None:
-                        if target_layer_image.shape != layer_image.shape:
-                            self.logger.warning(
-                                "Layer %s and target layer %s have different shapes, skipping merge.",
-                                layer.name,
-                                target_layer.name,
-                            )
-                            continue
-                        target_layer_image = cv2.add(target_layer_image, layer_image)
-                        cv2.imwrite(target_layer.path(self._weights_dir), target_layer_image)
-                    self.logger.debug("Merged layer %s into %s.", layer.name, target_layer.name)
+            if not layer.merge_into:
+                continue
+            self._merge_single_layer(layer)
 
-                    # Clear the content of the layer which have merge_into property.
-                    cv2.imwrite(layer.path(self._weights_dir), np.zeros_like(layer_image))
-                    self.logger.debug("Cleared layer %s.", layer.name)
+    def _merge_single_layer(self, layer: Layer) -> None:
+        """Merge one layer into its configured target and clear source content."""
+        if layer.merge_into is None:
+            return
+        target_layer = self.get_layer_by_name(layer.merge_into)
+        if target_layer is None:
+            self.logger.debug("Target layer %s not found for %s.", layer.merge_into, layer.name)
+            return
+
+        target_path = target_layer.path(self._weights_dir)
+        source_path = layer.path(self._weights_dir)
+
+        target_layer_image = self._load_layer_image(target_path)
+        layer_image = self._load_layer_image(source_path)
+        if target_layer_image is None or layer_image is None:
+            return
+
+        if target_layer_image.shape != layer_image.shape:
+            self.logger.warning(
+                "Layer %s and target layer %s have different shapes, skipping merge.",
+                layer.name,
+                target_layer.name,
+            )
+            return
+
+        merged_image = cv2.add(target_layer_image, layer_image)
+        cv2.imwrite(target_path, merged_image)
+        self.logger.debug("Merged layer %s into %s.", layer.name, target_layer.name)
+
+        cv2.imwrite(source_path, np.zeros_like(layer_image))
+        self.logger.debug("Cleared layer %s.", layer.name)
 
     @monitor_performance
     def rotate_textures(self) -> None:
         """Rotates textures of the layers which have tags."""
-        if self.rotation:
-            # Iterate over the layers which have tags and rotate them.
-            for layer in tqdm(self.layers, desc="Rotating textures", unit="layer"):
-                if layer.tags or layer.precise_tags:
-                    self.logger.debug("Rotating layer %s.", layer.name)
-                    layer_paths = layer.paths(self._weights_dir)
-                    layer_paths += [layer.path_preview(self._weights_dir)]
-                    for layer_path in layer_paths:
-                        if os.path.isfile(layer_path):
-                            self.rotate_image(
-                                layer_path,
-                                self.rotation,
-                                output_height=self.map_size,
-                                output_width=self.map_size,
-                            )
-                else:
-                    self.logger.debug(
-                        "Skipping rotation of layer %s because it has no tags.", layer.name
+        if not self.rotation:
+            return
+
+        for layer in tqdm(self.layers, desc="Rotating textures", unit="layer"):
+            if not self._has_tag_textures(layer):
+                self.logger.debug(
+                    "Skipping rotation of layer %s because it has no tags.", layer.name
+                )
+                continue
+            self.logger.debug("Rotating layer %s.", layer.name)
+            for layer_path in self._iter_layer_output_paths(layer, include_preview=True):
+                if os.path.isfile(layer_path):
+                    self.rotate_image(
+                        layer_path,
+                        self.rotation,
+                        output_height=self.map_size,
+                        output_width=self.map_size,
                     )
 
     @monitor_performance
@@ -342,21 +425,25 @@ class Texture(ImageComponent):
             return
 
         for layer in tqdm(self.layers, desc="Scaling textures", unit="layer"):
-            layer_paths = layer.paths(self._weights_dir)
-            layer_paths += [layer.path_preview(self._weights_dir)]
+            for layer_path in self._iter_layer_output_paths(layer, include_preview=True):
+                self._scale_texture_file(layer_path)
 
-            for layer_path in layer_paths:
-                if os.path.isfile(layer_path):
-                    self.logger.debug("Scaling layer %s.", layer_path)
-                    img = cv2.imread(layer_path, cv2.IMREAD_UNCHANGED)
-                    img = cv2.resize(
-                        img,  # type: ignore
-                        (self.map.output_size, self.map.output_size),
-                        interpolation=cv2.INTER_NEAREST,
-                    )
-                    cv2.imwrite(layer_path, img)
-                else:
-                    self.logger.debug("Layer %s not found, skipping scaling.", layer_path)
+    def _scale_texture_file(self, layer_path: str) -> None:
+        """Scale one texture file to map output size if it exists."""
+        if not os.path.isfile(layer_path):
+            self.logger.debug("Layer %s not found, skipping scaling.", layer_path)
+            return
+
+        self.logger.debug("Scaling layer %s.", layer_path)
+        img = self._load_layer_image(layer_path)
+        if img is None or self.map.output_size is None:
+            return
+        scaled = cv2.resize(
+            img,
+            (self.map.output_size, self.map.output_size),
+            interpolation=cv2.INTER_NEAREST,
+        )
+        cv2.imwrite(layer_path, scaled)
 
     def _read_parameters(self) -> None:
         """Reads map parameters from OSM data, such as:
@@ -364,6 +451,32 @@ class Texture(ImageComponent):
         """
         bbox = ox.utils_geo.bbox_from_point(self.coordinates, dist=self.map_rotated_size / 2)
         self.minimum_x, self.minimum_y, self.maximum_x, self.maximum_y = bbox
+
+    def _build_osm_pipeline(self) -> None:
+        """Create standalone OSM source+rasterizer pipeline for this texture run."""
+        projector = LatLonProjector(
+            minimum_x=self.minimum_x,
+            minimum_y=self.minimum_y,
+            maximum_x=self.maximum_x,
+            maximum_y=self.maximum_y,
+            raster_size=self.map_rotated_size,
+        )
+        source = OSMNXFeatureSource(
+            bbox=self.new_bbox,
+            custom_osm_path=self.map.custom_osm,
+            use_cache=self.map.texture_settings.use_cache,
+            requests_timeout=Parameters.OSM_REQUESTS_TIMEOUT,
+            logger=self.logger,
+        )
+        rasterizer = OSMGeometryRasterizer(
+            projector=projector,
+            cap_style=self.cap_style,
+            fields_padding=self.map.texture_settings.fields_padding,
+            logger=self.logger,
+        )
+        self.osm_pipeline = OSMRasterPipeline(
+            source=source, rasterizer=rasterizer, logger=self.logger
+        )
 
     def info_sequence(self) -> dict[str, Any]:
         """Returns the JSON representation of the generation info for textures."""
@@ -380,7 +493,7 @@ class Texture(ImageComponent):
         return {attr: getattr(self, attr, None) for attr in useful_attributes}
 
     @monitor_performance
-    def _prepare_weights(self):
+    def _prepare_weights(self) -> None:
         self.logger.debug("Starting preparing weights from %s layers.", len(self.layers))
 
         for layer in tqdm(self.layers, desc="Preparing weights", unit="layer"):
@@ -398,7 +511,9 @@ class Texture(ImageComponent):
             size = (self.map_size, self.map_size)
         else:
             size = (self.map_rotated_size, self.map_rotated_size)
-        postfix = "_weight.png" if not layer.exclude_weight else ".png"
+        postfix = (
+            Parameters.WEIGHT_FILE_POSTFIX if not layer.exclude_weight else Parameters.PNG_EXTENSION
+        )
         if layer.count == 0:
             filepaths = [os.path.join(self._weights_dir, layer.name + postfix)]
         else:
@@ -454,9 +569,12 @@ class Texture(ImageComponent):
         if not layer.road_texture:
             return
 
-        roads_directory = os.path.join(self.map_directory, "roads")
+        roads_directory = os.path.join(self.map_directory, Parameters.ROADS_DIRECTORY)
         os.makedirs(roads_directory, exist_ok=True)
-        mask_path = os.path.join(roads_directory, f"{layer.road_texture}_mask.png")
+        mask_path = os.path.join(
+            roads_directory,
+            f"{layer.road_texture}_mask{Parameters.PNG_EXTENSION}",
+        )
 
         cv2.imwrite(mask_path, layer_image)
         self.rotate_image(
@@ -466,68 +584,143 @@ class Texture(ImageComponent):
     @monitor_performance
     def draw(self) -> None:
         """Iterates over layers and fills them with polygons from OSM data."""
-        layers = self.layers_by_priority()
-        layers = [
-            layer for layer in layers if layer.tags is not None or layer.precise_tags is not None
-        ]
+        layers = [layer for layer in self.layers_by_priority() if self._is_drawable_layer(layer)]
+        self._prefetch_osm_data(layers)
 
-        cumulative_image = None
-
-        # Dictionary to store info layer data.
-        # Key is a layer.info_layer, value is a list of polygon points as tuples (x, y).
-        info_layer_data: dict[str, list[list[int]]] = defaultdict(list)
+        info_layer_data: dict[str, list[Any]] = defaultdict(list)
+        cumulative_image: np.ndarray | None = None
 
         for layer in tqdm(layers, desc="Drawing textures", unit="layer"):
-            if self.map.texture_settings.skip_drains and layer.usage == "drain":
-                self.logger.debug("Skipping layer %s because of the usage.", layer.name)
-                continue
-            if layer.priority == 0:
-                self.logger.debug(
-                    "Found base layer %s. Postponing that to be the last layer drawn.", layer.name
-                )
-                continue
-            layer_path = layer.path(self._weights_dir)
-            self.logger.debug("Drawing layer %s.", layer_path)
-            layer_image = cv2.imread(layer_path, cv2.IMREAD_UNCHANGED)
-
-            if cumulative_image is None:
-                self.logger.debug("First layer, creating new cumulative image.")
-                cumulative_image = layer_image
-
-            mask = cv2.bitwise_not(cumulative_image)  # type: ignore
-            self._draw_layer(layer, info_layer_data, layer_image)  # type: ignore
-
-            if layer.road_texture:
-                self.save_road_mask(layer, layer_image)  # type: ignore
-
-            self._add_roads(layer, info_layer_data)
-
-            if not layer.external:
-                output_image = cv2.bitwise_and(layer_image, mask)  # type: ignore
-                cumulative_image = cv2.bitwise_or(cumulative_image, output_image)  # type: ignore
-            else:
-                output_image = layer_image  # type: ignore
-
-            cv2.imwrite(layer_path, output_image)
-            self.logger.debug("Texture %s saved.", layer_path)
-
-        # Save info layer data.
-        if os.path.isfile(self.info_layer_path):
-            self.logger.debug(
-                "File %s already exists, will update to avoid overwriting.", self.info_layer_path
+            cumulative_image = self._draw_single_layer(
+                layer,
+                info_layer_data,
+                cumulative_image,
             )
-            with open(self.info_layer_path, "r", encoding="utf-8") as f:
-                info_layer_data.update(json.load(f))
 
-        with open(self.info_layer_path, "w", encoding="utf-8") as f:
-            json.dump(info_layer_data, f, ensure_ascii=False, indent=4)
-            self.logger.debug("Info layer data saved to %s.", self.info_layer_path)
+        self._publish_info_layer_data(info_layer_data)
 
         if cumulative_image is not None:
             self.draw_base_layer(cumulative_image)
 
+    def _prefetch_osm_data(self, layers: list[Layer]) -> None:
+        """Prefetch unique OSM queries in parallel to reduce Overpass wait time."""
+        if self.osm_pipeline is None:
+            return
+
+        tags_to_prefetch: list[dict[str, str | list[str] | bool]] = []
+        for layer in layers:
+            tags = self._resolve_layer_tags_for_prefetch(layer)
+            if tags is not None:
+                tags_to_prefetch.append(tags)
+
+        if not tags_to_prefetch:
+            return
+
+        self.osm_pipeline.prefetch(
+            tags_to_prefetch,
+            max_workers=Parameters.OSM_PREFETCH_WORKERS,
+        )
+
+    def _resolve_layer_tags_for_prefetch(
+        self,
+        layer: Layer,
+    ) -> dict[str, str | list[str] | bool] | None:
+        """Resolve tags for prefetch without emitting per-layer debug logs."""
+        if self.map.texture_settings.use_precise_tags and layer.precise_tags:
+            return layer.precise_tags
+        return layer.tags
+
+    def _draw_single_layer(
+        self,
+        layer: Layer,
+        info_layer_data: dict[str, list[Any]],
+        cumulative_image: np.ndarray | None,
+    ) -> np.ndarray | None:
+        """Draw one layer and update cumulative mask image."""
+        if self.map.texture_settings.skip_drains and layer.usage == Parameters.DRAIN:
+            self.logger.debug("Skipping layer %s because of the usage.", layer.name)
+            return cumulative_image
+
+        if layer.priority == 0:
+            self.logger.debug(
+                "Found base layer %s. Postponing that to be the last layer drawn.", layer.name
+            )
+            return cumulative_image
+
+        layer_path = layer.path(self._weights_dir)
+        self.logger.debug("Drawing layer %s.", layer_path)
+        layer_image = self._load_layer_image(layer_path)
+        if layer_image is None:
+            return cumulative_image
+
+        if cumulative_image is None:
+            self.logger.debug("First layer, creating new cumulative image.")
+            cumulative_image = layer_image
+
+        mask = cv2.bitwise_not(cumulative_image)
+        self._draw_layer(layer, info_layer_data, layer_image)
+
+        if layer.road_texture:
+            self.save_road_mask(layer, layer_image)
+
+        self._add_roads(layer, info_layer_data)
+
+        if layer.external:
+            output_image = layer_image
+        else:
+            output_image = cv2.bitwise_and(layer_image, mask)
+            cumulative_image = cv2.bitwise_or(cumulative_image, output_image)
+
+        cv2.imwrite(layer_path, output_image)
+        self.logger.debug("Texture %s saved.", layer_path)
+        return cumulative_image
+
+    def _publish_info_layer_data(self, info_layer_data: dict[str, list[Any]]) -> None:
+        """Publish drawn info-layer data into map context."""
+        ctx = self.map.context
+        if self.options.channel == Parameters.TEXTURE_CHANNEL_TEXTURES:
+            ctx.fields = cast(
+                list[list[tuple[int, int]]], info_layer_data.get(Parameters.FIELDS, [])
+            )
+            ctx.buildings = cast(
+                list[list[tuple[int, int]]], info_layer_data.get(Parameters.BUILDINGS, [])
+            )
+            ctx.farmyards = cast(
+                list[list[tuple[int, int]]], info_layer_data.get(Parameters.FARMYARDS, [])
+            )
+            ctx.forest = cast(
+                list[list[tuple[int, int]]], info_layer_data.get(Parameters.FOREST, [])
+            )
+            ctx.water = cast(list[list[tuple[int, int]]], info_layer_data.get(Parameters.WATER, []))
+            ctx.roads_polylines = cast(
+                list[dict[str, Any]], info_layer_data.get(Parameters.ROADS_POLYLINES, [])
+            )
+            ctx.water_polylines = cast(
+                list[dict[str, Any]], info_layer_data.get(Parameters.WATER_POLYLINES, [])
+            )
+            self.logger.debug(
+                "Map context populated: %d fields, %d buildings, %d roads, %d water polylines.",
+                len(ctx.fields),
+                len(ctx.buildings),
+                len(ctx.roads_polylines),
+                len(ctx.water_polylines),
+            )
+            return
+
+        ctx.background_water = cast(
+            list[list[tuple[int, int]]], info_layer_data.get(Parameters.WATER, [])
+        )
+        ctx.background_water_polylines = cast(
+            list[dict[str, Any]], info_layer_data.get(Parameters.WATER_POLYLINES, [])
+        )
+        self.logger.debug(
+            "Background context populated: %d water polygons, %d water polylines.",
+            len(ctx.background_water),
+            len(ctx.background_water_polylines),
+        )
+
     def _draw_layer(
-        self, layer: Layer, info_layer_data: dict[str, list[list[int]]], layer_image: np.ndarray
+        self, layer: Layer, info_layer_data: dict[str, list[Any]], layer_image: np.ndarray
     ) -> None:
         """Draws polygons from OSM data on the layer image and updates the info layer data.
 
@@ -536,69 +729,94 @@ class Texture(ImageComponent):
             info_layer_data (dict[list[list[int]]]): Dictionary to store info layer data.
             layer_image (np.ndarray): Layer image.
         """
-        tags = layer.tags
-        if self.map.texture_settings.use_precise_tags:
-            if layer.precise_tags:
-                self.logger.debug(
-                    "Using precise tags: %s for layer %s.", layer.precise_tags, layer.name
-                )
-                tags = layer.precise_tags
-
+        tags = self._resolve_layer_tags(layer)
         if tags is None:
             return
 
-        for polygon, osm_tags, geom_type in self.objects_generator(tags, layer.width, layer.info_layer):  # type: ignore[misc]
+        if self.osm_pipeline is None:
+            raise RuntimeError("OSM pipeline is not initialized. Call process() first.")
+
+        is_fields = layer.info_layer == Parameters.FIELDS
+        for polygon, osm_tags, geom_type in self.osm_pipeline.polygons(
+            tags, layer.width, is_fields
+        ):
             if not len(polygon) > 2:
                 self.logger.debug("Skipping polygon with less than 3 points.")
                 continue
-            if layer.info_layer:
-                # For the water info layer, skip linestring-buffered entries — they are
-                # handled by the separate line_surface_water mesh (water_resources_line_surface).
-                if layer.info_layer == "water" and geom_type != "Polygon":
-                    pass
-                else:
-                    if layer.save_tags:
-                        entry = {
-                            Parameters.POINTS: self.np_to_polygon_points(polygon),  # type: ignore
-                            Parameters.TAGS: osm_tags,
-                        }
-                    else:
-                        entry = self.np_to_polygon_points(polygon)  # type: ignore
-                    info_layer_data[layer.info_layer].append(entry)  # type: ignore
-            if not layer.invisible:
-                try:
-                    cv2.fillPoly(layer_image, [polygon], color=255)  # type: ignore
-                except Exception as e:
-                    self.logger.warning("Error drawing polygon: %s.", repr(e))
-                    continue
+            self._append_info_layer_entry(layer, polygon, osm_tags, geom_type, info_layer_data)
+            self._fill_layer_polygon(layer, layer_image, polygon)
 
-    def _add_roads(self, layer: Layer, info_layer_data: dict[str, list[list[int]]]) -> None:
+    def _resolve_layer_tags(self, layer: Layer) -> dict[str, str | list[str] | bool] | None:
+        """Resolve OSM tags for a layer, honoring precise-tags setting."""
+        tags = layer.tags
+        if self.map.texture_settings.use_precise_tags and layer.precise_tags:
+            self.logger.debug(
+                "Using precise tags: %s for layer %s.", layer.precise_tags, layer.name
+            )
+            tags = layer.precise_tags
+        return tags
+
+    def _append_info_layer_entry(
+        self,
+        layer: Layer,
+        polygon: np.ndarray,
+        osm_tags: dict[str, Any],
+        geom_type: str,
+        info_layer_data: dict[str, list[Any]],
+    ) -> None:
+        """Append a polygon entry to info layer collection if layer requires it."""
+        if not layer.info_layer:
+            return
+
+        if layer.info_layer == Parameters.WATER and geom_type != "Polygon":
+            # Skip buffered line artifacts for water polygon info.
+            return
+
+        scaled_points = self.np_array_to_scaled_points(polygon, self.map.size_scale)
+        entry: Any
+        if layer.save_tags:
+            entry = {Parameters.POINTS: scaled_points, Parameters.TAGS: osm_tags}
+        else:
+            entry = scaled_points
+
+        info_layer_data[layer.info_layer].append(entry)
+
+    def _fill_layer_polygon(
+        self, layer: Layer, layer_image: np.ndarray, polygon: np.ndarray
+    ) -> None:
+        """Fill one polygon into layer image if layer is visible."""
+        if layer.invisible:
+            return
+        try:
+            cv2.fillPoly(layer_image, [polygon], color=255)
+        except Exception as e:
+            self.logger.warning("Error drawing polygon: %s.", repr(e))
+
+    def _add_roads(self, layer: Layer, info_layer_data: dict[str, list[Any]]) -> None:
         """Adds roads to the info layer data.
 
         Arguments:
             layer (Layer): Layer with textures and tags.
             info_layer_data (dict[list[list[int]]]): Dictionary to store info layer data.
         """
-        linestring_infolayers = ["roads", "water"]
-        # if self.kwargs.get("info_layer_path", None):
-        #     linestring_infolayers.append("water")
+        linestring_infolayers = [Parameters.ROADS, Parameters.WATER]
 
         if layer.info_layer in linestring_infolayers:
-            for linestring, _ in self.objects_generator(  # type: ignore[misc]
-                layer.tags, layer.width, layer.info_layer, yield_linestrings=True
-            ):
-                if self.map.size_scale is not None:
-                    linestring = [  # type: ignore
-                        (int(x * self.map.size_scale), int(y * self.map.size_scale))
-                        for x, y in linestring
-                    ]
+            if self.osm_pipeline is None:
+                raise RuntimeError("OSM pipeline is not initialized. Call process() first.")
+
+            if layer.tags is None:
+                return
+
+            for linestring, _ in self.osm_pipeline.linestrings(layer.tags):
+                linestring = self.scale_point_tuples(linestring, self.map.size_scale)
                 linestring_entry = {
-                    "points": linestring,
-                    "tags": str(layer.tags),
-                    "width": layer.width,
-                    "road_texture": layer.road_texture,
+                    Parameters.POINTS: linestring,
+                    Parameters.TAGS: str(layer.tags),
+                    Parameters.WIDTH: layer.width,
+                    Parameters.ROAD_TEXTURE: layer.road_texture,
                 }
-                info_layer_data[f"{layer.info_layer}_polylines"].append(linestring_entry)  # type: ignore
+                info_layer_data[f"{layer.info_layer}_polylines"].append(linestring_entry)
 
     @monitor_performance
     def dissolve(self) -> None:
@@ -624,37 +842,42 @@ class Texture(ImageComponent):
             return
 
         self.logger.debug("Dissolving layer from %s to %s.", layer_path, layer_paths)
-        # Check if the image contains any non-zero values, otherwise continue.
-        layer_image = cv2.imread(layer_path, cv2.IMREAD_UNCHANGED)
+        layer_image = self._load_layer_image(layer_path)
         if layer_image is None:
             self.logger.debug("Layer %s image not found, skipping.", layer.name)
             return
 
-        # Get mask of non-zero pixels. If there are no non-zero pixels, skip the layer.
-        mask = layer_image > 0
-        if not np.any(mask):
+        if not self._has_non_zero_pixels(layer_image):
             self.logger.debug(
                 "Layer %s does not contain any non-zero values, skipping.", layer.name
             )
             return
-        # Save the original image to use it for preview later, without combining the sublayers.
-        cv2.imwrite(layer.path_preview(self._weights_dir), layer_image.copy())  # type: ignore
 
-        # Create random assignment array for all pixels
-        random_assignment = np.random.randint(0, layer.count, size=layer_image.shape)
-
-        # Create sublayers using vectorized operations.
-        sublayers = []
-        for i in range(layer.count):
-            # Create sublayer: 255 where (mask is True AND random_assignment == i)
-            sublayer = np.where((mask) & (random_assignment == i), 255, 0).astype(np.uint8)
-            sublayers.append(sublayer)
-
-        # Save sublayers
-        for sublayer, sublayer_path in zip(sublayers, layer_paths):
-            cv2.imwrite(sublayer_path, sublayer)
+        cv2.imwrite(layer.path_preview(self._weights_dir), layer_image.copy())
+        sublayers = self._build_dissolved_sublayers(layer_image, layer.count)
+        self._write_sublayers(sublayers, layer_paths)
 
         self.logger.debug("Dissolved layer %s.", layer.name)
+
+    @staticmethod
+    def _has_non_zero_pixels(image: np.ndarray) -> bool:
+        """Return whether an image contains at least one non-zero pixel."""
+        return bool(np.any(image > 0))
+
+    def _build_dissolved_sublayers(self, layer_image: np.ndarray, count: int) -> list[np.ndarray]:
+        """Split non-zero pixels randomly into count binary sublayers."""
+        mask = layer_image > 0
+        random_assignment = np.random.randint(0, count, size=layer_image.shape)
+        return [
+            np.where(mask & (random_assignment == idx), 255, 0).astype(np.uint8)
+            for idx in range(count)
+        ]
+
+    @staticmethod
+    def _write_sublayers(sublayers: list[np.ndarray], layer_paths: list[str]) -> None:
+        """Write generated dissolved sublayers to disk paths."""
+        for sublayer, sublayer_path in zip(sublayers, layer_paths):
+            cv2.imwrite(sublayer_path, sublayer)
 
     def draw_base_layer(self, cumulative_image: np.ndarray) -> None:
         """Draws base layer and saves it into the png file.
@@ -670,304 +893,6 @@ class Texture(ImageComponent):
             img = cv2.bitwise_not(cumulative_image)
             cv2.imwrite(layer_path, img)
             self.logger.debug("Base texture %s saved.", layer_path)
-
-    def latlon_to_pixel(self, lat: float, lon: float) -> tuple[int, int]:
-        """Converts latitude and longitude to pixel coordinates.
-
-        Arguments:
-            lat (float): Latitude.
-            lon (float): Longitude.
-
-        Returns:
-            tuple[int, int]: Pixel coordinates.
-        """
-        x = int((lon - self.minimum_x) / (self.maximum_x - self.minimum_x) * self.map_rotated_size)
-        y = int((lat - self.maximum_y) / (self.minimum_y - self.maximum_y) * self.map_rotated_size)
-        return x, y
-
-    def np_to_polygon_points(self, np_array: np.ndarray) -> list[tuple[int, int]]:
-        """Converts numpy array of polygon points to list of tuples.
-
-        Arguments:
-            np_array (np.ndarray): Numpy array of polygon points.
-
-        Returns:
-            list[tuple[int, int]]: List of tuples.
-        """
-        return [
-            (int(x * self.map.size_scale), int(y * self.map.size_scale))
-            for x, y in np_array.reshape(-1, 2)
-        ]
-
-    def _to_np(self, geometry: Polygon, *args) -> np.ndarray:
-        """Converts Polygon geometry to numpy array of polygon points.
-
-        Arguments:
-            geometry (Polygon): Polygon geometry.
-            *Arguments: Additional arguments:
-                - width (int | None): Width of the polygon in meters.
-
-        Returns:
-            np.ndarray: Numpy array of polygon points.
-        """
-        coords = list(geometry.exterior.coords)
-        pts = np.array(coords, np.int32)
-        pts = pts.reshape((-1, 1, 2))
-        return pts
-
-    def _to_polygon(self, obj: pd.core.series.Series, width: int | None) -> Polygon:
-        """Converts OSM object to numpy array of polygon points and converts coordinates to pixels.
-
-        Arguments:
-            obj (pd.core.series.Series): OSM object.
-            width (int | None): Width of the polygon in meters.
-
-        Returns:
-            Polygon: Polygon geometry with pixel coordinates.
-        """
-        geometry = obj["geometry"]
-        geometry_type = geometry.geom_type
-        converter = self._converters(geometry_type)
-        if not converter:
-            self.logger.debug("Geometry type %s not supported.", geometry_type)
-            return None
-        return converter(geometry, width)
-
-    def polygon_to_pixel_coordinates(self, polygon: Polygon) -> Polygon:
-        """Converts polygon coordinates from lat lon to pixel coordinates.
-
-        Arguments:
-            polygon (Polygon): Polygon geometry.
-
-        Returns:
-            Polygon: Polygon geometry.
-        """
-        coords_pixel = [
-            self.latlon_to_pixel(lat, lon) for lon, lat in list(polygon.exterior.coords)
-        ]
-        return Polygon(coords_pixel)
-
-    def linestring_to_pixel_coordinates(self, linestring: LineString) -> LineString:
-        """Converts LineString coordinates from lat lon to pixel coordinates.
-
-        Arguments:
-            linestring (LineString): LineString geometry.
-
-        Returns:
-            LineString: LineString geometry.
-        """
-        coords_pixel = [self.latlon_to_pixel(lat, lon) for lon, lat in list(linestring.coords)]
-        return LineString(coords_pixel)
-
-    def point_to_pixel_coordinates(self, point: Point) -> Point:
-        """Converts Point coordinates from lat lon to pixel coordinates.
-
-        Arguments:
-            point (Point): Point geometry.
-
-        Returns:
-            Point: Point geometry.
-        """
-        x, y = self.latlon_to_pixel(point.y, point.x)
-        return Point(x, y)
-
-    def _to_pixel(self, geometry: Polygon, *args, **kwargs) -> Polygon:
-        """Returns the same geometry with pixel coordinates.
-
-        Arguments:
-            geometry (Polygon): Polygon geometry.
-
-        Returns:
-            Polygon: Polygon geometry with pixel coordinates.
-        """
-        return self.polygon_to_pixel_coordinates(geometry)
-
-    def _sequence_to_pixel(
-        self,
-        geometry: LineString | Point,
-        width: int | None,
-    ) -> Polygon:
-        """Converts LineString or Point geometry to numpy array of polygon points.
-
-        Arguments:
-            geometry (LineString | Point): LineString or Point geometry.
-            width (int | None): Width of the polygon in meters.
-
-        Raises:
-            ValueError: If the geometry type is not supported
-
-        Returns:
-            Polygon: Polygon geometry.
-        """
-        if isinstance(geometry, LineString):
-            geometry = self.linestring_to_pixel_coordinates(geometry)
-        elif isinstance(geometry, Point):
-            geometry = self.point_to_pixel_coordinates(geometry)
-        else:
-            raise ValueError(f"Geometry type {type(geometry)} not supported.")
-
-        buffered = geometry.buffer(width if width else 0, cap_style=self.cap_style)
-        if not isinstance(buffered, Polygon):
-            raise ValueError("Buffered geometry is not a Polygon.")
-        return buffered
-
-    def _converters(
-        self, geom_type: str
-    ) -> Optional[Callable[[BaseGeometry, Optional[int]], np.ndarray]]:
-        """Returns a converter function for a given geometry type.
-
-        Arguments:
-            geom_type (str): Geometry type.
-
-        Returns:
-            Callable[[shapely.geometry, int | None], np.ndarray]: Converter function.
-        """
-        converters = {
-            "Polygon": self._to_pixel,
-            "LineString": self._sequence_to_pixel,
-            "Point": self._sequence_to_pixel,
-        }
-        return converters.get(geom_type)  # type: ignore
-
-    def objects_generator(
-        self,
-        tags: dict[str, str | list[str] | bool] | None,
-        width: int | None,
-        info_layer: str | None = None,
-        yield_linestrings: bool = False,
-    ) -> Generator[
-        tuple[list[tuple[int, int]], dict[str, Any]] | tuple[np.ndarray, dict[str, Any], str],
-        None,
-        None,
-    ]:
-        """Generator which yields numpy arrays of polygons from OSM data.
-
-        Arguments:
-            tags (dict[str, str | list[str]]): Dictionary of tags to search for.
-            width (int | None): Width of the polygon in meters (only for LineString).
-            info_layer (str | None): Name of the corresponding info layer.
-            yield_linestrings (bool): Flag to determine if the LineStrings should be yielded.
-
-        Yields:
-            Generator[tuple[list[tuple[int, int]], dict] | tuple[np.ndarray, dict], None, None]:
-                Tuple containing geometry data (numpy array or list of points) and OSM tags dict.
-        """
-        if tags is None:
-            return
-        is_fieds = info_layer == "fields"
-
-        ox_settings.use_cache = self.map.texture_settings.use_cache
-        ox_settings.requests_timeout = 10
-
-        objects = self.fetch_osm_data(tags)
-        if objects is None or objects.empty:
-            self.logger.debug("No objects found for tags: %s.", tags)
-            return
-
-        self.logger.debug("Fetched %s elements for tags: %s.", len(objects), tags)
-
-        method = self.linestrings_generator if yield_linestrings else self.polygons_generator
-
-        yield from method(objects, width, is_fieds)
-
-    @monitor_performance
-    def fetch_osm_data(self, tags: dict[str, str | list[str] | bool]) -> gpd.GeoDataFrame | None:
-        """Fetches OSM data for given tags.
-
-        Arguments:
-            tags (dict[str, str | list[str] | bool]): Dictionary of tags to search for.
-
-        Returns:
-            gpd.GeoDataFrame | None: GeoDataFrame with OSM objects or None if no objects found.
-        """
-        try:
-            if self.map.custom_osm is not None:
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", FutureWarning)
-                    objects = ox.features_from_xml(self.map.custom_osm, tags=tags)
-            else:
-                objects = ox.features_from_bbox(bbox=self.new_bbox, tags=tags)
-        except Exception as e:
-            self.logger.debug("Error fetching objects for tags: %s. Error: %s.", tags, e)
-            return None
-
-        return objects
-
-    def linestrings_generator(
-        self, objects: gpd.GeoDataFrame, *args, **kwargs
-    ) -> Generator[tuple[list[tuple[int, int]], dict[str, Any]], None, None]:
-        """Generator which yields lists of point coordinates which represent LineStrings from OSM.
-
-        Arguments:
-            objects (gpd.GeoDataFrame): GeoDataFrame with OSM objects.
-
-        Yields:
-            Generator[tuple[list[tuple[int, int]], dict[str, Any]], None, None]:
-                Tuple containing list of point coordinates and corresponding OSM tags dict.
-        """
-        for _, obj in objects.iterrows():
-            geometry = obj["geometry"]
-            osm_tags = self._get_tags_from_osm_object(obj)
-            if isinstance(geometry, LineString):
-                points = [self.latlon_to_pixel(x, y) for y, x in geometry.coords]
-                yield points, osm_tags
-
-    def _get_tags_from_osm_object(self, obj: pd.core.series.Series) -> dict[str, Any]:
-        """Extracts tags from OSM object.
-
-        Arguments:
-            obj (pd.core.series.Series): OSM object.
-        Returns:
-            dict[str, Any]: Dictionary of tags.
-        """
-        ignored_keys = {"geometry", "osmid", "element_type", "action", "visible"}
-        tags = {}
-        for key in obj.index:
-            if key not in ignored_keys:
-                value = obj[key]
-                if pd.isna(value):
-                    continue
-                tags[key] = value
-        return tags
-
-    def polygons_generator(
-        self, objects: pd.core.frame.DataFrame, width: int | None, is_fieds: bool
-    ) -> Generator[tuple[np.ndarray, dict[str, Any], str], None, None]:
-        """Generator which yields numpy arrays of polygons from OSM data.
-
-        Arguments:
-            objects (pd.core.frame.DataFrame): Dataframe with OSM objects.
-            width (int | None): Width of the polygon in meters (only for LineString).
-            is_fieds (bool): Flag to determine if the fields should be padded.
-
-        Yields:
-            Generator[tuple[np.ndarray, dict[str, Any], str], None, None]:
-                Tuple containing numpy array of polygon points, OSM tags dict, and the original
-                OSM geometry type string (e.g. "Polygon", "LineString").
-        """
-        for _, obj in objects.iterrows():
-            geom_type = obj["geometry"].geom_type
-            osm_tags = self._get_tags_from_osm_object(obj)
-            try:
-                polygon = self._to_polygon(obj, width)
-            except Exception as e:
-                self.logger.warning("Error converting object to polygon: %s.", e)
-                continue
-            if polygon is None:
-                continue
-
-            if is_fieds and self.map.texture_settings.fields_padding > 0:
-                padded_polygon = polygon.buffer(-self.map.texture_settings.fields_padding)
-
-                if not isinstance(padded_polygon, Polygon) or not list(
-                    padded_polygon.exterior.coords
-                ):
-                    self.logger.debug("The padding value is too high, field will not padded.")
-                else:
-                    polygon = padded_polygon
-
-            polygon_np = self._to_np(polygon)
-            yield polygon_np, osm_tags, geom_type
 
     @monitor_performance
     def previews(self) -> list[str]:
@@ -1006,26 +931,33 @@ class Texture(ImageComponent):
         self.logger.debug("Following layers have tag textures: %s.", len(active_layers))
 
         images = [
-            cv2.resize(
-                cv2.imread(layer.get_preview_or_path(self._weights_dir), cv2.IMREAD_UNCHANGED),  # type: ignore
-                preview_size,
-            )
+            cv2.resize(image, preview_size)
             for layer in active_layers
+            for image in [
+                cv2.imread(layer.get_preview_or_path(self._weights_dir), cv2.IMREAD_UNCHANGED)
+            ]
+            if image is not None
         ]
         colors = [layer.color for layer in active_layers]
         color_images = []
         for img, color in zip(images, colors):
             color_img = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)
-            color_img[img > 0] = color
+            color_img[img > 0] = cast(tuple[int, int, int] | list[int], color)
             color_images.append(color_img)
-        merged = np.sum(color_images, axis=0, dtype=np.uint8)
+        if color_images:
+            merged = cast(np.ndarray, np.sum(color_images, axis=0, dtype=np.uint8))
+        else:
+            merged = np.zeros((preview_size[1], preview_size[0], 3), dtype=np.uint8)
         self.logger.debug(
             "Merged layers into one image. Shape: %s, dtype: %s.",
             merged.shape,
             merged.dtype,
         )
-        preview_path = os.path.join(self.previews_directory, "textures_osm.png")
+        preview_path = os.path.join(
+            self.previews_directory,
+            Parameters.TEXTURES_OSM_PREVIEW_FILENAME,
+        )
 
-        cv2.imwrite(preview_path, merged)  # type: ignore
+        cv2.imwrite(preview_path, merged)
         self.logger.debug("Preview saved to %s.", preview_path)
         return preview_path

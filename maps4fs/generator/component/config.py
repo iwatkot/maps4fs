@@ -8,24 +8,15 @@ from typing import Any
 import cv2
 import numpy as np
 
-import maps4fs.generator.utils as mfsutils
 from maps4fs.generator.component.base.component_image import ImageComponent
-from maps4fs.generator.component.base.component_xml import XMLComponent
+from maps4fs.generator.component.xml_document import XmlDocument
+from maps4fs.generator.geo import get_country_by_coordinates
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
-# Defines coordinates for country block on the license plate texture.
-COUNTRY_CODE_TOP = 169
-COUNTRY_CODE_BOTTOM = 252
-COUNTRY_CODE_LEFT = 74
-COUNTRY_CODE_RIGHT = 140
-
-LICENSE_PLATES_XML_FILENAME = "licensePlatesPL.xml"
-LICENSE_PLATES_I3D_FILENAME = "licensePlatesPL.i3d"
-
 
 # pylint: disable=R0903
-class Config(XMLComponent, ImageComponent):
+class Config(ImageComponent):
     """Component for map settings and configuration.
 
     Arguments:
@@ -42,15 +33,14 @@ class Config(XMLComponent, ImageComponent):
     def preprocess(self) -> None:
         """Gets the path to the map XML file and saves it to the instance variable."""
         self.info: dict[str, Any] = {}
-        self.xml_path = self.game.map_xml_path(self.map_directory)
+        self.xml_path = self.game.map_xml_path
         self.fog_parameters: dict[str, int] = {}
 
     def process(self) -> None:
         """Sets the map size in the map.xml file."""
         self._set_map_size()
 
-        if self.game.fog_processing:
-            self._adjust_fog()
+        self._adjust_fog()
 
         self._set_overview()
 
@@ -58,20 +48,8 @@ class Config(XMLComponent, ImageComponent):
 
     def _set_map_size(self) -> None:
         """Edits map.xml file to set correct map size."""
-        tree = self.get_tree()
-        if not tree:
-            raise FileNotFoundError(f"Map XML file not found: {self.xml_path}")
-
-        root = tree.getroot()
-        data = {
-            "width": str(self.scaled_size),
-            "height": str(self.scaled_size),
-        }
-
-        for element in root.iter("map"):  # type: ignore
-            self.update_element(element, data)
-            break
-        self.save_tree(tree)
+        with XmlDocument(self.xml_path) as doc:
+            doc.set_attrs(".", width=str(self.scaled_size), height=str(self.scaled_size))
 
     def info_sequence(self) -> dict[str, dict[str, str | float | int]]:
         """Returns information about the component.
@@ -86,14 +64,8 @@ class Config(XMLComponent, ImageComponent):
         # That's why the distance is set to the map height not as a half of it.
         bbox = self.get_bbox(distance=self.map_size)
         south, west, north, east = bbox
-        epsg3857_string = self.get_epsg3857_string(bbox=bbox)
-        epsg3857_string_with_margin = self.get_epsg3857_string(bbox=bbox, add_margin=True)
 
-        self.qgis_sequence()
-
-        overview_data = {
-            "epsg3857_string": epsg3857_string,
-            "epsg3857_string_with_margin": epsg3857_string_with_margin,
+        overview_data: dict[str, str | float | int] = {
             "south": south,
             "west": west,
             "north": north,
@@ -102,40 +74,21 @@ class Config(XMLComponent, ImageComponent):
             "width": self.map_size * 2,
         }
 
-        data = {
+        data: dict[str, dict[str, str | float | int]] = {
             "Overview": overview_data,
         }
         if self.fog_parameters:
-            data["Fog"] = self.fog_parameters  # type: ignore
+            data["Fog"] = dict(self.fog_parameters)
 
         data.update(self.info)
 
-        return data  # type: ignore
-
-    def qgis_sequence(self) -> None:
-        """Generates QGIS scripts for creating bounding box layers and rasterizing them."""
-        bbox = self.get_bbox(distance=self.map_size)
-        espg3857_bbox = self.get_espg3857_bbox(bbox=bbox)
-        espg3857_bbox_with_margin = self.get_espg3857_bbox(bbox=bbox, add_margin=True)
-
-        qgis_layers = [("Overview_bbox", *espg3857_bbox)]
-        qgis_layers_with_margin = [("Overview_bbox_with_margin", *espg3857_bbox_with_margin)]
-
-        layers = qgis_layers + qgis_layers_with_margin
-
-        self.create_qgis_scripts(layers)
+        return data
 
     @monitor_performance
     def _adjust_fog(self) -> None:
         """Adjusts the fog settings in the environment XML file based on the DEM and height scale."""
         self.logger.debug("Adjusting fog settings based on DEM and height scale...")
-        try:
-            environment_xml_path = self.game.get_environment_xml_path(self.map_directory)
-        except NotImplementedError:
-            self.logger.warning(
-                "Game does not support environment XML file, fog adjustment will not be applied."
-            )
-            return
+        environment_xml_path = self.game.environment_xml_path
 
         if not environment_xml_path or not os.path.isfile(environment_xml_path):
             self.logger.warning(
@@ -150,11 +103,10 @@ class Config(XMLComponent, ImageComponent):
             return
         maximum_height, minimum_height = dem_params
 
-        tree = self.get_tree(xml_path=environment_xml_path)
-        root = tree.getroot()
+        doc = XmlDocument(environment_xml_path)
 
         # Find the <latitude>40.6</latitude> element in the XML file.
-        latitude_element = root.find("./latitude")  # type: ignore
+        latitude_element = doc.get(self.game.config.env_latitude_xpath)
         if latitude_element is not None:
             map_latitude = round(self.map.coordinates[0], 1)
             latitude_element.text = str(map_latitude)
@@ -166,19 +118,17 @@ class Config(XMLComponent, ImageComponent):
         # The XML file contains 4 <fog> entries in different sections of <weather> representing
         # different seasons, such as <season name="spring">, <season name="summer">, etc.
         # We need to find them all and adjust the parameters accordingly.
-        for season in root.findall(".//weather/season"):  # type: ignore
+        for season in doc.find_all(self.game.config.env_seasons_xpath):
             # Example of the <heightFog> element:
             # <heightFog>
             #     <groundLevelDensity min="0.05" max="0.2" />
             #     <maxHeight min="420" max="600" />
             # </heightFog>
             # We need to adjust the maxheight min and max attributes.
-            max_height_element = season.find("./fog/heightFog/maxHeight")
-            data = {
-                "min": str(minimum_height),
-                "max": str(maximum_height),
-            }
-            self.update_element(max_height_element, data)  # type: ignore
+            max_height_element = season.find(self.game.config.env_fog_max_height_xpath)
+            if max_height_element is not None:
+                max_height_element.set("min", str(minimum_height))
+                max_height_element.set("max", str(maximum_height))
             self.logger.debug(
                 "Adjusted fog settings for season '%s': min=%s, max=%s",
                 season.get("name", "unknown"),
@@ -187,7 +137,7 @@ class Config(XMLComponent, ImageComponent):
             )
 
         self.logger.debug("Fog adjusted and file will be saved to %s", environment_xml_path)
-        self.save_tree(tree, xml_path=environment_xml_path)
+        doc.save()
 
         self.fog_parameters = {
             "minimum_height": minimum_height,
@@ -202,7 +152,7 @@ class Config(XMLComponent, ImageComponent):
                 is not found or cannot be read.
         """
         self.logger.debug("Reading DEM meter parameters...")
-        dem_path = self.game.dem_file_path(self.map_directory)
+        dem_path = self.game.dem_file_path
         if not dem_path or not os.path.isfile(dem_path):
             self.logger.warning("DEM file not found, fog adjustment will not be applied.")
             return None
@@ -221,7 +171,14 @@ class Config(XMLComponent, ImageComponent):
         )
 
         try:
-            height_scale = self.get_height_scale()
+            doc = XmlDocument(self.game.i3d_file_path)
+            terrain_elem = doc.get(self.game.config.i3d_terrain_xpath)
+            if terrain_elem is None:
+                raise ValueError("Height scale element not found in the I3D file.")
+            hs = terrain_elem.get(Parameters.HEIGHT_SCALE)
+            if hs is None:
+                raise ValueError("Height scale not found in the I3D file.")
+            height_scale = int(hs)
         except ValueError as e:
             self.logger.warning("Error getting height scale from I3D file: %s", e)
             return None
@@ -240,31 +197,23 @@ class Config(XMLComponent, ImageComponent):
     @monitor_performance
     def _set_overview(self) -> None:
         """Generates and sets the overview image for the map."""
-        try:
-            overview_image_path = self.game.overview_file_path(self.map_directory)
-        except NotImplementedError:
+        overview_image_path = self.game.overview_file_path
+
+        overview_path = self.map.context.satellite_overview_path
+        if not overview_path:
             self.logger.warning(
-                "Game does not support overview image file, overview generation will be skipped."
+                "Satellite overview path not set in context, overview generation will be skipped."
             )
             return
 
-        satellite_component = self.map.get_satellite_component()
-        if not satellite_component:
-            self.logger.warning(
-                "Satellite component not found, overview generation will be skipped."
-            )
-            return
-
-        if not satellite_component.assets.overview or not os.path.isfile(
-            satellite_component.assets.overview
-        ):
+        if not os.path.isfile(overview_path):
             self.logger.warning(
                 "Satellite overview image not found, overview generation will be skipped."
             )
             return
 
-        satellite_images_directory = os.path.dirname(satellite_component.assets.overview)
-        overview_image = cv2.imread(satellite_component.assets.overview, cv2.IMREAD_UNCHANGED)
+        satellite_images_directory = os.path.dirname(overview_path)
+        overview_image = cv2.imread(overview_path, cv2.IMREAD_UNCHANGED)
 
         if overview_image is None:
             self.logger.warning(
@@ -355,15 +304,11 @@ class Config(XMLComponent, ImageComponent):
         }
 
     @monitor_performance
-    def update_license_plates(self):
+    def update_license_plates(self) -> None:
         """Updates license plates for the specified country."""
-        try:
-            license_plates_directory = self.game.license_plates_dir_path(self.map_directory)
-        except NotImplementedError:
-            self.logger.warning("Game does not support license plates processing.")
-            return
+        license_plates_directory = self.game.license_plates_dir_path
 
-        country_name = mfsutils.get_country_by_coordinates(self.map.coordinates).lower()
+        country_name = get_country_by_coordinates(self.map.coordinates).lower()
         self.info["license_plate_country_name"] = country_name
         if country_name not in self.supported_countries:
             self.logger.warning(
@@ -403,10 +348,10 @@ class Config(XMLComponent, ImageComponent):
                 license_plates_directory,
                 country_code,
                 eu_format,
-                COUNTRY_CODE_LEFT,
-                COUNTRY_CODE_TOP,
-                COUNTRY_CODE_RIGHT,
-                COUNTRY_CODE_BOTTOM,
+                Parameters.COUNTRY_CODE_LEFT,
+                Parameters.COUNTRY_CODE_TOP,
+                Parameters.COUNTRY_CODE_RIGHT,
+                Parameters.COUNTRY_CODE_BOTTOM,
             )
 
             self.logger.debug("License plates updated successfully")
@@ -424,27 +369,20 @@ class Config(XMLComponent, ImageComponent):
             FileNotFoundError: If the map XML file is not found.
             ValueError: If the map XML root element is None.
         """
-        tree = self.get_tree()
-        if not tree:
-            raise FileNotFoundError(f"Map XML file not found: {self.xml_path}")
-
-        root = tree.getroot()
-
-        if root is None:
-            raise ValueError("Map XML root element is None.")
+        doc = XmlDocument(self.xml_path)
+        root = doc.root
 
         # Find or create licensePlates element
-        license_plates_element = root.find(".//licensePlates")
+        license_plates_element = root.find(self.game.config.map_xml_license_plates_xpath)
         if license_plates_element is not None:
-            license_plates_element.set("filename", "map/licensePlates/licensePlatesPL.xml")
+            license_plates_element.set("filename", self.game.config.map_xml_license_plates_filename)
         else:
-            # Create new licensePlates element if it doesn't exist
             license_plates_element = root.makeelement(
-                "licensePlates", {"filename": "map/licensePlates/licensePlatesPL.xml"}
+                "licensePlates", {"filename": self.game.config.map_xml_license_plates_filename}
             )
             root.append(license_plates_element)
 
-        self.save_tree(tree)
+        doc.save()
         self.logger.debug("Updated map.xml to use PL license plates")
 
     def _update_license_plates_xml(
@@ -460,18 +398,16 @@ class Config(XMLComponent, ImageComponent):
             FileNotFoundError: If the license plates XML file is not found.
             ValueError: If required XML elements are not found.
         """
-        xml_path = os.path.join(license_plates_directory, LICENSE_PLATES_XML_FILENAME)
+        xml_path = os.path.join(license_plates_directory, Parameters.LICENSE_PLATES_XML_FILENAME)
         if not os.path.isfile(xml_path):
             raise FileNotFoundError(f"License plates XML file not found: {xml_path}.")
 
-        tree = self.get_tree(xml_path=xml_path)
-        root = tree.getroot()
-        if root is None:
-            raise ValueError("License plates XML root element is None.")
+        doc = XmlDocument(xml_path)
+        root = doc.root
 
         # Find licensePlate with node="0"
         license_plate = None
-        for plate in root.findall(".//licensePlate"):
+        for plate in root.findall(self.game.config.lp_xml_license_plate_xpath):
             if plate.get("node") == "0":
                 license_plate = plate
                 break
@@ -480,11 +416,11 @@ class Config(XMLComponent, ImageComponent):
             raise ValueError("Could not find licensePlate element with node='0'")
 
         # Find first variations/variation element
-        variations = license_plate.find("variations")
+        variations = license_plate.find(self.game.config.lp_xml_variations_xpath)
         if variations is None:
             raise ValueError("Could not find variations element")
 
-        variation = variations.find("variation")
+        variation = variations.find(self.game.config.lp_xml_variation_xpath)
         if variation is None:
             raise ValueError("Could not find first variation element")
 
@@ -496,7 +432,7 @@ class Config(XMLComponent, ImageComponent):
         self.info["license_plate_prefix"] = license_plate_prefix
 
         # 3. Position X values for the letters.
-        pos_x_values = ["-0.1712", "-0.1172", "-0.0632"]  # ? DO WE REALLY NEED THEM?
+        pos_x_values = self.game.config.lp_xml_char_pos_x_values
 
         # 4. Update all 3 positions (0|0, 0|1, 0|2) to ensure proper formatting.
         # Always process exactly 3 positions, padding with spaces as needed.
@@ -505,7 +441,7 @@ class Config(XMLComponent, ImageComponent):
             target_node = f"0|{i}"
             # Find existing value with this node ID.
             existing_value = None
-            for value in variation.findall("value"):
+            for value in variation.findall(self.game.config.lp_xml_value_xpath):
                 if value.get("node") == target_node:
                     existing_value = value
                     break
@@ -532,7 +468,7 @@ class Config(XMLComponent, ImageComponent):
                 variation.insert(i, value_elem)
 
         # 5. Save the updated XML.
-        self.save_tree(tree, xml_path=xml_path)
+        doc.save()
         self.logger.debug(
             "Updated licensePlatesPL.xml with license plate prefix: %s", license_plate_prefix
         )
@@ -548,21 +484,17 @@ class Config(XMLComponent, ImageComponent):
             FileNotFoundError: If the license plates i3d file is not found.
             ValueError: If required XML elements are not found.
         """
-        i3d_path = os.path.join(license_plates_directory, LICENSE_PLATES_I3D_FILENAME)
+        i3d_path = os.path.join(license_plates_directory, Parameters.LICENSE_PLATES_I3D_FILENAME)
         if not os.path.isfile(i3d_path):
             raise FileNotFoundError(f"License plates i3d file not found: {i3d_path}")
 
-        # 1. Load the i3d XML.
-        tree = self.get_tree(xml_path=i3d_path)
-        root = tree.getroot()
-
-        if root is None:
-            raise ValueError("License plates i3d XML root element is None.")
+        doc = XmlDocument(i3d_path)
+        root = doc.root
 
         # 2. Find File element with fileId="12"
         file_element = None
-        for file_elem in root.findall(".//File"):
-            if file_elem.get("fileId") == "12":
+        for file_elem in root.findall(self.game.config.lp_i3d_file_elements_xpath):
+            if file_elem.get("fileId") == self.game.config.lp_i3d_texture_file_id:
                 file_element = file_elem
                 break
 
@@ -571,14 +503,14 @@ class Config(XMLComponent, ImageComponent):
 
         # 3. Update filename to point to local map directory (relative path).
         if eu_format:
-            filename = "licensePlates_diffuseEU.png"
+            filename = self.game.config.lp_i3d_eu_texture_filename
         else:
-            filename = "licensePlates_diffuse.png"
+            filename = self.game.config.lp_i3d_default_texture_filename
 
         file_element.set("filename", filename)
 
         # 4. Save the updated i3d XML.
-        self.save_tree(tree, xml_path=i3d_path)
+        doc.save()
         self.logger.debug("Updated licensePlatesPL.i3d texture reference to: %s", filename)
 
     @monitor_performance
@@ -609,9 +541,9 @@ class Config(XMLComponent, ImageComponent):
         """
         # 1. Define the path to the base texture depending on EU format.
         if eu_format:
-            texture_filename = "licensePlates_diffuseEU.png"
+            texture_filename = self.game.config.lp_i3d_eu_texture_filename
         else:
-            texture_filename = "licensePlates_diffuse.png"
+            texture_filename = self.game.config.lp_i3d_default_texture_filename
 
         # 2. Check if the base texture file exists.
         texture_path = os.path.join(license_plates_directory, texture_filename)

@@ -1,14 +1,19 @@
 """Base class for all components that primarily used to work with images."""
 
+from __future__ import annotations
+
 import os
 import subprocess
+import sys
+from typing import cast
 
 import cv2
 import numpy as np
 from PIL import Image, ImageFile
+from PIL.Image import Image as PILImage
 
 from maps4fs.generator.component.base.component import Component
-from maps4fs.generator.config import get_texconv_executable_path
+from maps4fs.generator.constants import Paths
 from maps4fs.generator.settings import Parameters
 
 
@@ -16,22 +21,36 @@ class ImageComponent(Component):
     """Base class for all components that primarily used to work with images."""
 
     @staticmethod
-    def polygon_points_to_np(
-        polygon_points: list[tuple[int, int]], divide: int | None = None
-    ) -> np.ndarray:
-        """Converts the polygon points to a NumPy array.
+    def scale_point_tuples(
+        points: list[tuple[int, int]],
+        scale: float,
+    ) -> list[tuple[int, int]]:
+        """Scale 2D integer point tuples by a factor and round to int coordinates."""
+        return [(int(x * scale), int(y * scale)) for x, y in points]
 
-        Arguments:
-            polygon_points (list[tuple[int, int]]): The polygon points.
-            divide (int, optional): The number to divide the points by. Defaults to None.
+    @staticmethod
+    def np_array_to_scaled_points(np_array: np.ndarray, scale: float) -> list[tuple[int, int]]:
+        """Convert Nx1x2 or Nx2 point array to scaled integer point tuples."""
+        points = [
+            cast(tuple[int, int], tuple(map(int, point))) for point in np_array.reshape(-1, 2)
+        ]
+        return ImageComponent.scale_point_tuples(points, scale)
 
-        Returns:
-            np.array: The NumPy array of the polygon points.
-        """
-        array = np.array(polygon_points, dtype=np.int32).reshape((-1, 1, 2))
-        if divide:
-            return array // divide
-        return array
+    @staticmethod
+    def _center_square_bounds(shape: tuple[int, ...], half_size: int) -> tuple[int, int, int, int]:
+        """Return center square bounds (x1, x2, y1, y2) for an image-like shape."""
+        center = (shape[0] // 2, shape[1] // 2)
+        x1 = center[0] - half_size
+        x2 = center[0] + half_size
+        y1 = center[1] - half_size
+        y2 = center[1] + half_size
+        return x1, x2, y1, y2
+
+    @staticmethod
+    def _validate_same_spatial_shape(data: np.ndarray, mask: np.ndarray) -> None:
+        """Ensure data and mask have identical spatial dimensions."""
+        if data.shape[:2] != mask.shape[:2]:
+            raise ValueError("Data and mask must have the same dimensions.")
 
     @staticmethod
     def cut_out_np(
@@ -48,11 +67,7 @@ class ImageComponent(Component):
         Returns:
             np.ndarray: The image with the cutout or the cutout itself.
         """
-        center = (image.shape[0] // 2, image.shape[1] // 2)
-        x1 = center[0] - half_size
-        x2 = center[0] + half_size
-        y1 = center[1] - half_size
-        y2 = center[1] + half_size
+        x1, x2, y1, y2 = ImageComponent._center_square_bounds(image.shape, half_size)
 
         if return_cutout:
             return image[x1:x2, y1:y2]
@@ -195,8 +210,7 @@ class ImageComponent(Component):
         Returns:
             np.ndarray: The image with the blur applied according to the mask.
         """
-        if data.shape[:2] != mask.shape[:2]:
-            raise ValueError("Data and mask must have the same dimensions.")
+        self._validate_same_spatial_shape(data, mask)
 
         # Create a blurred version of the data
         blurred_data = cv2.GaussianBlur(data, (blur_radius, blur_radius), sigmaX=10)
@@ -227,8 +241,7 @@ class ImageComponent(Component):
         Returns:
             np.ndarray: The image with the edges blurred according to the mask.
         """
-        if data.shape[:2] != mask.shape[:2]:
-            raise ValueError("Data and mask must have the same dimensions.")
+        self._validate_same_spatial_shape(data, mask)
 
         bigger_mask = cv2.dilate(
             mask, np.ones((bigger_kernel, bigger_kernel), np.uint8), iterations=iterations
@@ -242,7 +255,7 @@ class ImageComponent(Component):
         return self.blur_by_mask(data, edge_mask)
 
     @staticmethod
-    def convert_png_to_dds(input_png_path: str, output_dds_path: str):
+    def convert_png_to_dds(input_png_path: str, output_dds_path: str) -> None:
         """Convert a PNG file to DDS format.
 
         Arguments:
@@ -262,7 +275,7 @@ class ImageComponent(Component):
             ImageComponent.convert_png_to_dds_pil(input_png_path, output_dds_path)
 
     @staticmethod
-    def convert_png_to_dds_pil(input_png_path: str, output_dds_path: str):
+    def convert_png_to_dds_pil(input_png_path: str, output_dds_path: str) -> None:
         """Convert a PNG file to DDS format using PIL
 
         Arguments:
@@ -277,20 +290,21 @@ class ImageComponent(Component):
 
             with Image.open(input_png_path) as img:
                 # Convert to RGB if needed (DDS works better with RGB)
+                image_to_save: PILImage = img.copy()
                 if img.mode == "RGBA":
                     # Create RGB version on white background
                     rgb_img = Image.new("RGB", img.size, (255, 255, 255))
                     rgb_img.paste(img, mask=img.split()[-1])  # Use alpha as mask
-                    img = rgb_img  # type: ignore
+                    image_to_save = rgb_img
                 elif img.mode != "RGB":
-                    img = img.convert("RGB")  # type: ignore
+                    image_to_save = image_to_save.convert("RGB")
 
-                img.save(output_dds_path, format="DDS")
+                image_to_save.save(output_dds_path, format="DDS")
         except Exception as e:
-            raise RuntimeError(f"DDS conversion failed: {e}")
+            raise RuntimeError(f"DDS conversion failed: {e}") from e
 
     @staticmethod
-    def convert_png_to_dds_texconv(input_png_path: str, output_dds_path: str):
+    def convert_png_to_dds_texconv(input_png_path: str, output_dds_path: str) -> None:
         """Convert a PNG file to DDS format using texconv
 
         Arguments:
@@ -300,7 +314,7 @@ class ImageComponent(Component):
         Raises:
             RuntimeError: If the DDS conversion fails.
         """
-        texconv_path = get_texconv_executable_path()
+        texconv_path = Paths.get_texconv_executable_path()
         if texconv_path is None:
             raise RuntimeError("texconv executable not found.")
 
@@ -309,15 +323,15 @@ class ImageComponent(Component):
 
         cmd = [texconv_path, "-f", "BC1_UNORM", "-m", "1", "-y", "-o", output_dir, input_png_path]
 
-        # PyInstaller windowed apps have no console, so we must:
-        #   - set stdin=DEVNULL (parent stdin is None in windowed mode, child must not inherit it)
-        #   - use CREATE_NO_WINDOW so texconv doesn't try to open a console of its own
+        # PyInstaller windowed apps have no console: stdin must be DEVNULL and on Windows
+        # we suppress any new console window so texconv doesn't open one of its own.
         run_kwargs: dict = {
             "stdin": subprocess.DEVNULL,
             "capture_output": True,
             "text": True,
-            "creationflags": subprocess.CREATE_NO_WINDOW,  # type: ignore[attr-defined]
         }
+        if sys.platform == "win32":
+            run_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
 
         result = subprocess.run(cmd, **run_kwargs)  # pylint: disable=subprocess-run-check
 
@@ -334,3 +348,49 @@ class ImageComponent(Component):
         )
         if os.path.abspath(produced) != os.path.abspath(output_dds_path):
             os.replace(produced, output_dds_path)
+
+    def rotate_image(
+        self,
+        image_path: str,
+        angle: int,
+        output_height: int,
+        output_width: int,
+        output_path: str | None = None,
+    ) -> None:
+        """Rotates an image by a given angle around its center and cuts out the center to match
+        the output size.
+
+        Arguments:
+            image_path (str): The path to the image to rotate.
+            angle (int): The angle to rotate the image by.
+            output_height (int): The height of the output image.
+            output_width (int): The width of the output image.
+            output_path (str, optional): Output path. Defaults to overwriting input.
+        """
+        if not os.path.isfile(image_path):
+            self.logger.warning("Image %s does not exist", image_path)
+            return
+
+        image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+        if image is None:
+            self.logger.warning("Image %s could not be read", image_path)
+            return
+
+        self.logger.debug("Read image from %s with shape: %s", image_path, image.shape)
+
+        if not output_path:
+            output_path = image_path
+
+        height, width = image.shape[:2]
+        center = (width // 2, height // 2)
+
+        rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
+        rotated = cv2.warpAffine(image, rotation_matrix, (width, height))
+
+        start_x = center[0] - output_width // 2
+        start_y = center[1] - output_height // 2
+        end_x = start_x + output_width
+        end_y = start_y + output_height
+
+        cropped = rotated[start_y:end_y, start_x:end_x]
+        cv2.imwrite(output_path, cropped)

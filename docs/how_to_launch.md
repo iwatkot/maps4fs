@@ -30,7 +30,7 @@ Maps4FS offers multiple deployment options to suit different user needs, from qu
 3. Start generating maps!
 
 ### 🚨 Security Warning
-**ONLY download from the official website: maps4fs.xyz/download**  
+**ONLY download from the official website: maps4fs.xyz/download**
 Carefully verify the URL - downloading executables from unofficial sources can be extremely dangerous.
 
 ### 📖 Full Documentation
@@ -139,6 +139,8 @@ pip install -e .
 
 ### 📖 Developer Resources
 - 📚 [Python Package Deployment](python_package_deployment.md)
+- 🧠 [How Maps4FS Works](how_maps4fs_works.md)
+- 🔄 [Migration to 3.0](migration_to_3_0.md)
 - 🐙 [GitHub Repository](https://github.com/iwatkot/maps4fs)
 - 📝 [API Documentation](https://github.com/iwatkot/maps4fsapi)
 
@@ -184,3 +186,7 @@ pip install -e .
 ---
 
 **Ready to start?** Choose your preferred option above and begin creating amazing Farming Simulator maps from real-world locations!
+
+
+
+

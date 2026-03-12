@@ -23,11 +23,15 @@
 ## 💻 Setup & Installation
 * [Windows App](windows_app.md)
 * [Local Deployment (Docker)](local_deployment.md)
-* [Python Package Deployment](python_package_deployment.md)
 * [Localization](localization.md)
 * [Getting Help](get_help.md)
 * [Data Directory](data_directory.md)
 * [Map Templates](map_templates.md)
+
+## 🧑‍💻 For Developers
+* [Python Package Deployment](python_package_deployment.md)
+* [How Maps4FS Works](how_maps4fs_works.md)
+* [Migration to 3.0](migration_to_3_0.md)
 
 ## ⚡ Additional Features
 * [My Maps](my_maps.md)
@@ -71,3 +75,7 @@
 * [Terms of Use](terms-of-use.md)
 * [Official Sources & Risks](official-sources.md)
 * [Supporting the Project](support.md)
+
+
+
+

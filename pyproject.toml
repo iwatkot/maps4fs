@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "maps4fs"
-version = "1.0.0"
+version = "3.0.0"
 description = "Generate map templates for Farming Simulator from real places."
 authors = [{name = "iwatkot", email = "iwatkot@gmail.com"}]
 readme = "README.md"

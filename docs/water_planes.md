@@ -17,14 +17,13 @@ After generation, you'll find the following files in your map's `assets/water/` 
 map_directory/
 ├── assets/
 │   └── water/
-│       └── water_resources.i3d  ← Ready to import!
+│       └── polygon_water.i3d  ← Ready to import!
 └── water/
-    ├── elevated_water.obj
-    ├── plane_water.obj
-    └── line_based_water.obj  (if applicable)
+    ├── polygon_water.obj
+    └── polyline_water.obj  (if applicable)
 ```
 
-## 🚀 How to Use (FS25)
+## 🚀 How to Use
 
 > **Windows App users:** If you are using the Windows App and the i3dConverter is available (it is downloaded automatically on first run), the conversion to binary i3d, ocean shader setup, collision/physics properties, normal map assignment, and in-map positioning are all done **automatically**. You can skip the Giants Editor configuration steps below.
 
@@ -33,10 +32,10 @@ map_directory/
 2. Generate your map normally
 
 ### Step 2: Import into Giants Editor
-1. Open your map in **Giants Editor 10.0.0+** (FS25)
+1. Open your map in **Giants Editor 10.0.0+**
 2. Go to `File` → `Import...`
 3. Navigate to `your_map/assets/water/`
-4. Select `water_resources.i3d`
+4. Select `polygon_water.i3d`
 5. Click `Import`
 
 If the water plane appears black initially - this is normal and expected behavior.
@@ -64,7 +63,7 @@ Position the water plane in the correct location within your map.
 
 ![Normal map](https://github.com/user-attachments/assets/95adc493-983a-46ae-bd20-7d1f4e998ba7)
 
-2. Click the **...** button and provide the path to the **water_normal.dds** file  
+2. Click the **...** button and provide the path to the **water_normal.dds** file
    Location: `where-the-game-is-installed/data/maps/textures/shared/water_normal.dds`
 
 ![Water normal map](https://github.com/user-attachments/assets/515de60b-bc1a-4843-b548-2820107435af)
@@ -102,7 +101,6 @@ You can control the automated generation through these settings:
 | Game Version | Status | Method |
 |--------------|---------|---------|
 | **Farming Simulator 25** | ✅ **Fully Automated** | Use this guide |
-| **Farming Simulator 22** | ⚠️ **Manual Process** | Use [Legacy Water Planes](legacy_water_planes.md) |
 
 ## 📊 Performance Benefits
 
@@ -111,16 +109,16 @@ The automated process includes several optimizations:
 - **Smart Mesh Generation**: Optimized polygon count for water surfaces
 - **Ocean Shader Ready**: Pre-configured with proper ocean shader materials
 - **Memory Efficient**: Optimized for minimal in-game impact
-- **Multiple Types**: Generates both elevated and plane water meshes
+- **Multiple Sources**: Supports polygon and polyline-derived water geometry
 
 ## 🔧 Troubleshooting
 
-### No water_resources.i3d file generated?
+### No polygon_water.i3d file generated?
 - Ensure **Generate Water** is enabled
 - Check that your map has water areas defined in OSM data
 
 ### Import fails in Giants Editor?
-- Use Giants Editor 10.0.0+ for FS25 maps
+- Use Giants Editor 10.0.0+ for maps
 - Make sure the i3d file isn't corrupted
 - Try importing the .obj files manually (see legacy docs)
 
@@ -135,7 +133,7 @@ The automated process includes several optimizations:
 ## 💡 Tips
 
 - **Multiple Water Bodies**: The automated process handles multiple separate water areas
-- **Custom Shapes**: Water follows the actual shape from your map data  
+- **Custom Shapes**: Water follows the actual shape from your map data
 - **Quality Settings**: Use **Water Blurriness** to control surface detail
 - **Performance**: Generated water planes are optimized for in-game performance
 
@@ -150,4 +148,6 @@ If you've been using the manual Blender workflow:
 
 ---
 
-**Need the manual process?** Check out the [Legacy Water Planes](legacy_water_planes.md) documentation for the traditional Blender workflow (required for FS22).
+
+
+

@@ -9,7 +9,7 @@ This document describes the advanced settings available in **maps4fs** - a map g
 These settings control the generation and processing of the DEM map image, which defines the terrain elevation and height data for your map.
 
 ### Blur Radius
-**Units:** Integer value (pixels)  
+**Units:** Integer value (pixels)
 DEM blur radius is used to blur the elevation map. Without blurring, the terrain may look too sharp and unrealistic. By default the blur radius is set to 3, which corresponds to a 3x3 pixel kernel. You can increase this value to make the terrain more smooth, or make it smaller to make the terrain more sharp.
 
 ![Blur Radius Example](https://github.com/user-attachments/assets/78e18ceb-b5b1-4a9d-b51b-4834effdaf9b)
@@ -17,15 +17,15 @@ DEM blur radius is used to blur the elevation map. Without blurring, the terrain
 ⚠️ **Note:** This image represents the difference when using low quality DEM data with resolution of 30 meters per pixel. If you're using high quality DEM data, do not use high blur radius values, as it will destroy the details of the terrain.
 
 ### Plateau
-**Units:** Meters from ground level  
+**Units:** Meters from ground level
 DEM plateau value is used to make the whole map higher or lower. This value will be added to each pixel of the DEM image, making it higher. It can be useful if you're working on a plain area and need to add some negative height (to make rivers, for example).
 
 ### Ceiling
-**Units:** Meters from the top of highest elevation  
+**Units:** Meters from the top of highest elevation
 DEM ceiling value is used to add padding in the DEM above the highest elevation in your map area. It can be useful if you plan to manually add some height to the map by sculpting the terrain in Giants Editor.
 
 ### Water Depth
-**Units:** Meters  
+**Units:** Meters
 Water depth value will be subtracted from the DEM image, making the water deeper. The pixel value used for this is calculated based on the heightScale value for your map.
 
 ![Water Depth Example](https://github.com/user-attachments/assets/22b99071-3169-4c02-9425-1e9fec0e27ec)
@@ -41,30 +41,28 @@ If enabled, the terrain under buildings will be flattened to their average heigh
 
 These settings control the generation of background terrain, water planes, and other 3D elements that surround the playable map area.
 
-> 🎉 **NEW for FS25**: When combined with **Download Satellite Images**, Maps4FS now automatically generates ready-to-use `background_terrain.i3d` files that can be directly imported into Giants Editor - no Blender required!
+> 🎉 **New**: When combined with **Download Satellite Images**, Maps4FS now automatically generates ready-to-use `background_terrain.i3d` files that can be directly imported into Giants Editor - no Blender required!
 
 ### Generate Background
-**For FS25**: Generates both obj files AND ready-to-use i3d files when satellite images are enabled.  
-**For FS22**: Generates obj files for manual processing in Blender.
+**Available**: Generates both obj files AND ready-to-use i3d files when satellite images are enabled.
 
 If enabled, the background terrain files will be generated. You can turn it off if you already have those files or don't need them. By default, it's set to True.
 
-**Generated files (FS25 with satellite images):**
+**Generated files (with satellite images):**
 - `assets/background/background_terrain.i3d` ← **Ready to import!**
 - `assets/background/textured_mesh/` folder with obj, mtl, and texture files
 
 ### Generate Water
-**For FS25**: Generates both obj files AND ready-to-use i3d files for direct Giants Editor import.  
-**For FS22**: Generates obj files for manual processing in Blender.
+**Available**: Generates both obj files AND ready-to-use i3d files for direct Giants Editor import.
 
 If enabled, the water plane files will be generated. You can turn it off if you already have those files or don't need them. By default, it's set to True.
 
-**Generated files (FS25):**
-- `assets/water/water_resources.i3d` ← **Ready to import!**
-- `water/` folder with obj files for reference
+**Generated files:**
+- `assets/water/polygon_water.i3d` ← **Ready to import!**
+- `water/` folder with `polygon_water.obj` and `polyline_water.obj` for reference
 
 ### Water Blurriness
-**Units:** Integer value  
+**Units:** Integer value
 Used to reduce the roughness of the water planes. The higher the value, the more flat the surface of the water planes will be. However, too high values can lead to the water planes mesh not matching the terrain.
 
 ![Water Blurriness Example](https://i.postimg.cc/2jn8zgpP/water-blurriness.png)
@@ -77,7 +75,7 @@ If enabled, the terrain under roads will be flattened. Do not use this option wi
 ⚠️ **Note:** This image represents the difference when using low quality DEM data with resolution of 30 meters per pixel. If you're using high quality DEM data, do not use this feature, as it may lead to unexpected results.
 
 ### Flatten Water
-If enabled, the bottom of water resources will be set to the average height of all water resources for the whole map. This option is suitable for maps with water resources that don't differ too much in height. Do not use this option if your map terrain contains big hills or mountains, as it may lead to worse results.
+If enabled, the water bottom will be set to a shared average height across generated water areas. This option is suitable for maps with water surfaces that don't differ too much in height. Do not use this option if your map terrain contains big hills or mountains, as it may lead to worse results.
 
 ### Remove Center
 If enabled, the playable region (map terrain) will be removed from the background terrain. By default, it's set to True.
@@ -89,7 +87,7 @@ If enabled, the playable region (map terrain) will be removed from the backgroun
 These settings control the generation of GRLE files (info layers) for the map, including farmlands, vegetation, and grass distribution.
 
 ### Farmland Margin
-**Units:** Meters  
+**Units:** Meters
 This value will be applied to each farmland, making it bigger. You can use this value to adjust how much the farmland should be bigger than the actual field. By default, it's set to 3. It's useful because without the margin, the farmland will end exactly at the same position as the field ends, which can cause gameplay issues.
 
 ![Farmland Margin Example](https://github.com/user-attachments/assets/c160bf6d-9217-455b-9655-462dc09b943c)
@@ -111,7 +109,7 @@ You can select which plant will be used as base grass on the map. Note that the 
 If enabled, the tool will create farmlands from regions marked as farmyards in the OSM data. Those farmlands will not have fields and will not be drawn on textures. By default, it's turned off.
 
 ### Base Price
-**Units:** In-game currency (EUR or USD)  
+**Units:** In-game currency (EUR or USD)
 The base price of farmland. It's used to calculate the price of farmland in the game. In default in-game maps this value equals 60000.
 
 ## I3D Settings
@@ -124,21 +122,21 @@ If enabled, the tool will add trees to the map in areas defined as forests in th
 ![Add Trees Example](https://github.com/user-attachments/assets/50dd8f82-f4f9-411e-a17a-ea10a0b95c20)
 
 ### License Plate Prefix
-**Units:** 1-3 letter string  
-**FS25 Only**: Customizes the regional identifier that appears on license plates alongside the automatically detected country code. This represents specific regions, cities, or administrative areas within a country.
+**Units:** 1-3 letter string
+**Available**: Customizes the regional identifier that appears on license plates alongside the automatically detected country code. This represents specific regions, cities, or administrative areas within a country.
 
 **Examples:**
 - `"NS"` for Novi Sad (Serbia) → License plate shows "SRB NS"
-- `"M"` for Munich (Germany) → License plate shows "D M"  
+- `"M"` for Munich (Germany) → License plate shows "D M"
 - `"75"` for Paris (France) → License plate shows "F 75"
 - `"KRK"` for Krakow (Poland) → License plate shows "PL KRK"
 
-**How it works**: 
+**How it works**:
 1. **Country code** is automatically detected from map coordinates (e.g., Serbia → SRB)
 2. **Regional prefix** is what you specify here (e.g., NS for Novi Sad)
 3. **Final result**: Both appear on the license plate together
 
-**When to use**: 
+**When to use**:
 - Add regional authenticity to your map
 - Represent specific cities or administrative regions
 - Create custom regional identifiers for fictional areas
@@ -146,13 +144,13 @@ If enabled, the tool will add trees to the map in areas defined as forests in th
 ⚠️ **Limits**: Maximum 3 characters (letters or numbers). Longer strings will be truncated.
 
 ### Forest Density
-**Units:** Meters between trees  
+**Units:** Meters between trees
 The density of the forest in meters. The lower the value, the lower the distance between trees, which makes the forest denser. Note that low values will lead to an enormous number of trees, which may cause Giants Editor to crash or lead to performance issues. By default, it's set to 10.
 
 ![Forest Density Example](https://github.com/user-attachments/assets/bf353ed6-f25c-4226-b0d6-105ada0f097b)
 
 ### Tree Limit
-**Units:** Integer value (0 means no limit)  
+**Units:** Integer value (0 means no limit)
 This value will be used to adjust the forest density value. For example, if it's possible to place 100,000 trees from OSM data, and the forest density is set to 10, the expected number of trees on the map will be 10,000. If you set the tree limit to 5,000, the forest density will be adjusted to 20, meaning the distance between trees will be doubled.
 
 This value is useful to prevent Giants Editor from crashing due to too many trees on the map. By default, it's set to 0 (disabled). Note that it will not lead to the exact number of trees, but will adjust the forest density to fit the tree limit.
@@ -167,7 +165,7 @@ If enabled, the values from one layer will be split between different layers of 
 ![Dissolve Example](https://github.com/user-attachments/assets/b7da059b-eb35-4a4e-a656-168c31257b15)
 
 ### Fields Padding
-**Units:** Meters  
+**Units:** Meters
 This value will be applied to each field, making it smaller. It's useful when fields are too close to each other and you want to make them smaller. By default, it's set to 0.
 
 ![Fields Padding Example](https://github.com/user-attachments/assets/b88ebfb3-7afb-4012-a845-42a04fefa7d2)
@@ -198,19 +196,18 @@ However, if this option is enabled, the generator will use the `precise_tags` in
 These settings control the download and processing of satellite imagery used for textures and visual references.
 
 ### Download Images
-**For FS25**: Enables automatic generation of multiple assets:
+**Available**: Enables automatic generation of multiple assets:
 - ✅ Ready-to-use `background_terrain.i3d` files (when combined with **Generate Background**)
 - ✅ Automatic `overview.dds` creation for in-game minimap
 - ✅ Satellite imagery for textures and visual references
 
-**For FS22**: Downloads satellite images for manual background terrain and overview creation.
 
 If enabled, the tool will download satellite images for the background terrain and overview image. If you already have the images, you can turn it off.
 
-> 💡 **Tip**: For FS25 users, enabling **Download Images** provides the complete automated workflow for background terrain AND overview maps!
+> 💡 **Tip**: For users, enabling **Download Images** provides the complete automated workflow for background terrain AND overview maps!
 
 ### Zoom Level
-**Units:** Integer value (maximum recommended: 18)  
+**Units:** Integer value (maximum recommended: 18)
 The zoom level of satellite images. The higher the value, the more detailed the images will be. By default, it's set to 14. Be careful with high values, as they may result in very large images and extremely long download times. This option is disabled in the public version of the app.
 
 ## Settings Export & Reference
@@ -245,4 +242,8 @@ Maps4FS can export your complete settings configuration as `generation_settings.
 ```
 
 **Usage Note**: The JSON file serves as a reference of your chosen parameters. For authoritative information about available settings and their current functionality, always refer to this documentation rather than the JSON structure.
+
+
+
+
 

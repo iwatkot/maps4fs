@@ -3,11 +3,9 @@ around the map."""
 
 from __future__ import annotations
 
-import json
 import os
 import shutil
-from copy import deepcopy
-from typing import Any, Literal
+from typing import Any, Sequence
 
 import cv2
 import numpy as np
@@ -17,25 +15,9 @@ from tqdm import tqdm
 from trimesh import Trimesh
 
 from maps4fs.generator.component.base.component_image import ImageComponent
-from maps4fs.generator.component.base.component_mesh import (
-    LineSurfaceEntry,
-    MeshComponent,
-)
-from maps4fs.generator.component.dem import DEM
-from maps4fs.generator.component.texture import Texture
+from maps4fs.generator.component.base.component_mesh import MeshComponent
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
-
-SEGMENT_LENGTH = 2
-LINE_SURFACE_WATER_WIDTH_EXTENSION = 2
-
-# Note: the DEM types sorted by priority for usage with fallbacks.
-# Starting from the most detailed to the least detailed.
-SUPPORTED_DEM_TYPES = [
-    Parameters.NOT_RESIZED_DEM_ROADS,
-    Parameters.NOT_RESIZED_DEM_FOUNDATIONS,
-    Parameters.NOT_RESIZED_DEM,
-]
 
 
 class Background(MeshComponent, ImageComponent):
@@ -67,62 +49,54 @@ class Background(MeshComponent, ImageComponent):
         self.rotated_size = int(self.background_size * output_size_multiplier)
         self.mesh_info: list[dict[str, Any]] = []
 
-        self.background_directory = os.path.join(self.map_directory, "background")
-        self.water_directory = os.path.join(self.map_directory, "water")
+        self.background_directory = os.path.join(
+            self.map_directory, Parameters.BACKGROUND_DIRECTORY
+        )
         os.makedirs(self.background_directory, exist_ok=True)
-        os.makedirs(self.water_directory, exist_ok=True)
 
-        self.textured_mesh_directory = os.path.join(self.background_directory, "textured_mesh")
+        self.textured_mesh_directory = os.path.join(
+            self.background_directory,
+            Parameters.TEXTURED_MESH_DIRECTORY,
+        )
         os.makedirs(self.textured_mesh_directory, exist_ok=True)
 
-        self.assets_background_directory = os.path.join(self.map.assets_directory, "background")
-        self.assets_water_directory = os.path.join(self.map.assets_directory, "water")
+        self.assets_background_directory = os.path.join(
+            self.map.assets_directory,
+            Parameters.BACKGROUND_DIRECTORY,
+        )
         os.makedirs(self.assets_background_directory, exist_ok=True)
-        os.makedirs(self.assets_water_directory, exist_ok=True)
 
-        self.water_resources_path = os.path.join(self.water_directory, "water_resources.png")
-
-        self.output_path = os.path.join(self.background_directory, f"{Parameters.FULL}.png")
-        if self.map.custom_background_path:
-            self.validate_np_for_mesh(self.map.custom_background_path, self.map_size)
-            shutil.copyfile(self.map.custom_background_path, self.output_path)
-
-        self.not_substracted_path: str = os.path.join(
+        self.output_path = self.map.context.dem_path or os.path.join(
+            self.background_directory,
+            f"{Parameters.FULL}.png",
+        )
+        self.not_substracted_path: str = self.map.context.dem_not_subtracted_path or os.path.join(
             self.background_directory, "not_substracted.png"
         )
-
-        self.flatten_water_to: int | None = None
-
-        self.dem = DEM(
-            self.game,
-            self.map,
-            self.coordinates,
-            self.background_size,
-            self.rotated_size,
-            self.rotation,
-            self.map_directory,
-            self.logger,
-        )
-        self.dem.preprocess()
-        self.dem.set_output_resolution((self.rotated_size, self.rotated_size))
-        self.dem.set_dem_path(self.output_path)
 
     def process(self) -> None:
         """Launches the component processing. Iterates over all tiles and processes them
         as a result the DEM files will be saved, then based on them the obj files will be
         generated."""
-        self.create_background_textures()
+        cutted_dem_path = self._prepare_main_dem()
 
-        if not self.map.custom_background_path:
-            self.dem.process()
-            self.validate_np_for_mesh(self.output_path, self.map_size)
-        else:
-            custom_dem_data = cv2.imread(self.map.custom_background_path, cv2.IMREAD_UNCHANGED)
-            self.dem.determine_height_scale(custom_dem_data, adjust=False)
+        if self.game.additional_dem_name is not None:
+            self.make_copy(cutted_dem_path, self.game.additional_dem_name)
 
-        shutil.copyfile(self.output_path, self.not_substracted_path)
-        if self.map.dem_settings.water_depth:
-            self.subtraction()
+        self._generate_optional_assets()
+        self.process_road_masks()
+
+    def _prepare_main_dem(self) -> str:
+        """Prepare and save DEM outputs used by downstream generation steps."""
+        if not os.path.isfile(self.output_path):
+            raise FileNotFoundError(
+                f"Background DEM not found. Expected DEM component output: {self.output_path}"
+            )
+
+        self.validate_np_for_mesh(self.output_path, self.map_size)
+
+        if not os.path.isfile(self.not_substracted_path):
+            shutil.copyfile(self.output_path, self.not_substracted_path)
 
         cutted_dem_path = self.save_map_dem(self.output_path)
         self.save_map_dem(
@@ -132,35 +106,15 @@ class Background(MeshComponent, ImageComponent):
         if self.map.background_settings.flatten_roads:
             self.flatten_roads()
 
-        if self.game.additional_dem_name is not None:
-            self.make_copy(cutted_dem_path, self.game.additional_dem_name)
+        return cutted_dem_path
 
+    def _generate_optional_assets(self) -> None:
+        """Generate optional background terrain assets based on settings."""
         if self.map.background_settings.generate_background:
             self.generate_obj_files()
-            if self.game.mesh_processing:
-                self.logger.debug("Mesh processing is enabled, will decimate, texture and convert.")
-                self.decimate_background_mesh()
-                self.texture_background_mesh()
-                background_conversion_result = self.convert_background_mesh_to_i3d()
-                if background_conversion_result:
-                    self.add_note_file(asset="background")
-            else:
-                self.logger.warning(
-                    "Mesh processing is disabled for the game, skipping background mesh processing."
-                )
-        if self.map.background_settings.generate_water:
-            self.generate_water_resources_obj()
-            if self.game.mesh_processing:
-                self.logger.debug("Mesh processing is enabled, will convert water mesh to i3d.")
-                water_conversion_result = self.convert_water_mesh_to_i3d()
-                if water_conversion_result:
-                    self.add_note_file(asset="water")
-            else:
-                self.logger.warning(
-                    "Mesh processing is disabled for the game, skipping water mesh processing."
-                )
-
-        self.process_road_masks()
+            self.decimate_background_mesh()
+            self.texture_background_mesh()
+            self.convert_background_mesh_to_i3d()
 
     def not_resized_paths(self) -> list[str]:
         """Returns the list of paths to all not resized DEM files.
@@ -168,7 +122,7 @@ class Background(MeshComponent, ImageComponent):
         Returns:
             list[str] : The list of paths to all not resized DEM files.
         """
-        return [self.not_resized_path(dem_type) for dem_type in SUPPORTED_DEM_TYPES]
+        return [self.not_resized_path(dem_type) for dem_type in Parameters.SUPPORTED_DEM_TYPES]
 
     def not_resized_path(self, dem_type: str) -> str:
         """Returns the path to the specified not resized DEM file.
@@ -184,7 +138,7 @@ class Background(MeshComponent, ImageComponent):
         """
         if not dem_type.endswith(".png"):
             dem_type += ".png"
-        if dem_type not in SUPPORTED_DEM_TYPES:
+        if dem_type not in Parameters.SUPPORTED_DEM_TYPES:
             raise ValueError(f"Unsupported dem_type: {dem_type}")
 
         return os.path.join(self.background_directory, dem_type)
@@ -207,38 +161,40 @@ class Background(MeshComponent, ImageComponent):
         self.logger.debug("Found %s buildings in textures info layer.", len(buildings))
 
         for building in tqdm(buildings, desc="Creating foundations", unit="building"):
-            try:
-                fitted_building = self.fit_object_into_bounds(
-                    polygon_points=building, angle=self.rotation
-                )
-            except ValueError as e:
-                self.logger.debug(
-                    "Building could not be fitted into the map bounds with error: %s",
-                    e,
-                )
+            mask = self._get_building_mask(building, dem_image.shape)
+            if mask is None:
                 continue
 
-            # 1. Read the pixel values from the DEM image.
-            # 2. Calculate the average pixel value of the building area.
-            # 3. Set the pixel values in the DEM to the average pixel value.
-
-            building_np = self.polygon_points_to_np(fitted_building)
-            mask = np.zeros(dem_image.shape, dtype=np.uint8)
-
-            try:
-                cv2.fillPoly(mask, [building_np], 255)  # type: ignore
-            except Exception as e:
-                self.logger.debug("Could not create mask for building with error: %s", e)
-                continue
-
-            mean_value = cv2.mean(dem_image, mask=mask)[0]  # type: ignore
-            mean_value = np.round(mean_value).astype(dem_image.dtype)
-            self.logger.debug("Mean value of the building area: %s", mean_value)
-
-            # Set the pixel values in the DEM to the average pixel value.
+            mean = cv2.mean(dem_image, mask=mask)
+            mean_scalar = float(mean[0]) if isinstance(mean, Sequence) else float(mean)
+            mean_value = np.array(round(mean_scalar), dtype=dem_image.dtype).item()
             dem_image[mask == 255] = mean_value
 
         return dem_image
+
+    def _get_building_mask(
+        self,
+        building: list[tuple[int, int]],
+        dem_shape: tuple[int, ...],
+    ) -> np.ndarray | None:
+        """Create a raster mask for one building footprint in DEM coordinates."""
+        try:
+            fitted_building = self.fit_object_into_bounds(
+                polygon_points=building,
+                angle=self.rotation,
+            )
+        except ValueError as e:
+            self.logger.debug("Building could not be fitted into the map bounds: %s", e)
+            return None
+
+        building_np = self.polygon_points_to_np(fitted_building)
+        mask = np.zeros(dem_shape, dtype=np.uint8)
+        try:
+            cv2.fillPoly(mask, [building_np], 255)
+            return mask
+        except Exception as e:
+            self.logger.debug("Could not create building mask: %s", e)
+            return None
 
     def make_copy(self, dem_path: str, dem_name: str) -> None:
         """Copies DEM data to additional DEM file.
@@ -254,7 +210,7 @@ class Background(MeshComponent, ImageComponent):
         shutil.copyfile(dem_path, additional_dem_path)
         self.logger.debug("Additional DEM data was copied to %s.", additional_dem_path)
 
-    def info_sequence(self) -> dict[str, str | float | int]:
+    def info_sequence(self) -> dict[str, Any]:
         """Returns a dictionary with information about the background terrain.
         Adds the EPSG:3857 string to the data for convenient usage in QGIS.
 
@@ -262,38 +218,20 @@ class Background(MeshComponent, ImageComponent):
             dict[str, str, float | int] -- A dictionary with information about the background
                 terrain.
         """
-        self.qgis_sequence()
+        north, south, east, west = self.bbox
 
-        north, south, east, west = self.dem.bbox
-        epsg3857_string = self.dem.get_epsg3857_string()
-        epsg3857_string_with_margin = self.dem.get_epsg3857_string(add_margin=True)
-
-        data = {
-            "center_latitude": self.dem.coordinates[0],
-            "center_longitude": self.dem.coordinates[1],
-            "epsg3857_string": epsg3857_string,
-            "epsg3857_string_with_margin": epsg3857_string_with_margin,
-            "height": self.dem.map_size,
-            "width": self.dem.map_size,
+        data: dict[str, Any] = {
+            "center_latitude": self.coordinates[0],
+            "center_longitude": self.coordinates[1],
+            "height": self.map_size,
+            "width": self.map_size,
             "north": north,
             "south": south,
             "east": east,
             "west": west,
         }
-
-        dem_info_sequence = self.dem.info_sequence()
-        data["DEM"] = dem_info_sequence
         data["Mesh"] = self.mesh_info
-        return data  # type: ignore
-
-    def qgis_sequence(self) -> None:
-        """Generates QGIS scripts for creating bounding box layers and rasterizing them."""
-        qgis_layer = (f"Background_{Parameters.FULL}", *self.dem.get_espg3857_bbox())
-        qgis_layer_with_margin = (
-            f"Background_{Parameters.FULL}_margin",
-            *self.dem.get_espg3857_bbox(add_margin=True),
-        )
-        self.create_qgis_scripts([qgis_layer, qgis_layer_with_margin])
+        return data
 
     @monitor_performance
     def generate_obj_files(self) -> None:
@@ -315,17 +253,20 @@ class Background(MeshComponent, ImageComponent):
         self.assets.background_mesh = save_path
 
         dem_data = cv2.imread(self.output_path, cv2.IMREAD_UNCHANGED)
+        if dem_data is None:
+            self.logger.warning("Failed to read DEM file for OBJ generation: %s", self.output_path)
+            return
 
         if self.map.output_size is not None:
             scaled_background_size = int(self.background_size * self.map.size_scale)
             dem_data = cv2.resize(
-                dem_data,  # type: ignore
+                dem_data,
                 (scaled_background_size, scaled_background_size),
                 interpolation=cv2.INTER_NEAREST,
             )
 
         self.plane_from_np(
-            dem_data,  # type: ignore
+            dem_data,
             save_path,
             create_preview=True,
             remove_center=self.map.background_settings.remove_center,
@@ -416,17 +357,6 @@ class Background(MeshComponent, ImageComponent):
     @monitor_performance
     def texture_background_mesh(self) -> None:
         """Textures the background mesh using satellite imagery."""
-        satellite_component = self.map.get_satellite_component()
-        if not satellite_component:
-            self.logger.warning("Satellite component not found, cannot texture background mesh.")
-            return
-
-        background_texture_path = satellite_component.assets.background
-
-        if not background_texture_path or not os.path.isfile(background_texture_path):
-            self.logger.warning("Background texture not found, cannot texture background mesh.")
-            return
-
         decimated_background_mesh_path = self.assets.decimated_background_mesh
         if not decimated_background_mesh_path or not os.path.isfile(decimated_background_mesh_path):
             self.logger.warning(
@@ -434,45 +364,15 @@ class Background(MeshComponent, ImageComponent):
             )
             return
 
-        background_texture_resolution = self.get_background_texture_resolution(self.map_size)
-        non_resized_texture_image = cv2.imread(background_texture_path, cv2.IMREAD_UNCHANGED)
-
-        if non_resized_texture_image is None:
-            self.logger.error(
-                "Failed to read background texture image: %s", background_texture_path
-            )
+        texture_bundle = self._prepare_background_texture_bundle()
+        if texture_bundle is None:
             return
+        resized_texture_save_path, texture_for_i3d = texture_bundle
 
-        resized_texture_image = cv2.resize(
-            non_resized_texture_image,  # type: ignore
-            (background_texture_resolution, background_texture_resolution),
-            interpolation=cv2.INTER_AREA,
-        )
-
-        resized_texture_save_path = os.path.join(
-            self.textured_mesh_directory,
-            "background_texture.jpg",
-        )
-
-        cv2.imwrite(resized_texture_save_path, resized_texture_image)
-        self.logger.debug("Resized background texture saved: %s", resized_texture_save_path)
-
-        dds_texture_save_path = os.path.join(
-            self.textured_mesh_directory,
-            "background_texture.dds",
-        )
-        texture_for_i3d = resized_texture_save_path
         try:
-            self.convert_png_to_dds(resized_texture_save_path, dds_texture_save_path)
-            self.logger.debug("Background texture converted to DDS: %s", dds_texture_save_path)
-            texture_for_i3d = dds_texture_save_path
+            decimated_mesh = trimesh.load_mesh(decimated_background_mesh_path, force="mesh")
         except Exception as e:
-            self.logger.warning("Could not convert background texture to DDS: %s", e)
-
-        decimated_mesh = trimesh.load_mesh(decimated_background_mesh_path, force="mesh")
-
-        if decimated_mesh is None:
-            self.logger.error("Failed to load decimated mesh after all retry attempts")
+            self.logger.error("Could not load decimated background mesh: %s", e)
             return
 
         try:
@@ -490,6 +390,41 @@ class Background(MeshComponent, ImageComponent):
         except Exception as e:
             self.logger.error("Could not texture background mesh: %s", e)
             return
+
+    def _prepare_background_texture_bundle(self) -> tuple[str, str] | None:
+        """Load, resize, and optionally convert the background texture to DDS."""
+        background_texture_path = self.map.context.satellite_background_path
+        if not background_texture_path or not os.path.isfile(background_texture_path):
+            self.logger.warning("Background texture not found, cannot texture background mesh.")
+            return None
+
+        resolution = self.get_background_texture_resolution(self.map_size)
+        source_image = cv2.imread(background_texture_path, cv2.IMREAD_UNCHANGED)
+        if source_image is None:
+            self.logger.error(
+                "Failed to read background texture image: %s", background_texture_path
+            )
+            return None
+
+        resized_texture_image = cv2.resize(
+            source_image,
+            (resolution, resolution),
+            interpolation=cv2.INTER_AREA,
+        )
+        resized_texture_save_path = os.path.join(
+            self.textured_mesh_directory, "background_texture.jpg"
+        )
+        cv2.imwrite(resized_texture_save_path, resized_texture_image)
+
+        dds_texture_save_path = os.path.join(self.textured_mesh_directory, "background_texture.dds")
+        texture_for_i3d = resized_texture_save_path
+        try:
+            self.convert_png_to_dds(resized_texture_save_path, dds_texture_save_path)
+            texture_for_i3d = dds_texture_save_path
+        except Exception as e:
+            self.logger.warning("Could not convert background texture to DDS: %s", e)
+
+        return resized_texture_save_path, texture_for_i3d
 
     @monitor_performance
     def convert_background_mesh_to_i3d(self) -> bool:
@@ -524,11 +459,10 @@ class Background(MeshComponent, ImageComponent):
             if background_dem is not None:
                 z_factor = self.get_z_scaling_factor(ignore_height_scale_multiplier=True)
                 max_elevation = float(np.max(background_dem) * z_factor)
-                positions_dir = os.path.join(self.map_directory, "positions")
-                os.makedirs(positions_dir, exist_ok=True)
-                position_path = os.path.join(positions_dir, f"{Parameters.BACKGROUND_TERRAIN}.json")
-                with open(position_path, "w", encoding="utf-8") as pf:
-                    json.dump({"mesh_centroid_y": max_elevation}, pf, indent=4)
+                self.map.context.set_mesh_position(
+                    Parameters.BACKGROUND_TERRAIN,
+                    mesh_centroid_y=max_elevation,
+                )
                 self.logger.debug("Background terrain T_y (max elevation): %.4f m", max_elevation)
         except Exception as e:
             self.logger.warning("Could not save background terrain elevation: %s", e)
@@ -550,106 +484,6 @@ class Background(MeshComponent, ImageComponent):
             self.logger.error("Could not convert background mesh to i3d: %s", e)
             return False
 
-    def add_note_file(self, asset: Literal["background", "water"]) -> None:
-        """Adds a note file to the background or water directory.
-
-        Arguments:
-            asset (Literal["background", "water"]): The asset type to add the note file to.
-        """
-        filename = "DO_NOT_USE_THESE_FILES.txt"
-        note_template = (
-            "Please find the ready-to-use {asset} i3d files in the {asset_directory} directory."
-        )
-        directory = {
-            "background": self.background_directory,
-            "water": self.water_directory,
-        }
-
-        content = (
-            "The files in this directory can be used to create the mesh files manually in Blender. "
-            "However, it's recommended to use the ready-to-use i3d files located in the assets "
-            "directory. There you'll find the i3d files, that can be imported directly into the "
-            "Giants Editor without any additional processing."
-        )
-        note = note_template.format(
-            asset=asset,
-            asset_directory=f"assets/{asset}",
-        )
-
-        file_path = os.path.join(directory[asset], filename)
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(content + "\n\n" + note)
-
-    @monitor_performance
-    def convert_water_mesh_to_i3d(self) -> bool:
-        """Converts the line-based water mesh to i3d format.
-
-        Returns:
-            bool -- True if the conversion was successful, False otherwise.
-        """
-        if not self.assets.line_based_water_mesh or not os.path.isfile(
-            self.assets.line_based_water_mesh
-        ):
-            self.logger.warning("Line-based water mesh not found, cannot convert to i3d.")
-            return False
-
-        try:
-            mesh = trimesh.load_mesh(self.assets.line_based_water_mesh, force="mesh")
-        except Exception as e:
-            self.logger.error("Could not load line-based water mesh: %s", e)
-            return False
-
-        # Apply the rotation that mesh_to_i3d would do, so we can capture the centroid.
-        rotation_matrix = trimesh.transformations.rotation_matrix(-np.pi / 2, [1, 0, 0])
-        mesh.apply_transform(rotation_matrix)
-        center = mesh.vertices.mean(axis=0)
-
-        # After -pi/2 X rotation: center[0]=mean pixel X, center[2]=mean pixel Y,
-        # center[1] may be raw DEM units if flatten_water_to was set — always look it up.
-        background_dem = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
-        if background_dem is not None:
-            elevation = self.get_z_coordinate_from_dem(
-                background_dem, int(center[0]), int(center[2])
-            )
-        else:
-            elevation = float(center[1])
-
-        positions_dir = os.path.join(self.map_directory, "positions")
-        os.makedirs(positions_dir, exist_ok=True)
-        position_path = os.path.join(positions_dir, f"{Parameters.WATER_RESOURCES}.json")
-        try:
-            with open(position_path, "w", encoding="utf-8") as pf:
-                json.dump(
-                    {
-                        "mesh_centroid_x": float(center[0]),
-                        "mesh_centroid_y": float(elevation),
-                        "mesh_centroid_z": float(center[2]),
-                    },
-                    pf,
-                    ensure_ascii=False,
-                    indent=4,
-                )
-        except Exception as e:
-            self.logger.warning("Could not save water resources centroid: %s", e)
-
-        try:
-            i3d_water_resources = self.mesh_to_i3d(
-                mesh,
-                output_dir=self.assets_water_directory,
-                name=Parameters.WATER_RESOURCES,
-                water_mesh=True,
-                rotate_mesh=False,
-                center_mesh=True,
-            )
-            self.logger.debug(
-                "Water resources mesh converted to i3d successfully: %s", i3d_water_resources
-            )
-            self.assets.water_resources_i3d = i3d_water_resources
-            return True
-        except Exception as e:
-            self.logger.error("Could not convert water mesh to i3d: %s", e)
-            return False
-
     def map_dem_size(self) -> int:
         """Returns the size of the map DEM.
 
@@ -669,8 +503,10 @@ class Background(MeshComponent, ImageComponent):
             str -- The path to the cutout DEM file.
         """
         dem_data = cv2.imread(dem_path, cv2.IMREAD_UNCHANGED)
+        if dem_data is None:
+            raise ValueError(f"Could not load DEM image: {dem_path}")
         half_size = self.map_size // 2
-        dem_data = self.cut_out_np(dem_data, half_size, return_cutout=True)  # type: ignore
+        dem_data = self.cut_out_np(dem_data, half_size, return_cutout=True)
 
         if save_path:
             cv2.imwrite(save_path, dem_data)
@@ -687,7 +523,7 @@ class Background(MeshComponent, ImageComponent):
 
         output_size = self.map_dem_size()
 
-        main_dem_path = self.game.dem_file_path(self.map_directory)
+        main_dem_path = self.game.dem_file_path
 
         try:
             os.remove(main_dem_path)
@@ -777,7 +613,7 @@ class Background(MeshComponent, ImageComponent):
         Returns:
             list[str] -- A list of paths to the previews.
         """
-        preview_paths = self.dem_previews(self.game.dem_file_path(self.map_directory))
+        preview_paths = self.dem_previews(self.game.dem_file_path)
 
         background_dem_preview_path = os.path.join(self.previews_directory, "background_dem.png")
 
@@ -786,9 +622,12 @@ class Background(MeshComponent, ImageComponent):
             return []
 
         background_dem_preview_image = cv2.imread(self.output_path, cv2.IMREAD_UNCHANGED)
+        if background_dem_preview_image is None:
+            self.logger.warning("Could not read DEM preview source: %s", self.output_path)
+            return preview_paths
 
         background_dem_preview_image = cv2.resize(
-            background_dem_preview_image, (0, 0), fx=1 / 4, fy=1 / 4  # type: ignore
+            background_dem_preview_image, (0, 0), fx=1 / 4, fy=1 / 4
         )
         background_dem_preview_image = cv2.normalize(
             background_dem_preview_image,
@@ -837,7 +676,9 @@ class Background(MeshComponent, ImageComponent):
         self.logger.debug("Creating grayscale preview of DEM data in %s.", grayscale_dem_path)
 
         dem_data = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-        dem_data_rgb = cv2.cvtColor(dem_data, cv2.COLOR_GRAY2RGB)  # type: ignore
+        if dem_data is None:
+            raise ValueError(f"Could not read DEM image for grayscale preview: {image_path}")
+        dem_data_rgb = cv2.cvtColor(dem_data, cv2.COLOR_GRAY2RGB)
         cv2.imwrite(grayscale_dem_path, dem_data_rgb)
         return grayscale_dem_path
 
@@ -856,467 +697,24 @@ class Background(MeshComponent, ImageComponent):
         self.logger.debug("Creating colored preview of DEM data in %s.", colored_dem_path)
 
         dem_data = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+        if dem_data is None:
+            raise ValueError(f"Could not read DEM image for colored preview: {image_path}")
 
         # Create an empty array with the same shape and type as dem_data.
         dem_data_normalized = np.empty_like(dem_data)
 
         # Normalize the DEM data to the range [0, 255]
-        cv2.normalize(dem_data, dem_data_normalized, 0, 255, cv2.NORM_MINMAX)  # type: ignore
+        cv2.normalize(dem_data, dem_data_normalized, 0, 255, cv2.NORM_MINMAX)
         dem_data_colored = cv2.applyColorMap(dem_data_normalized, cv2.COLORMAP_JET)
 
         cv2.imwrite(colored_dem_path, dem_data_colored)
         return colored_dem_path
 
     @monitor_performance
-    def create_background_textures(self) -> None:
-        """Creates background textures for the map."""
-        layers_schema = self.map.texture_schema
-        if not layers_schema:
-            self.logger.warning("No texture schema found.")
-            return
-
-        background_layers = []
-        for layer in layers_schema:
-            if layer.get("background") is True:
-                layer_copy = deepcopy(layer)
-                layer_copy["count"] = 1
-                layer_copy["name"] = f"{layer['name']}_background"
-                background_layers.append(layer_copy)
-
-        if not background_layers:
-            return
-
-        self.background_texture = Texture(
-            self.game,
-            self.map,
-            self.coordinates,
-            self.background_size,
-            self.rotated_size,
-            rotation=self.rotation,
-            map_directory=self.map_directory,
-            logger=self.logger,
-            texture_custom_schema=background_layers,  # type: ignore
-            skip_scaling=True,  # type: ignore
-            info_layer_path=os.path.join(self.info_layers_directory, "background.json"),  # type: ignore
-            cap_style="flat",  # type: ignore
-        )
-
-        self.background_texture.preprocess()
-        self.background_texture.process()
-
-        processed_layers = self.background_texture.get_background_layers()
-        weights_directory = self.game.weights_dir_path(self.map_directory)
-        background_paths = [layer.path(weights_directory) for layer in processed_layers]
-        self.logger.debug("Found %s background textures.", len(background_paths))
-
-        if not background_paths:
-            self.logger.warning("No background textures found.")
-            return
-
-        # Merge all images into one.
-        background_image = np.zeros((self.background_size, self.background_size), dtype=np.uint8)
-        for path in background_paths:
-            background_layer = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-            background_image = cv2.add(background_image, background_layer)  # type: ignore
-
-        cv2.imwrite(self.water_resources_path, background_image)
-
-    @monitor_performance
-    def subtraction(self) -> None:
-        """Subtracts the water depth from the DEM data where the water resources are located."""
-        if not self.water_resources_path:
-            self.logger.warning("Water resources texture not found.")
-            return
-        if not os.path.isfile(self.water_resources_path):
-            self.logger.warning("Water resources texture was not generated, skipping subtraction.")
-            return
-
-        water_resources_image = cv2.imread(self.water_resources_path, cv2.IMREAD_UNCHANGED)
-        dem_image = cv2.imread(self.output_path, cv2.IMREAD_UNCHANGED)
-
-        # fall back to default value for height_scale 255, it is defined as float | None
-        # but it is always set at this point
-        z_scaling_factor: float = (
-            self.map.shared_settings.mesh_z_scaling_factor
-            if self.map.shared_settings.mesh_z_scaling_factor is not None
-            else 257
-        )
-        flatten_to = None
-        subtract_by = int(self.map.dem_settings.water_depth * z_scaling_factor)
-
-        if self.map.background_settings.flatten_water:
-            try:
-                # Check if there are any water pixels (255) in the water resources image.
-                if not np.any(water_resources_image == 255):
-                    self.logger.warning("No water pixels found in water resources image.")
-                    return
-                mask = water_resources_image == 255
-                flatten_to = int(np.mean(dem_image[mask]) - subtract_by)  # type: ignore
-                self.flatten_water_to = flatten_to  # type: ignore
-            except Exception as e:
-                self.logger.warning("Error occurred while flattening water: %s", e)
-
-        dem_image = self.subtract_by_mask(
-            dem_image,  # type: ignore
-            water_resources_image,  # type: ignore
-            subtract_by=subtract_by,
-            flatten_to=flatten_to,
-        )
-
-        dem_image = self.blur_edges_by_mask(
-            dem_image, water_resources_image, smaller_kernel=3, iterations=5, bigger_kernel=5  # type: ignore
-        )
-
-        # Save the modified dem_image back to the output path
-        cv2.imwrite(self.output_path, dem_image)
-        self.logger.debug("Water depth subtracted from DEM data: %s", self.output_path)
-
-    def _get_blur_power(self) -> int:
-        """Returns the blur power for the water resources to apply Gaussian blur.
-
-        Returns:
-            int: The blur power for the water resources.
-        """
-        blur_power = max(3, min(self.map.background_settings.water_blurriness, 99))
-        if blur_power % 2 == 0:
-            blur_power += 1
-
-        return blur_power
-
-    def generate_linebased_water(self) -> None:
-        """Generates water resources based on line-based polylines from the background info layer.
-        It creates polygons from the polylines, fits them into the map bounds, and generates a mesh.
-        """
-        self.logger.debug("Starting line-based water generation...")
-        water_polygons = self.get_infolayer_data(Parameters.BACKGROUND, Parameters.WATER)
-        if not water_polygons:
-            self.logger.warning("No water polygons found in background info layer.")
-            return
-
-        self.logger.debug(
-            "Found %s water polygons in background info layer.", len(water_polygons)  # type: ignore
-        )
-
-        polygons: list[shapely.Polygon] = []
-        for polygon_points in water_polygons:
-            if not polygon_points or len(polygon_points) < 2:
-                self.logger.warning("Skipping polygon with insufficient points...")
-                continue
-
-            polygon = shapely.Polygon(polygon_points)
-
-            if polygon.is_empty or not polygon.is_valid:
-                self.logger.warning("Skipping empty or invalid polygon...")
-                continue
-
-            # Make Polygon a little bit bigger to hide under the terrain when creating water planes.
-            polygon = polygon.buffer(Parameters.WATER_ADD_WIDTH, quad_segs=4)
-
-            polygons.append(polygon)
-
-        fitted_polygons = []
-        for polygon in polygons:
-            try:
-                fitted_polygon_points = self.fit_object_into_bounds(
-                    polygon_points=polygon.exterior.coords,
-                    angle=self.rotation,
-                    canvas_size=self.background_size,
-                    rotated_canvas_size=self.rotated_size,
-                )
-                fitted_polygon = shapely.Polygon(fitted_polygon_points)
-                fitted_polygons.append(fitted_polygon)
-            except Exception as e:
-                self.logger.debug("Could not fit polygon into bounds with error: %s.", e)
-                continue
-
-        if not fitted_polygons:
-            self.logger.warning("No valid water polygons created from polylines.")
-            return
-
-        # Create a mesh from the 3D polygons
-        mesh = self.mesh_from_3d_polygons(fitted_polygons, single_z_value=self.flatten_water_to)
-        if mesh is None:
-            self.logger.warning("No mesh could be created from the water polygons.")
-            return
-        self.logger.debug("Created mesh from %s water polygons.", len(fitted_polygons))
-
-        mesh = self.rotate_mesh(mesh)
-        mesh = self.invert_faces(mesh)
-
-        line_based_save_path = os.path.join(self.water_directory, "line_based_water.obj")
-        mesh.export(line_based_save_path)
-        self.logger.debug("Line-based water mesh saved to %s", line_based_save_path)
-
-        self.assets.line_based_water_mesh = line_based_save_path
-
-    def generate_line_surface_water(self) -> None:
-        """Generate water mesh based on line surface water polylines from the background info layer."""
-        water_infos = self.get_infolayer_data(Parameters.BACKGROUND, Parameters.WATER_POLYLINES)
-        if not water_infos:
-            self.logger.warning("Water polylines data not found in textures info layer.")
-            return
-
-        water_entries: list[LineSurfaceEntry] = []
-        for water_id, water_info in enumerate(water_infos, start=1):  # type: ignore
-            if isinstance(water_info, dict):
-                points: list[int | float] = water_info.get("points")  # type: ignore
-                width: int = water_info.get("width")  # type: ignore
-            else:
-                continue
-
-            if not points or len(points) < 2 or not width:
-                self.logger.debug("Invalid water data for water ID %s: %s", water_id, water_info)
-                continue
-
-            try:
-                fitted_water = self.fit_object_into_bounds(  # type: ignore
-                    linestring_points=points,  # type: ignore
-                    angle=self.rotation,
-                    canvas_size=self.background_size,
-                    rotated_canvas_size=self.rotated_size,
-                )
-            except ValueError as e:
-                self.logger.debug(
-                    "Water %s could not be fitted into the map bounds with error: %s",
-                    water_id,
-                    e,
-                )
-                continue
-
-            try:
-                linestring = shapely.LineString(fitted_water)
-            except ValueError as e:
-                self.logger.debug(
-                    "Water %s could not be converted to a LineString with error: %s",
-                    water_id,
-                    e,
-                )
-                continue
-
-            width += LINE_SURFACE_WATER_WIDTH_EXTENSION
-            water_entries.append(LineSurfaceEntry(linestring=linestring, width=width))
-
-        if not water_entries:
-            self.logger.warning("No valid water polylines found in textures info layer.")
-            return
-
-        interpolated_water_entries: list[LineSurfaceEntry] = self.smart_interpolation(water_entries)
-
-        split_line_surface_entries: list[LineSurfaceEntry] = self.split_long_line_surfaces(
-            interpolated_water_entries
-        )
-
-        obj_output_path = os.path.join(self.water_directory, "line_surface_water.obj")
-
-        dem_image = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
-        if dem_image is None:
-            self.logger.error("Could not read DEM image for line surface water generation.")
-            return
-
-        self.create_textured_linestrings_mesh(
-            split_line_surface_entries, obj_output_path, dem_override=dem_image
-        )
-
-        mesh = trimesh.load_mesh(obj_output_path, force="mesh", process=False)
-        rotation_matrix = trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0])
-        mesh.apply_transform(rotation_matrix)
-
-        vertices = mesh.vertices
-        center = vertices.mean(axis=0)
-        mesh.vertices = vertices - center
-
-        # Save mesh centroid for GE positioning.
-        positions_dir = os.path.join(self.map_directory, "positions")
-        os.makedirs(positions_dir, exist_ok=True)
-        position_path = os.path.join(
-            positions_dir, f"{Parameters.WATER_RESOURCES}_line_surface.json"
-        )
-        try:
-            with open(position_path, "w", encoding="utf-8") as pf:
-                json.dump(
-                    {
-                        "mesh_centroid_x": float(center[0]),
-                        "mesh_centroid_y": float(center[1]),
-                        "mesh_centroid_z": float(center[2]),
-                    },
-                    pf,
-                    ensure_ascii=False,
-                    indent=4,
-                )
-        except Exception as e:
-            self.logger.warning("Could not save water line surface centroid: %s", e)
-
-        output_directory = os.path.join(self.map_directory, "assets", "water")
-        os.makedirs(output_directory, exist_ok=True)
-
-        self.mesh_to_i3d(
-            mesh,
-            output_directory,
-            Parameters.WATER_RESOURCES_LINE_SURFACE,
-            water_mesh=True,
-            rotate_mesh=False,
-            center_mesh=False,
-        )
-
-    def mesh_from_3d_polygons(
-        self, polygons: list[shapely.Polygon], single_z_value: int | None = None
-    ) -> Trimesh | None:
-        """Create a simple mesh from a list of 3D shapely Polygons.
-        Each polygon must be flat (all Z the same or nearly the same for each polygon).
-        Returns a single Trimesh mesh.
-
-        Arguments:
-            polygons (list[shapely.Polygon]): List of 3D shapely Polygons to create the mesh from.
-            single_z_value (int | None): The Z value to use for all vertices in the mesh.
-
-        Returns:
-            Trimesh: A single Trimesh object containing the mesh created from the polygons.
-        """
-
-        all_vertices = []
-        all_faces = []
-        vertex_offset = 0
-
-        not_resized_dem = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
-
-        for polygon in polygons:
-            # Get exterior 3D coordinates
-            exterior_coords = np.array(polygon.exterior.coords)
-            # Project to 2D for triangulation
-            exterior_2d = exterior_coords[:, :2]
-            poly_2d = shapely.geometry.Polygon(
-                exterior_2d, [np.array(ring.coords)[:, :2] for ring in polygon.interiors]
-            )
-
-            # Triangulate in 2D
-            vertices_2d, faces = trimesh.creation.triangulate_polygon(poly_2d)
-            # tris.vertices is 2D, tris.faces are indices
-
-            # Map 2D triangulated vertices back to 3D by matching to original 3D coords
-            vertices_3d = []
-            for v in vertices_2d:
-                # Find closest original 2D point to get Z
-                dists = np.linalg.norm(exterior_2d - v[:2], axis=1)
-                idx = np.argmin(dists)
-                # z = exterior_coords[idx, 2]
-                if not single_z_value:
-                    z = self.get_z_coordinate_from_dem(
-                        not_resized_dem, exterior_coords[idx, 0], exterior_coords[idx, 1]  # type: ignore
-                    )
-                    z = -z
-                else:
-                    z = single_z_value
-                vertices_3d.append([v[0], v[1], z])
-            vertices_3d = np.array(vertices_3d)  # type: ignore
-
-            faces = faces + vertex_offset
-            all_vertices.append(vertices_3d)
-            all_faces.append(faces)
-            vertex_offset += len(vertices_3d)
-
-        if not all_vertices:
-            return None
-
-        vertices = np.vstack(all_vertices)
-        faces = np.vstack(all_faces)
-        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
-        return mesh
-
-    @monitor_performance
-    def generate_water_resources_obj(self) -> None:
-        """Generates 3D obj files based on water resources data."""
-        self.logger.debug("Starting water resources generation...")
-        try:
-            self.generate_line_surface_water()
-        except Exception as e:
-            self.logger.error("Error during line surface water generation: %s", e)
-
-        try:
-            self.generate_linebased_water()
-        except Exception as e:
-            self.logger.error("Error during line-based water generation: %s", e)
-
-        if not os.path.isfile(self.water_resources_path):
-            self.logger.warning("Water resources texture not found.")
-            return
-
-        # Single channeled 8 bit image, where the water have values of 255, and the rest 0.
-        plane_water = cv2.imread(self.water_resources_path, cv2.IMREAD_UNCHANGED)
-
-        # Check if the image contains non-zero values.
-        if not np.any(plane_water):  # type: ignore
-            self.logger.debug("Water resources image is empty, skipping water generation.")
-            return
-
-        dilated_plane_water = cv2.dilate(
-            plane_water.astype(np.uint8), np.ones((5, 5), np.uint8), iterations=5  # type: ignore
-        ).astype(np.uint8)
-        plane_save_path = os.path.join(self.water_directory, "plane_water.obj")
-        self.plane_from_np(dilated_plane_water, plane_save_path, include_zeros=False)
-
-        # Single channeled 16 bit DEM image of terrain.
-        background_dem = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
-
-        if self.map.output_size is not None:
-            scaled_background_size = int(self.background_size * self.map.size_scale)
-            plane_water = cv2.resize(
-                plane_water,  # type: ignore
-                (scaled_background_size, scaled_background_size),
-                interpolation=cv2.INTER_NEAREST,
-            )
-            background_dem = cv2.resize(
-                background_dem,  # type: ignore
-                (scaled_background_size, scaled_background_size),
-                interpolation=cv2.INTER_NEAREST,
-            )
-
-        if self.map.background_settings.water_blurriness:
-            # Apply Gaussian blur to the background dem.
-            blur_power = self._get_blur_power()
-            background_dem = cv2.GaussianBlur(
-                background_dem, (blur_power, blur_power), sigmaX=blur_power, sigmaY=blur_power  # type: ignore
-            )
-
-        # Remove all the values from the background dem where the plane_water is 0.
-        background_dem[plane_water == 0] = 0  # type: ignore
-
-        # Dilate the background dem to make the water more smooth.
-        elevated_water = cv2.dilate(background_dem, np.ones((3, 3), np.uint16), iterations=10)  # type: ignore
-
-        # Use the background dem as a mask to prevent the original values from being overwritten.
-        mask = background_dem > 0  # type: ignore
-
-        # Combine the dilated background dem with non-dilated background dem.
-        elevated_water = np.where(mask, background_dem, elevated_water)  # type: ignore
-        elevated_save_path = os.path.join(self.water_directory, "elevated_water.obj")
-
-        self.assets.water_mesh = elevated_save_path
-
-        self.plane_from_np(elevated_water, elevated_save_path, include_zeros=False)
-
-    @monitor_performance
     def flatten_roads(self) -> None:
         """Flattens the roads in the DEM data by averaging the height values along the road polylines."""
-        supported_files = [
-            self.not_resized_path(Parameters.NOT_RESIZED_DEM_FOUNDATIONS),
-            self.not_resized_path(Parameters.NOT_RESIZED_DEM),
-        ]
-
-        base_image_path = None
-        for supported_file in supported_files:
-            if not supported_file or not os.path.isfile(supported_file):
-                continue
-
-            base_image_path = supported_file
-            break
-
-        if not base_image_path:
-            self.logger.warning("No DEM data found for flattening roads.")
-            return
-
-        dem_image = cv2.imread(base_image_path, cv2.IMREAD_UNCHANGED)
+        dem_image = self._load_roads_base_dem()
         if dem_image is None:
-            self.logger.warning("Failed to read DEM data.")
             return
 
         roads_polylines = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
@@ -1329,104 +727,15 @@ class Background(MeshComponent, ImageComponent):
         full_mask = np.zeros(dem_image.shape, dtype=np.uint8)
 
         for road_polyline in tqdm(roads_polylines, desc="Flattening roads", unit="road"):
-            points = road_polyline.get("points")
-            width = road_polyline.get("width")
-            if not points or not width:
-                self.logger.warning("Skipping road with insufficient data: %s", road_polyline)
+            road_result = self._flatten_single_road(road_polyline, dem_image)
+            if road_result is None:
                 continue
 
-            try:
-                fitted_road = self.fit_object_into_bounds(
-                    linestring_points=points, angle=self.rotation
-                )
-            except ValueError as e:
-                self.logger.debug(
-                    "Road polyline could not be fitted into the map bounds with error: %s",
-                    e,
-                )
-                continue
-
-            polyline = shapely.LineString(fitted_road)
-
-            total_length = polyline.length
-            self.logger.debug("Total length of the road polyline: %s", total_length)
-
-            # Step 1: Create complete road mask once
-            road_mask = np.zeros(dem_image.shape, dtype=np.uint8)
-            # OpenCV thickness is total width, not radius like Shapely buffer
-            # So we need width * 4 to match the old buffer(width * 2) behavior
-            line_thickness = int(width * 4)
-
-            # Get densely sampled points for smooth road
-            dense_sample_distance = min(SEGMENT_LENGTH, total_length / 100)  # At least 100 samples
-            num_dense_points = max(100, int(total_length / dense_sample_distance))
-            dense_distances = np.linspace(0, total_length, num_dense_points)
-            dense_points = [polyline.interpolate(d) for d in dense_distances]
-            dense_coords = np.array([(int(p.x), int(p.y)) for p in dense_points], dtype=np.int32)
-
-            # Draw entire road at once
-            if len(dense_coords) > 1:
-                cv2.polylines(road_mask, [dense_coords], False, 255, thickness=line_thickness)
-
-            # Step 2: Get all road pixels that need processing
-            road_pixels = np.where(road_mask == 255)
-            if len(road_pixels[0]) == 0:
-                continue
-
-            road_y, road_x = road_pixels
-            self.logger.debug("Processing %s road pixels", len(road_y))
-
-            # Step 3: Efficient distance-based smooth gradation
-            # Use much larger segments (10-20x SEGMENT_LENGTH) but interpolate between them
-            large_segment_length = SEGMENT_LENGTH * 15  # 30 units instead of 2
-            num_large_segments = max(1, int(np.ceil(total_length / large_segment_length)))
-            large_distances = np.linspace(0, total_length, num_large_segments + 1)
-
-            # Calculate elevation values at large segment points
-            segment_elevations = []
-            for dist in large_distances:
-                sample_point = polyline.interpolate(dist)
-                sample_x, sample_y = int(sample_point.x), int(sample_point.y)
-
-                # Sample elevation in small area around this point
-                sample_radius = max(5, line_thickness // 4)
-                y_min = max(0, sample_y - sample_radius)
-                y_max = min(dem_image.shape[0], sample_y + sample_radius)
-                x_min = max(0, sample_x - sample_radius)
-                x_max = min(dem_image.shape[1], sample_x + sample_radius)
-
-                if y_max > y_min and x_max > x_min:
-                    sample_elevation = np.mean(dem_image[y_min:y_max, x_min:x_max])  # type: ignore
-                else:
-                    sample_elevation = (
-                        dem_image[sample_y, sample_x]  # type: ignore
-                        if 0 <= sample_y < dem_image.shape[0] and 0 <= sample_x < dem_image.shape[1]
-                        else 0
-                    )
-
-                segment_elevations.append(sample_elevation)
-
-            # Step 4: Interpolate elevations smoothly along entire road
-            road_distances_from_start = []
-            for i in range(len(road_y)):  # pylint: disable=consider-using-enumerate
-                px, py = road_x[i], road_y[i]
-                # Find closest point on polyline (approximation)
-                closest_point = polyline.interpolate(polyline.project(shapely.Point(px, py)))
-                distance_along_road = polyline.project(closest_point)
-                road_distances_from_start.append(distance_along_road)
-
-            road_distances_from_start = np.array(road_distances_from_start)  # type: ignore
-
-            # Interpolate elevation values based on distance along road
-            interpolated_elevations = np.interp(
-                road_distances_from_start, large_distances, segment_elevations
-            )
-
-            # Step 5: Apply interpolated elevations to road pixels
+            road_y, road_x, interpolated_elevations = road_result
             dem_image[road_y, road_x] = interpolated_elevations
             full_mask[road_y, road_x] = 255
 
-        main_dem_path = self.game.dem_file_path(self.map_directory)
+        main_dem_path = self.game.dem_file_path
         dem_image = self.blur_by_mask(dem_image, full_mask, blur_radius=5)
         dem_image = self.blur_edges_by_mask(dem_image, full_mask)
 
@@ -1445,12 +754,107 @@ class Background(MeshComponent, ImageComponent):
         cv2.imwrite(main_dem_path, resized_dem)
         self.logger.debug("Flattened roads saved to DEM file: %s", main_dem_path)
 
+    def _load_roads_base_dem(self) -> np.ndarray | None:
+        """Load the highest-priority DEM available for road flattening."""
+        candidate_paths = [
+            self.not_resized_path(Parameters.NOT_RESIZED_DEM_FOUNDATIONS),
+            self.not_resized_path(Parameters.NOT_RESIZED_DEM),
+        ]
+        for candidate_path in candidate_paths:
+            if not os.path.isfile(candidate_path):
+                continue
+
+            dem_image = cv2.imread(candidate_path, cv2.IMREAD_UNCHANGED)
+            if dem_image is not None:
+                return dem_image
+
+        self.logger.warning("No DEM data found for flattening roads.")
+        return None
+
+    def _flatten_single_road(
+        self,
+        road_polyline: dict[str, Any],
+        dem_image: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
+        """Return target pixels and interpolated elevations for one road polyline."""
+        points = road_polyline.get("points")
+        width = road_polyline.get("width")
+        if not points or not width:
+            self.logger.warning("Skipping road with insufficient data: %s", road_polyline)
+            return None
+
+        try:
+            fitted_road = self.fit_object_into_bounds(linestring_points=points, angle=self.rotation)
+        except ValueError as e:
+            self.logger.debug("Road polyline could not be fitted into bounds: %s", e)
+            return None
+
+        polyline = shapely.LineString(fitted_road)
+        total_length = polyline.length
+        if total_length <= 0:
+            return None
+
+        line_thickness = int(width * 4)
+        road_mask = np.zeros(dem_image.shape, dtype=np.uint8)
+        dense_sample_distance = min(Parameters.SEGMENT_LENGTH, total_length / 100)
+        num_dense_points = max(100, int(total_length / dense_sample_distance))
+        dense_distances = np.linspace(0, total_length, num_dense_points)
+        dense_points = [polyline.interpolate(d) for d in dense_distances]
+        dense_coords = np.array([(int(p.x), int(p.y)) for p in dense_points], dtype=np.int32)
+        if len(dense_coords) > 1:
+            cv2.polylines(road_mask, [dense_coords], False, 255, thickness=line_thickness)
+
+        road_pixels = np.where(road_mask == 255)
+        if len(road_pixels[0]) == 0:
+            return None
+        road_y, road_x = road_pixels
+
+        large_segment_length = Parameters.SEGMENT_LENGTH * 15
+        num_large_segments = max(1, int(np.ceil(total_length / large_segment_length)))
+        large_distances = np.linspace(0, total_length, num_large_segments + 1)
+
+        segment_elevations = []
+        for dist in large_distances:
+            sample_point = polyline.interpolate(dist)
+            sample_x, sample_y = int(sample_point.x), int(sample_point.y)
+            sample_radius = max(5, line_thickness // 4)
+            y_min = max(0, sample_y - sample_radius)
+            y_max = min(dem_image.shape[0], sample_y + sample_radius)
+            x_min = max(0, sample_x - sample_radius)
+            x_max = min(dem_image.shape[1], sample_x + sample_radius)
+
+            if y_max > y_min and x_max > x_min:
+                sample_elevation = np.mean(dem_image[y_min:y_max, x_min:x_max])
+            elif 0 <= sample_y < dem_image.shape[0] and 0 <= sample_x < dem_image.shape[1]:
+                sample_elevation = dem_image[sample_y, sample_x]
+            else:
+                sample_elevation = 0
+            segment_elevations.append(sample_elevation)
+
+        road_distances_from_start = np.array(
+            [
+                polyline.project(polyline.interpolate(polyline.project(shapely.Point(px, py))))
+                for px, py in zip(road_x, road_y)
+            ]
+        )
+        interpolated_elevations = np.interp(
+            road_distances_from_start,
+            large_distances,
+            segment_elevations,
+        )
+        return road_y, road_x, interpolated_elevations
+
     def process_road_masks(self) -> None:
         """Reads road mask images from the roads directory and saves bounding-box position
         data for each mask so the GE can position the road meshes correctly."""
         roads_directory = os.path.join(self.map_directory, "roads")
         if not os.path.isdir(roads_directory):
             self.logger.warning("Roads directory not found, skipping road mask processing.")
+            return
+
+        dem_image = self.get_dem_image_with_fallback()
+        if dem_image is None:
+            self.logger.warning("DEM image not found, skipping road mask processing.")
             return
 
         # Get all files in directory ending with _mask.png
@@ -1462,25 +866,18 @@ class Background(MeshComponent, ImageComponent):
             if mask is None:
                 self.logger.warning("Could not read mask file: %s, skipping.", mask_path)
                 continue
-            bounds = self.get_non_zero_bounds(mask)
-            if bounds is None:
+            if not np.any(mask):
                 self.logger.warning(
                     "No non-zero pixels found in rotated mask, skipping road mask processing."
                 )
-                return
-            left, top, right, bottom = bounds
-
-            dem_image = self.get_dem_image_with_fallback()
-            if dem_image is None:
-                self.logger.warning("DEM image not found, skipping road mask processing.")
-                return
+                continue
 
             extremes = self.get_dem_extremes_by_mask(dem_image, mask)
             if extremes is None:
                 self.logger.warning("No valid pixels found in DEM image for road mask, skipping.")
-                return
+                continue
 
-            (min_x, min_y, min_val), (max_x, max_y, max_val) = extremes
+            (min_x, min_y, _), (max_x, max_y, _) = extremes
 
             min_z = self.get_z_coordinate_from_dem(dem_image, min_x, min_y)
             max_z = self.get_z_coordinate_from_dem(dem_image, max_x, max_y)
@@ -1491,31 +888,13 @@ class Background(MeshComponent, ImageComponent):
             centroid_x = int(np.mean(xs))
             centroid_y = int(np.mean(ys))
 
-            road_data = {
-                "left": left,
-                "top": top,
-                "right": right,
-                "bottom": bottom,
-                "centroid_x": centroid_x,
-                "centroid_y": centroid_y,
-                "min_x": min_x,
-                "min_y": min_y,
-                "min_z": min_z,
-                "min_val": min_val,
-                "max_x": max_x,
-                "max_y": max_y,
-                "max_z": max_z,
-                "max_val": max_val,
-            }
-
             base_filename = os.path.splitext(mask_file)[0].replace("_mask", "")
-            positions_directory = os.path.join(self.map_directory, "positions")
-            os.makedirs(positions_directory, exist_ok=True)
-
-            road_data_path = os.path.join(positions_directory, f"{base_filename}.json")
-            with open(road_data_path, "w", encoding="utf-8") as f:
-                json.dump(road_data, f, ensure_ascii=False, indent=4)
-                self.logger.debug("Road data saved to %s.", road_data_path)
+            self.map.context.set_mesh_position(
+                base_filename,
+                mesh_centroid_x=float(centroid_x),
+                mesh_centroid_y=float((min_z + max_z) / 2),
+                mesh_centroid_z=float(centroid_y),
+            )
 
             try:
                 os.remove(mask_path)

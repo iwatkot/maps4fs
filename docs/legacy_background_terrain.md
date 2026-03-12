@@ -1,18 +1,16 @@
 # Background Terrain (Legacy Manual Process)
 
-> ⚠️ **This is the legacy manual process for FS22 or users who prefer manual control**
-> 
-> For **Farming Simulator 25**, Maps4FS now automatically generates ready-to-use i3d files! 
+>
+> For **Farming Simulator 25**, Maps4FS now automatically generates ready-to-use i3d files!
 > See the [new automated Background Terrain guide](background_terrain.md) instead.
-> 
+>
 > **Use this guide only if:**
-> - You're creating maps for **Farming Simulator 22**
 > - You prefer manual control over the process
 > - You need custom quality settings not available in automation
 
 ## How to create a background terrain
 
-📹 Check out the video version of this tutorial.  
+📹 Check out the video version of this tutorial.
 
 [![YouTube tutorial](https://github.com/user-attachments/assets/0c0a205d-b41e-4bfb-ac75-27737bd8f1e9)](https://www.youtube.com/watch?v=j0_tmJgfdpw)
 
@@ -37,7 +35,7 @@ Let's get straight to work:
 
 ![413003](https://github.com/user-attachments/assets/c3b74d01-624a-4c1f-b5ad-ef620cbb33d4)
 
-7. In the `Item` tab, change the `Location` [2] to `0, 0, 0` and the `Rotation` [3] to `0, 0, 0`.  
+7. In the `Item` tab, change the `Location` [2] to `0, 0, 0` and the `Rotation` [3] to `0, 0, 0`.
 Set the `Dimensions` [4] of the background terrain in meters. This is calculated as map size + 2048 × 2. For example, if your map size is 4096×4096, the terrain size should be 8192×8192.
 
 ![Transformation](https://github.com/user-attachments/assets/bdd0be37-2a38-44e7-bbb8-21e1a0929756)
@@ -92,13 +90,13 @@ The object should now look more terrain-like with `Shade Smooth` applied.
 
 ### Cutting Out the Map Center
 
-The generator can now remove the center from the mesh automatically. Ensure that **Background Settings** → **Remove center** is enabled.  
+The generator can now remove the center from the mesh automatically. Ensure that **Background Settings** → **Remove center** is enabled.
 
 ### Exporting the Object
 
 19. It's time to export our object as an `*.i3d` file. Open the side panel by pressing `N` and select the `GIANTS I3D Exporter` tab. If you can't see it, you either didn't install the `Blender Exporter Plugins` (step 2) or didn't activate them (step 3).
 
-Ensure the object is selected [1], specify the output file path [3], and click the `Export selected` button [4]. You can also use `Export all`, but make sure you don't have other objects in the scene (Blender adds a camera, light source, and cube by default). 
+Ensure the object is selected [1], specify the output file path [3], and click the `Export selected` button [4]. You can also use `Export all`, but make sure you don't have other objects in the scene (Blender adds a camera, light source, and cube by default).
 
 ![Export to i3d](https://github.com/user-attachments/assets/ad3913d7-a16e-47c0-a039-9f792e34ad4c)
 
@@ -110,18 +108,17 @@ At this point, you should have `*.i3d` files with your background terrain. Now l
 
 Here's what you need to do:
 
-1. Download and install Giants Editor from the official website: [https://gdn.giants-software.com/downloads.php](https://gdn.giants-software.com/downloads.php). 
-   
-   **Important**: For Farming Simulator 25 maps, use Giants Editor 10.0.0 or later. For Farming Simulator 22 maps, use Giants Editor 9.0.0 or later. Using the wrong editor version will cause crashes.
+1. Download and install Giants Editor from the official website: [https://gdn.giants-software.com/downloads.php](https://gdn.giants-software.com/downloads.php).
 
-2. Open your main map file (for Farming Simulator 25, this is the `map/map.i3d` file).
+
+2. Open your main map file (usually `map/map.i3d`).
 
 3. Click the `File` menu and select `Import...`, then choose your `*.i3d` file with the background terrain.
 
 ![Import](https://github.com/user-attachments/assets/32145805-6583-4147-ac04-4c69d041b554)
 
 4. If you can't see the texture on the terrain after import, you need to add it manually.
-   Open the `Material Editing` panel (if not visible, click `Window` menu and select `Material Editing`) and ensure you've selected the correct object in the `Scenegraph` panel. Find the `Albedo map` and click the `...` button to select the terrain texture. 
+   Open the `Material Editing` panel (if not visible, click `Window` menu and select `Material Editing`) and ensure you've selected the correct object in the `Scenegraph` panel. Find the `Albedo map` and click the `...` button to select the terrain texture.
 
 ![Albedo map](https://github.com/user-attachments/assets/20a197cd-dadf-4e61-8ad2-c6752d60fb17)
 
@@ -137,10 +134,13 @@ Here's what you need to do:
 
 8. If you used the method to cut out the map center from the previous tutorial, you only need to adjust the `Translate Y` and `Scale Y` values, which will differ for each terrain.
 
-ℹ️ These examples were added later, so they contain different untextured terrain - don't be alarmed!  
+ℹ️ These examples were added later, so they contain different untextured terrain - don't be alarmed!
 
 ![Adjust the terrain](https://github.com/user-attachments/assets/d5b6aec2-8e81-47e4-92f1-752a8df7fd69)
 
-And it should be perfectly aligned with the rest of the map.  
+And it should be perfectly aligned with the rest of the map.
 
 ![Aligned terrain](https://github.com/user-attachments/assets/e31e8f27-032c-4096-8043-20e94dfed6ac)
+
+
+

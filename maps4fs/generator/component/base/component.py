@@ -5,16 +5,16 @@ from __future__ import annotations
 import json
 import os
 from copy import deepcopy
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable
 
 import cv2
 import numpy as np
 import osmnx as ox
-from pyproj import Transformer
 from shapely.affinity import rotate, translate
 from shapely.geometry import LineString, Polygon, box
 
-from maps4fs.generator.qgis import save_scripts
+from maps4fs.generator.settings import Parameters
 
 if TYPE_CHECKING:
     from maps4fs.generator.game import Game
@@ -50,41 +50,59 @@ class AttrDict(dict):
         self[name] = value
 
 
+@dataclass(frozen=True)
+class ComponentPaths:
+    """Resolved filesystem paths used by all components."""
+
+    map_directory: str
+
+    @property
+    def previews_directory(self) -> str:
+        """Return directory path where component previews are stored."""
+        return os.path.join(self.map_directory, "previews")
+
+    @property
+    def satellite_directory(self) -> str:
+        """Return directory path where downloaded satellite tiles are stored."""
+        return os.path.join(self.map_directory, "satellite")
+
+    @property
+    def generation_info_path(self) -> str:
+        """Return path to component generation info JSON file."""
+        return os.path.join(self.map_directory, "generation_info.json")
+
+
 class Component:
     """Base class for all map generation components.
 
     Arguments:
         game (Game): The game instance for which the map is generated.
         map (Map): The map instance for which the component is generated.
-        coordinates (tuple[float, float]): The latitude and longitude of the center of the map.
-        map_size (int): The size of the map in pixels.
-        map_rotated_size (int): The size of the map in pixels after rotation.
-        rotation (int): The rotation angle of the map.
-        map_directory (str): The directory where the map files are stored.
-        logger (Any, optional): The logger to use. Must have at least three basic methods: debug,
-            info, warning. If not provided, default logging will be used.
+        map_size (int, optional): Override the map canvas size (default: map.size).
+        map_rotated_size (int, optional): Override the rotated canvas size
+            (default: map.rotated_size). Used by Background to pass a larger canvas.
     """
 
     def __init__(
         self,
         game: Game,
         map: Map,
-        coordinates: tuple[float, float],
-        map_size: int,
-        map_rotated_size: int,
-        rotation: int,
-        map_directory: str,
-        logger: Any = None,
-        **kwargs: dict[str, Any],
+        *,
+        map_size: int | None = None,
+        map_rotated_size: int | None = None,
+        **kwargs: Any,
     ):
         self.game = game
         self.map = map
-        self.coordinates = coordinates
-        self.map_size = map_size
-        self.map_rotated_size = map_rotated_size
-        self.rotation = rotation
-        self.map_directory = map_directory
-        self.logger = logger
+        self.map_size = map_size if map_size is not None else map.size
+        self.map_rotated_size = (
+            map_rotated_size if map_rotated_size is not None else map.rotated_size
+        )
+        self.coordinates = map.coordinates
+        self.rotation = map.rotation
+        self.map_directory = map.map_directory
+        self.paths = ComponentPaths(self.map_directory)
+        self.logger = map.logger
         self.kwargs = kwargs
 
         self.logger.debug(
@@ -94,15 +112,17 @@ class Component:
             self.map_rotated_size,
         )
 
-        os.makedirs(self.previews_directory, exist_ok=True)
-        os.makedirs(self.scripts_directory, exist_ok=True)
-        os.makedirs(self.info_layers_directory, exist_ok=True)
-        os.makedirs(self.satellite_directory, exist_ok=True)
+        self._prepare_directories()
 
         self.save_bbox()
         self.preprocess()
 
         self.assets = AttrDict()
+
+    def _prepare_directories(self) -> None:
+        """Ensure all shared component output directories exist."""
+        os.makedirs(self.paths.previews_directory, exist_ok=True)
+        os.makedirs(self.paths.satellite_directory, exist_ok=True)
 
     def preprocess(self) -> None:
         """Prepares the component for processing. Must be implemented in the child class."""
@@ -132,25 +152,7 @@ class Component:
         Returns:
             str: The directory where the preview images are stored.
         """
-        return os.path.join(self.map_directory, "previews")
-
-    @property
-    def info_layers_directory(self) -> str:
-        """The directory where the info layers are stored.
-
-        Returns:
-            str: The directory where the info layers are stored.
-        """
-        return os.path.join(self.map_directory, "info_layers")
-
-    @property
-    def scripts_directory(self) -> str:
-        """The directory where the scripts are stored.
-
-        Returns:
-            str: The directory where the scripts are stored.
-        """
-        return os.path.join(self.map_directory, "scripts")
+        return self.paths.previews_directory
 
     @property
     def satellite_directory(self) -> str:
@@ -159,7 +161,7 @@ class Component:
         Returns:
             str: The directory where the satellite images are stored.
         """
-        return os.path.join(self.map_directory, "satellite")
+        return self.paths.satellite_directory
 
     @property
     def generation_info_path(self) -> str:
@@ -168,7 +170,7 @@ class Component:
         Returns:
             str: The path to the generation info JSON file.
         """
-        return os.path.join(self.map_directory, "generation_info.json")
+        return self.paths.generation_info_path
 
     def info_sequence(self) -> dict[Any, Any]:
         """Returns the information sequence for the component. Must be implemented in the child
@@ -271,65 +273,6 @@ class Component:
         north, south, east, west = self.bbox
         return west, south, east, north
 
-    def get_espg3857_bbox(
-        self, bbox: tuple[float, float, float, float] | None = None, add_margin: bool = False
-    ) -> tuple[float, float, float, float]:
-        """Converts the bounding box to EPSG:3857.
-        If the bounding box is not provided, the instance variable is used.
-
-        Arguments:
-            bbox (tuple[float, float, float, float], optional): The bounding box to convert.
-            add_margin (bool, optional): Whether to add a margin to the bounding box.
-
-        Returns:
-            tuple[float, float, float, float]: The bounding box in EPSG:3857.
-        """
-        bbox = bbox or self.bbox
-        north, south, east, west = bbox
-        transformer = Transformer.from_crs("epsg:4326", "epsg:3857")
-        epsg3857_north, epsg3857_west = transformer.transform(north, west)
-        epsg3857_south, epsg3857_east = transformer.transform(south, east)
-
-        if add_margin:
-            margin = 500
-            epsg3857_north = int(epsg3857_north - margin)
-            epsg3857_south = int(epsg3857_south + margin)
-            epsg3857_east = int(epsg3857_east - margin)
-            epsg3857_west = int(epsg3857_west + margin)
-
-        return epsg3857_north, epsg3857_south, epsg3857_east, epsg3857_west
-
-    def get_epsg3857_string(
-        self, bbox: tuple[float, float, float, float] | None = None, add_margin: bool = False
-    ) -> str:
-        """Converts the bounding box to EPSG:3857 string.
-        If the bounding box is not provided, the instance variable is used.
-
-        Arguments:
-            bbox (tuple[float, float, float, float], optional): The bounding box to convert.
-            add_margin (bool, optional): Whether to add a margin to the bounding box.
-
-        Returns:
-            str: The bounding box in EPSG:3857 string.
-        """
-        north, south, east, west = self.get_espg3857_bbox(bbox, add_margin=add_margin)
-        return f"{north},{south},{east},{west} [EPSG:3857]"
-
-    def create_qgis_scripts(
-        self, qgis_layers: list[tuple[str, float, float, float, float]]
-    ) -> None:
-        """Creates QGIS scripts from the given layers.
-        Each layer is a tuple where the first element is a name of the layer and the rest are the
-        bounding box coordinates in EPSG:3857.
-        For filenames, the class name is used as a prefix.
-
-        Arguments:
-            qgis_layers (list[tuple[str, float, float, float, float]]): The list of layers to
-                create scripts for.
-        """
-        class_name = self.__class__.__name__.lower()
-        save_scripts(qgis_layers, class_name, self.scripts_directory)
-
     def get_polygon_center(self, polygon_points: list[tuple[int, int]]) -> tuple[int, int]:
         """Calculates the center of a polygon defined by a list of points.
 
@@ -342,6 +285,29 @@ class Component:
         polygon = Polygon(polygon_points)
         center = polygon.centroid
         return int(center.x), int(center.y)
+
+    @staticmethod
+    def polygon_points_to_np(
+        polygon_points: list[tuple[int, int]], divide: int | None = None
+    ) -> np.ndarray:
+        """Convert polygon points to Nx1x2 int32 array optionally divided by factor."""
+        array = np.array(polygon_points, dtype=np.int32).reshape((-1, 1, 2))
+        if divide:
+            return array // divide
+        return array
+
+    @staticmethod
+    def polygon_dimensions_and_rotation(polygon_points: np.ndarray) -> tuple[float, float, float]:
+        """Return width, depth and normalized rotation angle using min-area rectangle."""
+        points = polygon_points.astype(np.float32)
+        (_, _), (width, height), angle = cv2.minAreaRect(points)
+
+        if width < height:
+            width, height = height, width
+            angle = angle + 90.0
+
+        rotation_angle = (-angle) % 360.0
+        return width, height, rotation_angle
 
     def absolute_to_relative(
         self, point: tuple[int, int], center: tuple[int, int]
@@ -423,9 +389,10 @@ class Component:
                 center_x = center_y = rotated_canvas_size // 2
                 offset = limit // 2 - rotated_canvas_size // 2
             else:
-                center_x = center_y = self.map_rotated_size * self.map.size_scale // 2  # type: ignore
-                offset = (
-                    int((self.map_size / 2) - (self.map_rotated_size / 2)) * self.map.size_scale  # type: ignore
+                center = int(self.map_rotated_size * self.map.size_scale // 2)
+                center_x = center_y = center
+                offset = int(
+                    int((self.map_size / 2) - (self.map_rotated_size / 2)) * self.map.size_scale
                 )
             self.logger.debug(
                 "Rotating the osm_object by %s degrees with center at %sx%s",
@@ -471,105 +438,36 @@ class Component:
             raise ValueError("The fitted osm_object has no points.")
         return as_list
 
-    def get_infolayer_path(self, layer_name: str) -> str | None:
-        """Returns the path to the info layer file.
-
-        Arguments:
-            layer_name (str): The name of the layer.
-
-        Returns:
-            str | None: The path to the info layer file or None if the layer does not exist.
-        """
-        info_layer_path = os.path.join(self.info_layers_directory, f"{layer_name}.json")
-        if not os.path.isfile(info_layer_path):
-            self.logger.warning("Info layer %s does not exist", info_layer_path)
-            return None
-        return info_layer_path
+    # Maps (layer_name, layer_key) pairs to their map.context attribute names.
+    # Used by get_infolayer_data for direct in-memory lookups.
+    _INFO_LAYER_CONTEXT_MAP: dict[tuple[str, str], str] = {
+        ("textures", "fields"): "fields",
+        ("textures", "buildings"): "buildings",
+        ("textures", "roads_polylines"): "roads_polylines",
+        ("textures", "water_polylines"): "water_polylines",
+        ("textures", "farmyards"): "farmyards",
+        ("textures", "forest"): "forest",
+        ("textures", "water"): "water",
+        ("background", "water"): "background_water",
+        ("background", "water_polylines"): "background_water_polylines",
+    }
 
     def get_infolayer_data(self, layer_name: str, layer_key: str) -> Any | None:
-        """Reads the JSON file of the requested info layer and returns the value of the requested
-        key. If the layer or the key does not exist, None is returned.
+        """Return data from a named info layer by key.
+
+        Reads map.context only. Legacy info_layers/*.json channel is removed.
 
         Arguments:
-            layer_name (str): The name of the layer.
-            layer_key (str): The key to get the value of.
+            layer_name (str): Name of the info layer (e.g. "textures", "background").
+            layer_key (str): Key within the layer (e.g. "fields", "buildings").
 
         Returns:
-            Any | None: The value of the requested key or None if the layer or the key does not
-                exist.
+            Any | None: The value or None if not found.
         """
-        infolayer_path = self.get_infolayer_path(layer_name)
-        if not infolayer_path:
-            return None
-
-        with open(infolayer_path, "r", encoding="utf-8") as file:
-            data = json.load(file)
-
-        return data.get(layer_key)
-
-    def rotate_image(
-        self,
-        image_path: str,
-        angle: int,
-        output_height: int,
-        output_width: int,
-        output_path: str | None = None,
-    ) -> None:
-        """Rotates an image by a given angle around its center and cuts out the center to match
-        the output size.
-
-        Arguments:
-            image_path (str): The path to the image to rotate.
-            angle (int): The angle to rotate the image by.
-            output_height (int): The height of the output image.
-            output_width (int): The width of the output image.
-        """
-        if not os.path.isfile(image_path):
-            self.logger.warning("Image %s does not exist", image_path)
-            return
-
-        image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-        if image is None:
-            self.logger.warning("Image %s could not be read", image_path)
-            return
-
-        self.logger.debug("Read image from %s with shape: %s", image_path, image.shape)
-
-        if not output_path:
-            output_path = image_path
-
-        height, width = image.shape[:2]
-        center = (width // 2, height // 2)
-
-        self.logger.debug(
-            "Rotating the image... Angle: %s, center: %s, height: %s, width: %s",
-            angle,
-            center,
-            height,
-            width,
-        )
-
-        rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
-        rotated = cv2.warpAffine(image, rotation_matrix, (width, height))
-
-        start_x = center[0] - output_width // 2
-        start_y = center[1] - output_height // 2
-        end_x = start_x + output_width
-        end_y = start_y + output_height
-
-        self.logger.debug(
-            "Cropping the rotated image: start_x: %s, start_y: %s, end_x: %s, end_y: %s",
-            start_x,
-            start_y,
-            end_x,
-            end_y,
-        )
-
-        cropped = rotated[start_y:end_y, start_x:end_x]
-
-        self.logger.debug("Shape of the cropped image: %s", cropped.shape)
-
-        cv2.imwrite(output_path, cropped)
+        ctx_attr = self._INFO_LAYER_CONTEXT_MAP.get((layer_name, layer_key))
+        if ctx_attr is not None:
+            return getattr(self.map.context, ctx_attr, None)
+        return None
 
     @staticmethod
     def interpolate_points(
@@ -612,10 +510,10 @@ class Component:
 
         scaling_factor = 1 / self.map.dem_settings.multiplier
 
-        if self.map.shared_settings.height_scale_multiplier and not ignore_height_scale_multiplier:
-            scaling_factor *= self.map.shared_settings.height_scale_multiplier
-        if self.map.shared_settings.mesh_z_scaling_factor:
-            scaling_factor *= 1 / self.map.shared_settings.mesh_z_scaling_factor
+        if self.map.context.height_scale_multiplier and not ignore_height_scale_multiplier:
+            scaling_factor *= self.map.context.height_scale_multiplier
+        if self.map.context.mesh_z_scaling_factor:
+            scaling_factor *= 1 / self.map.context.mesh_z_scaling_factor
 
         return scaling_factor
 
@@ -707,19 +605,12 @@ class Component:
         Returns:
             np.ndarray | None: The DEM image or None if not found.
         """
-        background_component = self.map.get_background_component()
-        if not background_component:
-            self.logger.warning("Background component not found.")
-            return None
-
-        items = background_component.not_resized_paths()
-        result = self.get_item_with_fallback(
-            items,
-            self.get_image_safely,
-            start_at,
-            end_on,
-        )
-        return result
+        background_directory = os.path.join(self.map_directory, "background")
+        items = [
+            os.path.join(background_directory, dem_type)
+            for dem_type in Parameters.SUPPORTED_DEM_TYPES
+        ]
+        return self.get_item_with_fallback(items, self.get_image_safely, start_at, end_on)
 
     def get_non_zero_bounds(self, image: np.ndarray) -> tuple[int, int, int, int] | None:
         """Gets the distance from each edge of the image to the nearest non-zero pixel.

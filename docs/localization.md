@@ -47,3 +47,7 @@ Accepted translations are picked up automatically by both deployment methods:
 - **Docker** — see [Local Deployment (Docker)](local_deployment.md) for setup instructions.
 
 The language can be selected inside the application's interface once a locale file for that language is available.
+
+
+
+

@@ -135,16 +135,16 @@ For detailed instructions on map generation settings, see:
 
 ### Common Issues
 
-**Q: Antivirus flags the executable**  
+**Q: Antivirus flags the executable**
 A: This is normal for new executables. The file is safe when downloaded from the official source. You may need to add an exception in your antivirus.
 
-**Q: Background Terrain center removal not working**  
+**Q: Background Terrain center removal not working**
 A: Install Blender 4.3+ from [blender.org](https://www.blender.org/download/)
 
-**Q: App crashes on startup**  
+**Q: App crashes on startup**
 A: Check Windows Event Viewer for details and report on GitHub with error logs
 
-**Q: Generation fails**  
+**Q: Generation fails**
 A: Ensure you have sufficient disk space and RAM. Try a smaller map size.
 
 ### Reporting Bugs
@@ -192,3 +192,7 @@ See [How to Launch](how_to_launch.md) for detailed comparison.
 ---
 
 **Remember**: Only download from [https://maps4fs.xyz/download](https://maps4fs.xyz/download) - your security depends on it!
+
+
+
+

@@ -2,86 +2,19 @@
 
 from __future__ import annotations
 
-import re
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Literal, NamedTuple
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, cast
 
 from pydantic import BaseModel, ConfigDict
 
-import maps4fs.generator.config as mfscfg
+from maps4fs.generator.bootstrap import Bootstrap
+from maps4fs.generator.constants import Parameters
+
+PACKAGE_VERSION = Bootstrap.package_version()
+__all__ = ["Parameters"]
 
 if TYPE_CHECKING:
     from maps4fs.generator.map import Map
-
-
-class Parameters:
-    """Simple class to store string constants for parameters."""
-
-    FIELD = "field"
-    FIELDS = "fields"
-    BUILDINGS = "buildings"
-    TEXTURES = "textures"
-    BACKGROUND = "background"
-    FOREST = "forest"
-    ROADS_POLYLINES = "roads_polylines"
-    WATER_POLYLINES = "water_polylines"
-    WATER = "water"
-    FARMYARDS = "farmyards"
-
-    MAXIMUM_BACKGROUND_TEXTURE_SIZE = 4096
-
-    PREVIEW_MAXIMUM_SIZE = 2048
-
-    BACKGROUND_DISTANCE = 2048
-    FULL = "FULL"
-    PREVIEW = "PREVIEW"
-
-    DECIMATED_BACKGROUND = "decimated_background"
-    BACKGROUND_TERRAIN = "background_terrain"
-
-    WATER_RESOURCES = "water_resources"
-    WATER_RESOURCES_LINE_SURFACE = "water_resources_line_surface"
-
-    RESIZE_FACTOR = 8
-
-    FARMLAND_ID_LIMIT = 254
-
-    PLANTS_ISLAND_PERCENT = 100
-    PLANTS_ISLAND_MINIMUM_SIZE = 10
-    PLANTS_ISLAND_MAXIMUM_SIZE = 200
-    PLANTS_ISLAND_VERTEX_COUNT = 30
-    PLANTS_ISLAND_ROUNDING_RADIUS = 15
-
-    WATER_ADD_WIDTH = 2
-
-    HEIGHT_SCALE = "heightScale"
-
-    OVERVIEW_IMAGE_SIZE = 4096
-    OVERVIEW_IMAGE_FILENAME = "overview"
-
-    NOT_RESIZED_DEM = "not_resized.png"
-    NOT_RESIZED_DEM_FOUNDATIONS = "not_resized_with_foundations.png"
-    NOT_RESIZED_DEM_ROADS = "not_resized_with_flattened_roads.png"
-
-    INFO_LAYER_FARMLANDS = "infoLayer_farmlands.png"
-    DENSITY_MAP_FRUITS = "densityMap_fruits.png"
-    INFO_LAYER_ENVIRONMENT = "infoLayer_environment.png"
-
-    POINTS = "points"
-    TAGS = "tags"
-
-
-class SharedSettings(BaseModel):
-    """Represents the shared settings for all components."""
-
-    mesh_z_scaling_factor: float | None = None
-    height_scale_multiplier: float | None = None
-    height_scale_value: float | None = None
-    change_height_scale: bool = False
-
-    model_config = ConfigDict(
-        frozen=False,
-    )
 
 
 class SettingsModel(BaseModel):
@@ -90,79 +23,6 @@ class SettingsModel(BaseModel):
     model_config = ConfigDict(
         frozen=False,
     )
-
-    @classmethod
-    def all_settings_to_json(cls) -> dict[str, dict[str, Any]]:
-        """Get all settings of the current class and its subclasses as a dictionary.
-
-        Returns:
-            dict[str, dict[str, Any]]: Dictionary with settings of the current class and its
-                subclasses.
-        """
-        all_settings = {}
-        for subclass in cls.__subclasses__():
-            all_settings[subclass.__name__] = subclass().model_dump()
-
-        return all_settings
-
-    @classmethod
-    def all_settings_from_json(
-        cls, data: dict, flattening: bool = True, from_snake: bool = False, safe: bool = False
-    ) -> dict[str, SettingsModel]:
-        """Create settings instances from JSON data.
-
-        Arguments:
-            data (dict): JSON data.
-            flattening (bool): if set to True will flattet iterables to use the first element
-                of it.
-            from_snake (bool): if set to True will convert snake_case keys to camelCase.
-
-        Returns:
-            dict[str, Type[SettingsModel]]: Dictionary with settings instances.
-        """
-        settings = {}
-        for subclass in cls.__subclasses__():
-            if from_snake:
-                subclass_key = subclass.__name__.replace("Settings", "_settings").lower()
-            else:
-                subclass_key = subclass.__name__
-
-            subclass_data = data.get(subclass_key, {}) if safe else data[subclass_key]
-            if flattening:
-                for key, value in subclass_data.items():
-                    if isinstance(value, (list, tuple)):
-                        subclass_data[key] = value[0]
-
-            settings[cls.camel_to_snake(subclass.__name__)] = subclass(**subclass_data)
-
-        return settings
-
-    @staticmethod
-    def camel_to_snake(camel_string: str) -> str:
-        """Convert a camel case string to snake case.
-
-        Arguments:
-            camel_string (str): Camel case string.
-
-        Returns:
-            str: Snake case string.
-        """
-        splitted = re.split(r"(Settings)", camel_string)
-        joined = "_".join(part.lower() for part in splitted if part)
-        return joined
-
-    @classmethod
-    def all_settings(cls) -> list[SettingsModel]:
-        """Get all settings of the current class and its subclasses.
-
-        Returns:
-            list[SettingsModel]: List with settings of the current class and its subclasses.
-        """
-        settings = []
-        for subclass in cls.__subclasses__():
-            settings.append(subclass())
-
-        return settings
 
 
 class DEMSettings(SettingsModel):
@@ -231,7 +91,7 @@ class GRLESettings(SettingsModel):
     base_price: int = 60000
     price_scale: int = 100
     add_grass: bool = True
-    base_grass: tuple | str = ("smallDenseMix", "meadow")
+    base_grass: str = "smallDenseMix"
     random_plants: bool = True
     fill_empty_farmlands: bool = True
 
@@ -349,10 +209,22 @@ class GenerationSettings(BaseModel):
         Returns:
             GenerationSettings: Instance of GenerationSettings.
         """
-        all_settings = SettingsModel.all_settings_from_json(
-            data, flattening=False, from_snake=from_snake, safe=safe
+
+        def _get(cls_name: str, snake_name: str) -> dict:
+            key = snake_name if from_snake else cls_name
+            return data.get(key, {}) if safe else data[key]
+
+        return cls(
+            dem_settings=DEMSettings(**_get("DEMSettings", "dem_settings")),
+            background_settings=BackgroundSettings(
+                **_get("BackgroundSettings", "background_settings")
+            ),
+            grle_settings=GRLESettings(**_get("GRLESettings", "grle_settings")),
+            i3d_settings=I3DSettings(**_get("I3DSettings", "i3d_settings")),
+            texture_settings=TextureSettings(**_get("TextureSettings", "texture_settings")),
+            satellite_settings=SatelliteSettings(**_get("SatelliteSettings", "satellite_settings")),
+            building_settings=BuildingSettings(**_get("BuildingSettings", "building_settings")),
         )
-        return cls(**all_settings)  # type: ignore
 
 
 class MainSettings(NamedTuple):
@@ -387,7 +259,26 @@ class MainSettings(NamedTuple):
         Returns:
             MainSettings: Instance of MainSettings.
         """
-        return cls(**data)  # type: ignore
+        return cls(
+            game=cast(str, data["game"]),
+            latitude=cast(float, data["latitude"]),
+            longitude=cast(float, data["longitude"]),
+            country=cast(str, data["country"]),
+            size=cast(int, data["size"]),
+            output_size=cast(int | None, data["output_size"]),
+            rotation=cast(int, data["rotation"]),
+            dtm_provider=cast(str, data["dtm_provider"]),
+            custom_osm=cast(bool, data["custom_osm"]),
+            custom_dem=cast(bool, data["custom_dem"]),
+            is_public=cast(bool, data["is_public"]),
+            date=cast(str, data["date"]),
+            time=cast(str, data["time"]),
+            version=cast(str, data["version"]),
+            completed=cast(bool, data["completed"]),
+            error=cast(str | None, data.get("error")),
+            origin=cast(str | None, data.get("origin")),
+            platform=cast(str | None, data.get("platform")),
+        )
 
     def to_json(self) -> dict[str, str | float | int | bool | None]:
         """Convert the MainSettings instance to JSON format.
@@ -395,26 +286,7 @@ class MainSettings(NamedTuple):
         Returns:
             dict[str, str | float | int | bool | None]: JSON representation of the MainSettings.
         """
-        return {
-            "game": self.game,
-            "latitude": self.latitude,
-            "longitude": self.longitude,
-            "country": self.country,
-            "size": self.size,
-            "output_size": self.output_size,
-            "rotation": self.rotation,
-            "dtm_provider": self.dtm_provider,
-            "custom_osm": self.custom_osm,
-            "custom_dem": self.custom_dem,
-            "is_public": self.is_public,
-            "date": self.date,
-            "time": self.time,
-            "version": self.version,
-            "completed": self.completed,
-            "error": self.error,
-            "origin": self.origin,
-            "platform": self.platform,
-        }
+        return self._asdict()
 
     @classmethod
     def from_map(cls, map: Map) -> MainSettings:
@@ -426,10 +298,12 @@ class MainSettings(NamedTuple):
         Returns:
             MainSettings: Instance of MainSettings.
         """
-        from maps4fs.generator.utils import get_country_by_coordinates
+        from maps4fs.generator.geo import get_country_by_coordinates
+
+        telemetry = getattr(map, "_telemetry", {})
 
         return cls(
-            game=map.game.code,  # type: ignore
+            game=map.game.code,
             latitude=map.coordinates[0],
             longitude=map.coordinates[1],
             country=get_country_by_coordinates(map.coordinates),
@@ -439,12 +313,12 @@ class MainSettings(NamedTuple):
             dtm_provider=map.dtm_provider.name(),
             custom_osm=bool(map.custom_osm),
             custom_dem=bool(map.custom_background_path),
-            is_public=map.kwargs.get("is_public", False),
+            is_public=telemetry.get("is_public", False),
             date=datetime.now().strftime("%Y-%m-%d"),
             time=datetime.now().strftime("%H:%M:%S"),
-            version=mfscfg.PACKAGE_VERSION,
+            version=PACKAGE_VERSION,
             completed=False,
             error=None,
-            origin=map.kwargs.get("origin", None),
-            platform=map.kwargs.get("platform", None),
+            origin=telemetry.get("origin", None),
+            platform=telemetry.get("platform", None),
         )

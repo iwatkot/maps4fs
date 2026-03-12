@@ -1,20 +1,18 @@
 # Water Planes (Legacy Manual Process)
 
-> ⚠️ **This is the legacy manual process for FS22 or users who prefer manual control**
-> 
-> For **Farming Simulator 25**, Maps4FS now automatically generates ready-to-use i3d files! 
+>
+> For **Farming Simulator 25**, Maps4FS now automatically generates ready-to-use i3d files!
 > See the [new automated Water Planes guide](water_planes.md) instead.
-> 
+>
 > **Use this guide only if:**
-> - You're creating maps for **Farming Simulator 22**
 > - You prefer manual control over the process
 > - You need custom quality settings not available in automation
 
 ## How to create water planes
 
-📹 Check out the video version of this tutorial.  
+📹 Check out the video version of this tutorial.
 
-[![YouTube tutorial](https://github.com/iwatkot/maps4fs/releases/download/2.0.2/ep06-play.png)](https://www.youtube.com/watch?v=lZeEZ-ce3cI)  
+[![YouTube tutorial](https://github.com/iwatkot/maps4fs/releases/download/2.0.2/ep06-play.png)](https://www.youtube.com/watch?v=lZeEZ-ce3cI)
 
 The generator automatically generates the obj files for the water planes, but you need to process them in both Blender and Giants Editor for them to display correctly in the game.
 
@@ -27,7 +25,7 @@ The generator automatically generates the obj files for the water planes, but yo
 
 ![Set origin to geometry](https://github.com/user-attachments/assets/e2cf16af-5d42-449a-935a-524a70643f23)
 
-4. Press the **N** key to open the **Transform** panel and set the **Location** to **0, 0, 0** and **Rotation** to **0, 0, 0**.  
+4. Press the **N** key to open the **Transform** panel and set the **Location** to **0, 0, 0** and **Rotation** to **0, 0, 0**.
    **DO NOT TOUCH SCALE AND DIMENSIONS!**
 
 ![Set location and rotation](https://github.com/user-attachments/assets/5489c013-2495-47c9-b422-d0d1d5b1ef9d)
@@ -95,14 +93,14 @@ Save the file and continue with the next steps.
 
 **Note**: This is a very important step. Otherwise, the water shader will not work correctly and will have weird-looking lines all over the water plane.
 
-14. Open Giants Editor and import the i3d file. It will appear black, but don't worry - this is normal.  
+14. Open Giants Editor and import the i3d file. It will appear black, but don't worry - this is normal.
     After importing, position the water plane in the correct location.
 
 ![Position the water plane](https://github.com/user-attachments/assets/c7257060-bd83-498f-a5dc-098e675540df)
 
 15. Open the **Material Editing** window and select your water plane.
 
-16. Change the **Variation** to **simple** and then edit the values as shown in the screenshot.  
+16. Change the **Variation** to **simple** and then edit the values as shown in the screenshot.
     These are default values for the water plane, but you can adjust them to achieve the desired effect.
 
 ![Water plane values](https://github.com/user-attachments/assets/6624878c-818d-4371-bbf9-8bb6ace6589f)
@@ -113,7 +111,7 @@ Save the file and continue with the next steps.
 
 ![Normal map](https://github.com/user-attachments/assets/95adc493-983a-46ae-bd20-7d1f4e998ba7)
 
-19. Click the **...** button and provide the path to the **water_normal.dds** file.  
+19. Click the **...** button and provide the path to the **water_normal.dds** file.
     It's located at: `where-the-game-is-installed/data/maps/textures/shared/water_normal.dds`.
 
 ![Water normal map](https://github.com/user-attachments/assets/515de60b-bc1a-4843-b548-2820107435af)
@@ -122,7 +120,7 @@ Save the file and continue with the next steps.
 
 ![Normal map window](https://github.com/user-attachments/assets/bee7955f-7f6c-4d94-978c-0ab7835b9e2b)
 
-21. Now switch to the **UserAttributes** tab, enter the name `onCreate`, select `Script callback`, and click **Add**.  
+21. Now switch to the **UserAttributes** tab, enter the name `onCreate`, select `Script callback`, and click **Add**.
     After that, set the **Attribute** value to `Environment.onCreateWater`.
 
 22. On the **Attributes** → **Transform** tab, check the `Rigid body` checkbox.
@@ -136,3 +134,7 @@ Save the file and continue with the next steps.
 ![Water plane in GE](https://github.com/user-attachments/assets/b246cf85-b044-4ceb-bff4-9b32a753b143)
 
 We're done here!
+
+
+
+

@@ -13,7 +13,6 @@ The buildings schema is the **intelligent placement engine** that automatically 
 - **FS25 Schema**: [fs25-buildings-schema.json](https://github.com/iwatkot/maps4fsdata/blob/main/fs25/fs25-buildings-schema.json)
 - **Local Template**: `templates/fs25-buildings-schema.json` (in your Maps4FS installation)
 
-**⚠️ Farming Simulator 25 Only**: Buildings schema is **exclusively available for FS25**. FS22 does not support automated building placement.
 
 ### Schema Example: Professional Configuration
 
@@ -56,7 +55,7 @@ Buildings are placed within **designated land use areas** defined in OpenStreetM
 
 **Common Area Types:**
 - `landuse=residential` → Residential buildings
-- `landuse=commercial` → Commercial buildings  
+- `landuse=commercial` → Commercial buildings
 - `landuse=industrial` → Industrial buildings
 - `landuse=farmyard` → Agricultural buildings
 
@@ -89,52 +88,52 @@ Maps4FS automatically:
 
 ### Core Properties
 
-**`file`** *(string, required)*  
-**Purpose**: Path to the building's 3D model file  
-**Game Assets**: `$data/maps/mapEU/textures/buildings/...`  
-**Custom Assets**: `/assets/buildings/...`  
+**`file`** *(string, required)*
+**Purpose**: Path to the building's 3D model file
+**Game Assets**: `$data/maps/mapEU/textures/buildings/...`
+**Custom Assets**: `/assets/buildings/...`
 **Critical**: File path determines whether building uses game assets or custom template assets
 
-**`name`** *(string, required)*  
-**Purpose**: Unique building identifier for internal reference  
-**Best Practice**: Use descriptive, consistent naming that reflects building purpose  
+**`name`** *(string, required)*
+**Purpose**: Unique building identifier for internal reference
+**Best Practice**: Use descriptive, consistent naming that reflects building purpose
 **Examples**: `apartmentBuilding01`, `gasStation`, `customWarehouse`
 
 ### Physical Dimensions
 
-**`width`** *(float, required)*  
-**Purpose**: Building width in meters (X-axis dimension)  
-**Measurement**: Real-world meter scale for accurate placement  
+**`width`** *(float, required)*
+**Purpose**: Building width in meters (X-axis dimension)
+**Measurement**: Real-world meter scale for accurate placement
 **Precision**: Decimal values supported for exact dimensions
 
-**`depth`** *(float, required)*  
-**Purpose**: Building depth in meters (Z-axis dimension)  
-**Measurement**: Real-world meter scale for accurate placement  
+**`depth`** *(float, required)*
+**Purpose**: Building depth in meters (Z-axis dimension)
+**Measurement**: Real-world meter scale for accurate placement
 **Precision**: Decimal values supported for exact dimensions
 
 **⚠️ Height Deprecated**: Height values are **no longer used** in FS25 buildings schema. The game engine determines building height automatically from the 3D model.
 
 ### Classification System
 
-**`type`** *(string, required)*  
-**Purpose**: Building functional classification  
-**Examples**: `"apartment"`, `"station"`, `"mill"`, `"silo"`, `"warehouse"`  
+**`type`** *(string, required)*
+**Purpose**: Building functional classification
+**Examples**: `"apartment"`, `"station"`, `"mill"`, `"silo"`, `"warehouse"`
 **Strategic Use**: Enables filtering and specialized placement logic
 
-**`categories`** *(array, required)*  
-**Purpose**: Land use compatibility categories - **the core placement intelligence**  
-**Critical Function**: Must match `building_category` values in texture schema  
-**Examples**: 
+**`categories`** *(array, required)*
+**Purpose**: Land use compatibility categories - **the core placement intelligence**
+**Critical Function**: Must match `building_category` values in texture schema
+**Examples**:
 - `["residential"]` - Only placed in residential areas
 - `["retail", "commercial"]` - Placed in retail OR commercial areas
 - `["farmyard", "industrial"]` - Placed in farmyard OR industrial areas
 
 ### Geographic Constraints
 
-**`regions`** *(array, required)*  
-**Purpose**: Geographic/cultural region compatibility  
-**Current Options**: `["EU"]` (European assets)  
-**Future Expansion**: Additional regions (US, etc.) planned for multi-regional support  
+**`regions`** *(array, required)*
+**Purpose**: Geographic/cultural region compatibility
+**Current Options**: `["EU"]` (European assets)
+**Future Expansion**: Additional regions (US, etc.) planned for multi-regional support
 **Filtering**: Buildings only appear in compatible regional contexts
 
 ## Building Asset Integration
@@ -169,12 +168,12 @@ Maps4FS automatically:
 **Requirements:**
 - 🔧 **Custom map template** with building assets
 - 🔧 **Complete asset package** (i3d, textures, materials)
-- 🔧 **FS25 compatibility** - Models must follow FS25 standards
+- 🔧 **compatibility** - Models must follow standards
 - 🔧 **Template integration** - Assets must be included during generation
 
 **Advantages:**
 - 🎨 **Unlimited customization** - Any building design possible
-- 🎨 **Unique visual identity** - Distinctive map appearance  
+- 🎨 **Unique visual identity** - Distinctive map appearance
 - 🎨 **Specialized functionality** - Buildings tailored for specific purposes
 
 **Example:**
@@ -201,19 +200,19 @@ Maps4FS automatically:
 - **Buildings**: Houses, apartments, residential complexes
 - **Placement**: Distributed throughout residential neighborhoods
 
-**`commercial`** - General business and office areas  
+**`commercial`** - General business and office areas
 - **OSM Areas**: `landuse=commercial`
 - **Buildings**: Offices, business centers, mixed-use facilities
 - **Placement**: Concentrated in business districts
 
 **`retail`** - Shopping and customer-facing businesses
-- **OSM Areas**: `landuse=retail`  
+- **OSM Areas**: `landuse=retail`
 - **Buildings**: Stores, gas stations, pharmacies, dealerships
 - **Placement**: Along major roads and commercial strips
 
 **`industrial`** - Manufacturing and heavy industry
 - **OSM Areas**: `landuse=industrial`
-- **Buildings**: Factories, mills, power plants, processing facilities  
+- **Buildings**: Factories, mills, power plants, processing facilities
 - **Placement**: Industrial zones, often near transportation
 
 **`farmyard`** - Agricultural facilities and farm buildings
@@ -226,7 +225,7 @@ Maps4FS automatically:
 - **Buildings**: Churches, sanctuaries, religious facilities
 - **Placement**: Community centers, often prominently positioned
 
-**`recreation`** - Sports and leisure facilities  
+**`recreation`** - Sports and leisure facilities
 - **OSM Areas**: `landuse=recreation_ground`
 - **Buildings**: Sports facilities, recreational buildings
 - **Placement**: Parks, sports complexes, community areas
@@ -303,7 +302,7 @@ The system automatically extracts relevant tags from OSM building data while fil
 
 **Included Tags:**
 - `building` - Building type classification
-- `landuse` - Land use designation  
+- `landuse` - Land use designation
 - `amenity` - Amenity/facility type
 - `shop` - Shop/retail type
 - `leisure` - Leisure facility type
@@ -360,7 +359,7 @@ To enable precise tag-based building placement, ensure your texture schema inclu
 ```
 Area polygon: landuse=commercial
 Building 1: { building=yes, office=company }
-Building 2: { building=yes, shop=convenience, amenity=fuel }  
+Building 2: { building=yes, shop=convenience, amenity=fuel }
 Building 3: { building=yes }  // No specific tags
 ```
 
@@ -374,7 +373,7 @@ Building 3: { building=yes }  // No specific tags
     "save_tags": true
   },
   {
-    "name": "BC_retail", 
+    "name": "BC_retail",
     "tags": { "amenity": "fuel" },
     "building_category": "retail",
     "save_tags": true
@@ -415,7 +414,7 @@ You can create and modify building schemas to customize which buildings are plac
 
 1. **Locate Schema**: Navigate to `templates/fs25-buildings-schema.json` in your Maps4FS installation
 2. **Backup Original**: Always create backup before modifications
-3. **Edit JSON**: Use any JSON editor to modify the schema  
+3. **Edit JSON**: Use any JSON editor to modify the schema
 4. **Validate Syntax**: Ensure proper JSON formatting
 5. **Test Generation**: Generate small test maps to verify changes
 
@@ -430,7 +429,7 @@ You can create and modify building schemas to customize which buildings are plac
 ```json
 {
   "file": "/assets/buildings/myBuilding/myBuilding.i3d",
-  "name": "myBuilding", 
+  "name": "myBuilding",
   "width": 25.0,
   "depth": 15.0,
   "type": "custom",
@@ -527,9 +526,9 @@ Simply **delete entries** from the schema to prevent placement:
 
 ### Performance Optimization
 
-**Large schemas**: Consider removing unused buildings to improve processing speed  
-**Complex models**: Simplify custom building geometry for better performance  
-**Category overlap**: Optimize category assignments to prevent placement conflicts  
+**Large schemas**: Consider removing unused buildings to improve processing speed
+**Complex models**: Simplify custom building geometry for better performance
+**Category overlap**: Optimize category assignments to prevent placement conflicts
 **Regional filtering**: Use regional constraints to limit building sets appropriately
 
 ## Integration Examples
@@ -546,7 +545,7 @@ Simply **delete entries** from the schema to prevent placement:
    {
      "name": "BC_commercial",
      "count": 1,
-     "external": true,  
+     "external": true,
      "tags": { "landuse": "commercial" },
      "building_category": "commercial"
    }
@@ -562,7 +561,7 @@ Simply **delete entries** from the schema to prevent placement:
        "depth": 15.0
      },
      {
-       "name": "gasStation", 
+       "name": "gasStation",
        "categories": ["retail", "commercial"],
        "width": 40.0,
        "depth": 30.0
@@ -574,11 +573,13 @@ Simply **delete entries** from the schema to prevent placement:
 
 ## ⚠️ Important Limitations
 
-- **FS25 exclusive**: No building schema support for FS22
 - **Schema editing**: Create and modify custom building placement configurations
-- **Template dependency**: Custom buildings require proper map template integration  
+- **Template dependency**: Custom buildings require proper map template integration
 - **Asset requirements**: Custom buildings must include complete asset packages
 - **Performance impact**: Large building schemas may slow generation processing
 - **Regional constraints**: Buildings limited to compatible regional contexts
 
 For additional guidance, consult [Map Templates](map_templates.md) for asset integration and [Texture Schema](texture_schema.md) for area definition workflows.
+
+
+

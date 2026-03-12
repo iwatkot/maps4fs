@@ -9,13 +9,11 @@ Generated map archives follow a standardized naming pattern that includes essent
 **Format:** `[Date]_[Time]_[Latitude]_[Longitude]_[GameVersion]`
 
 **Components:**
-- **Game Version**: FS25 (Farming Simulator 25) or FS22 (Farming Simulator 22)
+- **Game Version**: FS25 (Farming Simulator 25)
 - **Latitude**: Center point latitude (e.g., 45.28571)
-- **Longitude**: Center point longitude (e.g., 20.23743)  
+- **Longitude**: Center point longitude (e.g., 20.23743)
 - **Date**: Generation date (e.g., 2024-12-10)
 - **Time**: Generation time (e.g., 23-43-55)
-
-## Directory Structure Overview
 
 ## Directory Structure Overview
 
@@ -28,14 +26,13 @@ Contains the essential components for creating realistic background terrain mesh
 - **PNG Images**: Raw DEM data files (can be safely removed after mesh generation)
 - **FULL.obj**: Complete 3D mesh file for background terrain rendering
 
-**NEW for FS25 - Automated Assets:**
+**Automated Assets:**
 When **Download Satellite Images** and **Generate Background** are both enabled, Maps4FS automatically creates:
 - **`assets/background/background_terrain.i3d`**: Ready-to-import Giants Editor file
 - **`assets/background/textured_mesh/`**: Complete textured mesh files (obj, mtl, texture)
 
 **Usage:**
-- **FS25**: Simply import `assets/background/background_terrain.i3d` directly into Giants Editor
-- **FS22**: Use `FULL.obj` with manual Blender workflow (see [Legacy Background Terrain](legacy_background_terrain.md))
+- Simply import `assets/background/background_terrain.i3d` directly into Giants Editor
 
 For detailed implementation guidance, see the [Background Terrain](background_terrain.md) tutorial.
 
@@ -46,48 +43,17 @@ Contains components for creating realistic water body meshes and planes. This di
 
 **Key Files:**
 - **PNG Images**: Water resource data files
-- **elevated_water.obj**: 3D mesh file for elevated water surfaces
-- **plane_water.obj**: 3D mesh file for flat water planes  
-- **line_based_water.obj**: 3D mesh file for linear water features (if applicable)
+- **polygon_water.obj**: Polygon-based water mesh source
+- **polyline_water.obj**: Polyline-based water mesh source (if applicable)
 
-**NEW for FS25 - Automated Assets:**
+**Automated Assets:**
 When **Generate Water** is enabled, Maps4FS automatically creates:
-- **`assets/water/water_resources.i3d`**: Ready-to-import Giants Editor file with proper ocean shader configuration
+- **`assets/water/polygon_water.i3d`**: Ready-to-import Giants Editor file with proper ocean shader configuration
 
 **Usage:**
-- **FS25**: Simply import `assets/water/water_resources.i3d` directly into Giants Editor, then configure water properties
-- **FS22**: Use obj files with manual Blender workflow (see [Legacy Water Planes](legacy_water_planes.md))
+- Simply import `assets/water/polygon_water.i3d` directly into Giants Editor, then configure water properties
 
 For detailed implementation guidance, see the [Water Planes](water_planes.md) tutorial.
-
-### Information Layers
-**Location:** `info_layers/`
-
-Internal storage directory for component data exchange and generation metadata. Currently utilized by the Texture component for storing field generation data.
-
-**Safety Note:** This directory can be safely removed if you don't require generation data persistence.
-
-#### Texture Generation Data
-**File:** `textures.json`
-
-Contains coordinate mapping for texture-associated InfoLayers, specifically field polygon data used by the I3D component for field generation.
-
-**Structure Example:**
-```json
-{
-    "fields": [
-        [
-            [458, 580],
-            [390, 758],
-            // Additional coordinates...
-        ]
-        // Additional field polygons...
-    ]
-    // Additional field data...
-}
-```
-
-**Note:** This file can be safely removed if field generation is not required for your map.
 
 ## Core Map Components
 **Location:** `map/`
@@ -102,7 +68,7 @@ XML configuration files that define various map behaviors and properties. While 
 #### Critical Configuration: Farmlands
 **File:** `farmLands.xml`
 
-**⚠️ IMPORTANT:** This file requires manual configuration to match the `farmlands` InfoLayer in Giants Editor. Without proper configuration, land purchasing will not function in-game.  
+**⚠️ IMPORTANT:** This file requires manual configuration to match the `farmlands` InfoLayer in Giants Editor. Without proper configuration, land purchasing will not function in-game.
 
 **Configuration Example:**
 ```xml
@@ -142,7 +108,7 @@ Essential terrain elevation data that defines your map's topography.
 
 **Key Files:**
 - **`dem.png`**: Primary elevation data used by Giants Editor and in-game
-- **`unprocessedHeightMap.png`**: Original elevation data before processing *(FS25 only)*
+- **`unprocessedHeightMap.png`**: Original elevation data before processing **
 
 **Version Note:** The unprocessed height map is only available in Farming Simulator 25.
 
@@ -167,9 +133,8 @@ Contains references and paths to various map components. Manual editing should o
 
 The minimap image displayed in-game.
 
-**NEW for FS25**: Automatically generated when **Download Satellite Images** is enabled - no manual creation required!
+**New**: Automatically generated when **Download Satellite Images** is enabled - no manual creation required!
 
-**Manual Creation**: Required for FS22 or custom designs. For detailed creation and optimization guidance, see the [Overview Image](overview_image.md) documentation.
 
 ### Preview Assets
 **Location:** `previews/`
@@ -194,7 +159,7 @@ For complete metadata documentation, see the [Generation Info](generation_info.m
     "DEBUG": [
         {
             "level": "DEBUG",
-            "timestamp": "2025-11-04 14:30:15,123", 
+            "timestamp": "2025-11-04 14:30:15,123",
             "message": "Processing texture layer for grass..."
         }
     ],
@@ -207,7 +172,7 @@ For complete metadata documentation, see the [Generation Info](generation_info.m
     ],
     "WARNING": [
         {
-            "level": "WARNING", 
+            "level": "WARNING",
             "timestamp": "2025-11-04 14:30:17,789",
             "message": "Custom texture schema not found, using default."
         }
@@ -215,7 +180,7 @@ For complete metadata documentation, see the [Generation Info](generation_info.m
     "ERROR": [
         {
             "level": "ERROR",
-            "timestamp": "2025-11-04 14:30:18,012", 
+            "timestamp": "2025-11-04 14:30:18,012",
             "message": "Failed to download satellite imagery for coordinates."
         }
     ]
@@ -240,7 +205,6 @@ For complete metadata documentation, see the [Generation Info](generation_info.m
 ## Mod Package Files
 
 ### Visual Identity
-- **`icon.dds`**: Mod icon (256×256 for FS22, 512×512 for FS25)
 - **`preview.dds`**: Map preview image (2048×2048 pixels)
 
 Both files use the DDS format. For conversion tools and optimization, see the [Getting Help](get_help.md) documentation.
@@ -259,8 +223,6 @@ Below is the complete file structure of a generated map package:
  ┣ 📂background
  ┃ ┣ 📄FULL.obj
  ┃ ┗ 📄FULL.png
- ┣ 📂info_layers
- ┃ ┗ 📄textures.json
  ┣ 📂map
  ┃ ┣ 📂config
  ┃ ┃ ┣ 📄aiSystem.xml
@@ -411,3 +373,6 @@ Below is the complete file structure of a generated map package:
  ┣ 📄modDesc.xml
  ┗ 📄preview.dds
 ```
+
+
+

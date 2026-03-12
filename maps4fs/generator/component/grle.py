@@ -1,5 +1,7 @@
 """This module contains the GRLE class for generating InfoLayer PNG files based on GRLE schema."""
 
+from __future__ import annotations
+
 import json
 import os
 from random import choice, randint
@@ -11,52 +13,10 @@ from shapely.geometry import Polygon
 from tqdm import tqdm
 
 from maps4fs.generator.component.base.component_image import ImageComponent
-from maps4fs.generator.component.base.component_xml import XMLComponent
 from maps4fs.generator.component.layer import Layer
+from maps4fs.generator.component.xml_document import XmlDocument
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
-
-# This value sums up the pixel value of the basic area type to convert it from "No Water" to "Near Water".
-# For example, if the basic area type is "city" (1), then the pixel value for "near water" will be 9.
-WATER_AREA_PIXEL_VALUE = 8
-
-
-def plant_to_pixel_value(plant_name: str) -> int | None:
-    """Returns the pixel value representation of the plant.
-    If not found, returns None.
-
-    Arguments:
-        plant_name (str): name of the plant
-
-    Returns:
-        int | None: pixel value of the plant or None if not found.
-    """
-    plants = {
-        "smallDenseMix": 33,
-        "meadow": 131,
-    }
-    return plants.get(plant_name)
-
-
-def area_type_to_pixel_value(area_type: str) -> int | None:
-    """Returns the pixel value representation of the area type.
-    If not found, returns None.
-
-    Arguments:
-        area_type (str): name of the area type
-
-    Returns:
-        int | None: pixel value of the area type or None if not found.
-    """
-    area_types = {
-        "open_land": 0,
-        "city": 1,
-        "village": 2,
-        "harbor": 3,
-        "industrial": 4,
-        "open_water": 5,
-    }
-    return area_types.get(area_type)
 
 
 class GRLELayer(NamedTuple):
@@ -77,7 +37,7 @@ class GRLELayer(NamedTuple):
     data_type: str
 
 
-class GRLE(ImageComponent, XMLComponent):
+class GRLE(ImageComponent):
     """Component for to generate InfoLayer PNG files based on GRLE schema.
 
     Arguments:
@@ -95,18 +55,10 @@ class GRLE(ImageComponent, XMLComponent):
         """Gets the path to the map I3D file from the game instance and saves it to the instance
         attribute. If the game does not support I3D files, the attribute is set to None."""
         self.preview_paths: dict[str, str] = {}
-        try:
-            self.xml_path = self.game.get_farmlands_xml_path(self.map_directory)
-        except NotImplementedError:
-            self.logger.warning("Farmlands XML file processing is not implemented for this game.")
-            self.xml_path = None
+        self.xml_path = self.game.farmlands_xml_path
 
     def _read_grle_schema(self) -> list[GRLELayer]:
-        try:
-            grle_schema_path = self.game.grle_schema
-        except ValueError:
-            self.logger.warning("GRLE schema processing is not implemented for this game.")
-            return []
+        grle_schema_path = self.game.grle_schema
 
         try:
             with open(grle_schema_path, "r", encoding="utf-8") as file:
@@ -141,20 +93,19 @@ class GRLE(ImageComponent, XMLComponent):
             return
 
         for info_layer in tqdm(grle_schema, desc="Preparing GRLE files", unit="layer"):
-            file_path = os.path.join(
-                self.game.weights_dir_path(self.map_directory), info_layer.name
-            )
+            file_path = os.path.join(self.game.weights_dir_path, info_layer.name)
 
             height = int(self.scaled_size * info_layer.height_multiplier)
             width = int(self.scaled_size * info_layer.width_multiplier)
             channels = info_layer.channels
             data_type = info_layer.data_type
+            info_layer_data: np.ndarray
 
             # Create the InfoLayer PNG file with zeros.
             if channels == 1:
                 info_layer_data = np.zeros((height, width), dtype=data_type)
             else:
-                info_layer_data = np.zeros((height, width, channels), dtype=data_type)  # type: ignore
+                info_layer_data = np.zeros((height, width, channels), dtype=data_type)
             self.logger.debug("Shape of %s: %s.", info_layer.name, info_layer_data.shape)
             cv2.imwrite(file_path, info_layer_data)
             self.logger.debug("InfoLayer PNG file %s created.", file_path)
@@ -162,11 +113,10 @@ class GRLE(ImageComponent, XMLComponent):
         self.grle_schema = grle_schema
 
         self._add_farmlands()
-        if self.game.plants_processing and self.map.grle_settings.add_grass:
+        if self.map.grle_settings.add_grass:
             self._add_plants()
-        if self.game.environment_processing:
-            self._process_environment()
-            self._process_indoor()
+        self._process_environment()
+        self._process_indoor()
 
     def get_info_layer_by_name(self, name: str) -> GRLELayer | None:
         """Returns the GRLELayer object for the given name.
@@ -197,15 +147,18 @@ class GRLE(ImageComponent, XMLComponent):
             save_path = os.path.join(self.previews_directory, f"{preview_name}.png")
             # Resize the preview image to the maximum size allowed for previews.
             image = cv2.imread(preview_path, cv2.IMREAD_GRAYSCALE)
+            if image is None:
+                self.logger.warning("Preview source could not be loaded: %s", preview_path)
+                continue
             if (
-                image.shape[0] > Parameters.PREVIEW_MAXIMUM_SIZE  # type: ignore
-                or image.shape[1] > Parameters.PREVIEW_MAXIMUM_SIZE  # type: ignore
+                image.shape[0] > Parameters.PREVIEW_MAXIMUM_SIZE
+                or image.shape[1] > Parameters.PREVIEW_MAXIMUM_SIZE
             ):
                 image = cv2.resize(
-                    image, (Parameters.PREVIEW_MAXIMUM_SIZE, Parameters.PREVIEW_MAXIMUM_SIZE)  # type: ignore
+                    image, (Parameters.PREVIEW_MAXIMUM_SIZE, Parameters.PREVIEW_MAXIMUM_SIZE)
                 )
             image_normalized = np.empty_like(image)
-            cv2.normalize(image, image_normalized, 0, 255, cv2.NORM_MINMAX)  # type: ignore
+            cv2.normalize(image, image_normalized, 0, 255, cv2.NORM_MINMAX)
             image_colored = cv2.applyColorMap(image_normalized, cv2.COLORMAP_JET)
             cv2.imwrite(save_path, image_colored)
             preview_paths.append(save_path)
@@ -234,20 +187,21 @@ class GRLE(ImageComponent, XMLComponent):
         Returns:
             np.ndarray | None: The farmlands preview image with fields overlayed on top of it.
         """
-        fields_layer = self.map.get_texture_layer(by_usage="field")
+        fields_layer = self.map.context.get_layer_by_usage("field")
         if not fields_layer:
             self.logger.debug("Fields layer not found in the texture component.")
             return None
 
-        fields_layer_path = fields_layer.get_preview_or_path(
-            self.game.weights_dir_path(self.map_directory)
-        )
+        fields_layer_path = fields_layer.get_preview_or_path(self.game.weights_dir_path)
         if not fields_layer_path or not os.path.isfile(fields_layer_path):
             self.logger.debug("Fields layer not found in the texture component.")
             return None
         fields_np = cv2.imread(fields_layer_path)
+        if fields_np is None:
+            self.logger.debug("Fields preview image could not be loaded: %s", fields_layer_path)
+            return None
         # Resize fields_np to the same size as farmlands_np.
-        fields_np = cv2.resize(fields_np, (farmlands_np.shape[1], farmlands_np.shape[0]))  # type: ignore
+        fields_np = cv2.resize(fields_np, (farmlands_np.shape[1], farmlands_np.shape[0]))
 
         # use fields_np as base layer and overlay farmlands_np on top of it with 50% alpha blending.
         return cv2.addWeighted(fields_np, 0.5, farmlands_np, 0.5, 0)
@@ -273,7 +227,7 @@ class GRLE(ImageComponent, XMLComponent):
             )
             return
 
-        info_layer_farmlands_path = self.game.get_farmlands_path(self.map_directory)
+        info_layer_farmlands_path = self.game.farmlands_path
 
         self.logger.debug(
             "Adding farmlands to the InfoLayer PNG file: %s.", info_layer_farmlands_path
@@ -284,14 +238,17 @@ class GRLE(ImageComponent, XMLComponent):
             return
 
         image = cv2.imread(info_layer_farmlands_path, cv2.IMREAD_UNCHANGED)
+        if image is None:
+            self.logger.warning(
+                "Could not read farmlands info layer image: %s", info_layer_farmlands_path
+            )
+            return
 
-        tree = self.get_tree()
-        root = tree.getroot()
-        farmlands_node = root.find("farmlands")  # type: ignore
-        if farmlands_node is None:
+        doc = XmlDocument(self.xml_path)
+        if doc.get("farmlands") is None:
             raise ValueError("Farmlands XML element not found in the farmlands XML file.")
 
-        self.update_element(farmlands_node, {"pricePerHa": str(self.map.grle_settings.base_price)})
+        doc.set_attrs("farmlands", pricePerHa=str(self.map.grle_settings.base_price))
 
         farmland_id = 1
 
@@ -339,7 +296,7 @@ class GRLE(ImageComponent, XMLComponent):
                 break
 
             try:
-                cv2.fillPoly(image, [farmland_np], (float(farmland_id),))  # type: ignore
+                cv2.fillPoly(image, [farmland_np], (float(farmland_id),))
             except Exception as e:
                 self.logger.debug(
                     "Farmland %s could not be added to the InfoLayer PNG file with error: %s",
@@ -348,22 +305,23 @@ class GRLE(ImageComponent, XMLComponent):
                 )
                 continue
 
-            data = {
-                "id": str(farmland_id),
-                "priceScale": "1",
-                "npcName": "FORESTER",
-            }
-            self.create_subelement(farmlands_node, "farmland", data)
+            doc.append_child(
+                "farmlands",
+                "farmland",
+                id=str(farmland_id),
+                priceScale="1",
+                npcName="FORESTER",
+            )
 
             farmland_id += 1
 
-        self.save_tree(tree)
+        doc.save()
 
         # Replace all the zero values on the info layer image with 255.
         if self.map.grle_settings.fill_empty_farmlands:
-            image[image == 0] = 255  # type: ignore
+            image[image == 0] = 255
 
-        cv2.imwrite(info_layer_farmlands_path, image)  # type: ignore
+        cv2.imwrite(info_layer_farmlands_path, image)
 
         self.assets.farmlands = info_layer_farmlands_path
 
@@ -372,16 +330,16 @@ class GRLE(ImageComponent, XMLComponent):
     @monitor_performance
     def _add_plants(self) -> None:
         """Adds plants to the InfoLayer PNG file."""
-        grass_layer = self.map.get_texture_layer(by_usage="grass")
+        grass_layer = self.map.context.get_layer_by_usage("grass")
         if not grass_layer:
             self.logger.warning("Grass layer not found in the texture component.")
             return
 
-        weights_directory = self.game.weights_dir_path(self.map_directory)
+        weights_directory = self.game.weights_dir_path
         grass_image_path = grass_layer.get_preview_or_path(weights_directory)
         self.logger.debug("Grass image path: %s.", grass_image_path)
 
-        forest_layer = self.map.get_texture_layer(by_usage="forest")
+        forest_layer = self.map.context.get_layer_by_usage("forest")
         forest_image = None
         if forest_layer:
             forest_image_path = forest_layer.get_preview_or_path(weights_directory)
@@ -394,7 +352,7 @@ class GRLE(ImageComponent, XMLComponent):
             self.logger.warning("Base image not found in %s.", grass_image_path)
             return
 
-        density_map_fruit_path = self.game.get_density_map_fruits_path(self.map_directory)
+        density_map_fruit_path = self.game.density_map_fruits_path
 
         self.logger.debug("Density map for fruits path: %s.", density_map_fruit_path)
 
@@ -404,6 +362,9 @@ class GRLE(ImageComponent, XMLComponent):
 
         # Single channeled 8-bit image, where non-zero values (255) are where the grass is.
         grass_image = cv2.imread(grass_image_path, cv2.IMREAD_UNCHANGED)
+        if grass_image is None:
+            self.logger.warning("Could not load grass mask image: %s", grass_image_path)
+            return
 
         grle_density_map_fruits = self.get_info_layer_by_name(Parameters.DENSITY_MAP_FRUITS)
         if not grle_density_map_fruits:
@@ -422,8 +383,8 @@ class GRLE(ImageComponent, XMLComponent):
         # Density map of the fruits by default is 2X size of the base image, so we need to resize it.
         # However, it's possible to customize the values in the schema, so we need to take that into account.
         grass_image = cv2.resize(
-            grass_image,  # type: ignore
-            (grass_image.shape[1] * width_multiplier, grass_image.shape[0] * height_multiplier),  # type: ignore
+            grass_image,
+            (grass_image.shape[1] * width_multiplier, grass_image.shape[0] * height_multiplier),
             interpolation=cv2.INTER_NEAREST,
         )
         if forest_image is not None:
@@ -440,12 +401,10 @@ class GRLE(ImageComponent, XMLComponent):
             grass_image[forest_image != 0] = 255
 
         base_grass = self.map.grle_settings.base_grass
-        if isinstance(base_grass, tuple):
-            base_grass = base_grass[0]
-
-        base_layer_pixel_value = plant_to_pixel_value(str(base_grass))
-        if not base_layer_pixel_value:
-            base_layer_pixel_value = 131
+        base_layer_pixel_value = (
+            Parameters.PLANT_PIXEL_VALUES.get(str(base_grass))
+            or Parameters.DEFAULT_GRASS_PIXEL_VALUE
+        )
 
         grass_image_copy = grass_image.copy()
         if forest_image is not None:
@@ -474,15 +433,18 @@ class GRLE(ImageComponent, XMLComponent):
         # Three channeled 8-bit image, where non-zero values are the
         # different types of plants (only in the R channel).
         density_map_fruits = cv2.imread(density_map_fruit_path, cv2.IMREAD_UNCHANGED)
-        self.logger.debug("Density map for fruits loaded, shape: %s.", density_map_fruits.shape)  # type: ignore
+        if density_map_fruits is None:
+            self.logger.warning("Could not load density map for fruits: %s", density_map_fruit_path)
+            return
+        self.logger.debug("Density map for fruits loaded, shape: %s.", density_map_fruits.shape)
 
         # Put the updated base image as the B channel in the density map.
-        density_map_fruits[:, :, 0] = grass_image_copy  # type: ignore
+        density_map_fruits[:, :, 0] = grass_image_copy
         self.logger.debug("Updated base image added as the B channel in the density map.")
 
         # Save the updated density map.
         # Ensure that order of channels is correct because CV2 uses BGR and we need RGB.
-        density_map_fruits = cv2.cvtColor(density_map_fruits, cv2.COLOR_BGR2RGB)  # type: ignore
+        density_map_fruits = cv2.cvtColor(density_map_fruits, cv2.COLOR_BGR2RGB)
         cv2.imwrite(density_map_fruit_path, density_map_fruits)
 
         self.assets.plants = density_map_fruit_path
@@ -588,7 +550,7 @@ class GRLE(ImageComponent, XMLComponent):
 
     @monitor_performance
     def _process_environment(self) -> None:
-        info_layer_environment_path = self.game.get_environment_path(self.map_directory)
+        info_layer_environment_path = self.game.environment_path
         if not info_layer_environment_path or not os.path.isfile(info_layer_environment_path):
             self.logger.warning(
                 "Environment InfoLayer PNG file not found in %s.", info_layer_environment_path
@@ -619,89 +581,36 @@ class GRLE(ImageComponent, XMLComponent):
         # 7. Same as resize, dilate, etc.
         # 8. Sum the current pixel value with the WATER_AREA_PIXEL_VALUE.
 
-        texture_component = self.map.get_texture_component()
-        if not texture_component:
-            self.logger.warning("Texture component not found in the map.")
+        texture_component = self.map.context
+        if not texture_component.texture_layers:
+            self.logger.warning("Texture layers not found in context.")
             return
 
         for layer in texture_component.get_area_type_layers():
-            pixel_value = area_type_to_pixel_value(layer.area_type)  # type: ignore
-            # * Not enabled for now.
-            # * If the layer is invisible, we need to draw the mask from the info layer.
-            # if layer.invisible:
-            #     self.logger.debug("Processing invisible area type layer: %s.", layer.name)
-            #     if layer.info_layer:
-            #         self.logger.debug("Info layer available: %s.", layer.info_layer)
-            #         weight_image = self.draw_invisible_layer_mask(layer, environment_size)
-            #     else:
-            #         self.logger.debug("No info layer available for layer: %s.", layer.name)
-            #         continue
-            # else:
-            weight_image = self.get_resized_weight(layer, environment_size)  # type: ignore
+            pixel_value = Parameters.ENVIRONMENT_AREA_TYPES.get(layer.area_type)
+            if pixel_value is None:
+                continue
+            weight_image = self.get_resized_weight(layer, environment_size)
             if weight_image is None:
                 self.logger.warning("Weight image for area type layer not found in %s.", layer.name)
                 continue
-            environment_image[weight_image > 0] = pixel_value  # type: ignore
+            environment_image[weight_image > 0] = pixel_value
 
         for layer in texture_component.get_water_area_layers():
-            pixel_value = WATER_AREA_PIXEL_VALUE
             weight_image = self.get_resized_weight(layer, environment_size)
             if weight_image is None:
                 self.logger.warning(
                     "Weight image for water area layer not found in %s.", layer.name
                 )
                 continue
-            environment_image[weight_image > 0] += pixel_value  # type: ignore
+            water_mask = weight_image > 0
+            environment_image[water_mask] = environment_image[water_mask] + int(
+                Parameters.WATER_AREA_PIXEL_VALUE
+            )
 
         cv2.imwrite(info_layer_environment_path, environment_image)
         self.logger.debug("Environment InfoLayer PNG file saved: %s.", info_layer_environment_path)
         self.preview_paths["environment"] = info_layer_environment_path
-
-    # def draw_invisible_layer_mask(self, layer: Layer, resize_to: int) -> np.ndarray:
-    #     """Draw the mask for the invisible layer.
-
-    #     Arguments:
-    #         layer (Layer): The layer for which to draw the mask.
-    #         resize_to (int): The size to which the mask should be resized.
-
-    #     Returns:
-    #         np.ndarray: The resized mask.
-    #     """
-    #     mask = np.zeros((self.map.size, self.map.size), dtype=np.uint8)
-    #     polygons = self.get_infolayer_data(Parameters.TEXTURES, layer.info_layer)
-    #     self.logger.debug("Found %d polygons in info layer %s.", len(polygons), layer.info_layer)
-
-    #     for polygon in polygons:
-    #         try:
-    #             fitted_polygon = self.fit_object_into_bounds(
-    #                 polygon_points=polygon,
-    #                 # margin=self.map.grle_settings.farmland_margin,
-    #                 angle=self.rotation,
-    #             )
-    #         except ValueError as e:
-    #             self.logger.debug(
-    #                 "Polygon could not be fitted into the map bounds with error: %s",
-    #                 e,
-    #             )
-    #             continue
-    #         polygon_np = self.polygon_points_to_np(fitted_polygon)
-
-    #         try:
-    #             cv2.fillPoly(mask, [polygon_np], (float(255),))  # type: ignore
-    #         except Exception as e:
-    #             self.logger.debug(
-    #                 "Polygon could not be added to the mask with error: %s",
-    #                 e,
-    #             )
-    #             continue
-
-    #     resized_mask = cv2.resize(
-    #         mask,
-    #         (resize_to, resize_to),
-    #         interpolation=cv2.INTER_NEAREST,
-    #     )
-
-    #     return resized_mask
 
     @monitor_performance
     def get_resized_weight(
@@ -717,9 +626,7 @@ class GRLE(ImageComponent, XMLComponent):
         Returns:
             np.ndarray | None: The resized and dilated weight image, or None if the image could not be loaded.
         """
-        weight_image_path = layer.get_preview_or_path(
-            self.game.weights_dir_path(self.map_directory)
-        )
+        weight_image_path = layer.get_preview_or_path(self.game.weights_dir_path)
         self.logger.debug("Weight image path for area type layer: %s.", weight_image_path)
 
         if not weight_image_path or not os.path.isfile(weight_image_path):
@@ -750,14 +657,16 @@ class GRLE(ImageComponent, XMLComponent):
             return weight_image
 
         dilated_weight_image = cv2.dilate(
-            weight_image.astype(np.uint8), np.ones((dilations, dilations), np.uint8), iterations=dilations  # type: ignore
+            weight_image.astype(np.uint8),
+            np.ones((dilations, dilations), np.uint8),
+            iterations=dilations,
         )
 
         return dilated_weight_image
 
     def _process_indoor(self) -> None:
         """Processes the indoor layers."""
-        info_layer_indoor_path = self.game.get_indoor_mask_path(self.map_directory)
+        info_layer_indoor_path = self.game.indoor_mask_path
         if not info_layer_indoor_path or not os.path.isfile(info_layer_indoor_path):
             self.logger.warning(
                 "Indoor InfoLayer PNG file not found in %s.", info_layer_indoor_path
@@ -774,12 +683,12 @@ class GRLE(ImageComponent, XMLComponent):
         indoor_mask_size = int(indoor_mask_image.shape[0])
         self.logger.debug("Indoor InfoLayer PNG file loaded, shape: %s.", indoor_mask_image.shape)
 
-        texture_component = self.map.get_texture_component()
-        if not texture_component:
-            self.logger.warning("Texture component not found in the map.")
+        texture_context = self.map.context
+        if not texture_context.texture_layers:
+            self.logger.warning("Texture layers not found in context.")
             return
 
-        for layer in texture_component.get_indoor_layers():
+        for layer in texture_context.get_indoor_layers():
             weight_image = self.get_resized_weight(layer, indoor_mask_size, dilations=0)
             if weight_image is None:
                 self.logger.warning("Weight image for indoor layer not found in %s.", layer.name)

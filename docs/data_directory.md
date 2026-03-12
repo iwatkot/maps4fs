@@ -32,7 +32,7 @@ The Data Directory contains three main components:
 ```
 📁 Data Directory (~/maps4fs)
 ├── 📂 mfsrootdir/          # Generated content & user inputs
-├── 📂 templates/           # Map templates & schemas  
+├── 📂 templates/           # Map templates & schemas
 └── 📂 defaults/            # Default source data
 ```
 
@@ -51,7 +51,7 @@ The Data Directory contains three main components:
 **Purpose**: Core Maps4FS templates and configuration schemas
 
 **Contents:**
-- **Map Templates** - Base FS22/FS25 map structures  
+- **Map Templates** - Base FS25 map structures
 - **Texture Schemas** - Object-to-texture mapping definitions
 - **Configuration Files** - System-wide generation settings
 
@@ -64,7 +64,7 @@ The Data Directory contains three main components:
 ```
 📂 defaults/
 ├── 📂 osm/                         # OpenStreetMap data files
-│   ├── 📄 germany_rural.osm        # Preset: German rural roads  
+│   ├── 📄 germany_rural.osm        # Preset: German rural roads
 │   ├── 📄 france_vineyards.osm     # Preset: French vineyards
 │   ├── 📄 mountain_roads.osm       # Preset: Mountain terrain
 │   └── 📄 [multiple_osm_files].osm # Multiple OSM presets
@@ -75,7 +75,7 @@ The Data Directory contains three main components:
 │   └── 📄 [multiple_dem_files].png # Multiple DEM presets
 ├── 📂 main_settings/              # Main Settings presets
 │   ├── 📄 germany_4x4.json         # German coordinates, 4x4km
-│   ├── 📄 france_large.json        # French coordinates, 8x8km  
+│   ├── 📄 france_large.json        # French coordinates, 8x8km
 │   └── 📄 [settings_presets].json  # Multiple main settings
 └── 📂 generation_settings/        # Generation Settings presets
     ├── 📄 realistic_fields.json    # Realistic field patterns
@@ -101,7 +101,7 @@ The Data Directory contains three main components:
 
 **Presets Benefits:**
 - **Efficiency** - No more manual file swapping or renaming
-- **Organization** - Descriptive names instead of generic filenames  
+- **Organization** - Descriptive names instead of generic filenames
 - **Flexibility** - Mix and match different preset components
 - **Backup Safety** - Multiple versions prevent configuration loss
 
@@ -157,3 +157,7 @@ The Data Directory is automatically created during setup. You'll find a realisti
 ---
 
 **Ready to dive deeper?** Explore the detailed documentation for each component to master your Maps4FS workflow and create amazing custom maps!
+
+
+
+

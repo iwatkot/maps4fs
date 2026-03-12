@@ -1,5 +1,7 @@
 """This module contains the Satellite class for the maps4fs package to download satellite images
 for the map."""
+from __future__ import annotations
+
 
 import os
 import shutil
@@ -7,8 +9,8 @@ from typing import NamedTuple
 
 from pygmdl import save_image
 
-import maps4fs.generator.config as mfscfg
 from maps4fs.generator.component.base.component_image import ImageComponent
+from maps4fs.generator.constants import Paths
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
@@ -68,6 +70,10 @@ class Satellite(ImageComponent):
 
         self.assets.background = background_path
 
+        # Publish paths to context so later components need no reference to this component.
+        self.map.context.satellite_overview_path = overwiew_path
+        self.map.context.satellite_background_path = background_path
+
         sizes = [overview_size, background_size]
         self.image_paths = [overwiew_path, background_path]
 
@@ -88,8 +94,8 @@ class Satellite(ImageComponent):
                     zoom=task.zoom,
                     from_center=True,
                     logger=self.logger,
-                    tiles_dir=mfscfg.SAT_CACHE_DIR,
-                    show_progress=not mfscfg.TQDM_DISABLE,
+                    tiles_dir=Paths.SAT_CACHE_DIR,
+                    show_progress=not Paths.TQDM_DISABLE,
                 )
 
             except Exception as e:

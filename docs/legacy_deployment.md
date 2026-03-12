@@ -51,3 +51,6 @@ Docker Hub: https://hub.docker.com/r/iwatkot/maps4fs
 ## Recommended Alternative
 
 For the best experience with latest features and support, please use the **[Local Deployment](local_deployment.md)** method instead.
+
+
+

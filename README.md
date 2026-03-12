@@ -47,7 +47,8 @@
 
 </div>
 
-🚜 **Farming Simulator 22 & 25** - Generate maps for both game versions<br>
+🚜 **Farming Simulator 25** - Generate maps for the current supported game version<br>
+🧾 **Support Policy** - FS22 support was removed starting from Maps4FS 3.0.0 and Maps4FS Windows 1.0.0<br>
 🗺️ **Flexible Map Sizes** - 2x2, 4x4, 8x8, 16x16 km + custom sizes<br>
 ✂️ **Map Scaling & Rotation** - Perfect positioning and sizing control<br>
 🏘️ **Adding buildings** - Automatic building placement system<br>

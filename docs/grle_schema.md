@@ -2,9 +2,8 @@
 
 The GRLE Schema defines technical specifications for Farming Simulator's internal image layers and rendering parameters. This configuration controls how Maps4FS generates various game-critical information layers that manage gameplay mechanics, collision detection, and visual effects.
 
-## **⚠️ Farming Simulator 25 Only**
+## **⚠️ Farming Simulator 25**
 
-GRLE Schema is **only available for Farming Simulator 25**. FS22 does not use this configuration system.
 
 ## File Location
 
@@ -13,7 +12,7 @@ The GRLE schema is located in your **Data Directory**:
 ```
 📁 Data Directory/
 └── 📂 templates/
-    └── 📄 fs25-grle-schema.json  ← GRLE layer definitions for FS25
+    └── 📄 fs25-grle-schema.json  ← GRLE layer definitions
 ```
 
 ## **🚨 Critical Warning: Do Not Modify**
@@ -26,7 +25,7 @@ The GRLE schema is located in your **Data Directory**:
 
 ### **Why Modifications Fail**
 - **Engine dependencies**: FS25 expects exact specifications for proper rendering
-- **Hardcoded relationships**: Layer parameters are tied to internal game systems  
+- **Hardcoded relationships**: Layer parameters are tied to internal game systems
 - **Binary compatibility**: Generated files must match exact engine requirements
 - **No user benefits**: Schema defines technical specs, not customizable features
 
@@ -61,7 +60,7 @@ Each layer definition includes precise technical parameters:
 ### **Technical Parameters**
 - **`name`**: Output filename for the generated layer
 - **`height_multiplier`**: Vertical resolution scaling factor
-- **`width_multiplier`**: Horizontal resolution scaling factor  
+- **`width_multiplier`**: Horizontal resolution scaling factor
 - **`channels`**: Color channel count (1=grayscale, 3=RGB, 4=RGBA)
 - **`data_type`**: Binary data format specification
 
@@ -104,11 +103,11 @@ Maps4FS uses GRLE schema to:
 ### **No User Intervention Required**
 - **Transparent operation** - users don't interact with GRLE generation
 - **Automatic optimization** - Maps4FS handles all technical details
-- **Built-in validation** - Schema ensures output meets FS25 standards
+- **Built-in validation** - Schema ensures output meets standards
 
 ## Why This Schema Exists
 
-### **FS25 Evolution**
+### **Evolution**
 - **New rendering engine** requires precise layer specifications
 - **Enhanced gameplay features** need additional data layers
 - **Performance optimization** demands exact technical parameters
@@ -144,7 +143,7 @@ Maps4FS uses GRLE schema to:
 ### **Troubleshooting Strategy**
 - **GRLE problems**: Check input data (DEM, OSM) for corruption
 - **Generation failures**: Verify template integrity and file permissions
-- **Compatibility issues**: Ensure using latest Maps4FS version for FS25
+- **Compatibility issues**: Ensure using the latest Maps4FS version
 
 ## ⚠️ Support Policy
 
@@ -159,3 +158,7 @@ Maps4FS uses GRLE schema to:
 - **Customize other components** - focus on OSM, DEM, textures, trees
 - **Trust the system** - GRLE generation is highly optimized already
 - **Report bugs** - help improve default schema instead of modifying
+
+
+
+

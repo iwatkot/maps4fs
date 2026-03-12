@@ -1,541 +1,303 @@
-"""This module contains the Game class and its subclasses. Game class is used to define
-different versions of the game for which the map is generated. Each game has its own map
-template file and specific settings for map generation."""
+"""Game definitions for maps4fs map generation.
+
+``Game`` is the base class. Each supported game is a subclass that sets its
+own path constants and schema file names. ``Game.from_code("FS25")`` looks up
+the subclass registry and returns the right instance.
+
+Adding a new game requires only a new subclass — no changes to ``Game``.
+
+Call ``set_map_directory()`` once the map directory is known; this populates
+all map-relative path attributes so callers can access them as plain strings
+without passing a directory argument.
+"""
 
 from __future__ import annotations
 
 import os
-from typing import Callable
+from dataclasses import dataclass, field
+from typing import Any
 
-import maps4fs.generator.config as mfscfg
 from maps4fs.generator.component.background import Background
 from maps4fs.generator.component.building import Building
 from maps4fs.generator.component.config import Config
+from maps4fs.generator.component.dem import DEM
 from maps4fs.generator.component.grle import GRLE
-from maps4fs.generator.component.i3d import I3d
 from maps4fs.generator.component.road import Road
 from maps4fs.generator.component.satellite import Satellite
+from maps4fs.generator.component.scene import Scene
 from maps4fs.generator.component.texture import Texture
+from maps4fs.generator.component.water import Water
+from maps4fs.generator.constants import Paths
 from maps4fs.generator.settings import Parameters
 
 
-class Game:
-    """Class used to define different versions of the game for which the map is generated.
+@dataclass
+class GameConfig:
+    """Game-specific XML paths and tuning values.
 
-    Arguments:
-        map_template_path (str, optional): Path to the map template file. Defaults to None.
-
-    Attributes and Properties:
-        code (str): The code of the game.
-        components (list[Type[Component]]): List of components used for map generation.
-        map_template_path (str): Path to the map template file.
-
-    Public Methods:
-        from_code(cls, code: str) -> Game: Returns the game instance based on the game code.
+    Components read these instead of embedding literals, so a new game requires
+    only a new ``Game`` subclass that passes a customised ``GameConfig`` —
+    no changes to component code.
     """
 
-    code: str | None = None
-    dem_multipliyer: int = 2
-    _additional_dem_name: str | None = None
-    _map_template_file: str | None = None
-    _texture_schema_file: str | None = None
-    _grle_schema_file: str | None = None
-    _tree_schema_file: str | None = None
-    _buildings_schema_file: str | None = None
-    _i3d_processing: bool = True
-    _plants_processing: bool = True
-    _environment_processing: bool = True
-    _fog_processing: bool = True
-    _dissolve: bool = True
-    _mesh_processing: bool = True
+    # --- I3D XPaths ---
+    i3d_terrain_xpath: str = ".//Scene/TerrainTransformGroup"
+    i3d_sun_xpath: str = ".//Scene/Light[@name='sun']"
+    i3d_displacement_layer_xpath: str = ".//Scene/TerrainTransformGroup/Layers/DisplacementLayer"
+    i3d_gameplay_xpath: str = ".//TransformGroup[@name='gameplay']"
+    i3d_fields_xpath: str = ".//TransformGroup[@name='fields']"
 
-    # Order matters! Some components depend on others.
-    components = [Satellite, Texture, Background, GRLE, Config, Road, I3d, Building]
+    # --- I3D structural element XPaths ---
+    i3d_scene_xpath: str = ".//Scene"
+    i3d_shapes_xpath: str = ".//Shapes"
+    i3d_files_xpath: str = ".//Files"
+    i3d_user_attributes_xpath: str = ".//UserAttributes"
+    i3d_shape_xpath: str = ".//Shape"
+    i3d_material_xpath: str = ".//Material"
 
-    def __init__(self, map_template_path: str | None = None):
-        if map_template_path:
-            self._map_template_path = map_template_path
-        else:
-            if not self._map_template_file:
-                raise ValueError("Map template file not set.")
-            self._map_template_path = os.path.join(
-                mfscfg.MFS_TEMPLATES_DIR, self._map_template_file  # type: ignore
-            )
+    # --- I3D named element XPaths ---
+    i3d_bg_terrain_material_xpath: str = ".//Material[@name='background_terrain_material']"
+    i3d_bg_terrain_shape_xpath: str = ".//Shape[@name='background_terrain_shape']"
+    i3d_ocean_material_xpath: str = ".//Material[@name='OceanShader']"
+    i3d_water_shader_file_xpath: str = "File[@fileId='3']"
+    i3d_mapbounds_tg_xpath: str = ".//Scene/TransformGroup[@name='mapbounds']"
 
-        if not self._texture_schema_file:
-            self._texture_schema = None
-        else:
-            self._texture_schema = os.path.join(mfscfg.MFS_TEMPLATES_DIR, self._texture_schema_file)  # type: ignore
+    # --- Buildings I3D element and attribute names ---
+    i3d_buildings_group_name: str = "buildings"
+    i3d_transform_group_tag: str = "TransformGroup"
+    i3d_files_section_tag: str = "Files"
+    i3d_file_tag: str = "File"
+    i3d_reference_node_tag: str = "ReferenceNode"
+    i3d_attr_name: str = "name"
+    i3d_attr_file_id: str = "fileId"
+    i3d_attr_filename: str = "filename"
+    i3d_attr_translation: str = "translation"
+    i3d_attr_rotation: str = "rotation"
+    i3d_attr_reference_id: str = "referenceId"
+    i3d_attr_node_id: str = "nodeId"
+    i3d_zero_translation: str = "0 0 0"
 
-        if not self._grle_schema_file:
-            self._grle_schema = None
-        else:
-            self._grle_schema = os.path.join(mfscfg.MFS_TEMPLATES_DIR, self._grle_schema_file)  # type: ignore
+    # --- Scene XML tag/attribute names ---
+    i3d_shape_tag: str = "Shape"
+    i3d_nurbs_curve_tag: str = "NurbsCurve"
+    i3d_cv_tag: str = "cv"
+    i3d_note_tag: str = "Note"
+    i3d_user_attributes_tag: str = "UserAttributes"
+    i3d_user_attribute_tag: str = "UserAttribute"
+    i3d_attribute_tag: str = "Attribute"
+    i3d_custom_parameter_tag: str = "CustomParameter"
+    i3d_normalmap_tag: str = "Normalmap"
 
-        if not self._tree_schema_file:
-            self._tree_schema = None
-        else:
-            self._tree_schema = os.path.join(mfscfg.MFS_TEMPLATES_DIR, self._tree_schema_file)  # type: ignore
+    i3d_attr_shape_id: str = "shapeId"
+    i3d_attr_degree: str = "degree"
+    i3d_attr_form: str = "form"
+    i3d_attr_point: str = "c"
+    i3d_attr_text: str = "text"
+    i3d_attr_color: str = "color"
+    i3d_attr_fixed_size: str = "fixedSize"
+    i3d_attr_type: str = "type"
+    i3d_attr_value: str = "value"
+    i3d_attr_last_shadow_min: str = "lastShadowMapSplitBboxMin"
+    i3d_attr_last_shadow_max: str = "lastShadowMapSplitBboxMax"
+    i3d_attr_size: str = "size"
+    i3d_attr_receive_shadows: str = "receiveShadows"
+    i3d_attr_specular_color: str = "specularColor"
+    i3d_attr_custom_shader_id: str = "customShaderId"
+    i3d_attr_custom_shader_variation: str = "customShaderVariation"
+    i3d_attr_static: str = "static"
+    i3d_attr_collision_filter_group: str = "collisionFilterGroup"
+    i3d_attr_collision_filter_mask: str = "collisionFilterMask"
+    i3d_attr_casts_shadows: str = "castsShadows"
+    i3d_attr_scale: str = "scale"
 
-        if not self._buildings_schema_file:
-            self._buildings_schema_file = None
-        else:
-            self._buildings_schema_file = os.path.join(mfscfg.MFS_TEMPLATES_DIR, self._buildings_schema_file)  # type: ignore
+    # --- I3D tuning values ---
+    sun_bbox_y_min: int = -128
+    sun_bbox_y_max: int = 148
+    displacement_size_multiplier: int = 8
 
-    def set_components_by_names(self, component_names: list[str]) -> None:
-        """Sets the components used for map generation by their names.
+    # --- Environment XML XPaths ---
+    env_latitude_xpath: str = "./latitude"
+    env_seasons_xpath: str = ".//weather/season"
+    env_fog_max_height_xpath: str = "./fog/heightFog/maxHeight"
+
+    # --- Map XML ---
+    map_xml_license_plates_xpath: str = ".//licensePlates"
+    map_xml_license_plates_filename: str = "map/licensePlates/licensePlatesPL.xml"
+
+    # --- License plate XML structure ---
+    lp_xml_license_plate_xpath: str = ".//licensePlate"
+    lp_xml_variations_xpath: str = "variations"
+    lp_xml_variation_xpath: str = "variation"
+    lp_xml_value_xpath: str = "value"
+    lp_xml_char_pos_x_values: list[str] = field(
+        default_factory=lambda: ["-0.1712", "-0.1172", "-0.0632"]
+    )
+
+    # --- License plate I3D ---
+    lp_i3d_file_elements_xpath: str = ".//File"
+    lp_i3d_texture_file_id: str = "12"
+    lp_i3d_eu_texture_filename: str = "licensePlates_diffuseEU.png"
+    lp_i3d_default_texture_filename: str = "licensePlates_diffuse.png"
+
+
+class Game:
+    """Base class for game definitions.
+
+    Subclass this to add a new game. Set ``code`` and override all ``_*``
+    path/schema constants. The subclass is automatically registered and
+    discoverable via ``Game.from_code()``.
+
+    Call ``set_map_directory()`` once the concrete map directory is known.
+    After that all ``*_path`` / ``*_dir`` attributes are ready plain strings.
+    """
+
+    _registry: dict[str, type[Game]] = {}
+
+    # Order matters — some components depend on earlier ones.
+    # Subclasses may override to use a different component list.
+    components: list[type[Any]] = [
+        Satellite,
+        Texture,
+        DEM,
+        Water,
+        Background,
+        GRLE,
+        Config,
+        Road,
+        Scene,
+        Building,
+    ]
+
+    # Subclasses must set a non-empty code.
+    code: str = ""
+
+    # Relative paths inside the map directory — subclasses must override.
+    _DEM_PATH: str = ""
+    _WEIGHTS_DIR: str = ""
+    _I3D_PATH: str = ""
+    _SPLINES_PATH: str = ""
+    _MAP_XML: str = ""
+    _FARMLANDS_XML: str = ""
+    _ENVIRONMENT_XML: str = ""
+    _OVERVIEW_PATH: str = ""
+    _LICENSE_PLATES_DIR: str = ""
+    additional_dem_name: str = ""
+
+    # Schema file names relative to the templates directory — subclasses must override.
+    _TEXTURE_SCHEMA: str = ""
+    _GRLE_SCHEMA: str = ""
+    _TREE_SCHEMA: str = ""
+    _BUILDINGS_SCHEMA: str = ""
+    _MAP_TEMPLATE: str = ""
+
+    # Game-specific XML paths and tuning values.
+    # Subclasses may replace this with a customised GameConfig instance.
+    config: GameConfig = GameConfig()
+
+    def __init_subclass__(cls, **kwargs: object) -> None:
+        """Register subclasses by game code for dynamic lookup.
 
         Arguments:
-            component_names (list[str]): List of component names to be used.
+            cls (type[Game]): Newly created subclass.
+            **kwargs (object): Additional subclass initialization arguments.
         """
-        self.components = [comp for comp in self.components if comp.__name__ in component_names]
+        super().__init_subclass__(**kwargs)
+        if cls.code:
+            Game._registry[cls.code.upper()] = cls
 
-    def map_xml_path(self, map_directory: str) -> str:
-        """Returns the path to the map.xml file.
+    def __init__(self, map_template_path: str | None = None) -> None:
+        """Initialize schema/template paths and map-relative placeholders.
 
         Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the map.xml file.
+            map_template_path (str | None): Optional override for the map template archive path.
         """
-        return os.path.join(map_directory, "maps", "map", "map.xml")
+        templates_dir = Paths.TEMPLATES_DIR
+        self.template_path: str = map_template_path or os.path.join(
+            templates_dir, self._MAP_TEMPLATE
+        )
+        self.texture_schema: str = os.path.join(templates_dir, self._TEXTURE_SCHEMA)
+        self.grle_schema: str = os.path.join(templates_dir, self._GRLE_SCHEMA)
+        self.tree_schema: str = os.path.join(templates_dir, self._TREE_SCHEMA)
+        self.buildings_schema: str = os.path.join(templates_dir, self._BUILDINGS_SCHEMA)
+
+        # Map-relative paths — populated by set_map_directory()
+        self.dem_file_path: str = ""
+        self.weights_dir_path: str = ""
+        self.i3d_file_path: str = ""
+        self.splines_file_path: str = ""
+        self.map_xml_path: str = ""
+        self.farmlands_xml_path: str = ""
+        self.environment_xml_path: str = ""
+        self.overview_file_path: str = ""
+        self.license_plates_dir_path: str = ""
+        self.farmlands_path: str = ""
+        self.environment_path: str = ""
+        self.indoor_mask_path: str = ""
+        self.density_map_fruits_path: str = ""
 
     @classmethod
     def from_code(cls, code: str, map_template_path: str | None = None) -> Game:
-        """Returns the game instance based on the game code.
+        """Return a Game instance for the given game code.
 
         Arguments:
-            code (str): The code of the game.
-            map_template_path (str, optional): Path to the map template file. Defaults to None.
+            code (str): The game code, e.g. ``"FS25"``.
+            map_template_path (str, optional): Override for the map template zip.
 
         Returns:
-            Game: The game instance.
+            Game: Instantiated game definition for the requested code.
+
+        Raises:
+            ValueError: If the code is not recognised.
         """
-        for game in cls.__subclasses__():
-            if game.code and game.code.lower() == code.lower():
-                return game(map_template_path)
-        raise ValueError(f"Game with code {code} not found.")
+        game_cls = Game._registry.get(code.upper())
+        if game_cls is None:
+            raise ValueError(f"Game with code {code!r} not found.")
+        return game_cls(map_template_path)
 
-    @property
-    def template_path(self) -> str:
-        """Returns the path to the map template file.
+    def set_map_directory(self, map_directory: str) -> None:
+        """Resolve and store all map-relative paths for the given directory.
 
-        Raises:
-            ValueError: If the map template path is not set.
-
-        Returns:
-            str: The path to the map template file."""
-        if not self._map_template_path:
-            raise ValueError("Map template path not set.")
-        return self._map_template_path
-
-    @property
-    def texture_schema(self) -> str:
-        """Returns the path to the texture layers schema file.
-
-        Raises:
-            ValueError: If the texture layers schema path is not set.
-
-        Returns:
-            str: The path to the texture layers schema file."""
-        if not self._texture_schema:
-            raise ValueError("Texture layers schema path not set.")
-        return self._texture_schema
-
-    @property
-    def grle_schema(self) -> str:
-        """Returns the path to the GRLE layers schema file.
-
-        Raises:
-            ValueError: If the GRLE layers schema path is not set.
-
-        Returns:
-            str: The path to the GRLE layers schema file."""
-        if not self._grle_schema:
-            raise ValueError("GRLE layers schema path not set.")
-        return self._grle_schema
-
-    @property
-    def tree_schema(self) -> str:
-        """Returns the path to the tree layers schema file.
-
-        Raises:
-            ValueError: If the tree layers schema path is not set.
-
-        Returns:
-            str: The path to the tree layers schema file."""
-        if not self._tree_schema:
-            raise ValueError("Tree layers schema path not set.")
-        return self._tree_schema
-
-    @property
-    def buildings_schema(self) -> str:
-        """Returns the path to the buildings layers schema file.
-
-        Raises:
-            ValueError: If the buildings layers schema path is not set.
-
-        Returns:
-            str: The path to the buildings layers schema file."""
-        if not self._buildings_schema_file:
-            raise ValueError("Buildings layers schema path not set.")
-        return self._buildings_schema_file
-
-    def dem_file_path(self, map_directory: str) -> str:
-        """Returns the path to the DEM file.
+        Call once per generation session, right after the map directory is known.
 
         Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the DEM file."""
-        raise NotImplementedError
-
-    def weights_dir_path(self, map_directory: str) -> str:
-        """Returns the path to the weights directory.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the weights directory."""
-        raise NotImplementedError
-
-    def license_plates_dir_path(self, map_directory: str) -> str:
-        """Returns the path to the license plates directory.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the license plates directory."""
-        raise NotImplementedError
-
-    def get_density_map_fruits_path(self, map_directory: str) -> str:
-        """Returns the path to the density map fruits file.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the density map fruits file."""
-        weights_dir = self.weights_dir_path(map_directory)
-        return os.path.join(weights_dir, Parameters.DENSITY_MAP_FRUITS)
-
-    def get_farmlands_path(self, map_directory: str) -> str:
-        """Returns the path to the farmlands file.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the farmlands file."""
-        weights_dir = self.weights_dir_path(map_directory)
-        return os.path.join(weights_dir, Parameters.INFO_LAYER_FARMLANDS)
-
-    def get_environment_path(self, map_directory: str) -> str:
-        """Returns the path to the environment file.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the environment file."""
-        weights_dir = self.weights_dir_path(map_directory)
-        return os.path.join(weights_dir, Parameters.INFO_LAYER_ENVIRONMENT)
-
-    def get_indoor_mask_path(self, map_directory: str) -> str:
-        """Returns the path to the indoor mask file.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the indoor mask file."""
-        weights_dir = self.weights_dir_path(map_directory)
-        return os.path.join(weights_dir, "infoLayer_indoorMask.png")
-
-    def get_farmlands_xml_path(self, map_directory: str) -> str:
-        """Returns the path to the farmlands xml file.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the farmlands xml file."""
-        raise NotImplementedError
-
-    def get_environment_xml_path(self, map_directory: str) -> str:
-        """Returns the path to the environment xml file.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the environment xml file."""
-        raise NotImplementedError
-
-    def i3d_file_path(self, map_directory: str) -> str:
-        """Returns the path to the i3d file.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the i3d file."""
-        raise NotImplementedError
-
-    def overview_file_path(self, map_directory: str) -> str:
-        """Returns the path to the overview image file.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the overview image file."""
-        raise NotImplementedError
-
-    @property
-    def i3d_processing(self) -> bool:
-        """Returns whether the i3d file should be processed.
-
-        Returns:
-            bool: True if the i3d file should be processed, False otherwise."""
-        return self._i3d_processing
-
-    @property
-    def environment_processing(self) -> bool:
-        """Returns whether the environment should be processed.
-
-        Returns:
-            bool: True if the environment should be processed, False otherwise."""
-        return self._environment_processing
-
-    @property
-    def fog_processing(self) -> bool:
-        """Returns whether the fog should be processed.
-
-        Returns:
-            bool: True if the fog should be processed, False otherwise."""
-        return self._fog_processing
-
-    @property
-    def plants_processing(self) -> bool:
-        """Returns whether the plants should be processed.
-
-        Returns:
-            bool: True if the plants should be processed, False otherwise."""
-        return self._plants_processing
-
-    @property
-    def additional_dem_name(self) -> str | None:
-        """Returns the name of the additional DEM file.
-
-        Returns:
-            str | None: The name of the additional DEM file."""
-        return self._additional_dem_name
-
-    def splines_file_path(self, map_directory: str) -> str:
-        """Returns the path to the splines file.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the splines file."""
-        i3d_base_directory = os.path.dirname(self.i3d_file_path(map_directory))
-        return os.path.join(i3d_base_directory, "splines.i3d")
-
-    @property
-    def dissolve(self) -> bool:
-        """Returns whether the dissolve should be applied.
-
-        Returns:
-            bool: True if the dissolve should be applied, False otherwise."""
-        return self._dissolve
-
-    @property
-    def mesh_processing(self) -> bool:
-        """Returns whether the mesh should be processed.
-
-        Returns:
-            bool: True if the mesh should be processed, False otherwise."""
-        return self._mesh_processing
-
-    def validate_template(self, map_directory: str) -> None:
-        """Validates that all required files exist in the map template directory.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Raises:
-            FileNotFoundError: If any required files are missing from the template.
+            map_directory (str): Absolute path to the map working directory.
         """
-        all_files = []
-        for root, _, files in os.walk(map_directory):
-            for file in files:
-                all_files.append(os.path.join(root, file))
-
-        missing_files = []
-        for func in self.required_file_methods():
-            try:
-                required_filepath = func(map_directory)
-            except NotImplementedError:
-                continue
-            if required_filepath not in all_files:
-                missing_files.append(required_filepath)
-        if missing_files:
-            raise FileNotFoundError(f"The following files are not found: {missing_files}.")
-
-    def required_file_methods(self) -> list[Callable[[str], str]]:
-        """Returns a list of methods that return paths to required files for map generation.
-
-        Returns:
-            list[Callable[[str], str]]: List of methods that take a map directory path
-                and return file paths that are required for the map template.
-        """
-        return [
-            self.map_xml_path,
-            self.i3d_file_path,
-            self.get_environment_xml_path,
-            self.get_farmlands_xml_path,
-        ]
-
-
-class FS22(Game):
-    """Class used to define the game version FS22."""
-
-    code = "FS22"
-    _map_template_file = "fs22-map-template.zip"
-    _texture_schema_file = "fs22-texture-schema.json"
-    _i3d_processing = False
-    _environment_processing = False
-    _fog_processing = False
-    _plants_processing = False
-    _dissolve = False
-    _mesh_processing = False
-
-    def dem_file_path(self, map_directory: str) -> str:
-        """Returns the path to the DEM file.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the DEM file."""
-        return os.path.join(map_directory, "maps", "map", "data", "map_dem.png")
-
-    def weights_dir_path(self, map_directory: str) -> str:
-        """Returns the path to the weights directory.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the weights directory."""
-        return os.path.join(map_directory, "maps", "map", "data")
-
-    def i3d_file_path(self, map_directory: str) -> str:
-        """Returns the path to the i3d file.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the i3d file."""
-        return os.path.join(map_directory, "maps", "map", "map.i3d")
+        weights_dir = os.path.join(map_directory, self._WEIGHTS_DIR)
+        self.dem_file_path = os.path.join(map_directory, self._DEM_PATH)
+        self.weights_dir_path = weights_dir
+        self.i3d_file_path = os.path.join(map_directory, self._I3D_PATH)
+        self.splines_file_path = os.path.join(map_directory, self._SPLINES_PATH)
+        self.map_xml_path = os.path.join(map_directory, self._MAP_XML)
+        self.farmlands_xml_path = os.path.join(map_directory, self._FARMLANDS_XML)
+        self.environment_xml_path = os.path.join(map_directory, self._ENVIRONMENT_XML)
+        self.overview_file_path = os.path.join(map_directory, self._OVERVIEW_PATH)
+        self.license_plates_dir_path = os.path.join(map_directory, self._LICENSE_PLATES_DIR)
+        self.farmlands_path = os.path.join(weights_dir, Parameters.INFO_LAYER_FARMLANDS)
+        self.environment_path = os.path.join(weights_dir, Parameters.INFO_LAYER_ENVIRONMENT)
+        self.indoor_mask_path = os.path.join(weights_dir, "infoLayer_indoorMask.png")
+        self.density_map_fruits_path = os.path.join(weights_dir, Parameters.DENSITY_MAP_FRUITS)
 
 
 class FS25(Game):
-    """Class used to define the game version FS25."""
+    """Farming Simulator 25 game definition."""
 
     code = "FS25"
-    dem_multipliyer: int = 2
-    _additional_dem_name = "unprocessedHeightMap.png"
-    _map_template_file = "fs25-map-template.zip"
-    _texture_schema_file = "fs25-texture-schema.json"
-    _grle_schema_file = "fs25-grle-schema.json"
-    _tree_schema_file = "fs25-tree-schema.json"
-    _buildings_schema_file = "fs25-buildings-schema.json"
 
-    def dem_file_path(self, map_directory: str) -> str:
-        """Returns the path to the DEM file.
+    # Relative paths inside the map directory
+    _DEM_PATH = os.path.join("map", "data", "dem.png")
+    _WEIGHTS_DIR = os.path.join("map", "data")
+    _I3D_PATH = os.path.join("map", "map.i3d")
+    _SPLINES_PATH = os.path.join("map", "splines.i3d")
+    _MAP_XML = os.path.join("map", "map.xml")
+    _FARMLANDS_XML = os.path.join("map", "config", "farmlands.xml")
+    _ENVIRONMENT_XML = os.path.join("map", "config", "environment.xml")
+    _OVERVIEW_PATH = os.path.join("map", "overview.dds")
+    _LICENSE_PLATES_DIR = os.path.join("map", "licensePlates")
+    additional_dem_name = "unprocessedHeightMap.png"
 
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the DEM file."""
-        return os.path.join(map_directory, "map", "data", "dem.png")
-
-    def map_xml_path(self, map_directory: str) -> str:
-        """Returns the path to the map.xml file.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the map.xml file.
-        """
-        return os.path.join(map_directory, "map", "map.xml")
-
-    def weights_dir_path(self, map_directory: str) -> str:
-        """Returns the path to the weights directory.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the weights directory."""
-        return os.path.join(map_directory, "map", "data")
-
-    def license_plates_dir_path(self, map_directory: str) -> str:
-        """Returns the path to the license plates directory.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the license plates directory."""
-        return os.path.join(map_directory, "map", "licensePlates")
-
-    def i3d_file_path(self, map_directory: str) -> str:
-        """Returns the path to the i3d file.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the i3d file."""
-        return os.path.join(map_directory, "map", "map.i3d")
-
-    def get_farmlands_xml_path(self, map_directory: str) -> str:
-        """Returns the path to the farmlands xml file.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the farmlands xml file."""
-        return os.path.join(map_directory, "map", "config", "farmlands.xml")
-
-    def get_environment_xml_path(self, map_directory: str) -> str:
-        """Returns the path to the environment xml file.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the environment xml file."""
-        return os.path.join(map_directory, "map", "config", "environment.xml")
-
-    def overview_file_path(self, map_directory: str) -> str:
-        """Returns the path to the overview image file.
-
-        Arguments:
-            map_directory (str): The path to the map directory.
-
-        Returns:
-            str: The path to the overview image file."""
-        return os.path.join(map_directory, "map", "overview.dds")
+    # Schema file names relative to the templates directory
+    _TEXTURE_SCHEMA = "fs25-texture-schema.json"
+    _GRLE_SCHEMA = "fs25-grle-schema.json"
+    _TREE_SCHEMA = "fs25-tree-schema.json"
+    _BUILDINGS_SCHEMA = "fs25-buildings-schema.json"
+    _MAP_TEMPLATE = "fs25-map-template.zip"

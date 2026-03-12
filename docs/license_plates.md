@@ -1,13 +1,12 @@
 # License Plates
 
-Maps4FS automatically generates country-specific license plates for FS25 maps based on the map's geographic location. This feature adds authentic regional licensing to vehicles in your custom maps.
+Maps4FS automatically generates country-specific license plates for maps based on the map's geographic location. This feature adds authentic regional licensing to vehicles in your custom maps.
 
 ![License Plates Example](https://github.com/iwatkot/maps4fs/releases/download/2.8.1/lp.png)
 
 ## Compatibility
 
-- **FS25**: ✅ Fully supported
-- **FS22**: ❌ Not supported
+- **Available**: ✅ Fully supported
 
 ## How It Works
 
@@ -93,7 +92,7 @@ map/
 
 ## US License Plates
 
-**Note**: US license plates use completely different formats and layouts compared to European standards. Due to this complexity and regional variation, US plates are not automatically generated. 
+**Note**: US license plates use completely different formats and layouts compared to European standards. Due to this complexity and regional variation, US plates are not automatically generated.
 
 **Recommendation**: If you need specific US license plates, manually find and customize the appropriate template for your specific state/region.
 
@@ -122,7 +121,7 @@ to this:
 
 ### License Plates Not Appearing
 - Verify your map coordinates are within supported countries
-- Check that FS25 compatibility is enabled
+- Check that compatibility is enabled
 - Ensure the license plate prefix is 1-3 letters maximum
 
 ### Wrong Country Detected
@@ -139,3 +138,6 @@ to this:
 - [Map Structure](map_structure.md) - Understanding map file organization
 - [Generation Settings](generation_settings.md) - Configuring map generation options
 - [Step by Step Guide](step_by_step_guide.md) - Complete map creation workflow
+
+
+

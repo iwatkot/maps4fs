@@ -107,7 +107,7 @@ As your map library grows (and trust us, it will! 📈), these powerful search t
 
 **🎛️ Filter by Content Magic:**
 - 🛰️ **Show only satellite imagery** → Perfect for high-quality presentation projects
-- 🌐 **Find background terrain maps** → Ideal for immersive landscape work  
+- 🌐 **Find background terrain maps** → Ideal for immersive landscape work
 - 🗺️ **Locate custom data maps** → When you need that special OSM/DEM touch
 - 🌾🌲🌊 **Filter by features** → Fields for farming, forests for aesthetics, water for realism
 
@@ -181,7 +181,7 @@ Each map shows essential information at a glance:
 - **Map Size** - Dimensions in meters (e.g., 3252m)
 - **Output Size** - Final resolution (e.g., 2048px)
 - **Rotation** - Applied rotation angle in degrees
-- **Game Version** - Farming Simulator 22 or 25
+- **Game Version** - Farming Simulator 25
 - **Creation Date** - When the map was generated
 - **Status Indicators** - Success/error states with details
 
@@ -222,7 +222,7 @@ My Maps leverages the mounted directory system like a boss! 💪
 
 **✨ What This Means for You:**
 - 🔄 **Auto-discovery** - New maps appear instantly after generation
-- ⚡ **Real-time updates** - Changes show up immediately  
+- ⚡ **Real-time updates** - Changes show up immediately
 - 🛡️ **Update-proof** - Your library survives all Maps4FS container updates
 - 💾 **Backup-friendly** - Standard file structure = easy backup/restore
 - 🎛️ **Zero configuration** - Default setup is already optimized perfectly
@@ -239,10 +239,10 @@ Develop systems that scale with your growing library:
 - **Badge utilization** - Leverage filters to organize by content type and features
 - **Regular cleanup** - Remove experimental maps that didn't meet expectations
 
-### **Settings Integration Workflow** 
+### **Settings Integration Workflow**
 Leverage My Maps for building your [Settings](settings.md) library:
 - **Schema Discovery** - View texture and tree schemas from successful maps
-- **Save Proven Configurations** - Export working schemas directly to Settings management  
+- **Save Proven Configurations** - Export working schemas directly to Settings management
 - **Configuration Analysis** - Understand which schema combinations produce desired results
 - **Template Building** - Turn one-time successful maps into reusable Settings configurations
 - **Quality Assurance** - Test schema variations, then save the best performers to Settings
@@ -266,3 +266,7 @@ Transform trial-and-error into systematic improvement:
 My Maps isn't just about current projects - it's about building expertise over time. Each successful map becomes a template for future work. Configurations that work well for specific terrain types become reusable assets. Your library becomes a knowledge base of what works, encoded in actual working examples rather than just notes.
 
 This is why serious map creators find My Maps indispensable: it transforms map generation from repetitive manual work into a systematic process of building on proven successes.
+
+
+
+

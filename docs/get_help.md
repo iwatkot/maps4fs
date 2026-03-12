@@ -10,7 +10,7 @@
 This interactive tool will:
 - 🔍 **Diagnose local deployment issues** - Docker, containers, port conflicts, etc.
 - 🛠️ **Guide through troubleshooting** step-by-step
-- 📋 **Help you fill out** all required information  
+- 📋 **Help you fill out** all required information
 - 📄 **Generate a shareable markdown file** for support requests
 - 🎯 **Ensure you include** all necessary details
 
@@ -175,11 +175,11 @@ Your issue might already be solved there!
 
 ⛔ **STOP HERE**
 
-**I only support SRTM30 DTM provider.** 
+**I only support SRTM30 DTM provider.**
 
 For other DTM providers:
 1. 🔗 Visit [PyDTMDL repository](https://github.com/iwatkot/pydtmdl)
-2. 👤 Find the author of your DTM provider  
+2. 👤 Find the author of your DTM provider
 3. 📧 Contact them directly
 
 **I do not provide help or accept reports for non-SRTM30 DTM providers.**
@@ -231,7 +231,7 @@ This helps ensure you get the best possible help.
 ### 📍 Basic Information
 - [ ] **Map coordinates** (latitude, longitude) - *Example: 45.2841, 20.2370*
 - [ ] **Map size** - *Example: 4x4 km*
-- [ ] **Game version** - *FS22 or FS25*
+- [ ] **Game version** - *FS25*
 - [ ] **Maps4FS version** - *Check in app footer or about section*
 
 ### 📁 Required Files
@@ -322,3 +322,7 @@ Before contacting support, confirm:
 | 🗺️ Non-SRTM30 DTM issues | 👤 Contact DTM provider author at [PyDTMDL](https://github.com/iwatkot/pydtmdl) |
 
 ---
+
+
+
+

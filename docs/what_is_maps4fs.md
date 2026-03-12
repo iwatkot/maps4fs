@@ -4,7 +4,7 @@
 
 ## 🎯 What Does It Do?
 
-Maps4FS automatically generates complete, ready-to-use map templates for **Farming Simulator 22 and 25** by:
+Maps4FS automatically generates complete, ready-to-use map templates for **Farming Simulator 25** by:
 
 - 🗺️ **Analyzing real terrain** using multiple DTM providers (including high-quality sources where available)
 - 🌍 **Processing OpenStreetMap** data for roads, buildings, and land use
@@ -114,3 +114,6 @@ Join thousands of map creators in our community:
 ---
 
 *Transform any location on Earth into your next farming adventure with Maps4FS.*
+
+
+
