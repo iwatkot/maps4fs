@@ -52,7 +52,7 @@ For complete control over your map data, use our [Custom OSM](custom_osm.md) app
 
 **Issue**: Screen keeps flickering black during editing.
 
-**Solution**: 
+**Solution**:
 1. Go to **Scripts** → **Create new script**
 2. Name your script and paste this code:
 
@@ -185,3 +185,6 @@ FS25_mod name _ kgjdfg.zip       ← Incorrect (spaces/special chars)
 ---
 
 **Need more help?** Join our [Discord community](https://discord.gg/wemVfUUFRA) for real-time support and troubleshooting assistance!
+
+
+

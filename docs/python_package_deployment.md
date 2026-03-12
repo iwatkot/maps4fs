@@ -4,11 +4,11 @@ The Python package deployment allows you to use Maps4FS directly from Python cod
 
 ## Features
 
-🔴 **Skill level:** Advanced - Recommended for developers  
-🗺️ **Supported map sizes:** 2x2, 4x4, 8x8, 16x16 km and any custom size  
-✂️ **Map scaling:** Supported  
-⚙️ **Advanced settings:** Enabled  
-🖼️ **Texture dissolving:** Enabled  
+🔴 **Skill level:** Advanced - Recommended for developers
+🗺️ **Supported map sizes:** 2x2, 4x4, 8x8, 16x16 km and any custom size
+✂️ **Map scaling:** Supported
+⚙️ **Advanced settings:** Enabled
+🖼️ **Texture dissolving:** Enabled
 
 ## System Requirements
 
@@ -51,7 +51,7 @@ The Python package deployment allows you to use Maps4FS directly from Python cod
    ```bash
    # Install Homebrew first if you don't have it
    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-   
+
    # Install Python
    brew install python
    ```
@@ -161,7 +161,7 @@ There are two ways to install Maps4FS as a Python package:
 
 ### Option 1: Install from PyPI (Recommended for Beginners)
 
-**Skill level:** 🟡 Beginner-friendly  
+**Skill level:** 🟡 Beginner-friendly
 **Requires:** Python, pip
 
 This is the easiest and most reliable method:
@@ -186,7 +186,7 @@ python3 -c "import maps4fs; print('Maps4FS installed successfully!')"
 
 ### Option 2: Install from Source Code (Advanced)
 
-**Skill level:** 🔴 Advanced developers  
+**Skill level:** 🔴 Advanced developers
 **Requires:** Python, pip, Git
 
 For developers who want the latest features or need to modify the source code:
@@ -269,7 +269,7 @@ bash dev/create_venv.sh
 
 # The script automatically:
 # - Creates virtual environment
-# - Activates it  
+# - Activates it
 # - Installs all dependencies
 # - Sets up Maps4FS in development mode
 
@@ -373,7 +373,6 @@ After downloading, your project directory should look like this:
 ```text
 📁 Your-Project-Directory/
  ┣ 📁 templates/
- ┃  ┣ � fs22/
  ┃  ┃  ┣ 📄 map-template.zip
  ┃  ┃  ┗ 📄 texture-schema.json
  ┃  ┣ � fs25/
@@ -397,21 +396,21 @@ import maps4fs as mfs
 # Check if templates directory exists
 if os.path.exists("templates"):
     print("✅ Templates directory found")
-    
+
     # Check for required files
     fs25_template = "templates/fs25/map-template.zip"
     fs25_schema = "templates/fs25/texture-schema.json"
-    
+
     if os.path.exists(fs25_template):
         print("✅ FS25 map template found")
     else:
         print("❌ FS25 map template missing")
-        
+
     if os.path.exists(fs25_schema):
         print("✅ FS25 texture schema found")
     else:
         print("❌ FS25 texture schema missing")
-        
+
     print("🎉 Setup appears to be working!")
 else:
     print("❌ Templates directory not found")
@@ -435,9 +434,8 @@ import maps4fs as mfs
 
 # Step 1: Choose your game version
 print("🎮 Setting up game...")
-game_code = "fs25"  # Use "fs22" for Farming Simulator 22
 game = mfs.Game.from_code(game_code)
-print(f"✅ Game: {game_code.upper()}")
+print(f"✅ Game: {game_code.upper}")
 
 # Step 2: Choose location (latitude, longitude)
 # Some example coordinates:
@@ -488,14 +486,14 @@ print("This may take several minutes depending on your computer...")
 
 try:
     component_count = 0
-    for component_name in mp.generate():
+    for component_name in mp.generate:
         component_count += 1
         print(f"[{component_count}/6] Generating {component_name}...")
-    
+
     print(f"\n🎉 SUCCESS! Map generation completed!")
     print(f"📂 Your map is ready in the '{map_directory}' folder")
     print(f"🎮 You can now copy this folder to your Farming Simulator mods directory")
-    
+
 except Exception as e:
     print(f"\n❌ Error during generation: {e}")
     print("💡 Check the console output above for more details")
@@ -553,7 +551,7 @@ import maps4fs as mfs
 # Different map sizes (larger = more detail, but takes longer)
 size_options = {
     "2x2 km": 2048,    # Quick generation, small map
-    "4x4 km": 4096,    # Medium generation time, medium map  
+    "4x4 km": 4096,    # Medium generation time, medium map
     "8x8 km": 8192,    # Slow generation, large map
     "16x16 km": 16384  # Very slow generation, huge map
 }
@@ -574,7 +572,7 @@ global_providers = {
 # High-resolution providers (specific regions only)
 hires_providers = {
     "Germany": mfs.dtm.GermanyProvider,           # 1m resolution
-    "Netherlands": mfs.dtm.NetherlandsProvider,   # 1m resolution  
+    "Netherlands": mfs.dtm.NetherlandsProvider,   # 1m resolution
     "USA": mfs.dtm.USGSProvider,                  # 10m resolution
     # Add more as available
 }
@@ -614,11 +612,11 @@ locations = {
 game = mfs.Game.from_code("fs25")
 dtm_provider = mfs.dtm.SRTM30Provider
 
-for city_name, (lat, lon) in locations.items():
+for city_name, (lat, lon) in locations.items:
     print(f"\n🌍 Generating map for {city_name}...")
-    
-    map_directory = f"map_{city_name.lower()}"
-    
+
+    map_directory = f"map_{city_name.lower}"
+
     mp = mfs.Map(
         game,
         dtm_provider,
@@ -628,10 +626,10 @@ for city_name, (lat, lon) in locations.items():
         0,     # No rotation
         map_directory,
     )
-    
-    for component in mp.generate():
+
+    for component in mp.generate:
         print(f"  Generating {component}...")
-    
+
     print(f"✅ {city_name} map completed!")
 
 print("\n🎉 All maps generated successfully!")
@@ -703,7 +701,6 @@ size = 4096  # 4x4 km
 # Change game version:
 game_code = "fs25"
 # To:
-game_code = "fs22"
 ```
 
 #### 💡 **Why Start with demo.py?**
@@ -833,7 +830,7 @@ import os
 print("=== Python Environment Debug ===")
 print(f"Python version: {sys.version}")
 print(f"Python executable: {sys.executable}")
-print(f"Current directory: {os.getcwd()}")
+print(f"Current directory: {os.getcwd}")
 print(f"Python path: {sys.path}")
 
 try:
@@ -865,11 +862,11 @@ try:
     print("Testing game initialization...")
     game = mfs.Game.from_code("fs25")
     print("✅ Game initialized")
-    
+
     print("Testing DTM provider...")
     dtm_provider = mfs.dtm.SRTM30Provider
     print("✅ DTM provider ready")
-    
+
     print("Testing map initialization...")
     mp = mfs.Map(
         game,
@@ -882,11 +879,11 @@ try:
     )
     print("✅ Map initialization successful")
     print("🎉 Basic setup is working!")
-    
+
 except Exception as e:
     print(f"❌ Error: {e}")
     import traceback
-    traceback.print_exc()
+    traceback.print_exc
 ```
 
 ### Performance Optimization
@@ -937,7 +934,7 @@ python my_script.py
 
 #### macOS/Linux:
 ```bash
-# Check installations  
+# Check installations
 python3 --version && pip3 --version && git --version
 
 # Install Maps4FS
@@ -951,3 +948,6 @@ pip install maps4fs
 # Run your script
 python3 my_script.py
 ```
+
+
+

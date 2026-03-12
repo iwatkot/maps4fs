@@ -9,7 +9,7 @@ Custom DEM functionality allows you to use your own elevation data instead of re
 A Custom DEM is a user-provided elevation map that defines the terrain height data for your entire map region. Unlike standard DEM sources that Maps4FS downloads automatically, custom DEMs let you:
 
 - **Use specialized elevation data** from surveying or LiDAR sources
-- **Create fictional terrain** for fantasy or modified landscapes  
+- **Create fictional terrain** for fantasy or modified landscapes
 - **Enhance existing data** with higher resolution or accuracy
 - **Match specific real-world locations** not well-covered by public sources
 
@@ -32,7 +32,7 @@ A Custom DEM is a user-provided elevation map that defines the terrain height da
 
 ### **Image Format Specifications**
 - **Format**: PNG image file
-- **Color Mode**: Single-channel (grayscale) 
+- **Color Mode**: Single-channel (grayscale)
 - **Bit Depth**: Unsigned 16-bit
 - **Compression**: Standard PNG compression acceptable
 
@@ -43,7 +43,7 @@ The image size must be calculated precisely:
 
 **Examples**:
 - **2048×2048 map** → DEM image: `6144×6144` pixels
-- **4096×4096 map** → DEM image: `8192×8192` pixels  
+- **4096×4096 map** → DEM image: `8192×8192` pixels
 - **8192×8192 map** → DEM image: `12288×12288` pixels
 
 ### **Positioning Requirements**
@@ -65,7 +65,7 @@ The image size must be calculated precisely:
 │           Background Terrain        │
 │   ┌─────────────────────────────┐   │
 │   │                             │   │
-│   │      Playable Map Area      │   │ 
+│   │      Playable Map Area      │   │
 │   │        (Center)             │   │
 │   │                             │   │
 │   └─────────────────────────────┘   │
@@ -213,3 +213,7 @@ Once your custom DEM is properly prepared and placed in the Data Directory:
 ---
 
 **Ready to create stunning custom terrain?** Prepare your elevation data following these specifications and unlock unlimited creative potential for your Maps4FS projects!
+
+
+
+

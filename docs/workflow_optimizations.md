@@ -51,7 +51,7 @@ Once your OSM data meets your standards, begin the iterative generation process.
 - ✅ Automated terrain topology is acceptable
 - ✅ Road networks are properly positioned and connected
 - ✅ Field boundaries and farmland divisions are logical
-- ✅ Background terrain and water meshes render correctly *(FS25: Auto-generated i3d files ready to import!)*
+- ✅ Background terrain and water meshes render correctly *( Auto-generated i3d files ready to import!)*
 - ✅ Satellite imagery alignment is accurate
 - ✅ Everything seems to be in its place
 
@@ -60,3 +60,7 @@ Once your OSM data meets your standards, begin the iterative generation process.
 **Time Investment Begins**: Once you're confident in the automated foundation, you can begin creating custom buildings, decorative elements, unique landmarks, and other hand-crafted content that will differentiate your map.
 
 Remember: Custom assets built on a solid automated foundation retain their value across minor regenerations, maximizing your return on time investment.
+
+
+
+

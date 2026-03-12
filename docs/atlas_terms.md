@@ -134,3 +134,7 @@ Map authors have the right to:
 - [Submit Your Map](atlas_submit.md)
 - [Maps4FS Terms of Use](terms-of-use.md)
 - [Maps4FS License](license-info.md)
+
+
+
+

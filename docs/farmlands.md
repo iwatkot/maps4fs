@@ -39,7 +39,7 @@ Farmlands define the **property ownership and economic structure** of your map, 
 ![Farmlands Configuration in Giants Editor](https://github.com/user-attachments/assets/f16f172d-6a6c-4026-97a1-a1f59149a62c)
 
 1. **Enable Paint Mode**: Activate `Terrain Info Layer Paint Mode` [1]
-2. **Select Layer**: Choose **farmlands** from Info Layer selector [2]  
+2. **Select Layer**: Choose **farmlands** from Info Layer selector [2]
 3. **Choose Farmland ID**: Select specific farmland number [3] for painting
 4. **Paint Boundaries**: Apply farmland designation to desired map regions
 5. **Validate Coverage**: Ensure all purchasable areas are properly designated
@@ -141,3 +141,6 @@ Farmlands define the **property ownership and economic structure** of your map, 
 5. **Validate Implementation**: Comprehensive testing of purchase mechanics and economic progression
 
 **Strategic Outcome**: Well-designed farmland systems create engaging economic progression that reflects realistic property acquisition while providing clear goals and meaningful expansion opportunities for players at all skill levels.
+
+
+

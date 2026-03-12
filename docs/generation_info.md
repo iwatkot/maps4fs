@@ -13,7 +13,7 @@ The `generation_info.json` file serves as the **comprehensive metadata record** 
 The generation info is organized into specialized components, each handling different aspects of the map generation pipeline:
 
 - **`Texture`** - Geographic boundaries, coordinates, and spatial configuration
-- **`Background`** - Terrain mesh information and elevation data processing  
+- **`Background`** - Terrain mesh information and elevation data processing
 - **`I3d`** - Scene objects including forests, fields, and procedural elements
 - **`Config`** - Map metadata, overview settings, and environmental parameters
 - **`GRLE`** - Weight map and texture layer information *(when applicable)*
@@ -172,3 +172,6 @@ Use the complete `generation_info.json` to regenerate identical maps with differ
 - **Scale Planning**: Use DEM and mesh data for terrain modification planning
 
 **Best Practice**: Archive generation info files alongside your map projects for complete reproducibility and technical reference.
+
+
+

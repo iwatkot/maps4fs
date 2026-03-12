@@ -17,13 +17,13 @@ If you experience issues with the Maps4FS interface (blank screen, features not 
    ```bash
    # If using local deployment
    docker logs maps4fsui > maps4fsui.log
-   
+
    # If using API container
    docker logs maps4fsapi > maps4fsapi.log
    ```
 
 3. **Common UI Issues and Solutions**
-   
+
    | Issue | Possible Solution |
    |-------|-------------------|
    | Network error | Check your internet connection and firewall settings |
@@ -72,8 +72,7 @@ If your map is missing expected content (fields, forests, decorative foliage):
 If your generated map fails to open in Giants Editor:
 
 1. **Verify Correct Giants Editor Version**
-   - **FS22 maps**: Require Giants Editor 9.x
-   - **FS25 maps**: Require Giants Editor 10.x
+   - **maps**: Require Giants Editor 10.x
    - **Important**: Not just major versions, but exact minor versions must match your game installation
 
 2. **Check Editor Logs for Errors**
@@ -160,3 +159,6 @@ If you've tried the solutions above and still have issues:
    - Join our [Discord community](https://discord.gg/wemVfUUFRA) for real-time support
    - Open an issue on [GitHub](https://github.com/iwatkot/maps4fs/issues) with complete information
    - Follow the checklist in [Getting Help](get_help.md) to ensure your issue can be addressed quickly
+
+
+

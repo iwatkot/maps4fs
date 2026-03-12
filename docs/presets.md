@@ -7,7 +7,7 @@ The Presets feature revolutionizes your Maps4FS workflow by allowing you to stor
 Presets are pre-configured collections of map generation resources that include:
 
 - **OSM Files** - OpenStreetMap data for realistic map features
-- **DEM Files** - Digital Elevation Models for terrain height data  
+- **DEM Files** - Digital Elevation Models for terrain height data
 - **Main Settings** - Core map parameters like size, coordinates, and game version
 - **Generation Settings** - Advanced generation options and fine-tuning parameters
 
@@ -39,7 +39,7 @@ Each preset acts as a complete "recipe" for generating a specific type or style 
 The Presets system organizes your resources into four main categories:
 
 ### 1. 🗺️ OSM Presets
-**📍 Location**: `defaults/osm/`  
+**📍 Location**: `defaults/osm/`
 **🎯 Purpose**: Collection of OpenStreetMap data files
 
 OSM files contain the road networks, buildings, forests, and water bodies that define your map's structure and layout. Multiple OSM files let you:
@@ -51,8 +51,8 @@ OSM files contain the road networks, buildings, forests, and water bodies that d
 
 📖 **Learn More**: See [Custom OSM](custom_osm.md) for detailed creation and editing guides.
 
-### 2. 🏔️ DEM Presets  
-**📍 Location**: `defaults/dem/`  
+### 2. 🏔️ DEM Presets
+**📍 Location**: `defaults/dem/`
 **🎯 Purpose**: Digital Elevation Model heightmaps
 
 DEM files define the terrain elevation for both playable areas and background landscapes. Multiple DEM files enable:
@@ -65,12 +65,12 @@ DEM files define the terrain elevation for both playable areas and background la
 📖 **Learn More**: See [Custom DEM](custom_dem.md) for file requirements and creation workflows.
 
 ### 3. ⚙️ Main Settings Presets
-**📍 Location**: `defaults/main_settings/`  
+**📍 Location**: `defaults/main_settings/`
 **🎯 Purpose**: Core map configuration parameters
 
 Main Settings define the fundamental properties that control overall map structure:
-- 🎮 **Game Version** - FS22 or FS25 compatibility
-- 🌍 **Map Coordinates** - Latitude/longitude positioning  
+- 🎮 **Game Version** - compatibility
+- 🌍 **Map Coordinates** - Latitude/longitude positioning
 - 📏 **Map Size** - 2×2, 4×4, 8×8, or 16×16 km dimensions
 - 🧭 **Rotation** - Map orientation adjustments
 - 🔧 **Other Core Properties** - Essential generation parameters
@@ -80,7 +80,7 @@ Main Settings define the fundamental properties that control overall map structu
 📖 **Learn More**: See [Main Settings](main_settings.md) for detailed parameter explanations.
 
 ### 4. 🛠️ Generation Settings Presets
-**📍 Location**: `defaults/generation_settings/`  
+**📍 Location**: `defaults/generation_settings/`
 **🎯 Purpose**: Advanced generation control parameters
 
 Generation Settings control detailed aspects of the map creation process:
@@ -116,7 +116,7 @@ Generation Settings control detailed aspects of the map creation process:
    ```
    defaults/
    ├── osm/
-   ├── dem/  
+   ├── dem/
    ├── main_settings/
    └── generation_settings/
    ```
@@ -177,7 +177,7 @@ Good Examples:
 
 Avoid:
 ├── map1.png
-├── test.osm  
+├── test.osm
 ├── settings.json
 └── new_config.json
 ```
@@ -256,7 +256,7 @@ The Presets system integrates seamlessly with the **My Maps** feature, creating 
 ### 🎛️ **Preset Combinations**
 Mix and match different preset types for maximum flexibility:
 - 🌍 Use European DEM with American road patterns
-- 🏔️ Apply mountain terrain with plains field layouts  
+- 🏔️ Apply mountain terrain with plains field layouts
 - ⚙️ Combine different generation settings with same base data
 - 🔄 Create unique combinations not possible with single presets
 
@@ -270,7 +270,7 @@ Leverage presets for efficient batch processing:
 ### 📚 **Template Development**
 Build comprehensive template libraries:
 - 🌍 **Regional Collections** - Complete preset sets for specific areas
-- 🎮 **Gameplay Styles** - Different configurations for various play styles  
+- 🎮 **Gameplay Styles** - Different configurations for various play styles
 - 🍂 **Seasonal Variations** - Same region with different characteristics
 - 🏆 **Proven Configurations** - Save your most successful combinations
 
@@ -284,3 +284,6 @@ Maximize efficiency by combining presets with other Maps4FS features:
 ---
 
 🎉 **The Presets feature transforms Maps4FS from a single-use tool into a comprehensive map development platform, enabling efficient workflows and professional-quality results.**
+
+
+

@@ -4,20 +4,25 @@
 
 Ever wondered what it would be like to farm in your hometown? Or recreate that beautiful countryside you visited last summer? Maps4FS makes it possible by transforming real geographic data into detailed, playable Farming Simulator maps.
 
+## Support Policy
+
+Maps4FS supports Farming Simulator 25.
+Farming Simulator 22 support was fully removed starting from Maps4FS 3.0.0 and Maps4FS Windows 1.0.0.
+
 ## What You Can Create
 
-🌾 **Authentic Terrain** - Generate realistic elevation and landscape features  
-🛣️ **Real Road Networks** - Import actual road layouts from OpenStreetMap  
-🏞️ **Natural Textures** - Apply region-appropriate surface materials  
-🚜 **Functional Fields** - Create farmable areas based on real agricultural zones  
-🏡 **Farmland Boundaries** - Define property ownership and economic zones  
-🏔️ **Background Terrain** - Build stunning distant mountain ranges and landscapes  
-💧 **Water Features** - Generate rivers, lakes, and realistic water planes  
-🛤️ **Road Splines** - Create detailed 3D path networks for vehicles  
-🏘️ **Smart Building Placement** - Automatically place buildings in appropriate areas  
-🌲 **Procedural Elements** - Automatically place trees, foliage, and objects  
-🗺️ **Overview Maps** - Generate in-game minimap displays  
-🏡 **Familiar Landscapes** - Bring recognizable locations into the game  
+🌾 **Authentic Terrain** - Generate realistic elevation and landscape features
+🛣️ **Real Road Networks** - Import actual road layouts from OpenStreetMap
+🏞️ **Natural Textures** - Apply region-appropriate surface materials
+🚜 **Functional Fields** - Create farmable areas based on real agricultural zones
+🏡 **Farmland Boundaries** - Define property ownership and economic zones
+🏔️ **Background Terrain** - Build stunning distant mountain ranges and landscapes
+💧 **Water Features** - Generate rivers, lakes, and realistic water planes
+🛤️ **Road Splines** - Create detailed 3D path networks for vehicles
+🏘️ **Smart Building Placement** - Automatically place buildings in appropriate areas
+🌲 **Procedural Elements** - Automatically place trees, foliage, and objects
+🗺️ **Overview Maps** - Generate in-game minimap displays
+🏡 **Familiar Landscapes** - Bring recognizable locations into the game
 
 ## 🆕 What's New?
 
@@ -48,7 +53,7 @@ Choose your setup method in **[How to Launch Maps4FS](how_to_launch.md)**:
 Most users love to explore these areas first:
 
 - **[DEM (Elevation)](dem.md)** - Make mountains, valleys, and rolling hills feel real
-- **[Fields & Farmlands](fields.md)** - Design the heart of your farming operation  
+- **[Fields & Farmlands](fields.md)** - Design the heart of your farming operation
 - **[Textures](textures.md)** - Give your map authentic visual character
 - **[Background Terrain](background_terrain.md)** - Create stunning distant landscapes
 
@@ -61,7 +66,7 @@ Most users love to explore these areas first:
 ## Need Help Along the Way?
 
 - **Stuck on something?** Check the **[FAQ](FAQ.md)** for quick answers
-- **Want to optimize your workflow?** See **[Workflow Optimizations](workflow_optimizations.md)** 
+- **Want to optimize your workflow?** See **[Workflow Optimizations](workflow_optimizations.md)**
 - **Running into issues?** Visit **[Getting Help](get_help.md)** for troubleshooting and community support
 
 ## Ready to Create Something Amazing?
@@ -81,3 +86,5 @@ These graphics are provided for users who want to credit the tool, but there's *
 ---
 
 *From OSM maps to playable terrain in just a few clicks. Welcome to the future of map creation.*
+
+

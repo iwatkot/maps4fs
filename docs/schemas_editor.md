@@ -16,7 +16,6 @@ Instead of manually editing complex JSON files, the Textures Schema Editor offer
 - **Interactive tag configuration** - Easy selection of OpenStreetMap tags
 - **Real-time validation** - Immediate feedback on configuration errors
 - **Category filtering** - Organize textures by type (roads, fields, forests, etc.)
-- **Schema comparison** - Compare FS22 and FS25 schemas side by side
 
 ### Key Features
 
@@ -83,7 +82,7 @@ Tailor forest rendering:
 
 1. **Open Schemas Editor**: Navigate to the "Schemas Editor" tab in Maps4FS
 2. **Select Textures**: Choose "Textures Schema Editor" from the available options
-3. **Choose Game Version**: Select FS22 or FS25 schema to edit
+3. **Choose Game Version**: Select FS25 schema to edit
 4. **Start Editing**: Browse textures and begin customization
 5. **Save to Settings**: Use "Save to Settings" to add your schema directly to [Settings](settings.md) management
 
@@ -180,11 +179,10 @@ Control tree maturity distribution:
 - Focus on specific stages for particular landscape themes
 - Balance young and mature trees for realistic forests
 
-### FS25 Exclusive Features
+### Available Features
 
-⚠️ **Farming Simulator 25 Only**: Tree Schema Editor is exclusively available for FS25. FS22 does not support tree schema customization.
 
-**Advanced FS25 Capabilities:**
+**Advanced Capabilities:**
 - **81+ tree variants** across multiple species
 - **Growth stage progression** from young to ancient trees
 - **Leaf type classification** for seasonal changes
@@ -212,10 +210,14 @@ Control tree maturity distribution:
 
 The Tree Schema Editor integrates seamlessly with the [Settings](settings.md) system:
 - **Direct Save** - Save tree selections directly to Settings with descriptive names
-- **FS25 Organization** - Tree schemas are automatically organized under FS25 in Settings
+- **Organization** - Tree schemas are automatically organized in Settings
 - **Default Management** - Set your preferred tree schemas as default through Settings
 - **Configuration Library** - Build collections of tree configurations for different map themes
 
 ---
 
 *The Tree Schema Editor makes tree species selection intuitive and visual, allowing you to create diverse, authentic forests that match your map's geographic and thematic requirements. Whether building realistic regional landscapes or optimizing for performance, this tool puts complete control over your map's vegetation in your hands.*
+
+
+
+

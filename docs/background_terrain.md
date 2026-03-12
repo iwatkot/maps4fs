@@ -25,7 +25,7 @@ map_directory/
 │       └── background_terrain.i3d  ← Ready to import!
 ```
 
-## 🚀 How to Use (FS25)
+## 🚀 How to Use
 
 > **Windows App users:** If you are using the Windows App and the i3dConverter is available (it is downloaded automatically on first run), all of the steps below — conversion to binary i3d, material setup, and positioning on the map — are done **automatically**. You can skip straight to opening the map in Giants Editor.
 
@@ -35,7 +35,7 @@ map_directory/
 3. Generate your map normally
 
 ### Step 2: Import into Giants Editor
-1. Open your map in **Giants Editor 10.0.0+** (FS25)
+1. Open your map in **Giants Editor 10.0.0+**
 2. Go to `File` → `Import...`
 3. Navigate to `your_map/assets/background/`
 4. Select `background_terrain.i3d`
@@ -43,7 +43,7 @@ map_directory/
 
 That's it! The background terrain is automatically:
 - ✅ **Properly scaled** and positioned
-- ✅ **Textured** with satellite imagery  
+- ✅ **Textured** with satellite imagery
 - ✅ **Decimated** for optimal performance
 - ✅ **UV mapped** correctly
 - ✅ **Center removed** (if enabled in settings)
@@ -66,7 +66,6 @@ You can control the automated generation through these settings:
 | Game Version | Status | Method |
 |--------------|---------|---------|
 | **Farming Simulator 25** | ✅ **Fully Automated** | Use this guide |
-| **Farming Simulator 22** | ⚠️ **Manual Process** | Use [Legacy Background Terrain](legacy_background_terrain.md) |
 
 ## 📊 Performance Benefits
 
@@ -85,7 +84,7 @@ The automated process includes several optimizations:
 - Check that satellite images were successfully downloaded
 
 ### Import fails in Giants Editor?
-- Use Giants Editor 10.0.0+ for FS25 maps
+- Use Giants Editor 10.0.0+ for maps
 - Make sure the i3d file isn't corrupted
 - Try importing the .obj files manually (see legacy docs)
 
@@ -110,4 +109,6 @@ If you've been using the manual Blender workflow:
 
 ---
 
-**Need the manual process?** Check out the [Legacy Background Terrain](legacy_background_terrain.md) documentation for the traditional Blender workflow (required for FS22).
+
+
+

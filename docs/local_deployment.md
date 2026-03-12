@@ -10,7 +10,7 @@ This guide is for **advanced users** comfortable with Docker, command line tools
 
 ## 🎛️ **Key Features**
 
-### **Presets System** 
+### **Presets System**
 The [Presets](presets.md) feature allows you to:
 - 📁 **Store Multiple Configurations** - OSM files, DEM files, Main Settings, and Generation Settings
 - 🚀 **One-Click Apply** - Load complete map setups instantly
@@ -50,7 +50,7 @@ docker --version
 docker run --rm hello-world
 ```
 
-2. Make sure that you [increased the limit for Docker resources (CPU, Memory)](https://docs.docker.com/desktop/settings-and-maintenance/settings/) in Docker settings. Otherwise the containers will be stopped upon generation.  
+2. Make sure that you [increased the limit for Docker resources (CPU, Memory)](https://docs.docker.com/desktop/settings-and-maintenance/settings/) in Docker settings. Otherwise the containers will be stopped upon generation.
 
 3. Check that the [Powershell is installed](https://learn.microsoft.com/en-gb/powershell/scripting/install/installing-powershell-on-windows?view=powershell-7.5) and running properly:
 
@@ -64,9 +64,8 @@ Write-Host "Hello, World!"
 
 *️⃣ PowerShell is required for automated deployment, but you still can launch the containers manually with basic terminal without PowerShell installed.
 
-4. Install the corresponding version of the Giants Editor. 
+4. Install the corresponding version of the Giants Editor.
 
-*️⃣ Note: you must use the specific version that matches the game installation. Not just major versions, such as, GE 9.X for FS22 and GE 10.X for FS25, but also the exact minor versions, that matches the game version. Otherwise, the editor will crash or have errors and glitches.
 
 ## Deployment
 
@@ -74,7 +73,7 @@ There are different ways to deploy the tool locally, depending on your needs and
 
 ### Setup Wizard
 
-**Skill level:** 🟢  
+**Skill level:** 🟢
 **Requires:** PowerShell
 
 The easiest way to deploy Maps4FS locally is using our automated setup wizard. You can run it directly from PowerShell:
@@ -84,19 +83,19 @@ powershell -ExecutionPolicy Bypass -Command "iex (iwr 'https://raw.githubusercon
 ```
 
 This command will:
-- Download the latest setup wizard  
-- Check that Docker is installed  
-- Allows download and install Docker if not  
-- Checks if the Docker daemon is running or launches it if not  
-- Checks for the containers of old versions and removes them if necessary  
-- Checks if required ports are available  
-- Creates necessary directories and files  
-- Deploys the containers with all the necessary configurations  
+- Download the latest setup wizard
+- Check that Docker is installed
+- Allows download and install Docker if not
+- Checks if the Docker daemon is running or launches it if not
+- Checks for the containers of old versions and removes them if necessary
+- Checks if required ports are available
+- Creates necessary directories and files
+- Deploys the containers with all the necessary configurations
 - Opens the web interface in your default browser
 
 ### Using Docker Compose
 
-**Skill level:** 🟡  
+**Skill level:** 🟡
 **Requires:** Docker Compose
 
 If you want better control of the deployment such as mounts to specific directories or whatever, you can use the Docker Compose. Download the latest `docker-compose.yml` file from the repository [here](https://github.com/iwatkot/maps4fs/blob/main/docker-compose.yml) manually or use this command to download it directly from PowerShell:
@@ -118,8 +117,8 @@ powershell -ExecutionPolicy Bypass -Command "iwr 'https://raw.githubusercontent.
 
 ### Manual Deployment
 
-**Skill level:** 🟡  
-**Requires:** Docker  
+**Skill level:** 🟡
+**Requires:** Docker
 
 If you prefer to set up the containers manually, you can use the following commands:
 
@@ -129,7 +128,7 @@ docker run -d --pull=always -p 8000:8000 --name maps4fsapi -e USERPROFILE="$env:
 ```
 
 ```powershell
-# Frontend UI container  
+# Frontend UI container
 docker run -d --pull=always -p 3000:3000 --name maps4fsui -e USERPROFILE="$env:USERPROFILE" -v $env:USERPROFILE/maps4fs/mfsrootdir:/usr/src/app/mfsrootdir -v $env:USERPROFILE/maps4fs/templates:/usr/src/app/templates -v $env:USERPROFILE/maps4fs/defaults:/usr/src/app/defaults -v /var/run/docker.sock:/var/run/docker.sock iwatkot/maps4fsui
 ```
 
@@ -180,12 +179,12 @@ Then follow your original deployment method to install the latest version.
 
 ## Usage
 
-After deployment, you can access the web interface of Maps4FS by opening your browser and navigating to `http://localhost:3000`. The backend API will be accessible at `http://localhost:8000`.  
+After deployment, you can access the web interface of Maps4FS by opening your browser and navigating to `http://localhost:3000`. The backend API will be accessible at `http://localhost:8000`.
 
-By default, the following directories are mounted and used:  
-- `C:/Users/YourUsername/maps4fs/mfsrootdir` - Shared working directory between backend and frontend (maps and cache).  
-- `C:/Users/YourUsername/maps4fs/templates` - Templates and schemas directory for API.  
-- `C:/Users/YourUsername/maps4fs/defaults` - **🆕 Presets system** - Multiple OSM files, DEM files, and settings configurations.  
+By default, the following directories are mounted and used:
+- `C:/Users/YourUsername/maps4fs/mfsrootdir` - Shared working directory between backend and frontend (maps and cache).
+- `C:/Users/YourUsername/maps4fs/templates` - Templates and schemas directory for API.
+- `C:/Users/YourUsername/maps4fs/defaults` - **🆕 Presets system** - Multiple OSM files, DEM files, and settings configurations.
 
 🎯 **New Presets Structure**: The `defaults` directory now supports the [Presets](presets.md) system with four subdirectories:
 - `defaults/osm/` - Multiple OpenStreetMap data files
@@ -300,7 +299,7 @@ docker logs maps4fsapi > maps4fsapi.log
 docker logs maps4fsui > maps4fsui.log
 ```
 
-If the logs do not contain any errors, but simply indicate that the process was terminated, you may be facing a resource limitation issue and it's recommended to check the system resource usage (CPU, RAM) during the container runtime.  
+If the logs do not contain any errors, but simply indicate that the process was terminated, you may be facing a resource limitation issue and it's recommended to check the system resource usage (CPU, RAM) during the container runtime.
 If the logs contain errors, but they are unclear, it's recommended to ask for help in the [Discord](https://discord.gg/wemVfUUFRA).
 
 #### Docker events
@@ -319,7 +318,7 @@ docker events --since 24h > docker_events.log
 
 #### Docker exit code 137
 
-The most common exit code indicating that the container was killed due to out of memory (OOM) issues. For large maps, the generator may be processing gigantic images and/or meshes, which may lead to high RAM usage.  
+The most common exit code indicating that the container was killed due to out of memory (OOM) issues. For large maps, the generator may be processing gigantic images and/or meshes, which may lead to high RAM usage.
 In this case, you need to increase the memory limit for the containers, refer to the official [Docker documentation](https://docs.docker.com/desktop/settings-and-maintenance/settings/) for more information on how to do this.
 
 ### If containers running
@@ -379,3 +378,7 @@ The expected response should be the HTML content of the frontend UI.
 - [ ] I am attaching the Docker events log file with this request.
 - [ ] I have checked accessibility of both containers (API and UI).
 - [ ] I am attaching the outputs of both accessibility checks with this request.
+
+
+
+

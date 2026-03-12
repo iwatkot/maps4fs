@@ -18,7 +18,7 @@ Splines are **3D paths** that follow roads, tracks, and other linear features fr
 
 **Initial Position**: If your map has roads covering the full area, splines should be centered correctly. If roads only exist on part of your map, you'll need to adjust their position.
 
-**Create a Group**: 
+**Create a Group**:
 1. Select all imported splines
 2. Right-click and choose **Create Group**
 3. This lets you move all splines together
@@ -36,7 +36,7 @@ Splines are **3D paths** that follow roads, tracks, and other linear features fr
 
 1. **Select All Splines**: Choose your spline group
 2. **Create TransformGroup**: Group them if not already grouped
-3. **Add AI Attribute**: 
+3. **Add AI Attribute**:
    - Select the TransformGroup
    - Open **Attributes** panel → **User Attributes** tab
    - Add new attribute:
@@ -51,15 +51,15 @@ Splines are **3D paths** that follow roads, tracks, and other linear features fr
 ## Common Issues and Solutions
 
 ### Misaligned Splines
-**Problem**: Splines don't follow roads correctly  
+**Problem**: Splines don't follow roads correctly
 **Solution**: Check your OpenStreetMap data quality and regenerate if needed
 
 ### Height Problems
-**Problem**: Splines float above or sink below terrain  
+**Problem**: Splines float above or sink below terrain
 **Solution**: Use Transform Y tool to adjust height, or Scale Y to fix vertical proportions
 
 ### Missing Splines
-**Problem**: Some roads don't have splines  
+**Problem**: Some roads don't have splines
 **Solution**: Improve OSM road data coverage in your area before regeneration
 
 ## Spline Quality Tips
@@ -67,3 +67,6 @@ Splines are **3D paths** that follow roads, tracks, and other linear features fr
 **OSM Data Quality**: Better road data in OpenStreetMap = better splines
 **Road Types**: Major roads (highways, primary) typically generate more reliable splines than minor paths
 **Map Edges**: Roads that cut off at map boundaries may need manual adjustment
+
+
+

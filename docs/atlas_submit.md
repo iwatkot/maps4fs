@@ -38,7 +38,7 @@ If you don't have the settings file, provide:
 
 **Required**:
 - **Coordinates**: Latitude and longitude of the map location
-- **Game Version**: Farming Simulator 25 or Farming Simulator 22
+- **Game Version**: Farming Simulator 25
 - **DTM Provider**: Which elevation data provider was used
 - **Resolution**: Resolution of the DTM data
 - **Rotation**: Map rotation in degrees
@@ -105,3 +105,7 @@ If you have questions about submitting your map or need help with the submission
 - [Atlas Terms of Use](atlas_terms.md) - User responsibilities and legal consequences
 - [Atlas License](atlas_license.md) - Map ownership and licensing
 - [Generation Info](generation_info.md) - Understanding main_settings.json
+
+
+
+

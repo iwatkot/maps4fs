@@ -13,13 +13,12 @@ Choose from professionally optimized map sizes. Larger maps require [Local deplo
 - **2×2 km** - Perfect for detailed farming operations
 - **4×4 km** - Balanced size for diverse gameplay
 - **8×8 km** - Expansive agricultural landscapes
-- **16×16 km** - Maximum scale (⚠️ **FS25 Compatibility Warning**: May exceed engine limitations, causing Giants Editor crashes)s
+- **16×16 km** - Maximum scale (⚠️ **Compatibility Warning**: May exceed engine limitations, causing Giants Editor crashes)
 
 ## Game Platform Selection
 
 Choose your target Farming Simulator version from the dropdown menu. Default: **Farming Simulator 25**.
 
-**⚠️ IMPORTANT**: Farming Simulator 22 support is **officially discontinued**. FS22 lacks critical features including forest generation and advanced field creation. All future development focuses exclusively on FS25. **Strongly recommended**: Use FS25 for optimal results and continued feature support.
 
 ## Geographic Coordinates
 
@@ -37,7 +36,7 @@ The sizes are:
 - 8x8 km
 - 16x16 km
 
-**NOTE:** 16 km maps probably won't work for FS25 due to the limitations of the game engine. The map will be generated, but you may have issues trying to open it in the Giants Editor.
+**NOTE:** 16 km maps may not work reliably due to game engine limitations. The map can be generated, but you may have issues opening it in Giants Editor.
 
 ### Advanced: Custom Dimensions
 
@@ -71,11 +70,14 @@ The sizes are:
 
 **Map Rotation**: Apply precise angular adjustments to optimize map orientation for gameplay or geographic accuracy.
 
-**Range**: 0° to 360° (decimal values accepted)  
-**Default**: 0° (North-aligned)  
+**Range**: 0° to 360° (decimal values accepted)
+**Default**: 0° (North-aligned)
 **Application**: Affects both terrain elevation and all geographic features uniformly
 
 **Strategic Uses**:
 - Align field boundaries with preferred farming patterns
 - Optimize road networks for logical traffic flow
 - Match real-world cardinal directions for immersive gameplay
+
+
+

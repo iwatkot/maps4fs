@@ -2,9 +2,8 @@
 
 The Tree Schema defines which tree species are available for procedural placement on generated maps. This JSON configuration file controls the variety and characteristics of trees that Maps4FS can place across your landscape.
 
-## **⚠️ Farming Simulator 25 Only**
+## **⚠️ Farming Simulator 25**
 
-Tree Schema is **only available for Farming Simulator 25**. FS22 does not support this customization feature.
 
 ## File Location
 
@@ -13,7 +12,7 @@ The tree schema is located in your **Data Directory**:
 ```
 📁 Data Directory/
 └── 📂 templates/
-    └── 📄 fs25-tree-schema.json  ← Tree definitions for FS25
+    └── 📄 fs25-tree-schema.json  ← Tree definitions
 ```
 
 ## Schema Structure
@@ -42,7 +41,7 @@ The default schema includes **81+ tree variants** across multiple species:
 
 ### **Common Tree Types**
 - **American Elm** (5 growth stages)
-- **Apple Trees** 
+- **Apple Trees**
 - **Aspen** (4 growth stages)
 - **Beech** (4 growth stages)
 - **Birch** (4 growth stages)
@@ -57,7 +56,7 @@ The default schema includes **81+ tree variants** across multiple species:
 ### **Growth Stages**
 Most species include multiple growth stages representing different maturity levels:
 - `stage01` - Young/small trees
-- `stage02` - Growing trees  
+- `stage02` - Growing trees
 - `stage03` - Mature trees
 - `stage04` - Fully grown trees
 - `stage05` - Ancient/maximum size (rare)
@@ -116,7 +115,7 @@ Maps4FS uses the tree schema to:
 - **Document changes** for future reference
 
 ### **Custom Tree Development**
-- **Follow FS25 standards** for model compatibility
+- **Follow standards** for model compatibility
 - **Include multiple stages** for natural progression
 - **Test in-game** before finalizing additions
 - **Consider performance** impact of complex models
@@ -141,6 +140,9 @@ Maps4FS uses the tree schema to:
 ## ⚠️ Important Limitations
 
 - **Template dependency**: Custom trees require proper map template integration
-- **FS25 exclusive**: No tree schema support for FS22
 - **Model requirements**: Trees must follow FS25 asset standards and naming conventions
 - **Reference ID limits**: Avoid conflicts with future default additions
+
+
+
+

@@ -2,7 +2,6 @@
 
 DDS (DirectDraw Surface) is the native texture format used throughout Farming Simulator for all visual assets including textures, icons, previews, and in-game maps. Understanding DDS conversion is essential for creating professional-quality map mods.
 
-> 🎉 **NEW for FS25**: Maps4FS now automatically generates `overview.dds` files when **Download Satellite Images** is enabled! Manual conversion is only needed for custom overview maps or FS22.
 
 ## Windows App: Built-in DDS Conversion
 
@@ -42,7 +41,6 @@ In the **Map Editor** tab of the Windows app you can select any existing map fol
 
 | File | Dimensions | Purpose | Usage | FS25 Status |
 |------|------------|---------|--------|-------------|
-| `icon.dds` | 256×256 (FS22)<br>512×512 (FS25) | Mod icon | Displayed in mod browser | ✅ **One-click** in Windows app Map Editor |
 | `preview.dds` | 2048×2048 | Loading screen preview | Shows during map loading | ✅ **One-click** in Windows app Map Editor |
 | `overview.dds` | 4096×4096 | In-game minimap | Interactive map display | ✅ **Auto-generated** with satellite images |
 
@@ -55,9 +53,9 @@ In the **Map Editor** tab of the Windows app you can select any existing map fol
 - **Preview**: DXT1 compression for photographic content
 - **Overview**: DXT5 with alpha channel for transparency support
 
-## Automated Overview Generation (FS25)
+## Automated Overview Generation
 
-**Maps4FS now automatically handles overview.dds creation for Farming Simulator 25!**
+**Maps4FS now automatically handles overview.dds creation!**
 
 ### How It Works
 When you enable **Download Satellite Images** in Maps4FS settings:
@@ -73,7 +71,6 @@ When you enable **Download Satellite Images** in Maps4FS settings:
 - **Time Saving**: Eliminates manual image editing and conversion steps
 
 ### When Manual Conversion is Still Needed
-- **FS22 maps**: Automation only available for FS25
 - **Custom overview designs**: If you prefer artistic or stylized minimaps
 - **Icon and preview images**: Use the one-click converter in the Windows app Map Editor, or convert manually with the tools below
 
@@ -144,7 +141,7 @@ When you enable **Download Satellite Images** in Maps4FS settings:
 
 ### Compression Guidelines
 - **Icons**: Prioritize clarity over file size
-- **Previews**: Balance visual appeal with loading performance  
+- **Previews**: Balance visual appeal with loading performance
 - **Overview Maps**: Ensure text and details remain readable
 
 ### File Size Management
@@ -190,3 +187,6 @@ When you enable **Download Satellite Images** in Maps4FS settings:
 ---
 
 **Pro Tip:** Always keep your original high-resolution source files. DDS conversion is lossy, so you'll want to re-convert from originals when making updates rather than editing DDS files directly.
+
+
+

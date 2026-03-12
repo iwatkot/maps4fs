@@ -34,7 +34,6 @@ But then some people started contacting me about it.
 
 ## The Turning Point
 
-As FS25 approached, I remember sitting in the FS Discord, waiting for Giants Editor 10 to be released so I could add FS25 support (it only worked for FS22 at the time). Some people in the community suggested, "You should make a Discord server." I thought, "Who the hell needs that?"
 
 Turns out, the community really did need it.
 
@@ -49,3 +48,7 @@ The path has been painful for me, mainly because I had zero experience in FS mod
 That's how maps4fs came to be, and I hope it helps people like myself create maps from the places we care about and play on them. Eventually, if the community's demand is clear enough, maybe someone (hey, Giants!) can build something completely automated and easy for everyone.
 
 For me, it was never about personal interest, fame, or ego. In the end, I just want to play Farming Simulator in a place I care about, and I hope that maps4fs has helped the community with that.
+
+
+
+

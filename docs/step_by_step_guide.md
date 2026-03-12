@@ -9,12 +9,10 @@ Before you begin, ensure you have the necessary tools and system requirements:
 ### Required Software
 - **Giants Editor** ([Download here](https://gdn.giants-software.com/downloads.php))
   - For **Farming Simulator 25**: Use Giants Editor 10.0 or later
-  - For **Farming Simulator 22**: Use Giants Editor 9.0 series
 - **Maps4FS** - Either [web version](https://maps4fs.xyz) or [local installation](local_deployment.md)
 
 ### Optional Tools (for Advanced Features)
 - **Image editing software** (for texture customization)
-- **Blender** with Giants Exporter Plugin (for FS22 background terrain or advanced customization)
 
 ### System Requirements
 - **RAM**: 8GB minimum, 16GB+ recommended for larger maps
@@ -26,9 +24,8 @@ Before you begin, ensure you have the necessary tools and system requirements:
 Understanding the core settings will help you make informed decisions during map generation:
 
 ### Game Selection
-Choose between **Farming Simulator 22** and **Farming Simulator 25**:
+Choose **Farming Simulator 25**:
 - **FS25 (Recommended)**: Full feature support, active development
-- **FS22**: Limited features, discontinued support
 
 ⚠️ **Important**: Match your Giants Editor version to your target game!
 
@@ -105,33 +102,31 @@ Configure key settings for your needs:
 3. Extract all contents to this folder
 4. **Map Structure**: Learn about included files in [Map Structure](map_structure.md)
 
-### Step 6: 🌎 Background Terrain (Automated for FS25)
-**For Farming Simulator 25**: Background terrain is now fully automated!
+### Step 6: 🌎 Background Terrain (Automated)
+Background terrain is fully automated.
 1. ✅ Enable **Download Satellite Images** in satellite settings
-2. ✅ Enable **Generate Background** in background settings  
+2. ✅ Enable **Generate Background** in background settings
 3. 🎯 Maps4FS automatically creates ready-to-use `background_terrain.i3d` files
 4. 📁 Find them in `your_map/assets/background/` after generation
 5. 🚀 Simply import the `.i3d` file directly into Giants Editor!
 
-**For Farming Simulator 22**: Use the [Legacy Background Terrain](legacy_background_terrain.md) manual process.
 
-### Step 7: ⛰️ Import Background Terrain (FS25)
-No Blender needed for FS25!
+### Step 7: ⛰️ Import Background Terrain
+No Blender needed!
 1. Open your map in Giants Editor 10.0+
 2. Go to `File` → `Import...`
 3. Navigate to `your_map/assets/background/`
 4. Select `background_terrain.i3d` and import
 5. Done! The terrain is automatically textured and positioned
 
-### Step 8: 🌊 Water Planes (Automated for FS25)
-**For Farming Simulator 25**: Water planes are now fully automated!
+### Step 8: 🌊 Water Planes (Automated)
+Water planes are fully automated.
 1. ✅ Enable **Generate Water** in background settings
 2. 🎯 Maps4FS automatically creates a ready-to-use `polygon_water.i3d` file
 3. 📁 Find them in `your_map/assets/water/` after generation
 4. 🚀 Import the `.i3d` file directly into Giants Editor
 5. ⚙️ Configure water properties in Giants Editor (see [Water Planes guide](water_planes.md))
 
-**For Farming Simulator 22**: Use the [Legacy Water Planes](legacy_water_planes.md) manual process.
 
 ### Step 9: 📂 Open in Giants Editor
 1. Launch Giants Editor (correct version for your target game)
@@ -151,31 +146,29 @@ No Blender needed for FS25!
 3. **Price configuration**: Adjust land values in farmlands.xml
 4. **Detailed guide**: [Farmlands Documentation](farmlands.md)
 
-### Step 12: 🏘️ Buildings (Automated for FS25)
-**For Farming Simulator 25**: Buildings are now fully automated!
+### Step 12: 🏘️ Buildings (Automated)
+Buildings are fully automated.
 - ✅ Automatically placed in appropriate land use areas (residential, commercial, industrial, etc.)
 - 🎯 Buildings selected based on OSM area categories and building schema
 - 📁 Ready-to-use building placement - no manual work required
 - ⚙️ Customize building types and placement rules via [Buildings Schema](buildings_schema.md)
 
-**For Farming Simulator 22**: Manual building placement required
 - Buildings must be placed manually in Giants Editor
 - No automated building placement system available
 
-### Step 13: 🗺️ Overview Map (Automated for FS25)
-**For Farming Simulator 25**: Overview map is now fully automated!
+### Step 13: 🗺️ Overview Map (Automated)
+Overview map is fully automated.
 - ✅ Automatically generated when **Download Satellite Images** is enabled
 - 📁 Perfect `overview.dds` created with satellite imagery
 - 🎯 Correct dimensions and compression applied automatically
 
-**For Farming Simulator 22**: Manual creation required
 - Use satellite imagery for overview.dds
-- Resize and format according to game requirements  
+- Resize and format according to game requirements
 - Follow [DDS Conversion Guide](dds_conversion.md) for proper formatting
 
 ### Step 14: ✨ Polish and Customize
 Your map is now playable but needs finishing touches:
-- **Enhance buildings**: FS25 maps include automatic building placement; add additional custom farmhouses, shops, and industrial areas as needed
+- **Enhance buildings**: maps include automatic building placement; add additional custom farmhouses, shops, and industrial areas as needed
 - **Road network**: Connect fields and improve accessibility
 - **Decorative objects**: Trees, rocks, and environmental details
 - **Lighting**: Set up proper day/night lighting
@@ -200,7 +193,7 @@ Your map is now playable but needs finishing touches:
 
 ### Advanced Features
 - **🆕 Presets System** ([Local Deployment](local_deployment.md) only): Save and manage multiple configurations with the [Presets](presets.md) feature
-- **🆕 License Plates** (FS25 only): Automatic country-specific license plates with customizable prefixes - see [License Plates](license_plates.md)
+- **🆕 License Plates** : Automatic country-specific license plates with customizable prefixes - see [License Plates](license_plates.md)
 - **Custom crops**: Add specialty farming options
 - **Production chains**: Create unique economic systems
 - **Seasonal content**: Weather-specific map variants
@@ -225,3 +218,7 @@ Your map is now playable but needs finishing touches:
 ---
 
 **Congratulations!** You now have a complete, playable Farming Simulator map based on real-world terrain. The foundation is set – now let your creativity flourish as you build the farming paradise of your dreams!
+
+
+
+

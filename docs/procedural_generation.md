@@ -181,3 +181,6 @@ This configuration generates `data/masks/PG_buildings.png` based on geographic a
 ```
 
 This creates both `PG_meadows` and `PG_grasslands` masks from meadow-tagged areas, enabling varied terrain treatment options.
+
+
+

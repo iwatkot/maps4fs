@@ -57,3 +57,7 @@ Maps created using the Maps4FS tool are also subject to the [Maps4FS License](li
 - [Submit Your Map](atlas_submit.md)
 - [Maps4FS Terms of Use](terms-of-use.md)
 - [Maps4FS License](license-info.md)
+
+
+
+
