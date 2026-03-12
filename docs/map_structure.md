@@ -52,10 +52,10 @@ Contains components for creating realistic water body meshes and planes. This di
 
 **NEW for FS25 - Automated Assets:**
 When **Generate Water** is enabled, Maps4FS automatically creates:
-- **`assets/water/water_resources.i3d`**: Ready-to-import Giants Editor file with proper ocean shader configuration
+- **`assets/water/polygon_water.i3d`**: Ready-to-import Giants Editor file with proper ocean shader configuration
 
 **Usage:**
-- **FS25**: Simply import `assets/water/water_resources.i3d` directly into Giants Editor, then configure water properties
+- **FS25**: Simply import `assets/water/polygon_water.i3d` directly into Giants Editor, then configure water properties
 - **FS22**: Use obj files with manual Blender workflow (see [Legacy Water Planes](legacy_water_planes.md))
 
 For detailed implementation guidance, see the [Water Planes](water_planes.md) tutorial.

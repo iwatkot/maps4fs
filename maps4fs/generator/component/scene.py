@@ -939,11 +939,11 @@ class Scene(ImageComponent):
             self.logger.debug("Post-processing background terrain mesh.")
             self._postprocess_background_terrain(binary_i3d_path)
         elif asset_name in (
-            Parameters.WATER_RESOURCES,
-            Parameters.WATER_RESOURCES_LINE_SURFACE,
+            Parameters.POLYGON_WATER,
+            Parameters.POLYLINE_WATER,
         ):
             self.logger.debug("Post-processing water mesh for asset: %s.", asset_name)
-            self._postprocess_water_resources(binary_i3d_path)
+            self._postprocess_water_mesh(binary_i3d_path)
         else:
             self.logger.debug("Post-processing road mesh for asset: %s.", asset_name)
             self._postprocess_roads(binary_i3d_path)
@@ -984,7 +984,7 @@ class Scene(ImageComponent):
             return
 
         # Water meshes are generated over the full background canvas.
-        water_assets = {Parameters.WATER_RESOURCES, Parameters.WATER_RESOURCES_LINE_SURFACE}
+        water_assets = {Parameters.POLYGON_WATER, Parameters.POLYLINE_WATER}
         if asset_name in water_assets:
             canvas_half = (self.scaled_size + Parameters.BACKGROUND_DISTANCE * 2) // 2
         else:
@@ -1031,8 +1031,8 @@ class Scene(ImageComponent):
 
         doc.save()
 
-    def _postprocess_water_resources(self, binary_i3d_path: str) -> None:
-        """Post-processes the water resources mesh in the I3D file.
+    def _postprocess_water_mesh(self, binary_i3d_path: str) -> None:
+        """Post-processes water mesh in the I3D file.
 
         Arguments:
             binary_i3d_path (str): The path to the binary I3D file to post-process.

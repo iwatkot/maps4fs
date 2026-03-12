@@ -19,11 +19,13 @@ from dataclasses import dataclass, field
 from maps4fs.generator.component.background import Background
 from maps4fs.generator.component.building import Building
 from maps4fs.generator.component.config import Config
+from maps4fs.generator.component.dem import DEM
 from maps4fs.generator.component.grle import GRLE
 from maps4fs.generator.component.road import Road
 from maps4fs.generator.component.satellite import Satellite
 from maps4fs.generator.component.scene import Scene
 from maps4fs.generator.component.texture import Texture
+from maps4fs.generator.component.water import Water
 from maps4fs.generator.constants import Paths
 from maps4fs.generator.settings import Parameters
 
@@ -152,7 +154,7 @@ class Game:
 
     # Order matters — some components depend on earlier ones.
     # Subclasses may override to use a different component list.
-    components = [Satellite, Texture, Background, GRLE, Config, Road, Scene, Building]
+    components = [Satellite, Texture, DEM, Water, Background, GRLE, Config, Road, Scene, Building]
 
     # Subclasses must set a non-empty code.
     code: str = ""

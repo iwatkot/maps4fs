@@ -103,20 +103,18 @@ Texture component
   → info_layers/textures.json     (water polygon coordinates)
   
 Background component
-  → water/water_resources.png     (polygon-based water mask, 8-bit grayscale)
-  → water/line_based_water.obj    (line/polyline-based water mesh)
-  → water/elevated_water.obj      (polygon-based water surface mesh on terrain)
-  → water/plane_water.obj         (simplified flat water plane mesh)
-  → assets/water/water_resources.i3d  (READY TO USE: line-based water i3d)
+    → water/polygon_water_mask.png  (polygon-based water mask, 8-bit grayscale)
+    → water/polygon_water.obj       (polygon-based water mesh)
+    → water/polyline_water.obj      (line/polyline-based water mesh)
+    → assets/water/polygon_water.i3d  (READY TO USE: polygon water i3d)
 ```
 
 **Actually injected into the FS25 map:**
-- `assets/water/water_resources.i3d` — YES (manual import by user into Giants Editor)
-- `water_resources.png` — Only used internally for DEM subtraction masking
-- `elevated_water.obj` and `plane_water.obj` — NOT directly used; these are intermediate artifacts of the polygon-water generation path
-- `line_based_water.obj` — intermediate file; the i3d version is the deliverable
+- `assets/water/polygon_water.i3d` — YES (manual import by user into Giants Editor)
+- `water/polygon_water_mask.png` — only used internally for DEM subtraction masking
+- `water/polygon_water.obj` and `water/polyline_water.obj` — intermediate geometry artifacts
 
-**Recommendation:** Remove `elevated_water.obj` and `plane_water.obj` generation. Keep only `water_resources.png` (internal mask) and `assets/water/water_resources.i3d` (deliverable).
+**Recommendation:** Keep only the new polygon/polyline water pipeline and remove all legacy elevated/plane water outputs.
 
 ---
 
@@ -638,7 +636,7 @@ components = [Satellite, Texture, Background, GRLE, Config, Road, I3d, Building]
 **Proposed changes:**
 - Split into at most two responsibilities: (1) DEM cutout + modifications, (2) mesh generation
 - After `DEM` becomes a first-class component, `Background` only handles: cut to map size → apply water depth → apply road flattening → apply foundations → save final DEM → optionally generate meshes
-- Water mesh generation: keep `line_based_water_mesh` → `water_resources.i3d` pipeline; remove `elevated_water.obj` and `plane_water.obj` (they are not deliverables)
+- Water mesh generation: keep `polygon_water`/`polyline_water` mesh pipeline and `polygon_water.i3d`; remove legacy elevated/plane water outputs
 - Read road/water/building data from `map.context` instead of `textures.json`
 - Background textures: extract the secondary `Texture` trick into a proper `create_mask_from_layers()` utility that the background component calls directly
 
@@ -878,8 +876,8 @@ components = [Satellite, Texture, Background, GRLE, Config, Road, I3d, Building]
 | `templates/fs22-texture-schema.json` | FS22 deprecated |
 | `FS22` class in `game.py` | FS22 deprecated |
 | FS22 test cases in `test_generator.py` | FS22 deprecated |
-| `water/elevated_water.obj` generation | Not a deliverable, intermediate artifact |
-| `water/plane_water.obj` generation | Not a deliverable, intermediate artifact |
+| legacy `water/elevated_water.obj` generation | Not a deliverable, intermediate artifact |
+| legacy `water/plane_water.obj` generation | Not a deliverable, intermediate artifact |
 | `background/not_resized.png` (intermediate) | Replaced by in-memory context |
 | `background/not_resized_with_foundations.png` (intermediate) | Replaced by in-memory context |
 | `background/not_resized_with_flattened_roads.png` (intermediate) | Replaced by in-memory context |
@@ -892,8 +890,8 @@ components = [Satellite, Texture, Background, GRLE, Config, Road, I3d, Building]
 
 | File/Feature | Why Keep |
 |-------------|----------|
-| `water/line_based_water.obj` | Input to the water i3d converter |
-| `assets/water/water_resources.i3d` | Deliverable for user to import into Giants Editor |
+| `water/polygon_water.obj` | Input to the water i3d converter |
+| `assets/water/polygon_water.i3d` | Deliverable for user to import into Giants Editor |
 | `assets/background/background_terrain.i3d` | Deliverable |
 | `map/overview.dds` | Required by FS25 map for in-game minimap; not optional |
 | `generation_info.json` | Useful debug/info output |

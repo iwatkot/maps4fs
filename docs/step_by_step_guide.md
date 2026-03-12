@@ -126,7 +126,7 @@ No Blender needed for FS25!
 ### Step 8: 🌊 Water Planes (Automated for FS25)
 **For Farming Simulator 25**: Water planes are now fully automated!
 1. ✅ Enable **Generate Water** in background settings
-2. 🎯 Maps4FS automatically creates ready-to-use `water_resources.i3d` files
+2. 🎯 Maps4FS automatically creates a ready-to-use `polygon_water.i3d` file
 3. 📁 Find them in `your_map/assets/water/` after generation
 4. 🚀 Import the `.i3d` file directly into Giants Editor
 5. ⚙️ Configure water properties in Giants Editor (see [Water Planes guide](water_planes.md))

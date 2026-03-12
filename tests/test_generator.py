@@ -351,7 +351,7 @@ def test_background_terrain_i3d_generated():
 
     Satellite images are required to texture the background mesh before it can be
     converted to i3d, so download_images=True is used here.
-    water_resources.i3d is omitted: its generation depends on OSM water polygon
+    polygon_water.i3d is omitted: its generation depends on OSM water polygon
     availability at the test coordinates and is therefore unreliable in CI.
     """
     game = Game.from_code("FS25")

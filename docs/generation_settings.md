@@ -60,8 +60,8 @@ If enabled, the background terrain files will be generated. You can turn it off 
 If enabled, the water plane files will be generated. You can turn it off if you already have those files or don't need them. By default, it's set to True.
 
 **Generated files (FS25):**
-- `assets/water/water_resources.i3d` ← **Ready to import!**
-- `water/` folder with obj files for reference
+- `assets/water/polygon_water.i3d` ← **Ready to import!**
+- `water/` folder with `polygon_water.obj` and `polyline_water.obj` for reference
 
 ### Water Blurriness
 **Units:** Integer value  
@@ -77,7 +77,7 @@ If enabled, the terrain under roads will be flattened. Do not use this option wi
 ⚠️ **Note:** This image represents the difference when using low quality DEM data with resolution of 30 meters per pixel. If you're using high quality DEM data, do not use this feature, as it may lead to unexpected results.
 
 ### Flatten Water
-If enabled, the bottom of water resources will be set to the average height of all water resources for the whole map. This option is suitable for maps with water resources that don't differ too much in height. Do not use this option if your map terrain contains big hills or mountains, as it may lead to worse results.
+If enabled, the water bottom will be set to a shared average height across generated water areas. This option is suitable for maps with water surfaces that don't differ too much in height. Do not use this option if your map terrain contains big hills or mountains, as it may lead to worse results.
 
 ### Remove Center
 If enabled, the playable region (map terrain) will be removed from the background terrain. By default, it's set to True.

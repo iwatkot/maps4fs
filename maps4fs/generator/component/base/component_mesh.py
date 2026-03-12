@@ -31,6 +31,24 @@ class LineSurfaceEntry(NamedTuple):
 class MeshComponent(Component):
     """Base class for all components that primarily used to work with meshes."""
 
+    OBJ_INDEX_OFFSET = 1
+    ROAD_MATERIAL_NAME = "RoadMaterial"
+    TERRAIN_MATERIAL_NAME = "TerrainMaterial_XZ"
+    TEXTURE_TILE_SIZE_METERS = 10.0
+    UV_LIMIT = 32.0
+    UV_SPLIT_SAFETY_MARGIN = 30.0
+    INTERPOLATION_TARGET_SEGMENT_LENGTH = 5.0
+    INTERPOLATION_MAX_ANGLE_CHANGE = 30.0
+    I3D_ENCODING = "iso-8859-1"
+    I3D_VERSION = "1.6"
+    I3D_SCHEMA = "http://i3d.giants.ch/schema/i3d-1.6.xsd"
+    I3D_XSI_NAMESPACE = "http://www.w3.org/2001/XMLSchema-instance"
+    I3D_EXPORT_PROGRAM = "maps4fs"
+    I3D_EXPORT_VERSION = "1.0"
+    I3D_WATER_SHADER_PATH = "$data/shaders/oceanShader.xml"
+    I3D_WATER_SHADER_PATH_BINARY_BROKEN = 'filename="data/shaders/oceanShader.xml"'
+    I3D_WATER_SHADER_PATH_BINARY_FIXED = 'filename="$data/shaders/oceanShader.xml"'
+
     @staticmethod
     def validate_np_for_mesh(image_path: str, map_size: int) -> None:
         """Checks if the given image is a valid for mesh generation.
@@ -377,8 +395,8 @@ class MeshComponent(Component):
         target_faces = int(len(mesh.faces) * reduction_factor)
         return mesh.simplify_quadric_decimation(face_count=target_faces)
 
-    @staticmethod
     def texture_mesh(
+        self,
         mesh: trimesh.Trimesh,
         resized_texture_path: str,
         output_directory: str,
@@ -395,54 +413,16 @@ class MeshComponent(Component):
         Returns:
             tuple[str, str]: Paths to the saved OBJ and MTL files
         """
-        # 1. Copy texture to output directory (only if not already there).
-        texture_filename = os.path.basename(resized_texture_path)
-        texture_output_path = os.path.join(output_directory, texture_filename)
+        texture_filename, texture_output_path = self._copy_texture_to_output(
+            resized_texture_path,
+            output_directory,
+        )
 
-        # Check if source and destination are the same file to avoid copy conflicts
-        if os.path.abspath(resized_texture_path) != os.path.abspath(texture_output_path):
-            shutil.copy2(resized_texture_path, texture_output_path)
-
-        # 2. Apply rotation to fix 90-degree X-axis rotation.
         rotation_matrix = trimesh.transformations.rotation_matrix(-np.pi / 2, [1, 0, 0])
         mesh.apply_transform(rotation_matrix)
-
-        # 3. Get mesh bounds: using X and Z for ground plane.
         vertices = mesh.vertices
-
-        # 4. Ground plane coordinates (X, Z)
-        min_x = np.min(vertices[:, 0])  # X coordinate
-        max_x = np.max(vertices[:, 0])
-        min_z = np.min(vertices[:, 2])  # Z coordinate
-        max_z = np.max(vertices[:, 2])
-
-        width = max_x - min_x  # X dimension
-        depth = max_z - min_z  # Z dimension
-
-        # 5. Load texture.
+        uv_coords = self._calculate_ground_plane_uvs(vertices)
         texture_image = Image.open(texture_output_path)
-
-        # 6. Calculate UV coordinates based on X and Z positions.
-        uv_coords = np.zeros((len(vertices), 2), dtype=np.float32)
-        for i in tqdm(range(len(vertices)), desc="Calculating UVs", unit="vertex"):
-            vertex = vertices[i]
-
-            # Map X coordinate to U
-            u = (vertex[0] - min_x) / width if width > 0 else 0.5
-
-            # Map Z coordinate to V (NOT Y!)
-            v = (vertex[2] - min_z) / depth if depth > 0 else 0.5
-
-            # Flip V coordinate for correct orientation
-            v = 1.0 - v
-
-            # Clamp to valid range
-            u = np.clip(u, 0.0, 1.0)
-            v = np.clip(v, 0.0, 1.0)
-
-            uv_coords[i] = [u, v]
-
-        # 7. Create material.
         material = trimesh.visual.material.PBRMaterial(
             baseColorTexture=texture_image,
             metallicFactor=0.0,
@@ -450,7 +430,6 @@ class MeshComponent(Component):
             emissiveFactor=[0.0, 0.0, 0.0],
         )
 
-        # 8. Apply UV and material to mesh.
         visual = trimesh.visual.TextureVisuals(uv=uv_coords, material=material)
         mesh.visual = visual
 
@@ -459,42 +438,75 @@ class MeshComponent(Component):
         mtl_filepath = os.path.join(output_directory, mtl_filename)
         obj_filepath = os.path.join(output_directory, obj_filename)
 
-        faces = mesh.faces
-
-        # 9. Write OBJ file with correct UV mapping.
-        with open(obj_filepath, "w") as f:  # pylint: disable=unspecified-encoding
-            f.write("# Corrected UV mapping using X,Z coordinates (ground plane)\n")
-            f.write("# Y coordinate represents elevation\n")
-            f.write(f"mtllib {os.path.basename(mtl_filename)}\n")
-
-            # Write vertices
-            for vertex in vertices:
-                f.write(f"v {vertex[0]:.6f} {vertex[1]:.6f} {vertex[2]:.6f}\n")
-
-            # Write UV coordinates
-            for uv in uv_coords:
-                f.write(f"vt {uv[0]:.6f} {uv[1]:.6f}\n")
-
-            # Write faces
-            f.write("usemtl TerrainMaterial_XZ\n")
-            for face in faces:
-                v1, v2, v3 = face[0] + 1, face[1] + 1, face[2] + 1
-                f.write(f"f {v1}/{v1} {v2}/{v2} {v3}/{v3}\n")
-
-        # 10. Write MTL file.
-        with open(mtl_filepath, "w") as f:  # pylint: disable=unspecified-encoding
-            f.write("# Material with X,Z UV mapping\n")
-            f.write("newmtl TerrainMaterial_XZ\n")
-            f.write("Ka 1.0 1.0 1.0\n")
-            f.write("Kd 1.0 1.0 1.0\n")
-            f.write("Ks 0.0 0.0 0.0\n")
-            f.write("illum 1\n")
-            f.write(f"map_Kd {texture_filename}\n")
+        self._write_terrain_obj(
+            obj_filepath=obj_filepath,
+            mtl_filename=mtl_filename,
+            vertices=vertices,
+            uv_coords=uv_coords,
+            faces=mesh.faces,
+        )
+        self._write_terrain_mtl(mtl_filepath, texture_filename)
 
         return obj_filepath, mtl_filepath
 
-    @staticmethod
-    def to_i3d_binary(raw_i3d_path: str, binary_i3d_path: str, **kwargs) -> None:
+    def _copy_texture_to_output(self, texture_path: str, output_directory: str) -> tuple[str, str]:
+        """Copy texture to output directory if needed and return filename/path pair."""
+        texture_filename = os.path.basename(texture_path)
+        texture_output_path = os.path.join(output_directory, texture_filename)
+        if os.path.abspath(texture_path) != os.path.abspath(texture_output_path):
+            shutil.copy2(texture_path, texture_output_path)
+        return texture_filename, texture_output_path
+
+    def _calculate_ground_plane_uvs(self, vertices: np.ndarray) -> np.ndarray:
+        """Calculate UVs from mesh X/Z extents for ground-plane texturing."""
+        min_x = np.min(vertices[:, 0])
+        max_x = np.max(vertices[:, 0])
+        min_z = np.min(vertices[:, 2])
+        max_z = np.max(vertices[:, 2])
+        width = max_x - min_x
+        depth = max_z - min_z
+
+        uv_coords = np.zeros((len(vertices), 2), dtype=np.float32)
+        for i, vertex in enumerate(tqdm(vertices, desc="Calculating UVs", unit="vertex")):
+            u = (vertex[0] - min_x) / width if width > 0 else 0.5
+            v = (vertex[2] - min_z) / depth if depth > 0 else 0.5
+            uv_coords[i] = [np.clip(u, 0.0, 1.0), np.clip(1.0 - v, 0.0, 1.0)]
+        return uv_coords
+
+    def _write_terrain_obj(
+        self,
+        obj_filepath: str,
+        mtl_filename: str,
+        vertices: np.ndarray,
+        uv_coords: np.ndarray,
+        faces: np.ndarray,
+    ) -> None:
+        """Write terrain OBJ file with UV and material bindings."""
+        with open(obj_filepath, "w", encoding="utf-8") as obj_file:
+            obj_file.write("# Terrain mesh generated by maps4fs\n")
+            obj_file.write(f"mtllib {os.path.basename(mtl_filename)}\n")
+
+            for vertex in vertices:
+                obj_file.write(f"v {vertex[0]:.6f} {vertex[1]:.6f} {vertex[2]:.6f}\n")
+            for uv in uv_coords:
+                obj_file.write(f"vt {uv[0]:.6f} {uv[1]:.6f}\n")
+
+            obj_file.write(f"usemtl {self.TERRAIN_MATERIAL_NAME}\n")
+            for face in faces:
+                v1, v2, v3 = [idx + self.OBJ_INDEX_OFFSET for idx in face]
+                obj_file.write(f"f {v1}/{v1} {v2}/{v2} {v3}/{v3}\n")
+
+    def _write_terrain_mtl(self, mtl_filepath: str, texture_filename: str) -> None:
+        """Write material file for textured terrain mesh."""
+        with open(mtl_filepath, "w", encoding="utf-8") as mtl_file:
+            mtl_file.write(f"newmtl {self.TERRAIN_MATERIAL_NAME}\n")
+            mtl_file.write("Ka 1.0 1.0 1.0\n")
+            mtl_file.write("Kd 1.0 1.0 1.0\n")
+            mtl_file.write("Ks 0.0 0.0 0.0\n")
+            mtl_file.write("illum 1\n")
+            mtl_file.write(f"map_Kd {texture_filename}\n")
+
+    def to_i3d_binary(self, raw_i3d_path: str, binary_i3d_path: str, **kwargs) -> None:
         """Convert the raw XML i3d file to the Giants binary i3d format using the i3dConverter.exe tool.
 
         Generates a raw XML i3d file first, then converts it to the Giants binary i3d
@@ -534,8 +546,8 @@ class MeshComponent(Component):
                 f"stdout: {result.stdout.strip()} | stderr: {result.stderr.strip()}"
             )
 
-    @staticmethod
     def mesh_to_i3d(
+        self,
         mesh: trimesh.Trimesh,
         output_dir: str,
         name: str,
@@ -559,7 +571,6 @@ class MeshComponent(Component):
             str: Full path to the generated i3d file
         """
 
-        # Ensure output directory exists
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
@@ -574,36 +585,33 @@ class MeshComponent(Component):
             center = vertices.mean(axis=0)
             mesh.vertices = vertices - center
 
-        # 3. Handle texture copying if provided
-        texture_file = None
-        if texture_path and os.path.exists(texture_path):
-            texture_filename = os.path.basename(texture_path)
-            texture_dest = os.path.join(output_dir, texture_filename)
+        texture_file = self._copy_i3d_texture_if_needed(texture_path, output_dir)
 
-            # Copy texture if it's not already in output_dir
-            if os.path.abspath(texture_path) != os.path.abspath(texture_dest):
-                shutil.copy2(texture_path, texture_dest)
-
-            texture_file = texture_filename
-
-        # 4. Generate i3d file
         output_path = os.path.join(output_dir, f"{name}.i3d")
-        MeshComponent._write_i3d_file(mesh, output_path, name, texture_file, water_mesh)
+        self._write_i3d_file(mesh, output_path, name, texture_file, water_mesh)
 
         try:
-            # 5. Try converting to binary i3d format (optional, can be skipped if converter not available).
             binary_output_path = os.path.join(output_dir, f"{name}_binary.i3d")
-            MeshComponent.to_i3d_binary(output_path, binary_output_path)
+            self.to_i3d_binary(output_path, binary_output_path)
             output_path = binary_output_path
-            # 6. Fix binary i3d paths for shaders if needed (only for water meshes).
-            MeshComponent.fix_binary_paths(output_path)
+            self.fix_binary_paths(output_path)
         except Exception:
             pass
 
         return output_path
 
-    @staticmethod
-    def fix_binary_paths(binary_i3d_path: str) -> None:
+    def _copy_i3d_texture_if_needed(self, texture_path: str | None, output_dir: str) -> str | None:
+        """Copy optional i3d texture into output directory and return local filename."""
+        if not texture_path or not os.path.exists(texture_path):
+            return None
+
+        texture_filename = os.path.basename(texture_path)
+        texture_dest = os.path.join(output_dir, texture_filename)
+        if os.path.abspath(texture_path) != os.path.abspath(texture_dest):
+            shutil.copy2(texture_path, texture_dest)
+        return texture_filename
+
+    def fix_binary_paths(self, binary_i3d_path: str) -> None:
         """The binary i3d converter replaces $data with data in file paths, which causes issues with
         loading shaders.
 
@@ -617,14 +625,14 @@ class MeshComponent(Component):
         with open(binary_i3d_path, "r", encoding="utf-8") as f:
             content = f.read()
             content = content.replace(
-                'filename="data/shaders/oceanShader.xml"',
-                'filename="$data/shaders/oceanShader.xml"',
+                self.I3D_WATER_SHADER_PATH_BINARY_BROKEN,
+                self.I3D_WATER_SHADER_PATH_BINARY_FIXED,
             )
         with open(binary_i3d_path, "w", encoding="utf-8") as f:
             f.write(content)
 
-    @staticmethod
     def _write_i3d_file(
+        self,
         mesh: trimesh.Trimesh,
         output_path: str,
         name: str,
@@ -641,23 +649,8 @@ class MeshComponent(Component):
             is_water (bool): If True, generates water mesh with ocean shader
         """
 
-        # Root element
-        i3d = ET.Element(
-            "i3D",
-            attrib={
-                "name": name,
-                "version": "1.6",
-                "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-                "xsi:noNamespaceSchemaLocation": "http://i3d.giants.ch/schema/i3d-1.6.xsd",
-            },
-        )
-
-        # Asset section
-        asset = ET.SubElement(i3d, "Asset")
-        exp = ET.SubElement(asset, "Export")
-        exp.set("program", "maps4fs")
-        exp.set("version", "1.0")
-        exp.set("date", datetime.now().strftime("%Y-%m-%d"))
+        i3d = self._create_i3d_root(name)
+        self._append_i3d_asset(i3d)
 
         vertices = mesh.vertices
         faces = mesh.faces
@@ -669,185 +662,177 @@ class MeshComponent(Component):
             and len(mesh.visual.uv) == len(vertices)
         )
 
-        # Files section
-        files_section = None
-        if is_water:
-            # Water mesh: add ocean shader
-            files_section = ET.SubElement(i3d, "Files")
-            shader_file = ET.SubElement(files_section, "File")
-            shader_file.set("fileId", "4")
-            shader_file.set("filename", "$data/shaders/oceanShader.xml")
-        elif texture_file:
-            # Terrain mesh: add texture file
-            files_section = ET.SubElement(i3d, "Files")
-            file_entry = ET.SubElement(files_section, "File")
-            file_entry.set("fileId", "1")
-            file_entry.set("filename", texture_file)
-            file_entry.set("relativePath", "true")
+        self._append_i3d_files(i3d, is_water, texture_file)
+        self._append_i3d_material(i3d, name, is_water, texture_file)
 
-        # Materials section
-        materials_section = ET.SubElement(i3d, "Materials")
-        material = ET.SubElement(materials_section, "Material")
+        shape = self._append_i3d_shape(i3d, name, vertices)
+
+        self._append_i3d_vertices(shape, vertices, has_normals, has_uv, mesh)
+        self._append_i3d_triangles(shape, faces, len(vertices))
+        self._append_i3d_scene(i3d, name, is_water)
+
+        tree = ET.ElementTree(i3d)
+        ET.indent(tree, space="  ")
+        tree.write(output_path, encoding=self.I3D_ENCODING, xml_declaration=True)
+
+    def _create_i3d_root(self, name: str) -> ET.Element:
+        return ET.Element(
+            "i3D",
+            attrib={
+                "name": name,
+                "version": self.I3D_VERSION,
+                "xmlns:xsi": self.I3D_XSI_NAMESPACE,
+                "xsi:noNamespaceSchemaLocation": self.I3D_SCHEMA,
+            },
+        )
+
+    def _append_i3d_asset(self, i3d: ET.Element) -> None:
+        asset = ET.SubElement(i3d, "Asset")
+        export = ET.SubElement(asset, "Export")
+        export.set("program", self.I3D_EXPORT_PROGRAM)
+        export.set("version", self.I3D_EXPORT_VERSION)
+        export.set("date", datetime.now().strftime("%Y-%m-%d"))
+
+    def _append_i3d_files(
+        self,
+        i3d: ET.Element,
+        is_water: bool,
+        texture_file: str | None,
+    ) -> None:
+        if not is_water and not texture_file:
+            return
+
+        files_section = ET.SubElement(i3d, "Files")
+        file_node = ET.SubElement(files_section, "File")
+        if is_water:
+            file_node.set("fileId", "4")
+            file_node.set("filename", self.I3D_WATER_SHADER_PATH)
+        else:
+            file_node.set("fileId", "1")
+            file_node.set("filename", texture_file or "")
+            file_node.set("relativePath", "true")
+
+    def _append_i3d_material(
+        self,
+        i3d: ET.Element,
+        name: str,
+        is_water: bool,
+        texture_file: str | None,
+    ) -> None:
+        materials = ET.SubElement(i3d, "Materials")
+        material = ET.SubElement(materials, "Material")
+        material.set("materialId", "1")
 
         if is_water:
-            # Water material with ocean shader
             material.set("name", "OceanShader")
-            material.set("materialId", "1")
             material.set("diffuseColor", "0.8 0.8 0.8 1")
             material.set("specularColor", "0.501961 1 0")
             material.set("customShaderId", "4")
             material.set("customShaderVariation", "simple")
+            ET.SubElement(material, "Normalmap", {"fileId": "2"})
+            ET.SubElement(
+                material,
+                "Refractionmap",
+                {"coeff": "1", "bumpScale": "0.01", "withSSRData": "true"},
+            )
+            return
 
-            # Required for ocean shader
-            normalmap = ET.SubElement(material, "Normalmap")
-            normalmap.set("fileId", "2")
+        material.set("name", f"{name}_material")
+        material.set("diffuseColor", "1 1 1 1")
+        material.set("specularColor", "0.5 0.5 0.5")
+        if texture_file:
+            ET.SubElement(material, "Texture", {"fileId": "1"})
 
-            refractionmap = ET.SubElement(material, "Refractionmap")
-            refractionmap.set("coeff", "1")
-            refractionmap.set("bumpScale", "0.01")
-            refractionmap.set("withSSRData", "true")
-        else:
-            # Standard terrain material
-            material.set("name", f"{name}_material")
-            material.set("materialId", "1")
-            material.set("diffuseColor", "1 1 1 1")
-            material.set("specularColor", "0.5 0.5 0.5")
-
-            if texture_file:
-                texture = ET.SubElement(material, "Texture")
-                texture.set("fileId", "1")
-
-        # Shapes section
+    def _append_i3d_shape(self, i3d: ET.Element, name: str, vertices: np.ndarray) -> ET.Element:
         shapes = ET.SubElement(i3d, "Shapes")
         shape = ET.SubElement(shapes, "IndexedTriangleSet")
         shape.set("name", name)
         shape.set("shapeId", "1")
+        if len(vertices) == 0:
+            return shape
 
-        # Calculate bounding sphere
-        if len(vertices) > 0:
-            center = vertices.mean(axis=0)
-            max_dist = ((vertices - center) ** 2).sum(axis=1).max() ** 0.5
-            shape.set("bvCenter", f"{center[0]:.6f} {center[1]:.6f} {center[2]:.6f}")
-            shape.set("bvRadius", f"{max_dist:.6f}")
+        center = vertices.mean(axis=0)
+        max_dist = ((vertices - center) ** 2).sum(axis=1).max() ** 0.5
+        shape.set("bvCenter", f"{center[0]:.6f} {center[1]:.6f} {center[2]:.6f}")
+        shape.set("bvRadius", f"{max_dist:.6f}")
+        return shape
 
-        # Vertices block
-        xml_vertices = ET.SubElement(shape, "Vertices")
-        xml_vertices.set("count", str(len(vertices)))
-
+    def _append_i3d_vertices(
+        self,
+        shape: ET.Element,
+        vertices: np.ndarray,
+        has_normals: bool,
+        has_uv: bool,
+        mesh: trimesh.Trimesh,
+    ) -> None:
+        xml_vertices = ET.SubElement(shape, "Vertices", {"count": str(len(vertices))})
         if has_normals:
             xml_vertices.set("normal", "true")
         if has_uv:
             xml_vertices.set("uv0", "true")
 
-        # Pre-format ALL strings using vectorized operations
-        pos_strings = np.array([f"{v[0]:.6f} {v[1]:.6f} {v[2]:.6f}" for v in vertices])
+        normals = mesh.vertex_normals if has_normals else None
+        uvs = mesh.visual.uv if has_uv else None
+        for idx, vertex in enumerate(tqdm(vertices, desc="Writing vertices", unit="vertex")):
+            vertex_node = ET.SubElement(xml_vertices, "v")
+            vertex_node.set("p", f"{vertex[0]:.6f} {vertex[1]:.6f} {vertex[2]:.6f}")
+            if normals is not None:
+                normal = normals[idx]
+                vertex_node.set("n", f"{normal[0]:.6f} {normal[1]:.6f} {normal[2]:.6f}")
+            if uvs is not None:
+                uv = uvs[idx]
+                vertex_node.set("t0", f"{uv[0]:.6f} {uv[1]:.6f}")
 
-        normal_strings = None
-        if has_normals:
-            normal_strings = np.array(
-                [f"{n[0]:.6f} {n[1]:.6f} {n[2]:.6f}" for n in mesh.vertex_normals]
-            )
+    def _append_i3d_triangles(
+        self, shape: ET.Element, faces: np.ndarray, vertex_count: int
+    ) -> None:
+        xml_tris = ET.SubElement(shape, "Triangles", {"count": str(len(faces))})
+        for face in tqdm(faces, desc="Writing triangles", unit="triangle"):
+            ET.SubElement(xml_tris, "t", {"vi": f"{face[0]} {face[1]} {face[2]}"})
 
-        uv_strings = None
-        if has_uv:
-            uv_strings = np.array([f"{uv[0]:.6f} {uv[1]:.6f}" for uv in mesh.visual.uv])
+        subsets = ET.SubElement(shape, "Subsets", {"count": "1"})
+        ET.SubElement(
+            subsets,
+            "Subset",
+            {
+                "firstVertex": "0",
+                "numVertices": str(vertex_count),
+                "firstIndex": "0",
+                "numIndices": str(len(faces) * 3),
+            },
+        )
 
-        # Batch process vertices for memory efficiency
-        batch_size = 2000
-        vertex_elements = []
-
-        for batch_start in tqdm(
-            range(0, len(vertices), batch_size), desc="Writing vertices", unit="batch"
-        ):
-            batch_end = min(batch_start + batch_size, len(vertices))
-            batch_elements = []
-
-            for idx in range(batch_start, batch_end):
-                v_el = ET.Element("v")
-                v_el.set("p", pos_strings[idx])
-
-                if has_normals:
-                    v_el.set("n", normal_strings[idx])  # type: ignore
-
-                if has_uv:
-                    v_el.set("t0", uv_strings[idx])  # type: ignore
-
-                batch_elements.append(v_el)
-
-            vertex_elements.extend(batch_elements)
-
-        # Add all vertex elements at once
-        xml_vertices.extend(vertex_elements)
-
-        # Triangles block
-        xml_tris = ET.SubElement(shape, "Triangles")
-        xml_tris.set("count", str(len(faces)))
-        for f in tqdm(faces, desc="Writing triangles", unit="triangle"):
-            t = ET.SubElement(xml_tris, "t")
-            t.set("vi", f"{f[0]} {f[1]} {f[2]}")
-
-        # Subsets block
-        xml_subs = ET.SubElement(shape, "Subsets")
-        xml_subs.set("count", "1")
-        subset = ET.SubElement(xml_subs, "Subset")
-        subset.set("firstVertex", "0")
-        subset.set("numVertices", str(len(vertices)))
-        subset.set("firstIndex", "0")
-        subset.set("numIndices", str(len(faces) * 3))
-
-        # Scene section
+    def _append_i3d_scene(self, i3d: ET.Element, name: str, is_water: bool) -> None:
         scene = ET.SubElement(i3d, "Scene")
-
         if is_water:
-            # Water: direct shape node
-            shape_node = ET.SubElement(scene, "Shape")
-            shape_node.set("name", name)
-            shape_node.set("shapeId", "1")
-            shape_node.set("nodeId", "4")
-            shape_node.set("castsShadows", "true")
-            shape_node.set("receiveShadows", "true")
-            shape_node.set("materialIds", "1")
-        else:
-            # Terrain: transform group with shape
-            transform_group = ET.SubElement(scene, "TransformGroup")
-            transform_group.set("name", name)
-            transform_group.set("nodeId", "1")
+            ET.SubElement(
+                scene,
+                "Shape",
+                {
+                    "name": name,
+                    "shapeId": "1",
+                    "nodeId": "4",
+                    "castsShadows": "true",
+                    "receiveShadows": "true",
+                    "materialIds": "1",
+                },
+            )
+            return
 
-            shape_node = ET.SubElement(transform_group, "Shape")
-            shape_node.set("name", f"{name}_shape")
-            shape_node.set("nodeId", "2")
-            shape_node.set("shapeId", "1")
-            shape_node.set("static", "true")
-            shape_node.set("compound", "false")
-            shape_node.set("collision", "true")
-            shape_node.set("materialIds", "1")
-
-        # Pretty print and write
-        MeshComponent._indent(i3d)
-        tree = ET.ElementTree(i3d)
-        tree.write(output_path, encoding="iso-8859-1", xml_declaration=True)
-
-    @staticmethod
-    def _indent(elem: ET.Element, level: int = 0) -> None:
-        """Pretty print XML formatting. Modifies the element in place.
-
-        Arguments:
-            elem (ET.Element): The XML element to indent
-            level (int): Current indentation level
-        """
-        i = "\n" + level * "  "
-        if len(elem):
-            if not elem.text or not elem.text.strip():
-                elem.text = i + "  "
-            if not elem.tail or not elem.tail.strip():
-                elem.tail = i
-            for e in elem:
-                MeshComponent._indent(e, level + 1)
-            if not elem.tail or not elem.tail.strip():
-                elem.tail = i
-        else:
-            if level and (not elem.tail or not elem.tail.strip()):
-                elem.tail = i
+        transform_group = ET.SubElement(scene, "TransformGroup", {"name": name, "nodeId": "1"})
+        ET.SubElement(
+            transform_group,
+            "Shape",
+            {
+                "name": f"{name}_shape",
+                "nodeId": "2",
+                "shapeId": "1",
+                "static": "true",
+                "compound": "false",
+                "collision": "true",
+                "materialIds": "1",
+            },
+        )
 
     def create_textured_linestrings_mesh(
         self,
@@ -871,25 +856,70 @@ class MeshComponent(Component):
             texture_path: Path to the texture image file to apply. If None, texture is not applied.
             dem_override (np.ndarray | None): Optional DEM to use for Z values instead of default.
         """
-        # Use the not resized DEM with flattened roads to get accurate Z values
-        # for the road mesh vertices.
+        not_resized_dem = self._resolve_linestring_dem(dem_override)
+        if not_resized_dem is None:
+            return
+
+        vertices, faces, uvs = self._build_linestring_mesh_data(road_entries, not_resized_dem)
+        if not vertices:
+            self.logger.warning("No vertices generated for road mesh.")
+            return
+
+        if mtl_output_path and texture_path:
+            self._write_road_mtl(mtl_output_path, texture_path)
+
+        mtl_filename = os.path.basename(mtl_output_path) if mtl_output_path else None
+        with open(obj_output_path, "w", encoding="utf-8") as obj_file:
+            obj_file.write("# Road mesh generated by maps4fs\n")
+            if mtl_filename:
+                obj_file.write(f"mtllib {mtl_filename}\n\n")
+
+            obj_file.write(f"# {len(vertices)} vertices\n")
+            for v in vertices:
+                obj_file.write(f"v {v[0]:.6f} {v[1]:.6f} {v[2]:.6f}\n")
+
+            obj_file.write(f"\n# {len(uvs)} texture coordinates\n")
+            for uv in uvs:
+                obj_file.write(f"vt {uv[0]:.6f} {uv[1]:.6f}\n")
+
+            obj_file.write(f"\n# {len(faces)} faces\n")
+            if mtl_output_path:
+                obj_file.write(f"usemtl {self.ROAD_MATERIAL_NAME}\n")
+            for face in faces:
+                v1, v2, v3 = [idx + self.OBJ_INDEX_OFFSET for idx in face]
+                obj_file.write(f"f {v1}/{v1} " f"{v2}/{v2} " f"{v3}/{v3}\n")
+
+        self.logger.debug(
+            "OBJ file written to %s with %d vertices and %d faces",
+            obj_output_path,
+            len(vertices),
+            len(faces),
+        )
+
+    def _resolve_linestring_dem(self, dem_override: np.ndarray | None) -> np.ndarray | None:
+        """Resolve DEM source for linestring-based mesh generation."""
         if dem_override is not None:
-            not_resized_dem = dem_override
-        else:
-            not_resized_dem = self.get_dem_image_with_fallback()  # type: ignore
-            if not_resized_dem is None:
-                self.logger.warning(
-                    "Not resized DEM with flattened roads is not available. "
-                    "Cannot generate road mesh."
-                )
-                return
+            return dem_override
+        not_resized_dem = self.get_dem_image_with_fallback()  # type: ignore
+        if not_resized_dem is None:
+            self.logger.warning(
+                "Not resized DEM with flattened roads is not available. Cannot generate road mesh."
+            )
+            return None
+        return not_resized_dem
 
-        vertices = []
-        faces = []
-        uvs = []
+    def _build_linestring_mesh_data(
+        self,
+        road_entries: list[LineSurfaceEntry],
+        dem_image: np.ndarray,
+    ) -> tuple[
+        list[tuple[float, float, float]], list[tuple[int, int, int]], list[tuple[float, float]]
+    ]:
+        """Build vertex/face/uv lists for linestring surfaces."""
+        vertices: list[tuple[float, float, float]] = []
+        faces: list[tuple[int, int, int]] = []
+        uvs: list[tuple[float, float]] = []
         vertex_offset = 0
-
-        texture_tile_size = 10.0  # meters - how many meters before texture repeats
 
         patches_count = sum(1 for entry in road_entries if entry.z_offset > 0)
         self.logger.debug(
@@ -898,163 +928,111 @@ class MeshComponent(Component):
             patches_count,
         )
 
-        for _, (linestring, width, z_offset) in enumerate(road_entries):
-            coords = list(linestring.coords)
-            if len(coords) < 2:
+        for linestring, width, z_offset in road_entries:
+            strip_vertices, strip_uvs = self._build_linestring_strip(
+                linestring,
+                width,
+                z_offset,
+                dem_image,
+            )
+            if not strip_vertices:
                 continue
 
-            # Generate road strip vertices
-            segment_vertices = []
-            segment_uvs = []
-            accumulated_distance = 0.0
-            prev_center_3d: tuple[float, float, float] | None = (
-                None  # Track previous center point in 3D
-            )
+            vertices.extend(strip_vertices)
+            uvs.extend(strip_uvs)
 
-            for i in range(len(coords)):  # pylint: disable=consider-using-enumerate
-                x, y = coords[i]
-
-                # Calculate direction vector for perpendicular offset
-                if i == 0:
-                    # First point: use direction to next point
-                    dx = coords[i + 1][0] - coords[i][0]
-                    dy = coords[i + 1][1] - coords[i][1]
-                elif i == len(coords) - 1:
-                    # Last point: use direction from previous point
-                    dx = coords[i][0] - coords[i - 1][0]
-                    dy = coords[i][1] - coords[i - 1][1]
-                else:
-                    # Middle points: average direction
-                    dx1 = coords[i][0] - coords[i - 1][0]
-                    dy1 = coords[i][1] - coords[i - 1][1]
-                    dx2 = coords[i + 1][0] - coords[i][0]
-                    dy2 = coords[i + 1][1] - coords[i][1]
-                    dx = (dx1 + dx2) / 2.0
-                    dy = (dy1 + dy2) / 2.0
-
-                # Normalize direction and get perpendicular
-                length = np.sqrt(dx * dx + dy * dy)
-                if length > 0:
-                    dx /= length
-                    dy /= length
-
-                # Perpendicular vector (rotated 90 degrees)
-                perp_x = -dy
-                perp_y = dx
-
-                exact_z_value = self.get_z_coordinate_from_dem(not_resized_dem, x, y)
-                offsetted_z = -exact_z_value + z_offset
-
-                # Create left and right vertices with z-offset
-                left_vertex = (x + perp_x * width, y + perp_y * width, offsetted_z)
-                right_vertex = (x - perp_x * width, y - perp_y * width, offsetted_z)
-
-                segment_vertices.append(left_vertex)
-                segment_vertices.append(right_vertex)
-
-                # Calculate UV coordinates based on 3D distance (including Z changes)
-                # U coordinate: 0 for left edge, 1 for right edge
-                # V coordinate: based on accumulated 3D distance along the road
-                segment_distance_3d = 0.0
-                current_center_3d = (x, y, offsetted_z)
-
-                # pylint: disable=unsubscriptable-object
-                if i > 0 and prev_center_3d is not None:
-                    # Calculate both 2D and 3D distances for comparison
-                    segment_distance_3d = np.sqrt(
-                        (current_center_3d[0] - prev_center_3d[0]) ** 2
-                        + (current_center_3d[1] - prev_center_3d[1]) ** 2
-                        + (current_center_3d[2] - prev_center_3d[2]) ** 2
-                    )
-                    accumulated_distance += segment_distance_3d
-
-                prev_center_3d = current_center_3d
-
-                # Calculate V coordinate - divide by texture tile size
-                v_coord_raw = accumulated_distance / texture_tile_size
-
-                # Store raw V coordinate for now - we'll apply modulo to the entire road later
-                segment_uvs.append((0.0, v_coord_raw))  # Left edge
-                segment_uvs.append((1.0, v_coord_raw))  # Right edge
-
-            # Add vertices and UVs to global lists
-            vertices.extend(segment_vertices)
-            uvs.extend(segment_uvs)
-
-            # Create faces (triangles) for the road strip
-            num_segments = len(coords) - 1
+            num_segments = len(strip_vertices) // 2 - 1
             for i in range(num_segments):
-                # Each segment creates 2 triangles (a quad)
-                # Vertex indices for this segment
-                v0 = vertex_offset + i * 2  # Left vertex of current segment
-                v1 = vertex_offset + i * 2 + 1  # Right vertex of current segment
-                v2 = vertex_offset + (i + 1) * 2  # Left vertex of next segment
-                v3 = vertex_offset + (i + 1) * 2 + 1  # Right vertex of next segment
-
-                # First triangle (counter-clockwise winding)
+                v0 = vertex_offset + i * 2
+                v1 = vertex_offset + i * 2 + 1
+                v2 = vertex_offset + (i + 1) * 2
+                v3 = vertex_offset + (i + 1) * 2 + 1
                 faces.append((v0, v2, v1))
-                # Second triangle
                 faces.append((v1, v2, v3))
 
-            vertex_offset += len(segment_vertices)
+            vertex_offset += len(strip_vertices)
 
-        if not vertices:
-            self.logger.warning("No vertices generated for road mesh.")
-            return
+        return vertices, faces, uvs
 
-        # Write MTL file
-        if mtl_output_path and texture_path:
-            mtl_filename = os.path.basename(mtl_output_path)
-            texture_filename = os.path.basename(texture_path)
+    def _build_linestring_strip(
+        self,
+        linestring: shapely.LineString,
+        width: int,
+        z_offset: float,
+        dem_image: np.ndarray,
+    ) -> tuple[list[tuple[float, float, float]], list[tuple[float, float]]]:
+        """Build one linestring strip as paired left/right vertices plus UVs."""
+        coords = list(linestring.coords)
+        if len(coords) < 2:
+            return [], []
 
-            with open(mtl_output_path, "w", encoding="utf-8") as mtl_file:
-                mtl_file.write("# Road material\n")
-                mtl_file.write("newmtl RoadMaterial\n")
-                mtl_file.write("Ka 1.0 1.0 1.0\n")  # Ambient color
-                mtl_file.write("Kd 1.0 1.0 1.0\n")  # Diffuse color
-                mtl_file.write("Ks 0.3 0.3 0.3\n")  # Specular color
-                mtl_file.write("Ns 10.0\n")  # Specular exponent
-                mtl_file.write("illum 2\n")  # Illumination model
-                mtl_file.write(f"map_Kd {texture_filename}\n")  # Diffuse texture map
+        strip_vertices: list[tuple[float, float, float]] = []
+        strip_uvs: list[tuple[float, float]] = []
+        accumulated_distance = 0.0
+        prev_center_3d: tuple[float, float, float] | None = None
 
-            self.logger.debug("MTL file written to %s", mtl_output_path)
+        for i, (x, y) in enumerate(coords):
+            perp_x, perp_y = self._perpendicular_direction(coords, i)
+            exact_z_value = self.get_z_coordinate_from_dem(dem_image, x, y)
+            offsetted_z = -exact_z_value + z_offset
 
-        # Write OBJ file
-        with open(obj_output_path, "w", encoding="utf-8") as obj_file:
-            obj_file.write("# Road mesh generated by maps4fs\n")
-            if mtl_output_path:
-                # pylint: disable=possibly-used-before-assignment
-                obj_file.write(f"mtllib {mtl_filename}\n\n")
+            left_vertex = (x + perp_x * width, y + perp_y * width, offsetted_z)
+            right_vertex = (x - perp_x * width, y - perp_y * width, offsetted_z)
+            strip_vertices.extend([left_vertex, right_vertex])
 
-            # Write vertices
-            obj_file.write(f"# {len(vertices)} vertices\n")
-            for v in vertices:
-                obj_file.write(f"v {v[0]:.6f} {v[1]:.6f} {v[2]:.6f}\n")
-
-            # Write UV coordinates
-            obj_file.write(f"\n# {len(uvs)} texture coordinates\n")
-            for uv in uvs:
-                obj_file.write(f"vt {uv[0]:.6f} {uv[1]:.6f}\n")
-
-            # Write faces with material
-            obj_file.write(f"\n# {len(faces)} faces\n")
-            if mtl_output_path:
-                obj_file.write("usemtl RoadMaterial\n")
-            for face in faces:
-                # OBJ format uses 1-based indexing
-                # Format: f v1/vt1 v2/vt2 v3/vt3
-                obj_file.write(
-                    f"f {face[0] + 1}/{face[0] + 1} "
-                    f"{face[1] + 1}/{face[1] + 1} "
-                    f"{face[2] + 1}/{face[2] + 1}\n"
+            current_center_3d = (x, y, offsetted_z)
+            if prev_center_3d is not None:
+                accumulated_distance += np.sqrt(
+                    (current_center_3d[0] - prev_center_3d[0]) ** 2
+                    + (current_center_3d[1] - prev_center_3d[1]) ** 2
+                    + (current_center_3d[2] - prev_center_3d[2]) ** 2
                 )
+            prev_center_3d = current_center_3d
 
-        self.logger.debug(
-            "OBJ file written to %s with %d vertices and %d faces",
-            obj_output_path,
-            len(vertices),
-            len(faces),
-        )
+            v_coord_raw = accumulated_distance / self.TEXTURE_TILE_SIZE_METERS
+            strip_uvs.extend([(0.0, v_coord_raw), (1.0, v_coord_raw)])
+
+        return strip_vertices, strip_uvs
+
+    def _perpendicular_direction(
+        self,
+        coords: list[tuple[float, float]],
+        index: int,
+    ) -> tuple[float, float]:
+        """Return normalized perpendicular direction for a point on a polyline."""
+        if index == 0:
+            dx = coords[index + 1][0] - coords[index][0]
+            dy = coords[index + 1][1] - coords[index][1]
+        elif index == len(coords) - 1:
+            dx = coords[index][0] - coords[index - 1][0]
+            dy = coords[index][1] - coords[index - 1][1]
+        else:
+            dx = (coords[index][0] - coords[index - 1][0]) + (
+                coords[index + 1][0] - coords[index][0]
+            )
+            dy = (coords[index][1] - coords[index - 1][1]) + (
+                coords[index + 1][1] - coords[index][1]
+            )
+
+        length = np.sqrt(dx * dx + dy * dy)
+        if length <= 0:
+            return 0.0, 0.0
+
+        dx /= length
+        dy /= length
+        return -dy, dx
+
+    def _write_road_mtl(self, mtl_output_path: str, texture_path: str) -> None:
+        """Write MTL file for road/line surface mesh."""
+        texture_filename = os.path.basename(texture_path)
+        with open(mtl_output_path, "w", encoding="utf-8") as mtl_file:
+            mtl_file.write(f"newmtl {self.ROAD_MATERIAL_NAME}\n")
+            mtl_file.write("Ka 1.0 1.0 1.0\n")
+            mtl_file.write("Kd 1.0 1.0 1.0\n")
+            mtl_file.write("Ks 0.3 0.3 0.3\n")
+            mtl_file.write("Ns 10.0\n")
+            mtl_file.write("illum 2\n")
+            mtl_file.write(f"map_Kd {texture_filename}\n")
 
     def split_long_line_surfaces(
         self, road_entries: list[LineSurfaceEntry], texture_tile_size: float = 10.0
@@ -1071,47 +1049,18 @@ class MeshComponent(Component):
         Returns:
             (list[LineSurfaceEntry]): List of LineSurfaceEntry objects with long roads split.
         """
-        max_road_length = 30.0 * texture_tile_size  # Use 30 instead of 32 for safety margin
+        max_road_length = self.UV_SPLIT_SAFETY_MARGIN * texture_tile_size
         split_entries = []
 
         for linestring, width, z_offset in road_entries:
-            road_length = linestring.length
-
-            if road_length <= max_road_length:
-                # Road is short enough, keep as is
-                split_entries.append(LineSurfaceEntry(linestring, width, z_offset))
-                continue
-
-            # Road is too long, split it into segments
-            num_segments = int(np.ceil(road_length / max_road_length))
-            segment_length = road_length / num_segments
-
-            self.logger.debug(
-                "Splitting line surface (%.2fm) into %d segments of ~%.2fm each",
-                road_length,
-                num_segments,
-                segment_length,
+            split_entries.extend(
+                self._split_line_surface_entry(
+                    linestring,
+                    width,
+                    z_offset,
+                    max_road_length,
+                )
             )
-
-            for i in range(num_segments):
-                start_distance = i * segment_length
-                end_distance = min((i + 1) * segment_length, road_length)
-
-                # Extract segment using shapely's substring
-                try:
-                    segment_linestring = shapely.ops.substring(
-                        linestring, start_distance, end_distance, normalized=False
-                    )
-                    split_entries.append(LineSurfaceEntry(segment_linestring, width, z_offset))
-                    self.logger.debug(
-                        "  Segment %d: %.2fm to %.2fm (length: %.2fm)",
-                        i,
-                        start_distance,
-                        end_distance,
-                        segment_linestring.length,
-                    )
-                except Exception as e:
-                    self.logger.warning("Failed to split line surface segment %d: %s", i, e)
 
         self.logger.debug(
             "Line surface splitting complete: %d line surfaces -> %d segments",
@@ -1119,6 +1068,38 @@ class MeshComponent(Component):
             len(split_entries),
         )
         return split_entries
+
+    def _split_line_surface_entry(
+        self,
+        linestring: shapely.LineString,
+        width: int,
+        z_offset: float,
+        max_road_length: float,
+    ) -> list[LineSurfaceEntry]:
+        """Split a single line surface entry into UV-safe segments."""
+        road_length = linestring.length
+        if road_length <= max_road_length:
+            return [LineSurfaceEntry(linestring, width, z_offset)]
+
+        num_segments = int(np.ceil(road_length / max_road_length))
+        segment_length = road_length / num_segments
+
+        segments: list[LineSurfaceEntry] = []
+        for i in range(num_segments):
+            start_distance = i * segment_length
+            end_distance = min((i + 1) * segment_length, road_length)
+            try:
+                segment_linestring = shapely.ops.substring(
+                    linestring,
+                    start_distance,
+                    end_distance,
+                    normalized=False,
+                )
+                segments.append(LineSurfaceEntry(segment_linestring, width, z_offset))
+            except Exception as e:
+                self.logger.warning("Failed to split line surface segment %d: %s", i, e)
+
+        return segments
 
     def smart_interpolation(self, road_entries: list[LineSurfaceEntry]) -> list[LineSurfaceEntry]:
         """Apply smart interpolation to road linestrings.
@@ -1131,8 +1112,8 @@ class MeshComponent(Component):
             (list[LineSurfaceEntry]): List of LineSurfaceEntry objects with interpolated linestrings.
         """
         interpolated_entries = []
-        target_segment_length = 5  # Target distance between points in meters (denser)
-        max_angle_change = 30.0  # Maximum angle change in degrees to allow interpolation
+        target_segment_length = self.INTERPOLATION_TARGET_SEGMENT_LENGTH
+        max_angle_change = self.INTERPOLATION_MAX_ANGLE_CHANGE
 
         for linestring, width, z_offset in road_entries:
             coords = list(linestring.coords)
@@ -1140,67 +1121,20 @@ class MeshComponent(Component):
                 interpolated_entries.append(LineSurfaceEntry(linestring, width, z_offset))
                 continue
 
-            # Check if road has sharp curves - if so, skip interpolation
-            has_sharp_curves = False
-            if len(coords) >= 3:
-                for i in range(1, len(coords) - 1):
-                    # Calculate angle change at this point
-                    v1_x = coords[i][0] - coords[i - 1][0]
-                    v1_y = coords[i][1] - coords[i - 1][1]
-                    v2_x = coords[i + 1][0] - coords[i][0]
-                    v2_y = coords[i + 1][1] - coords[i][1]
-
-                    # Calculate angle between vectors
-                    dot = v1_x * v2_x + v1_y * v2_y
-                    len1 = np.sqrt(v1_x**2 + v1_y**2)
-                    len2 = np.sqrt(v2_x**2 + v2_y**2)
-
-                    if len1 > 0 and len2 > 0:
-                        cos_angle = np.clip(dot / (len1 * len2), -1.0, 1.0)
-                        angle_deg = np.degrees(np.arccos(cos_angle))
-
-                        if angle_deg > max_angle_change:
-                            has_sharp_curves = True
-                            break
-
-            if has_sharp_curves:
-                # Skip interpolation for curved roads
+            if self._has_sharp_curve(coords, max_angle_change):
                 interpolated_entries.append(LineSurfaceEntry(linestring, width, z_offset))
                 continue
 
-            # Check if interpolation is needed
-            needs_interpolation = False
-            for i in range(len(coords) - 1):
-                segment_length = np.sqrt(
-                    (coords[i + 1][0] - coords[i][0]) ** 2 + (coords[i + 1][1] - coords[i][1]) ** 2
-                )
-                if segment_length > target_segment_length * 1.5:
-                    needs_interpolation = True
-                    break
-
-            if not needs_interpolation:
-                # Road is already dense enough
+            if not self._needs_interpolation(coords, target_segment_length):
                 interpolated_entries.append(LineSurfaceEntry(linestring, width, z_offset))
                 continue
 
-            # Perform interpolation using shapely's interpolate (follows curves)
-            road_length = linestring.length
-            num_points = int(np.ceil(road_length / target_segment_length)) + 1
-
-            new_coords = []
-            for i in range(num_points):
-                distance = min(i * target_segment_length, road_length)
-                point = linestring.interpolate(distance)
-                new_coords.append((point.x, point.y))
-
-            # Ensure last point is exact
-            if new_coords[-1] != coords[-1]:
-                new_coords.append(coords[-1])
-
-            # Create new linestring with interpolated coordinates
-            # No cleanup needed - interpolation already creates evenly spaced points
             try:
-                interpolated_linestring = shapely.LineString(new_coords)
+                interpolated_linestring = self._interpolate_linestring(
+                    linestring,
+                    coords,
+                    target_segment_length,
+                )
                 interpolated_entries.append(
                     LineSurfaceEntry(interpolated_linestring, width, z_offset)
                 )
@@ -1214,3 +1148,67 @@ class MeshComponent(Component):
             "Smart interpolation complete. Processed %d roads.", len(interpolated_entries)
         )
         return interpolated_entries
+
+    def _has_sharp_curve(
+        self,
+        coords: list[tuple[float, float]],
+        max_angle_change: float,
+    ) -> bool:
+        """Detect whether polyline has sharp turns exceeding the threshold."""
+        if len(coords) < 3:
+            return False
+
+        for i in range(1, len(coords) - 1):
+            v1_x = coords[i][0] - coords[i - 1][0]
+            v1_y = coords[i][1] - coords[i - 1][1]
+            v2_x = coords[i + 1][0] - coords[i][0]
+            v2_y = coords[i + 1][1] - coords[i][1]
+
+            len1 = np.sqrt(v1_x**2 + v1_y**2)
+            len2 = np.sqrt(v2_x**2 + v2_y**2)
+            if len1 <= 0 or len2 <= 0:
+                continue
+
+            dot = v1_x * v2_x + v1_y * v2_y
+            cos_angle = np.clip(dot / (len1 * len2), -1.0, 1.0)
+            angle_deg = np.degrees(np.arccos(cos_angle))
+            if angle_deg > max_angle_change:
+                return True
+
+        return False
+
+    def _needs_interpolation(
+        self,
+        coords: list[tuple[float, float]],
+        target_segment_length: float,
+    ) -> bool:
+        """Check whether any segment is sparse enough to require interpolation."""
+        threshold = target_segment_length * 1.5
+        for i in range(len(coords) - 1):
+            segment_length = np.sqrt(
+                (coords[i + 1][0] - coords[i][0]) ** 2 + (coords[i + 1][1] - coords[i][1]) ** 2
+            )
+            if segment_length > threshold:
+                return True
+        return False
+
+    def _interpolate_linestring(
+        self,
+        linestring: shapely.LineString,
+        original_coords: list[tuple[float, float]],
+        target_segment_length: float,
+    ) -> shapely.LineString:
+        """Interpolate linestring points at roughly fixed segment length."""
+        road_length = linestring.length
+        num_points = int(np.ceil(road_length / target_segment_length)) + 1
+
+        new_coords = []
+        for i in range(num_points):
+            distance = min(i * target_segment_length, road_length)
+            point = linestring.interpolate(distance)
+            new_coords.append((point.x, point.y))
+
+        if new_coords[-1] != original_coords[-1]:
+            new_coords.append(original_coords[-1])
+
+        return shapely.LineString(new_coords)

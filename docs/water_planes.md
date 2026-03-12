@@ -17,11 +17,10 @@ After generation, you'll find the following files in your map's `assets/water/` 
 map_directory/
 ├── assets/
 │   └── water/
-│       └── water_resources.i3d  ← Ready to import!
+│       └── polygon_water.i3d  ← Ready to import!
 └── water/
-    ├── elevated_water.obj
-    ├── plane_water.obj
-    └── line_based_water.obj  (if applicable)
+    ├── polygon_water.obj
+    └── polyline_water.obj  (if applicable)
 ```
 
 ## 🚀 How to Use (FS25)
@@ -36,7 +35,7 @@ map_directory/
 1. Open your map in **Giants Editor 10.0.0+** (FS25)
 2. Go to `File` → `Import...`
 3. Navigate to `your_map/assets/water/`
-4. Select `water_resources.i3d`
+4. Select `polygon_water.i3d`
 5. Click `Import`
 
 If the water plane appears black initially - this is normal and expected behavior.
@@ -111,11 +110,11 @@ The automated process includes several optimizations:
 - **Smart Mesh Generation**: Optimized polygon count for water surfaces
 - **Ocean Shader Ready**: Pre-configured with proper ocean shader materials
 - **Memory Efficient**: Optimized for minimal in-game impact
-- **Multiple Types**: Generates both elevated and plane water meshes
+- **Multiple Sources**: Supports polygon and polyline-derived water geometry
 
 ## 🔧 Troubleshooting
 
-### No water_resources.i3d file generated?
+### No polygon_water.i3d file generated?
 - Ensure **Generate Water** is enabled
 - Check that your map has water areas defined in OSM data
 

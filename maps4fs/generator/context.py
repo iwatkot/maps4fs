@@ -46,13 +46,17 @@ class MapContext:
 
     # ---- Populated by DEM component ----
     dem_path: str | None = None
+    dem_not_subtracted_path: str | None = None
+
+    # ---- Populated by Water component ----
+    water_mask_path: str | None = None
 
     # ---- Populated by Satellite component ----
     satellite_overview_path: str | None = None
     satellite_background_path: str | None = None
 
     # ---- Populated by Background/Road components ----
-    # Mesh positions by asset name, e.g. "background_terrain", "water_resources", "asphalt".
+    # Mesh positions by asset name, e.g. "background_terrain", "polygon_water", "asphalt".
     # Values only contain fields that are actually consumed by Scene.
     mesh_positions: dict[str, dict[str, float]] = field(default_factory=dict)
 

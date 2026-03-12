@@ -39,7 +39,7 @@ class Paths:
 
     # ---- Executable names and remote URLs --------------------------------
     I3D_CONVERTER_NAME = "i3dConverter.exe"
-    I3D_CONVERTER_REMOTE_URL = "http://storage.atlasfs.xyz/mfsmdata/i3dConverter.exe"
+    I3D_CONVERTER_REMOTE_URL = "http://storage.atlasfs.xyz/mfsmedia/i3dConverter.exe"
     TEXCONV_NAME = "texconv.exe"
     TEXCONV_REMOTE_URL = (
         "https://github.com/microsoft/DirectXTex/releases/download/oct2025/texconv.exe"
@@ -140,8 +140,8 @@ class Parameters:
     # ---- Terrain layer names --------------------------------------------
     DECIMATED_BACKGROUND = "decimated_background"
     BACKGROUND_TERRAIN = "background_terrain"
-    WATER_RESOURCES = "water_resources"
-    WATER_RESOURCES_LINE_SURFACE = "water_resources_line_surface"
+    POLYGON_WATER = "polygon_water"
+    POLYLINE_WATER = "polyline_water"
     HEIGHT_SCALE = "heightScale"
 
     # ---- DEM file names -------------------------------------------------
@@ -168,7 +168,7 @@ class Parameters:
 
     # ---- Background mesh segment geometry -------------------------------
     SEGMENT_LENGTH = 2
-    LINE_SURFACE_WATER_WIDTH_EXTENSION = 2
+    POLYLINE_WATER_WIDTH_EXTENSION = 2
 
     # ---- GRLE pixel values ----------------------------------------------
     WATER_AREA_PIXEL_VALUE = 8
@@ -203,6 +203,14 @@ class Parameters:
     ROAD_INFO_TOTAL_OSM = "total_OSM_roads"
     ROAD_INFO_TOTAL_FITTED = "total_fitted_roads"
     ROAD_INFO_TOTAL_PATCHES = "total_patches_created"
+
+    # ---- Background/Water file names ------------------------------------
+    BACKGROUND_DIRECTORY = "background"
+    WATER_DIRECTORY = "water"
+    TEXTURED_MESH_DIRECTORY = "textured_mesh"
+    WATER_MASK_FILENAME = "polygon_water_mask.png"
+    POLYGON_WATER_MESH_FILENAME = "polygon_water.obj"
+    POLYLINE_WATER_MESH_FILENAME = "polyline_water.obj"
 
     # ---- Scene component runtime constants ------------------------------
     SCENE_INFO_FORESTS = "Forests"

@@ -181,15 +181,15 @@ Considerations:
 Categories of generated files:
 - **Used directly by FS25** — `dem.png`, `unprocessedHeightMap.png`, texture weight PNGs, GRLE PNGs, `map.xml`, `map.i3d`, `farmlands.xml`, `environment.xml`, `overview.dds`, splines i3d
 - **Used as manual-use assets** — background terrain obj/i3d, water mesh obj/i3d (user imports into Giants Editor)
-- **Intermediate files** — `not_resized.png`, `not_resized_with_foundations.png`, `not_resized_with_flattened_roads.png`, `water_resources.png`, STL previews
-- **Legacy/unused** — `plane_water.obj`, `elevated_water.obj` (if the line-based water i3d already covers the use case)
+- **Intermediate files** — `not_resized.png`, `not_resized_with_foundations.png`, `not_resized_with_flattened_roads.png`, `polygon_water_mask.png`, STL previews
+- **Legacy/unused** — removed old `plane_water.obj`/`elevated_water.obj` outputs
 - **Debug/info outputs** — `generation_info.json`, `generation_logs.json`, `performance_report.json`
 
 For each generated file: either document it as required, or mark it for removal.
 
 Water specifically:
-- `line_based_water.obj` → `assets/water/water_resources.i3d` (ready-to-use; keep)
-- `elevated_water.obj`, `plane_water.obj` — these polygon-based water files are not directly injected into FS25 map; evaluate removing them or keeping as optional manual-use meshes with clear documentation
+- `polygon_water.obj`/`polyline_water.obj` are generated for processing
+- `polygon_water.obj` → `assets/water/polygon_water.i3d` (ready-to-use; keep)
 
 ---
 
