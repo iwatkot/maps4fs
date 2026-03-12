@@ -283,6 +283,29 @@ class Component:
         center = polygon.centroid
         return int(center.x), int(center.y)
 
+    @staticmethod
+    def polygon_points_to_np(
+        polygon_points: list[tuple[int, int]], divide: int | None = None
+    ) -> np.ndarray:
+        """Convert polygon points to Nx1x2 int32 array optionally divided by factor."""
+        array = np.array(polygon_points, dtype=np.int32).reshape((-1, 1, 2))
+        if divide:
+            return array // divide
+        return array
+
+    @staticmethod
+    def polygon_dimensions_and_rotation(polygon_points: np.ndarray) -> tuple[float, float, float]:
+        """Return width, depth and normalized rotation angle using min-area rectangle."""
+        points = polygon_points.astype(np.float32)
+        (_, _), (width, height), angle = cv2.minAreaRect(points)
+
+        if width < height:
+            width, height = height, width
+            angle = angle + 90.0
+
+        rotation_angle = (-angle) % 360.0
+        return width, height, rotation_angle
+
     def absolute_to_relative(
         self, point: tuple[int, int], center: tuple[int, int]
     ) -> tuple[int, int]:

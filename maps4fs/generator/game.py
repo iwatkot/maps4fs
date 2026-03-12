@@ -59,6 +59,21 @@ class GameConfig:
     i3d_water_shader_file_xpath: str = "File[@fileId='3']"
     i3d_mapbounds_tg_xpath: str = ".//Scene/TransformGroup[@name='mapbounds']"
 
+    # --- Buildings I3D element and attribute names ---
+    i3d_buildings_group_name: str = "buildings"
+    i3d_transform_group_tag: str = "TransformGroup"
+    i3d_files_section_tag: str = "Files"
+    i3d_file_tag: str = "File"
+    i3d_reference_node_tag: str = "ReferenceNode"
+    i3d_attr_name: str = "name"
+    i3d_attr_file_id: str = "fileId"
+    i3d_attr_filename: str = "filename"
+    i3d_attr_translation: str = "translation"
+    i3d_attr_rotation: str = "rotation"
+    i3d_attr_reference_id: str = "referenceId"
+    i3d_attr_node_id: str = "nodeId"
+    i3d_zero_translation: str = "0 0 0"
+
     # --- I3D tuning values ---
     sun_bbox_y_min: int = -128
     sun_bbox_y_max: int = 148

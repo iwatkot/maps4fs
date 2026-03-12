@@ -207,6 +207,9 @@ class Parameters:
     DEFAULT_HEIGHT = 200
     AUTO_REGION = "auto"
     ALL_REGIONS = "all"
+    BUILDINGS_DIRECTORY = "buildings"
+    BUILDING_CATEGORIES_FILENAME = "building_categories.png"
+    DEFAULT_BUILDING_CATEGORY = "residential"
 
     AREA_TYPES = {
         "residential": 10,

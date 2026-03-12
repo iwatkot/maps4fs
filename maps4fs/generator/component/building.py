@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-from maps4fs.generator.component.base.component_image import ImageComponent
+from maps4fs.generator.component.base.component_mesh import MeshComponent
 from maps4fs.generator.component.xml_document import XmlDocument
 from maps4fs.generator.geo import get_region_by_coordinates
 from maps4fs.generator.settings import Parameters
@@ -262,7 +262,21 @@ class BuildingEntryCollection:
         return self.by_category.get(category, [])
 
 
-class Building(ImageComponent):
+class BuildingPlacement(NamedTuple):
+    """Prepared building placement data used for schema matching and XML creation."""
+
+    category: str
+    width: float
+    depth: float
+    rotation_angle: float
+    x: int
+    y: int
+    x_center: int
+    y_center: int
+    z: float
+
+
+class Building(MeshComponent):
     """Component for map buildings processing and generation.
 
     Arguments:
@@ -279,106 +293,125 @@ class Building(ImageComponent):
     def preprocess(self) -> None:
         """Preprocess and prepare buildings schema and buildings map image."""
         self.info: dict[str, Any] = {}
-        if not self.map.building_settings.generate_buildings:
-            self.logger.debug("Building generation is disabled in the map settings.")
+        if not self._is_generation_enabled():
             return
+        if not self._load_buildings_schema():
+            return
+
+        self.xml_path = self.game.i3d_file_path
+
+        if not self._prepare_buildings_category_map():
+            return
+
+        self._initialize_buildings_collection()
+
+    def _is_generation_enabled(self) -> bool:
+        """Return True when building generation is enabled in map settings."""
+        if self.map.building_settings.generate_buildings:
+            return True
+
+        self.logger.debug("Building generation is disabled in the map settings.")
+        return False
+
+    def _load_buildings_schema(self) -> bool:
+        """Load buildings schema from custom map config or default game file."""
+        custom_buildings_schema = self.map.buildings_custom_schema
+        if custom_buildings_schema:
+            self.buildings_schema = custom_buildings_schema
+            self.logger.debug(
+                "Custom buildings schema loaded successfully with %d objects.",
+                len(self.buildings_schema),
+            )
+            return True
 
         try:
             buildings_schema_path = self.game.buildings_schema
         except ValueError as e:
             self.logger.warning("The game does not support buildings schema: %s", e)
-            return
+            return False
 
-        custom_buildings_schema = self.map.buildings_custom_schema
-        if not custom_buildings_schema:
-            if not os.path.isfile(buildings_schema_path):
-                self.logger.warning(
-                    "Buildings schema file not found at path: %s. Skipping buildings generation.",
-                    buildings_schema_path,
-                )
-                return
+        if not os.path.isfile(buildings_schema_path):
+            self.logger.warning(
+                "Buildings schema file not found at path: %s. Skipping buildings generation.",
+                buildings_schema_path,
+            )
+            return False
 
-            try:
-                with open(buildings_schema_path, "r", encoding="utf-8") as f:
-                    buildings_schema = json.load(f)
-
-                self.buildings_schema = buildings_schema
-
-            except Exception as e:
-                self.logger.warning(
-                    "Failed to load buildings schema from path: %s with error: %s. Skipping buildings generation.",
-                    buildings_schema_path,
-                    e,
-                )
-        else:
-            self.buildings_schema = custom_buildings_schema
+        try:
+            with open(buildings_schema_path, "r", encoding="utf-8") as f:
+                self.buildings_schema = json.load(f)
+        except Exception as e:
+            self.logger.warning(
+                "Failed to load buildings schema from path: %s with error: %s. Skipping buildings generation.",
+                buildings_schema_path,
+                e,
+            )
+            return False
 
         self.logger.debug(
-            "Buildings schema loaded successfully with %d objects.", len(self.buildings_schema)
+            "Buildings schema loaded successfully with %d objects.",
+            len(self.buildings_schema),
         )
+        return True
 
-        self.xml_path = self.game.i3d_file_path
-
-        buildings_directory = os.path.join(self.map.map_directory, "buildings")
-        self.buildings_map_path = os.path.join(buildings_directory, "building_categories.png")
+    def _prepare_buildings_category_map(self) -> bool:
+        """Build a category raster that maps pixels to building categories."""
+        buildings_directory = os.path.join(self.map.map_directory, Parameters.BUILDINGS_DIRECTORY)
+        self.buildings_map_path = os.path.join(
+            buildings_directory,
+            Parameters.BUILDING_CATEGORIES_FILENAME,
+        )
         os.makedirs(buildings_directory, exist_ok=True)
 
-        texture_layers = self.map.context
-        if not texture_layers.texture_layers:
+        if not self.map.context.texture_layers:
             self.logger.warning("Texture layers not found in context.")
-            return
+            return False
 
         map_size = self.map.output_size or self.map.size
-
-        # Creating empty single-channel image for building categories.
         buildings_map_image = np.zeros((map_size, map_size), dtype=np.uint8)
 
-        for layer in texture_layers.get_building_category_layers():
-            self.logger.debug(
-                "Processing building category layer: %s (%s)",
-                layer.name,
-                layer.building_category,
-            )
-            pixel_value = Parameters.AREA_TYPES.get(layer.building_category)  # type: ignore
-            if pixel_value is None:
-                self.logger.warning(
-                    "Unknown building category '%s' for layer '%s'. Skipping.",
-                    layer.building_category,
-                    layer.name,
-                )
-                continue
-
-            layer_path = layer.path(self.game.weights_dir_path)
-            if not layer_path or not os.path.isfile(layer_path):
-                self.logger.warning("Layer texture file not found: %s. Skipping.", layer_path)
-                continue
-
-            layer_image = cv2.imread(layer_path, cv2.IMREAD_UNCHANGED)
-            if layer_image is None:
-                self.logger.warning("Failed to read layer image: %s. Skipping.", layer_path)
-                continue
-
-            mask = layer_image > 0
-            buildings_map_image[mask] = pixel_value
+        for layer in self.map.context.get_building_category_layers():
+            self._paint_building_category_layer(buildings_map_image, layer)
 
         cv2.imwrite(self.buildings_map_path, buildings_map_image)
         self.logger.debug("Building categories map saved to: %s", self.buildings_map_path)
+        return True
 
-        building_entries = []
-        for building_entry in self.buildings_schema:
-            building = BuildingEntry(**building_entry)
-            building_entries.append(building)
+    def _paint_building_category_layer(self, buildings_map_image: np.ndarray, layer: Any) -> None:
+        """Paint one category layer into the category raster."""
+        self.logger.debug(
+            "Processing building category layer: %s (%s)",
+            layer.name,
+            layer.building_category,
+        )
 
-        ignore_region = False
-        region = ""
+        pixel_value = Parameters.AREA_TYPES.get(layer.building_category)  # type: ignore[arg-type]
+        if pixel_value is None:
+            self.logger.warning(
+                "Unknown building category '%s' for layer '%s'. Skipping.",
+                layer.building_category,
+                layer.name,
+            )
+            return
 
-        if self.map.building_settings.region == Parameters.AUTO_REGION:
-            region = get_region_by_coordinates(self.coordinates)
-        elif self.map.building_settings.region == Parameters.ALL_REGIONS:
-            ignore_region = True
-            region = "all"  # Set a default region name for logging
-        else:
-            region = self.map.building_settings.region
+        layer_path = layer.path(self.game.weights_dir_path)
+        if not layer_path or not os.path.isfile(layer_path):
+            self.logger.warning("Layer texture file not found: %s. Skipping.", layer_path)
+            return
+
+        layer_image = cv2.imread(layer_path, cv2.IMREAD_UNCHANGED)
+        if layer_image is None:
+            self.logger.warning("Failed to read layer image: %s. Skipping.", layer_path)
+            return
+
+        buildings_map_image[layer_image > 0] = pixel_value
+
+    def _initialize_buildings_collection(self) -> None:
+        """Prepare region-scoped building entries for fast matching during placement."""
+        building_entries = [
+            BuildingEntry(**building_entry) for building_entry in self.buildings_schema
+        ]
+        region, ignore_region = self._resolve_region_settings()
 
         self.buildings_collection = BuildingEntryCollection(building_entries, region, ignore_region)
 
@@ -391,12 +424,22 @@ class Building(ImageComponent):
                 "Buildings collection created with %d buildings ignoring region restrictions.",
                 len(self.buildings_collection.entries),
             )
-        else:
-            self.logger.debug(
-                "Buildings collection created with %d buildings for region '%s'.",
-                len(self.buildings_collection.entries),
-                region,
-            )
+            return
+
+        self.logger.debug(
+            "Buildings collection created with %d buildings for region '%s'.",
+            len(self.buildings_collection.entries),
+            region,
+        )
+
+    def _resolve_region_settings(self) -> tuple[str, bool]:
+        """Resolve selected region and whether regional filtering must be disabled."""
+        region_setting = self.map.building_settings.region
+        if region_setting == Parameters.AUTO_REGION:
+            return get_region_by_coordinates(self.coordinates), False
+        if region_setting == Parameters.ALL_REGIONS:
+            return Parameters.ALL_REGIONS, True
+        return region_setting, False
 
     def process(self) -> None:
         """Process and place buildings on the map."""
@@ -408,205 +451,23 @@ class Building(ImageComponent):
     # pylint: disable=too-many-return-statements
     def add_buildings(self) -> None:
         """Process and place buildings on the map based on the buildings map image and schema."""
-        if not hasattr(self, "buildings_map_path") or not os.path.isfile(self.buildings_map_path):
-            self.logger.warning(
-                "Buildings map path is not set or file does not exist. Skipping process step."
-            )
+        loaded_inputs = self._load_processing_inputs()
+        if loaded_inputs is None:
             return
+        buildings_map_image, buildings, not_resized_dem = loaded_inputs
 
-        # Check if the collection contains any buildings.
-        if not self.buildings_collection.entries:
-            self.logger.warning(
-                "No buildings found in the collection. Buildings generation will be skipped.",
-            )
+        prepared_document = self._prepare_i3d_targets()
+        if prepared_document is None:
             return
+        doc, files_section, buildings_group = prepared_document
 
-        buildings_map_image = cv2.imread(self.buildings_map_path, cv2.IMREAD_UNCHANGED)
-        if buildings_map_image is None:
-            self.logger.warning("Failed to read buildings map image. Skipping process step.")
-            return
-
-        self.logger.debug("Buildings map categories file found, processing...")
-
-        buildings = self.get_infolayer_data(Parameters.TEXTURES, Parameters.BUILDINGS)
-        if not buildings:
-            self.logger.warning("Buildings data not found in textures info layer.")
-            return
-
-        self.logger.debug("Found %d building entries to process.", len(buildings))
-
-        # Initialize tracking for XML modifications
-        doc = XmlDocument(self.xml_path)  # type: ignore
-
-        # Find the Scene element
-        scene_node = doc.get(self.game.config.i3d_scene_xpath)
-        if scene_node is None:
-            self.logger.warning("Scene element not found in I3D file.")
-            return
-
-        # Find or create the Files section
-        files_section = doc.get(self.game.config.i3d_files_xpath)
-        if files_section is None:
-            files_section = doc.append_child(".", "Files")
-
-        # Find or create the buildings transform group in the scene
-        buildings_group = self._find_or_create_buildings_group(scene_node)
-
-        # Track used building files to avoid duplicates (file_path -> file_id mapping)
-        used_building_files = {}
-        file_id_counter = Parameters.BUILDINGS_STARTING_NODE_ID
-        node_id_counter = Parameters.BUILDINGS_STARTING_NODE_ID + 1000
-
-        not_resized_dem = self.get_dem_image_with_fallback(start_at=1)
-        if not_resized_dem is None:
-            self.logger.warning("Not resized DEM not found.")
-            return
-
-        for building_data in tqdm(buildings, desc="Placing buildings", unit="building"):
-            building = building_data.get(Parameters.POINTS)
-            building_osm_tags = building_data.get(Parameters.TAGS)
-            if not building:
-                self.logger.debug("Skipping building entry with missing points data.")
-                continue
-
-            try:
-                fitted_building = self.fit_object_into_bounds(
-                    polygon_points=building, angle=self.rotation
-                )
-            except ValueError as e:
-                self.logger.debug(
-                    "Building could not be fitted into the map bounds with error: %s",
-                    e,
-                )
-                continue
-
-            # Calculate center point (needed for both tag-based and pixel-based matching, and for DEM)
-            center_point = np.mean(fitted_building, axis=0).astype(int)
-            x, y = center_point
-            self.logger.debug("Center point of building polygon: %s", center_point)
-
-            # 0. Try to match building category from OSM tags first (prioritized method)
-            category = None
-            if building_osm_tags:
-                category = self._match_category_from_osm_tags(building_osm_tags)
-                self.logger.debug(
-                    "Building category matched from OSM tags: %s (tags: %s)",
-                    category,
-                    building_osm_tags,
-                )
-
-            # 1. If no category matched from OSM tags, fall back to pixel-based method
-            if not category:
-                pixel_value = buildings_map_image[y, x]
-                self.logger.debug("Pixel value at center point: %s", pixel_value)
-
-                category = Parameters.PIXEL_TYPES.get(pixel_value, "residential")
-                self.logger.debug("Building category from pixel-based method: %s", category)
-
-            # 2. Obtain building dimensions and rotation using minimum area bounding rectangle
-            polygon_np = self.polygon_points_to_np(fitted_building)
-            width, depth, rotation_angle = self._get_polygon_dimensions_and_rotation(polygon_np)
-            self.logger.debug(
-                "Building dimensions: width=%d, depth=%d, rotation=%d°",
-                width,
-                depth,
-                rotation_angle,
-            )
-
-            # 3. Find the best matching building from the collection and determine orientation
-            best_match, needs_rotation = self.buildings_collection.find_best_match_with_orientation(
-                category=category,
-                width=width,
-                depth=depth,
-                tolerance=self.map.building_settings.tolerance_factor / 100,
-            )
-
-            if best_match:
-                self.logger.debug(
-                    "Best building match: %s: %d x %d, needs_rotation: %s",
-                    best_match.name,
-                    best_match.width,
-                    best_match.depth,
-                    needs_rotation,
-                )
-
-                # Get world coordinates
-                x_center, y_center = self.top_left_coordinates_to_center(center_point)
-                try:
-                    z = self.get_z_coordinate_from_dem(not_resized_dem, x, y)
-                except Exception as e:
-                    self.logger.warning(
-                        "Failed to get Z coordinate from DEM at (%d, %d) with error: %s. Using default height %d.",
-                        x,
-                        y,
-                        e,
-                        Parameters.DEFAULT_HEIGHT,
-                    )
-                    z = Parameters.DEFAULT_HEIGHT
-
-                # * Disabled for now, maybe re-enable later.
-                # Calculate scale factors to match the polygon size
-                # scale_width = width / best_match.width
-                # scale_depth = depth / best_match.depth
-
-                self.logger.debug(
-                    "World coordinates for building: x=%.3f, y=%.3f, z=%.3f",
-                    x_center,
-                    y_center,
-                    z,
-                )
-                # self.logger.debug(
-                #     "Scale factors: width=%.4f, depth=%.4f",
-                #     scale_width,
-                #     scale_depth,
-                # )
-
-                # Add building file to Files section if not already present
-                file_id = None
-                if best_match.file not in used_building_files:
-                    file_id = file_id_counter
-                    file_element = ET.SubElement(files_section, "File")
-                    file_element.set("fileId", str(file_id))
-                    file_element.set("filename", best_match.file)
-                    used_building_files[best_match.file] = file_id
-                    file_id_counter += 1
-                else:
-                    file_id = used_building_files[best_match.file]
-
-                # Adjust rotation if the building needs to be rotated 90 degrees
-                final_rotation = rotation_angle
-                if needs_rotation:
-                    final_rotation = (rotation_angle + 90.0) % 360.0
-                    self.logger.debug(
-                        "Building needs 90° rotation: original=%.1f°, final=%.1f°",
-                        rotation_angle,
-                        final_rotation,
-                    )
-
-                # Create building instance in the buildings group
-                building_node = ET.SubElement(buildings_group, "ReferenceNode")
-                building_node.set("name", f"{best_match.name}_{node_id_counter}")
-                building_node.set("translation", f"{x_center:.3f} {z:.3f} {y_center:.3f}")
-                building_node.set("rotation", f"0 {final_rotation:.3f} 0")
-                # building_node.set(
-                #     "scale", f"{scale_width:.4f} 1.0 {scale_depth:.4f}"
-                # )
-                building_node.set("referenceId", str(file_id))
-                building_node.set("nodeId", str(node_id_counter))
-
-                node_id_counter += 1
-
-            else:
-                self.logger.debug(
-                    "No suitable building found for category '%s' with dimensions %.2fx%.2f",
-                    category,
-                    width,
-                    depth,
-                    needs_rotation,
-                )
-                continue
-
-        added_buildings_count = node_id_counter - (Parameters.BUILDINGS_STARTING_NODE_ID + 1000)
+        added_buildings_count = self._place_buildings(
+            buildings,
+            buildings_map_image,
+            not_resized_dem,
+            files_section,
+            buildings_group,
+        )
         self.logger.debug("Total buildings placed: %d of %d", added_buildings_count, len(buildings))
 
         self.info["total_buildings_placed"] = added_buildings_count
@@ -615,6 +476,302 @@ class Building(ImageComponent):
         # Save the modified XML tree
         doc.save()
         self.logger.debug("Buildings placement completed and saved to map.i3d")
+
+    def _place_buildings(
+        self,
+        buildings: list[dict[str, Any]],
+        buildings_map_image: np.ndarray,
+        not_resized_dem: np.ndarray,
+        files_section: ET.Element,
+        buildings_group: ET.Element,
+    ) -> int:
+        """Place buildings into the I3D tree and return number of successfully placed entries."""
+        used_building_files: dict[str, int] = {}
+        file_id_counter = Parameters.BUILDINGS_STARTING_NODE_ID
+        node_id_counter = Parameters.BUILDINGS_STARTING_NODE_ID + 1000
+        placed_count = 0
+
+        for building_data in tqdm(buildings, desc="Placing buildings", unit="building"):
+            placed, file_id_counter, node_id_counter = self._place_single_building(
+                building_data,
+                buildings_map_image,
+                not_resized_dem,
+                files_section,
+                buildings_group,
+                used_building_files,
+                file_id_counter,
+                node_id_counter,
+            )
+            if placed:
+                placed_count += 1
+
+        return placed_count
+
+    def _place_single_building(
+        self,
+        building_data: dict[str, Any],
+        buildings_map_image: np.ndarray,
+        not_resized_dem: np.ndarray,
+        files_section: ET.Element,
+        buildings_group: ET.Element,
+        used_building_files: dict[str, int],
+        file_id_counter: int,
+        node_id_counter: int,
+    ) -> tuple[bool, int, int]:
+        """Attempt to place one building and return (placed, next_file_id, next_node_id)."""
+        placement = self._prepare_building_placement(
+            building_data,
+            buildings_map_image,
+            not_resized_dem,
+        )
+        if placement is None:
+            return False, file_id_counter, node_id_counter
+
+        best_match, needs_rotation = self.buildings_collection.find_best_match_with_orientation(
+            category=placement.category,
+            width=placement.width,
+            depth=placement.depth,
+            tolerance=self.map.building_settings.tolerance_factor / 100,
+        )
+        if best_match is None:
+            self.logger.debug(
+                "No suitable building found for category '%s' with dimensions %.2fx%.2f",
+                placement.category,
+                placement.width,
+                placement.depth,
+            )
+            return False, file_id_counter, node_id_counter
+
+        self.logger.debug(
+            "Best building match: %s: %d x %d, needs_rotation: %s",
+            best_match.name,
+            best_match.width,
+            best_match.depth,
+            needs_rotation,
+        )
+
+        file_id, next_file_id = self._ensure_building_file_id(
+            files_section,
+            used_building_files,
+            best_match.file,
+            file_id_counter,
+        )
+
+        self._append_building_reference(
+            buildings_group,
+            best_match,
+            node_id_counter,
+            file_id,
+            placement,
+            needs_rotation,
+        )
+        return True, next_file_id, node_id_counter + 1
+
+    def _load_processing_inputs(
+        self,
+    ) -> tuple[np.ndarray, list[dict[str, Any]], np.ndarray] | None:
+        """Load and validate all required inputs before building placement starts."""
+        if not hasattr(self, "buildings_map_path") or not os.path.isfile(self.buildings_map_path):
+            self.logger.warning(
+                "Buildings map path is not set or file does not exist. Skipping process step."
+            )
+            return None
+
+        if not self.buildings_collection.entries:
+            self.logger.warning(
+                "No buildings found in the collection. Buildings generation will be skipped.",
+            )
+            return None
+
+        buildings_map_image = cv2.imread(self.buildings_map_path, cv2.IMREAD_UNCHANGED)
+        if buildings_map_image is None:
+            self.logger.warning("Failed to read buildings map image. Skipping process step.")
+            return None
+
+        self.logger.debug("Buildings map categories file found, processing...")
+
+        buildings = self.get_infolayer_data(Parameters.TEXTURES, Parameters.BUILDINGS)
+        if not buildings:
+            self.logger.warning("Buildings data not found in textures info layer.")
+            return None
+
+        not_resized_dem = self.get_dem_image_with_fallback(start_at=1)
+        if not_resized_dem is None:
+            self.logger.warning("Not resized DEM not found.")
+            return None
+
+        self.logger.debug("Found %d building entries to process.", len(buildings))
+        return buildings_map_image, buildings, not_resized_dem
+
+    def _prepare_i3d_targets(self) -> tuple[XmlDocument, ET.Element, ET.Element] | None:
+        """Open map I3D XML and return document sections required for building placement."""
+        doc = XmlDocument(self.xml_path)  # type: ignore[arg-type]
+        scene_node = doc.get(self.game.config.i3d_scene_xpath)
+        if scene_node is None:
+            self.logger.warning("Scene element not found in I3D file.")
+            return None
+
+        files_section = doc.get(self.game.config.i3d_files_xpath)
+        if files_section is None:
+            files_section = doc.append_child(".", self.game.config.i3d_files_section_tag)
+
+        buildings_group = self._find_or_create_buildings_group(scene_node)
+        return doc, files_section, buildings_group
+
+    def _prepare_building_placement(
+        self,
+        building_data: dict[str, Any],
+        buildings_map_image: np.ndarray,
+        not_resized_dem: np.ndarray,
+    ) -> BuildingPlacement | None:
+        """Build placement candidate from source polygon, tags, category map and DEM."""
+        building = building_data.get(Parameters.POINTS)
+        building_osm_tags = building_data.get(Parameters.TAGS)
+        if not building:
+            self.logger.debug("Skipping building entry with missing points data.")
+            return None
+
+        try:
+            fitted_building = self.fit_object_into_bounds(
+                polygon_points=building, angle=self.rotation
+            )
+        except ValueError as e:
+            self.logger.debug(
+                "Building could not be fitted into the map bounds with error: %s",
+                e,
+            )
+            return None
+
+        center_point = np.mean(fitted_building, axis=0).astype(int)
+        x, y = map(int, center_point)
+        x = int(np.clip(x, 0, buildings_map_image.shape[1] - 1))
+        y = int(np.clip(y, 0, buildings_map_image.shape[0] - 1))
+        self.logger.debug("Center point of building polygon: (%d, %d)", x, y)
+
+        category = self._resolve_building_category(building_osm_tags, buildings_map_image, x, y)
+
+        polygon_np = self.polygon_points_to_np(fitted_building)
+        width, depth, rotation_angle = self.polygon_dimensions_and_rotation(polygon_np)
+        self.logger.debug(
+            "Building dimensions: width=%.2f, depth=%.2f, rotation=%.2f°",
+            width,
+            depth,
+            rotation_angle,
+        )
+
+        x_center, y_center = self.top_left_coordinates_to_center((x, y))
+        try:
+            z = self.get_z_coordinate_from_dem(not_resized_dem, x, y)
+        except Exception as e:
+            self.logger.warning(
+                "Failed to get Z coordinate from DEM at (%d, %d) with error: %s. Using default height %d.",
+                x,
+                y,
+                e,
+                Parameters.DEFAULT_HEIGHT,
+            )
+            z = Parameters.DEFAULT_HEIGHT
+
+        self.logger.debug(
+            "World coordinates for building: x=%.3f, y=%.3f, z=%.3f",
+            x_center,
+            y_center,
+            z,
+        )
+
+        return BuildingPlacement(
+            category=category,
+            width=width,
+            depth=depth,
+            rotation_angle=rotation_angle,
+            x=x,
+            y=y,
+            x_center=x_center,
+            y_center=y_center,
+            z=z,
+        )
+
+    def _resolve_building_category(
+        self,
+        building_osm_tags: dict[str, Any] | None,
+        buildings_map_image: np.ndarray,
+        x: int,
+        y: int,
+    ) -> str:
+        """Resolve building category prioritizing OSM tags and falling back to map pixel."""
+        if building_osm_tags:
+            category = self._match_category_from_osm_tags(building_osm_tags)
+            self.logger.debug(
+                "Building category matched from OSM tags: %s (tags: %s)",
+                category,
+                building_osm_tags,
+            )
+            if category:
+                return category
+
+        pixel_value = int(buildings_map_image[y, x])
+        self.logger.debug("Pixel value at center point: %s", pixel_value)
+        category = Parameters.PIXEL_TYPES.get(pixel_value, Parameters.DEFAULT_BUILDING_CATEGORY)
+        self.logger.debug("Building category from pixel-based method: %s", category)
+        return category
+
+    def _ensure_building_file_id(
+        self,
+        files_section: ET.Element,
+        used_building_files: dict[str, int],
+        building_file: str,
+        next_file_id: int,
+    ) -> tuple[int, int]:
+        """Return file ID for building asset, appending a <File> node when first encountered."""
+        if building_file in used_building_files:
+            return used_building_files[building_file], next_file_id
+
+        file_id = next_file_id
+        cfg = self.game.config
+        file_element = XmlDocument.create_element(
+            cfg.i3d_file_tag,
+            {
+                cfg.i3d_attr_file_id: str(file_id),
+                cfg.i3d_attr_filename: building_file,
+            },
+        )
+        files_section.append(file_element)
+        used_building_files[building_file] = file_id
+        return file_id, next_file_id + 1
+
+    def _append_building_reference(
+        self,
+        buildings_group: ET.Element,
+        best_match: BuildingEntry,
+        node_id: int,
+        file_id: int,
+        placement: BuildingPlacement,
+        needs_rotation: bool,
+    ) -> None:
+        """Append a placed building reference node to the buildings transform group."""
+        final_rotation = placement.rotation_angle
+        if needs_rotation:
+            final_rotation = (final_rotation + 90.0) % 360.0
+            self.logger.debug(
+                "Building needs 90° rotation: original=%.1f°, final=%.1f°",
+                placement.rotation_angle,
+                final_rotation,
+            )
+
+        cfg = self.game.config
+        building_node = XmlDocument.create_element(
+            cfg.i3d_reference_node_tag,
+            {
+                cfg.i3d_attr_name: f"{best_match.name}_{node_id}",
+                cfg.i3d_attr_translation: (
+                    f"{placement.x_center:.3f} {placement.z:.3f} {placement.y_center:.3f}"
+                ),
+                cfg.i3d_attr_rotation: f"0 {final_rotation:.3f} 0",
+                cfg.i3d_attr_reference_id: str(file_id),
+                cfg.i3d_attr_node_id: str(node_id),
+            },
+        )
+        buildings_group.append(building_node)
 
     def _match_category_from_osm_tags(self, building_osm_tags: dict[str, Any]) -> str | None:
         """Match building category based on OSM tags from texture schema layers.
@@ -659,49 +816,6 @@ class Building(ImageComponent):
 
         return None
 
-    def _get_polygon_dimensions_and_rotation(
-        self, polygon_points: np.ndarray
-    ) -> tuple[float, float, float]:
-        """Calculate width, depth, and rotation angle of a polygon using minimum area bounding rectangle.
-
-        Arguments:
-            polygon_points (np.ndarray): Array of polygon points with shape (n, 2)
-
-        Returns:
-            tuple[float, float, float]: width, depth, and rotation angle in degrees
-        """
-        # Convert to the format expected by cv2.minAreaRect (needs to be float32)
-        points = polygon_points.astype(np.float32)
-
-        # Find the minimum area bounding rectangle
-        rect = cv2.minAreaRect(points)
-
-        # rect contains: ((center_x, center_y), (width, height), angle)
-        (_, _), (width, height), angle = rect
-
-        # OpenCV's minAreaRect returns angle in range [-90, 0) for the longer side
-        # We need to convert this to a proper world rotation angle
-
-        # First, ensure width is the longer dimension
-        if width < height:
-            # Swap dimensions
-            width, height = height, width
-            # When we swap dimensions, we need to adjust the angle by 90 degrees
-            angle = angle + 90.0
-
-        # Convert OpenCV angle to world rotation angle
-        # OpenCV angle is measured from the horizontal axis, counter-clockwise
-        # But we want the angle in degrees for Y-axis rotation in 3D space
-        rotation_angle = -angle  # Negative because 3D rotation is clockwise positive
-
-        # Normalize to [0, 360) range
-        while rotation_angle < 0:
-            rotation_angle += 360
-        while rotation_angle >= 360:
-            rotation_angle -= 360
-
-        return width, height, rotation_angle
-
     def _find_or_create_buildings_group(self, scene_node: ET.Element) -> ET.Element:
         """Find or create the buildings transform group in the scene.
 
@@ -711,18 +825,20 @@ class Building(ImageComponent):
         Returns:
             ET.Element: The buildings transform group element
         """
+        cfg = self.game.config
+
         # Look for existing buildings group in the scene
-        for transform_group in scene_node.iter("TransformGroup"):
-            if transform_group.get("name") == "buildings":
+        for transform_group in scene_node.iter(cfg.i3d_transform_group_tag):
+            if transform_group.get(cfg.i3d_attr_name) == cfg.i3d_buildings_group_name:
                 return transform_group
 
         # Create new buildings group if not found using the proper element creation method
         buildings_group = XmlDocument.create_element(
-            "TransformGroup",
+            cfg.i3d_transform_group_tag,
             {
-                "name": "buildings",
-                "translation": "0 0 0",
-                "nodeId": str(Parameters.BUILDINGS_STARTING_NODE_ID),
+                cfg.i3d_attr_name: cfg.i3d_buildings_group_name,
+                cfg.i3d_attr_translation: cfg.i3d_zero_translation,
+                cfg.i3d_attr_node_id: str(Parameters.BUILDINGS_STARTING_NODE_ID),
             },
         )
 
