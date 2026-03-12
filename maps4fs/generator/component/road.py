@@ -18,8 +18,6 @@ from maps4fs.generator.component.base.component_mesh import (
 from maps4fs.generator.constants import Paths
 from maps4fs.generator.settings import Parameters
 
-PATCH_Z_OFFSET = -0.001
-
 
 class Road(MeshComponent):
     """Component for map roads processing and generation.
@@ -151,7 +149,7 @@ class Road(MeshComponent):
         """
         patches = []
         tolerance = 1.0  # Distance tolerance for endpoint intersection detection
-        cumulative_offset = PATCH_Z_OFFSET
+        cumulative_offset = Parameters.PATCH_Z_OFFSET
 
         # Process each road to find T-junctions
         for idx, (road, _, _) in enumerate(road_entries):
@@ -213,7 +211,7 @@ class Road(MeshComponent):
                         try:
                             patch_linestring = shapely.LineString(patch_coords)
                             patch_z_offset = other_z_offset + cumulative_offset
-                            cumulative_offset += PATCH_Z_OFFSET
+                            cumulative_offset += Parameters.PATCH_Z_OFFSET
                             path_road_entry = LineSurfaceEntry(
                                 linestring=patch_linestring,
                                 width=other_width,

@@ -26,17 +26,6 @@ from maps4fs.generator.component.texture import Texture
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
-SEGMENT_LENGTH = 2
-LINE_SURFACE_WATER_WIDTH_EXTENSION = 2
-
-# Note: the DEM types sorted by priority for usage with fallbacks.
-# Starting from the most detailed to the least detailed.
-SUPPORTED_DEM_TYPES = [
-    Parameters.NOT_RESIZED_DEM_ROADS,
-    Parameters.NOT_RESIZED_DEM_FOUNDATIONS,
-    Parameters.NOT_RESIZED_DEM,
-]
-
 
 class Background(MeshComponent, ImageComponent):
     """Component for creating 3D obj files based on DEM data around the map.
@@ -156,7 +145,7 @@ class Background(MeshComponent, ImageComponent):
         Returns:
             list[str] : The list of paths to all not resized DEM files.
         """
-        return [self.not_resized_path(dem_type) for dem_type in SUPPORTED_DEM_TYPES]
+        return [self.not_resized_path(dem_type) for dem_type in Parameters.SUPPORTED_DEM_TYPES]
 
     def not_resized_path(self, dem_type: str) -> str:
         """Returns the path to the specified not resized DEM file.
@@ -172,7 +161,7 @@ class Background(MeshComponent, ImageComponent):
         """
         if not dem_type.endswith(".png"):
             dem_type += ".png"
-        if dem_type not in SUPPORTED_DEM_TYPES:
+        if dem_type not in Parameters.SUPPORTED_DEM_TYPES:
             raise ValueError(f"Unsupported dem_type: {dem_type}")
 
         return os.path.join(self.background_directory, dem_type)
@@ -914,8 +903,8 @@ class Background(MeshComponent, ImageComponent):
         # fall back to default value for height_scale 255, it is defined as float | None
         # but it is always set at this point
         z_scaling_factor: float = (
-            self.map.shared_settings.mesh_z_scaling_factor
-            if self.map.shared_settings.mesh_z_scaling_factor is not None
+            self.map.context.mesh_z_scaling_factor
+            if self.map.context.mesh_z_scaling_factor is not None
             else 257
         )
         flatten_to = None
@@ -1070,7 +1059,7 @@ class Background(MeshComponent, ImageComponent):
                 )
                 continue
 
-            width += LINE_SURFACE_WATER_WIDTH_EXTENSION
+            width += Parameters.LINE_SURFACE_WATER_WIDTH_EXTENSION
             water_entries.append(LineSurfaceEntry(linestring=linestring, width=width))
 
         if not water_entries:
@@ -1335,7 +1324,9 @@ class Background(MeshComponent, ImageComponent):
             line_thickness = int(width * 4)
 
             # Get densely sampled points for smooth road
-            dense_sample_distance = min(SEGMENT_LENGTH, total_length / 100)  # At least 100 samples
+            dense_sample_distance = min(
+                Parameters.SEGMENT_LENGTH, total_length / 100
+            )  # At least 100 samples
             num_dense_points = max(100, int(total_length / dense_sample_distance))
             dense_distances = np.linspace(0, total_length, num_dense_points)
             dense_points = [polyline.interpolate(d) for d in dense_distances]
@@ -1355,7 +1346,7 @@ class Background(MeshComponent, ImageComponent):
 
             # Step 3: Efficient distance-based smooth gradation
             # Use much larger segments (10-20x SEGMENT_LENGTH) but interpolate between them
-            large_segment_length = SEGMENT_LENGTH * 15  # 30 units instead of 2
+            large_segment_length = Parameters.SEGMENT_LENGTH * 15  # 30 units instead of 2
             num_large_segments = max(1, int(np.ceil(total_length / large_segment_length)))
             large_distances = np.linspace(0, total_length, num_large_segments + 1)
 

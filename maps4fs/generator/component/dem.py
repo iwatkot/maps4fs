@@ -243,17 +243,17 @@ class DEM(ImageComponent):
         else:
             adjusted_height_scale = height_scale
 
-        self.map.shared_settings.height_scale_value = adjusted_height_scale  # type: ignore
-        self.map.shared_settings.mesh_z_scaling_factor = 65535 / adjusted_height_scale
-        self.map.shared_settings.height_scale_multiplier = adjusted_height_scale / 255
-        self.map.shared_settings.change_height_scale = True  # type: ignore
+        self.map.context.height_scale_value = adjusted_height_scale  # type: ignore
+        self.map.context.mesh_z_scaling_factor = 65535 / adjusted_height_scale
+        self.map.context.height_scale_multiplier = adjusted_height_scale / 255
+        self.map.context.change_height_scale = True  # type: ignore
 
         try:
             entry = {
                 "height_scale_from_settings": height_scale,
                 "adjusted_height_scale": adjusted_height_scale,
-                "mesh_z_scaling_factor": self.map.shared_settings.mesh_z_scaling_factor,
-                "height_scale_multiplier": self.map.shared_settings.height_scale_multiplier,
+                "mesh_z_scaling_factor": self.map.context.mesh_z_scaling_factor,
+                "height_scale_multiplier": self.map.context.height_scale_multiplier,
             }
             self.info["height_scale"] = entry
         except Exception as e:

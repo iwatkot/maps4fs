@@ -16,48 +16,6 @@ from maps4fs.generator.component.layer import Layer
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
-# This value sums up the pixel value of the basic area type to convert it from "No Water" to "Near Water".
-# For example, if the basic area type is "city" (1), then the pixel value for "near water" will be 9.
-WATER_AREA_PIXEL_VALUE = 8
-
-
-def plant_to_pixel_value(plant_name: str) -> int | None:
-    """Returns the pixel value representation of the plant.
-    If not found, returns None.
-
-    Arguments:
-        plant_name (str): name of the plant
-
-    Returns:
-        int | None: pixel value of the plant or None if not found.
-    """
-    plants = {
-        "smallDenseMix": 33,
-        "meadow": 131,
-    }
-    return plants.get(plant_name)
-
-
-def area_type_to_pixel_value(area_type: str) -> int | None:
-    """Returns the pixel value representation of the area type.
-    If not found, returns None.
-
-    Arguments:
-        area_type (str): name of the area type
-
-    Returns:
-        int | None: pixel value of the area type or None if not found.
-    """
-    area_types = {
-        "open_land": 0,
-        "city": 1,
-        "village": 2,
-        "harbor": 3,
-        "industrial": 4,
-        "open_water": 5,
-    }
-    return area_types.get(area_type)
-
 
 class GRLELayer(NamedTuple):
     """Named tuple for GRLE layer.
@@ -90,6 +48,28 @@ class GRLE(ImageComponent, XMLComponent):
         logger (Any, optional): The logger to use. Must have at least three basic methods: debug,
             info, warning. If not provided, default logging will be used.
     """
+
+    @staticmethod
+    def plant_to_pixel_value(plant_name: str) -> int | None:
+        """Returns the pixel value for the given plant name, or None if not found."""
+        plants = {
+            "smallDenseMix": 33,
+            "meadow": 131,
+        }
+        return plants.get(plant_name)
+
+    @staticmethod
+    def area_type_to_pixel_value(area_type: str) -> int | None:
+        """Returns the pixel value for the given area type name, or None if not found."""
+        area_types = {
+            "open_land": 0,
+            "city": 1,
+            "village": 2,
+            "harbor": 3,
+            "industrial": 4,
+            "open_water": 5,
+        }
+        return area_types.get(area_type)
 
     def preprocess(self) -> None:
         """Gets the path to the map I3D file from the game instance and saves it to the instance
@@ -273,12 +253,10 @@ class GRLE(ImageComponent, XMLComponent):
         image = cv2.imread(info_layer_farmlands_path, cv2.IMREAD_UNCHANGED)
 
         doc = XmlDocument(self.xml_path)  # type: ignore
-        root = doc.root
-        farmlands_node = root.find("farmlands")  # type: ignore
-        if farmlands_node is None:
+        if doc.get("farmlands") is None:
             raise ValueError("Farmlands XML element not found in the farmlands XML file.")
 
-        self.update_element(farmlands_node, {"pricePerHa": str(self.map.grle_settings.base_price)})
+        doc.set_attrs("farmlands", pricePerHa=str(self.map.grle_settings.base_price))
 
         farmland_id = 1
 
@@ -335,12 +313,13 @@ class GRLE(ImageComponent, XMLComponent):
                 )
                 continue
 
-            data = {
-                "id": str(farmland_id),
-                "priceScale": "1",
-                "npcName": "FORESTER",
-            }
-            self.create_subelement(farmlands_node, "farmland", data)
+            doc.append_child(
+                "farmlands",
+                "farmland",
+                id=str(farmland_id),
+                priceScale="1",
+                npcName="FORESTER",
+            )
 
             farmland_id += 1
 
@@ -427,10 +406,7 @@ class GRLE(ImageComponent, XMLComponent):
             grass_image[forest_image != 0] = 255
 
         base_grass = self.map.grle_settings.base_grass
-        if isinstance(base_grass, tuple):
-            base_grass = base_grass[0]
-
-        base_layer_pixel_value = plant_to_pixel_value(str(base_grass))
+        base_layer_pixel_value = self.plant_to_pixel_value(str(base_grass))
         if not base_layer_pixel_value:
             base_layer_pixel_value = 131
 
@@ -612,7 +588,7 @@ class GRLE(ImageComponent, XMLComponent):
             return
 
         for layer in texture_component.get_area_type_layers():
-            pixel_value = area_type_to_pixel_value(layer.area_type)  # type: ignore
+            pixel_value = self.area_type_to_pixel_value(layer.area_type)  # type: ignore
             # * Not enabled for now.
             # * If the layer is invisible, we need to draw the mask from the info layer.
             # if layer.invisible:
@@ -631,7 +607,7 @@ class GRLE(ImageComponent, XMLComponent):
             environment_image[weight_image > 0] = pixel_value  # type: ignore
 
         for layer in texture_component.get_water_area_layers():
-            pixel_value = WATER_AREA_PIXEL_VALUE
+            pixel_value = Parameters.WATER_AREA_PIXEL_VALUE
             weight_image = self.get_resized_weight(layer, environment_size)
             if weight_image is None:
                 self.logger.warning(

@@ -15,61 +15,8 @@ if TYPE_CHECKING:
     from maps4fs.generator.map import Map
 
 
-class Parameters:
-    """Simple class to store string constants for parameters."""
-
-    FIELD = "field"
-    FIELDS = "fields"
-    BUILDINGS = "buildings"
-    TEXTURES = "textures"
-    BACKGROUND = "background"
-    FOREST = "forest"
-    ROADS_POLYLINES = "roads_polylines"
-    WATER_POLYLINES = "water_polylines"
-    WATER = "water"
-    FARMYARDS = "farmyards"
-
-    MAXIMUM_BACKGROUND_TEXTURE_SIZE = 4096
-
-    PREVIEW_MAXIMUM_SIZE = 2048
-
-    BACKGROUND_DISTANCE = 2048
-    FULL = "FULL"
-    PREVIEW = "PREVIEW"
-
-    DECIMATED_BACKGROUND = "decimated_background"
-    BACKGROUND_TERRAIN = "background_terrain"
-
-    WATER_RESOURCES = "water_resources"
-    WATER_RESOURCES_LINE_SURFACE = "water_resources_line_surface"
-
-    RESIZE_FACTOR = 8
-
-    FARMLAND_ID_LIMIT = 254
-
-    PLANTS_ISLAND_PERCENT = 100
-    PLANTS_ISLAND_MINIMUM_SIZE = 10
-    PLANTS_ISLAND_MAXIMUM_SIZE = 200
-    PLANTS_ISLAND_VERTEX_COUNT = 30
-    PLANTS_ISLAND_ROUNDING_RADIUS = 15
-
-    WATER_ADD_WIDTH = 2
-
-    HEIGHT_SCALE = "heightScale"
-
-    OVERVIEW_IMAGE_SIZE = 4096
-    OVERVIEW_IMAGE_FILENAME = "overview"
-
-    NOT_RESIZED_DEM = "not_resized.png"
-    NOT_RESIZED_DEM_FOUNDATIONS = "not_resized_with_foundations.png"
-    NOT_RESIZED_DEM_ROADS = "not_resized_with_flattened_roads.png"
-
-    INFO_LAYER_FARMLANDS = "infoLayer_farmlands.png"
-    DENSITY_MAP_FRUITS = "densityMap_fruits.png"
-    INFO_LAYER_ENVIRONMENT = "infoLayer_environment.png"
-
-    POINTS = "points"
-    TAGS = "tags"
+# Re-exported for backward compatibility — Parameters now lives in constants.
+from maps4fs.generator.constants import Parameters as Parameters  # noqa: F401
 
 
 class SettingsModel(BaseModel):

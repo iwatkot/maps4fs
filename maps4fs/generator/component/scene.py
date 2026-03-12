@@ -19,23 +19,6 @@ from maps4fs.generator.constants import Paths
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
-NODE_ID_STARTING_VALUE = 2000
-SPLINES_NODE_ID_STARTING_VALUE = 5000
-TREE_NODE_ID_STARTING_VALUE = 30000
-FILE_ID_STARTING_VALUE = 120000
-BINARY_MESHES_NODE_ID_STARTING_VALUE = 150000
-BOUNDS_FILE_ID = 160000
-BOUNDS_NODE_ID = 200000
-
-FIELDS_ATTRIBUTES = [
-    ("angle", "integer", "0"),
-    ("missionAllowed", "boolean", "true"),
-    ("missionOnlyGrass", "boolean", "false"),
-    ("nameIndicatorIndex", "string", "1"),
-    ("polygonIndex", "string", "0"),
-    ("teleportIndicatorIndex", "string", "2"),
-]
-
 
 class Scene(XMLComponent, ImageComponent):
     """Component for FS25 map I3D scene editing: height scale, sun bbox,
@@ -84,11 +67,8 @@ class Scene(XMLComponent, ImageComponent):
             value (int, optional): The height scale value.
         """
         if not value:
-            if (
-                self.map.shared_settings.change_height_scale
-                and self.map.shared_settings.height_scale_value
-            ):
-                value = int(self.map.shared_settings.height_scale_value)
+            if self.map.context.change_height_scale and self.map.context.height_scale_value:
+                value = int(self.map.context.height_scale_value)
             else:
                 return
 
@@ -167,7 +147,7 @@ class Scene(XMLComponent, ImageComponent):
             self.logger.warning("UserAttributes node not found in I3D file.")
             return
 
-        node_id = SPLINES_NODE_ID_STARTING_VALUE
+        node_id = Parameters.SPLINES_NODE_ID_STARTING_VALUE
         for road_id, road_info in enumerate(roads_polylines, start=1):
             if isinstance(road_info, dict):
                 points = road_info.get("points")
@@ -277,7 +257,7 @@ class Scene(XMLComponent, ImageComponent):
         if fields_node is None or user_attributes_node is None:
             return
 
-        node_id = NODE_ID_STARTING_VALUE
+        node_id = Parameters.NODE_ID_STARTING_VALUE
         field_id = 1
         added_fields = skipped_fields = 0
         skipped_field_ids: list[int] = []
@@ -302,7 +282,7 @@ class Scene(XMLComponent, ImageComponent):
             if field_node is None:
                 continue
             user_attributes_node.append(
-                self.get_user_attribute_node(node_id, attributes=FIELDS_ATTRIBUTES)
+                self.get_user_attribute_node(node_id, attributes=Parameters.FIELDS_ATTRIBUTES)
             )
             node_id = updated_node_id
 
@@ -523,7 +503,7 @@ class Scene(XMLComponent, ImageComponent):
             self.logger.warning("Forest layer not found.")
             return
 
-        node_id = TREE_NODE_ID_STARTING_VALUE
+        node_id = Parameters.TREE_NODE_ID_STARTING_VALUE
         tree_count = 0
         forests_doc = XmlDocument(self.xml_path)  # type: ignore
         forests_root = forests_doc.root
@@ -780,8 +760,8 @@ class Scene(XMLComponent, ImageComponent):
                 self._find_nested_binary_i3d_in_directory(roads_assets_directory)
             )
 
-        file_id = FILE_ID_STARTING_VALUE
-        node_id = BINARY_MESHES_NODE_ID_STARTING_VALUE
+        file_id = Parameters.FILE_ID_STARTING_VALUE
+        node_id = Parameters.BINARY_MESHES_NODE_ID_STARTING_VALUE
 
         # Load the main I3D document once; add all mesh references, then save once.
         main_doc = XmlDocument(self.xml_path)  # type: ignore
@@ -1150,7 +1130,7 @@ class Scene(XMLComponent, ImageComponent):
 
         files_node.append(
             self.create_element(
-                "File", {"fileId": str(BOUNDS_FILE_ID), "filename": bounds_rel_path}
+                "File", {"fileId": str(Parameters.BOUNDS_FILE_ID), "filename": bounds_rel_path}
             )
         )
         # Y=1024 is the fixed height above ground in GE's X Z Y coordinate system.
@@ -1160,8 +1140,8 @@ class Scene(XMLComponent, ImageComponent):
                 {
                     "name": "mapbounds",
                     "translation": "0 1024 0",
-                    "referenceId": str(BOUNDS_FILE_ID),
-                    "nodeId": str(BOUNDS_NODE_ID),
+                    "referenceId": str(Parameters.BOUNDS_FILE_ID),
+                    "nodeId": str(Parameters.BOUNDS_NODE_ID),
                 },
             )
         )

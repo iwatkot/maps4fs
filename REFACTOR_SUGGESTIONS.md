@@ -743,7 +743,6 @@ components = [Satellite, Texture, Background, GRLE, Config, Road, I3d, Building]
 - Replace `MainSettings.to_json()` body with `return self._asdict()`
 - Remove `SharedSettings` (replaced by `MapContext`)
 - Group `Parameters` constants by domain: `DemParameters`, `WaterParameters`, `PlantsParameters`, etc. — or dissolve into the modules that actually use them
-- `I3DSettings` → rename to `SceneSettings` (governs trees, splines, license plates, not just i3d format)
 - `GRLESettings.base_grass: tuple | str = ("smallDenseMix", "meadow")` — the `tuple | str` union is a legacy artifact. The value is sent as a string by the UI, but the Pydantic default is a tuple; `all_settings_from_json` handled this via the `flattening` workaround that took `value[0]`. After removing that flattening hack, this field should be a simple `str` with a `Literal` annotation covering the known FS25 plant names (mirroring `BuildingSettings.region: Literal["auto", "all", "EU", "US"]`). Valid values should come from `fs25-grle-schema.json`, not be hardcoded in Python.
 
 ---
@@ -926,7 +925,6 @@ If parallel external downloads are desired in the future, they can be added as `
 | Class / Method | Change | Reason |
 |----------------|--------|--------|
 | `SharedSettings` | Remove | Replaced by `MapContext` |
-| `I3DSettings` | Rename to `SceneSettings` | The class governs trees, splines, license plates — not just i3d |
 | `Parameters` | Split into domain-grouped constants or inline into callers | Flat bag of unrelated constants is hard to navigate |
 | `SettingsModel.all_settings_to_json()` | Remove | Unused by `GenerationSettings.to_json()`; subclasses scanning is fragile |
 | `SettingsModel.all_settings()` | Remove | Same reason; no external callers |

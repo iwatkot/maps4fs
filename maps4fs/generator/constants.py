@@ -82,3 +82,122 @@ class Paths:
     def get_texconv_executable_path() -> str | None:
         """Return path to texconv.exe, or None."""
         return Paths.get_windows_executable_path(Paths.TEXCONV_NAME)
+
+
+class Parameters:
+    """All named constants used across generator components.
+
+    Domain-agnostic string keys, numeric thresholds, node ID ranges, pixel
+    values, and file-name fragments.  Having everything in one place makes it
+    easy to grep or change a value without hunting across many modules.
+    """
+
+    # ---- OSM / texture layer tags ---------------------------------------
+    FIELD = "field"
+    FIELDS = "fields"
+    BUILDINGS = "buildings"
+    TEXTURES = "textures"
+    BACKGROUND = "background"
+    FOREST = "forest"
+    ROADS_POLYLINES = "roads_polylines"
+    WATER_POLYLINES = "water_polylines"
+    WATER = "water"
+    FARMYARDS = "farmyards"
+
+    POINTS = "points"
+    TAGS = "tags"
+
+    # ---- Image / texture sizes ------------------------------------------
+    MAXIMUM_BACKGROUND_TEXTURE_SIZE = 4096
+    PREVIEW_MAXIMUM_SIZE = 2048
+    OVERVIEW_IMAGE_SIZE = 4096
+    OVERVIEW_IMAGE_FILENAME = "overview"
+    FULL = "FULL"
+    PREVIEW = "PREVIEW"
+
+    # ---- Map geometry ---------------------------------------------------
+    BACKGROUND_DISTANCE = 2048
+    RESIZE_FACTOR = 8
+
+    # ---- Terrain layer names --------------------------------------------
+    DECIMATED_BACKGROUND = "decimated_background"
+    BACKGROUND_TERRAIN = "background_terrain"
+    WATER_RESOURCES = "water_resources"
+    WATER_RESOURCES_LINE_SURFACE = "water_resources_line_surface"
+    HEIGHT_SCALE = "heightScale"
+
+    # ---- DEM file names -------------------------------------------------
+    NOT_RESIZED_DEM = "not_resized.png"
+    NOT_RESIZED_DEM_FOUNDATIONS = "not_resized_with_foundations.png"
+    NOT_RESIZED_DEM_ROADS = "not_resized_with_flattened_roads.png"
+
+    # Priority-ordered list of DEM variants (most to least detailed)
+    SUPPORTED_DEM_TYPES = [NOT_RESIZED_DEM_ROADS, NOT_RESIZED_DEM_FOUNDATIONS, NOT_RESIZED_DEM]
+
+    # ---- Info-layer / density map file names ----------------------------
+    INFO_LAYER_FARMLANDS = "infoLayer_farmlands.png"
+    DENSITY_MAP_FRUITS = "densityMap_fruits.png"
+    INFO_LAYER_ENVIRONMENT = "infoLayer_environment.png"
+
+    # ---- Plants / farmland limits ---------------------------------------
+    FARMLAND_ID_LIMIT = 254
+    PLANTS_ISLAND_PERCENT = 100
+    PLANTS_ISLAND_MINIMUM_SIZE = 10
+    PLANTS_ISLAND_MAXIMUM_SIZE = 200
+    PLANTS_ISLAND_VERTEX_COUNT = 30
+    PLANTS_ISLAND_ROUNDING_RADIUS = 15
+    WATER_ADD_WIDTH = 2
+
+    # ---- Background mesh segment geometry -------------------------------
+    SEGMENT_LENGTH = 2
+    LINE_SURFACE_WATER_WIDTH_EXTENSION = 2
+
+    # ---- GRLE pixel values ----------------------------------------------
+    WATER_AREA_PIXEL_VALUE = 8
+
+    # ---- Road Z-offset --------------------------------------------------
+    PATCH_Z_OFFSET = -0.001
+
+    # ---- License-plate image crop coordinates ---------------------------
+    COUNTRY_CODE_TOP = 169
+    COUNTRY_CODE_BOTTOM = 252
+    COUNTRY_CODE_LEFT = 74
+    COUNTRY_CODE_RIGHT = 140
+
+    LICENSE_PLATES_XML_FILENAME = "licensePlatesPL.xml"
+    LICENSE_PLATES_I3D_FILENAME = "licensePlatesPL.i3d"
+
+    # ---- Building constants ---------------------------------------------
+    BUILDINGS_STARTING_NODE_ID = 10000
+    DEFAULT_HEIGHT = 200
+    AUTO_REGION = "auto"
+    ALL_REGIONS = "all"
+
+    AREA_TYPES = {
+        "residential": 10,
+        "commercial": 20,
+        "industrial": 30,
+        "retail": 40,
+        "farmyard": 50,
+        "religious": 60,
+        "recreation": 70,
+    }
+    PIXEL_TYPES = {v: k for k, v in AREA_TYPES.items()}
+
+    # ---- Scene / I3D node ID ranges -------------------------------------
+    NODE_ID_STARTING_VALUE = 2000
+    SPLINES_NODE_ID_STARTING_VALUE = 5000
+    TREE_NODE_ID_STARTING_VALUE = 30000
+    FILE_ID_STARTING_VALUE = 120000
+    BINARY_MESHES_NODE_ID_STARTING_VALUE = 150000
+    BOUNDS_FILE_ID = 160000
+    BOUNDS_NODE_ID = 200000
+
+    FIELDS_ATTRIBUTES = [
+        ("angle", "integer", "0"),
+        ("missionAllowed", "boolean", "true"),
+        ("missionOnlyGrass", "boolean", "false"),
+        ("nameIndicatorIndex", "string", "1"),
+        ("polygonIndex", "string", "0"),
+        ("teleportIndicatorIndex", "string", "2"),
+    ]

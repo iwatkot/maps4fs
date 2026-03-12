@@ -14,23 +14,6 @@ from maps4fs.generator.component.base.component_xml import XMLComponent, XmlDocu
 from maps4fs.generator.geo import get_region_by_coordinates
 from maps4fs.generator.settings import Parameters
 
-BUILDINGS_STARTING_NODE_ID = 10000
-DEFAULT_HEIGHT = 200
-AUTO_REGION = "auto"
-ALL_REGIONS = "all"
-
-
-AREA_TYPES = {
-    "residential": 10,
-    "commercial": 20,
-    "industrial": 30,
-    "retail": 40,
-    "farmyard": 50,
-    "religious": 60,
-    "recreation": 70,
-}
-PIXEL_TYPES = {v: k for k, v in AREA_TYPES.items()}
-
 
 class BuildingEntry(NamedTuple):
     """Data structure for a building entry in the buildings schema."""
@@ -279,32 +262,6 @@ class BuildingEntryCollection:
         return self.by_category.get(category, [])
 
 
-def building_category_type_to_pixel(building_category: str) -> int | None:
-    """Returns the pixel value representation of the building category.
-    If not found, returns None.
-
-    Arguments:
-        building_category (str | None): The building category type as a string.
-
-    Returns:
-        int | None: pixel value of the building category, or None if not found.
-    """
-    return AREA_TYPES.get(building_category)
-
-
-def pixel_value_to_building_category_type(pixel_value: int) -> str:
-    """Returns the building category type representation of the pixel value.
-    If not found, returns "residential".
-
-    Arguments:
-        pixel_value (int | None): The pixel value to look up the building category for.
-
-    Returns:
-        str: building category of the pixel value, or "residential" if not found.
-    """
-    return PIXEL_TYPES.get(pixel_value, "residential")
-
-
 class Building(XMLComponent, ImageComponent):
     """Component for map buildings processing and generation.
 
@@ -382,7 +339,7 @@ class Building(XMLComponent, ImageComponent):
                 layer.name,
                 layer.building_category,
             )
-            pixel_value = building_category_type_to_pixel(layer.building_category)  # type: ignore
+            pixel_value = Parameters.AREA_TYPES.get(layer.building_category)  # type: ignore
             if pixel_value is None:
                 self.logger.warning(
                     "Unknown building category '%s' for layer '%s'. Skipping.",
@@ -415,9 +372,9 @@ class Building(XMLComponent, ImageComponent):
         ignore_region = False
         region = ""
 
-        if self.map.building_settings.region == AUTO_REGION:
+        if self.map.building_settings.region == Parameters.AUTO_REGION:
             region = get_region_by_coordinates(self.coordinates)
-        elif self.map.building_settings.region == ALL_REGIONS:
+        elif self.map.building_settings.region == Parameters.ALL_REGIONS:
             ignore_region = True
             region = "all"  # Set a default region name for logging
         else:
@@ -480,26 +437,25 @@ class Building(XMLComponent, ImageComponent):
 
         # Initialize tracking for XML modifications
         doc = XmlDocument(self.xml_path)  # type: ignore
-        root = doc.root
 
         # Find the Scene element
-        scene_node = root.find(".//Scene")
+        scene_node = doc.get(".//Scene")
         if scene_node is None:
             self.logger.warning("Scene element not found in I3D file.")
             return
 
         # Find or create the Files section
-        files_section = root.find("Files")
+        files_section = doc.get("Files")
         if files_section is None:
-            files_section = ET.SubElement(root, "Files")
+            files_section = doc.append_child(".", "Files")
 
         # Find or create the buildings transform group in the scene
         buildings_group = self._find_or_create_buildings_group(scene_node)
 
         # Track used building files to avoid duplicates (file_path -> file_id mapping)
         used_building_files = {}
-        file_id_counter = BUILDINGS_STARTING_NODE_ID
-        node_id_counter = BUILDINGS_STARTING_NODE_ID + 1000
+        file_id_counter = Parameters.BUILDINGS_STARTING_NODE_ID
+        node_id_counter = Parameters.BUILDINGS_STARTING_NODE_ID + 1000
 
         not_resized_dem = self.get_dem_image_with_fallback(start_at=1)
         if not_resized_dem is None:
@@ -544,7 +500,7 @@ class Building(XMLComponent, ImageComponent):
                 pixel_value = buildings_map_image[y, x]
                 self.logger.debug("Pixel value at center point: %s", pixel_value)
 
-                category = pixel_value_to_building_category_type(pixel_value)
+                category = Parameters.PIXEL_TYPES.get(pixel_value, "residential")
                 self.logger.debug("Building category from pixel-based method: %s", category)
 
             # 2. Obtain building dimensions and rotation using minimum area bounding rectangle
@@ -584,9 +540,9 @@ class Building(XMLComponent, ImageComponent):
                         x,
                         y,
                         e,
-                        DEFAULT_HEIGHT,
+                        Parameters.DEFAULT_HEIGHT,
                     )
-                    z = DEFAULT_HEIGHT
+                    z = Parameters.DEFAULT_HEIGHT
 
                 # * Disabled for now, maybe re-enable later.
                 # Calculate scale factors to match the polygon size
@@ -650,7 +606,7 @@ class Building(XMLComponent, ImageComponent):
                 )
                 continue
 
-        added_buildings_count = node_id_counter - (BUILDINGS_STARTING_NODE_ID + 1000)
+        added_buildings_count = node_id_counter - (Parameters.BUILDINGS_STARTING_NODE_ID + 1000)
         self.logger.debug("Total buildings placed: %d of %d", added_buildings_count, len(buildings))
 
         self.info["total_buildings_placed"] = added_buildings_count
@@ -770,7 +726,7 @@ class Building(XMLComponent, ImageComponent):
             {
                 "name": "buildings",
                 "translation": "0 0 0",
-                "nodeId": str(BUILDINGS_STARTING_NODE_ID),
+                "nodeId": str(Parameters.BUILDINGS_STARTING_NODE_ID),
             },
         )
 

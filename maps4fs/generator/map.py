@@ -170,11 +170,6 @@ class Map:
         with open(save_path, "w", encoding="utf-8") as file:
             json.dump(data, file, indent=4)
 
-    @property
-    def shared_settings(self) -> MapContext:
-        """Backward-compatible alias for map.context (used by DEM, I3d, component.py)."""
-        return self.context
-
     def process_settings(self) -> None:
         """Checks the settings by predefined rules and updates them accordingly."""
         if self.dem_settings.water_depth > 0:

@@ -14,15 +14,6 @@ from maps4fs.generator.geo import get_country_by_coordinates
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
-# Defines coordinates for country block on the license plate texture.
-COUNTRY_CODE_TOP = 169
-COUNTRY_CODE_BOTTOM = 252
-COUNTRY_CODE_LEFT = 74
-COUNTRY_CODE_RIGHT = 140
-
-LICENSE_PLATES_XML_FILENAME = "licensePlatesPL.xml"
-LICENSE_PLATES_I3D_FILENAME = "licensePlatesPL.i3d"
-
 
 # pylint: disable=R0903
 class Config(XMLComponent, ImageComponent):
@@ -57,17 +48,8 @@ class Config(XMLComponent, ImageComponent):
 
     def _set_map_size(self) -> None:
         """Edits map.xml file to set correct map size."""
-        doc = XmlDocument(self.xml_path)  # type: ignore
-        root = doc.root
-        data = {
-            "width": str(self.scaled_size),
-            "height": str(self.scaled_size),
-        }
-
-        for element in root.iter("map"):  # type: ignore
-            self.update_element(element, data)
-            break
-        doc.save()
+        with XmlDocument(self.xml_path) as doc:  # type: ignore
+            doc.set_attrs(".", width=str(self.scaled_size), height=str(self.scaled_size))
 
     def info_sequence(self) -> dict[str, dict[str, str | float | int]]:
         """Returns information about the component.
@@ -126,10 +108,9 @@ class Config(XMLComponent, ImageComponent):
         maximum_height, minimum_height = dem_params
 
         doc = XmlDocument(environment_xml_path)
-        root = doc.root
 
         # Find the <latitude>40.6</latitude> element in the XML file.
-        latitude_element = root.find("./latitude")  # type: ignore
+        latitude_element = doc.get("./latitude")
         if latitude_element is not None:
             map_latitude = round(self.map.coordinates[0], 1)
             latitude_element.text = str(map_latitude)
@@ -141,7 +122,7 @@ class Config(XMLComponent, ImageComponent):
         # The XML file contains 4 <fog> entries in different sections of <weather> representing
         # different seasons, such as <season name="spring">, <season name="summer">, etc.
         # We need to find them all and adjust the parameters accordingly.
-        for season in root.findall(".//weather/season"):  # type: ignore
+        for season in doc.find_all(".//weather/season"):
             # Example of the <heightFog> element:
             # <heightFog>
             #     <groundLevelDensity min="0.05" max="0.2" />
@@ -149,11 +130,9 @@ class Config(XMLComponent, ImageComponent):
             # </heightFog>
             # We need to adjust the maxheight min and max attributes.
             max_height_element = season.find("./fog/heightFog/maxHeight")
-            data = {
-                "min": str(minimum_height),
-                "max": str(maximum_height),
-            }
-            self.update_element(max_height_element, data)  # type: ignore
+            if max_height_element is not None:
+                max_height_element.set("min", str(minimum_height))
+                max_height_element.set("max", str(maximum_height))
             self.logger.debug(
                 "Adjusted fog settings for season '%s': min=%s, max=%s",
                 season.get("name", "unknown"),
@@ -368,10 +347,10 @@ class Config(XMLComponent, ImageComponent):
                 license_plates_directory,
                 country_code,
                 eu_format,
-                COUNTRY_CODE_LEFT,
-                COUNTRY_CODE_TOP,
-                COUNTRY_CODE_RIGHT,
-                COUNTRY_CODE_BOTTOM,
+                Parameters.COUNTRY_CODE_LEFT,
+                Parameters.COUNTRY_CODE_TOP,
+                Parameters.COUNTRY_CODE_RIGHT,
+                Parameters.COUNTRY_CODE_BOTTOM,
             )
 
             self.logger.debug("License plates updated successfully")
@@ -419,7 +398,7 @@ class Config(XMLComponent, ImageComponent):
             FileNotFoundError: If the license plates XML file is not found.
             ValueError: If required XML elements are not found.
         """
-        xml_path = os.path.join(license_plates_directory, LICENSE_PLATES_XML_FILENAME)
+        xml_path = os.path.join(license_plates_directory, Parameters.LICENSE_PLATES_XML_FILENAME)
         if not os.path.isfile(xml_path):
             raise FileNotFoundError(f"License plates XML file not found: {xml_path}.")
 
@@ -505,7 +484,7 @@ class Config(XMLComponent, ImageComponent):
             FileNotFoundError: If the license plates i3d file is not found.
             ValueError: If required XML elements are not found.
         """
-        i3d_path = os.path.join(license_plates_directory, LICENSE_PLATES_I3D_FILENAME)
+        i3d_path = os.path.join(license_plates_directory, Parameters.LICENSE_PLATES_I3D_FILENAME)
         if not os.path.isfile(i3d_path):
             raise FileNotFoundError(f"License plates i3d file not found: {i3d_path}")
 

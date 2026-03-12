@@ -334,3 +334,49 @@ class ImageComponent(Component):
         )
         if os.path.abspath(produced) != os.path.abspath(output_dds_path):
             os.replace(produced, output_dds_path)
+
+    def rotate_image(
+        self,
+        image_path: str,
+        angle: int,
+        output_height: int,
+        output_width: int,
+        output_path: str | None = None,
+    ) -> None:
+        """Rotates an image by a given angle around its center and cuts out the center to match
+        the output size.
+
+        Arguments:
+            image_path (str): The path to the image to rotate.
+            angle (int): The angle to rotate the image by.
+            output_height (int): The height of the output image.
+            output_width (int): The width of the output image.
+            output_path (str, optional): Output path. Defaults to overwriting input.
+        """
+        if not os.path.isfile(image_path):
+            self.logger.warning("Image %s does not exist", image_path)
+            return
+
+        image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+        if image is None:
+            self.logger.warning("Image %s could not be read", image_path)
+            return
+
+        self.logger.debug("Read image from %s with shape: %s", image_path, image.shape)
+
+        if not output_path:
+            output_path = image_path
+
+        height, width = image.shape[:2]
+        center = (width // 2, height // 2)
+
+        rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
+        rotated = cv2.warpAffine(image, rotation_matrix, (width, height))
+
+        start_x = center[0] - output_width // 2
+        start_y = center[1] - output_height // 2
+        end_x = start_x + output_width
+        end_y = start_y + output_height
+
+        cropped = rotated[start_y:end_y, start_x:end_x]
+        cv2.imwrite(output_path, cropped)
