@@ -481,7 +481,7 @@ class GRLE(ImageComponent):
         """
         bit_depth = 16 if use_extended_foliage_values else 8
         plant_values = Parameters.PLANT_PIXEL_VALUES_BY_BIT_DEPTH.get(bit_depth, {})
-        default_pixel_value = Parameters.DEFAULT_GRASS_PIXEL_VALUE_BY_BIT_DEPTH.get(bit_depth)
+        default_pixel_value = Parameters.DEFAULT_GRASS_PIXEL_VALUE_BY_BIT_DEPTH[bit_depth]
         return plant_values.get(base_grass) or default_pixel_value
 
     @monitor_performance

@@ -80,7 +80,7 @@ class GRLESettings(SettingsModel):
         base_price (int): base price for the farmland.
         price_scale (int): scale for the price of the farmland.
         add_grass (bool): if True, grass will be added to the map.
-        base_grass (Literal["smallDenseMix", "meadow"]): base grass type for the map.
+        base_grass (Literal["smallDenseMix", "meadow", "grass"]): base grass type for the map.
         random_plants (bool): generate random plants on the map or use the default one.
         fill_empty_farmlands (bool): if True, empty farmlands will be filled with grass.
 
@@ -91,7 +91,7 @@ class GRLESettings(SettingsModel):
     base_price: int = 60000
     price_scale: int = 100
     add_grass: bool = True
-    base_grass: Literal["smallDenseMix", "meadow"] = "smallDenseMix"
+    base_grass: Literal["smallDenseMix", "meadow", "grass"] = "smallDenseMix"
     random_plants: bool = True
     fill_empty_farmlands: bool = True
 
