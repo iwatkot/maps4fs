@@ -74,31 +74,46 @@ class Scene(ImageComponent):
 
         with XmlDocument(self.xml_path) as doc:
             root = doc.root
-            file_nodes = root.findall(self.game.config.i3d_files_xpath + "/File")
+            file_nodes = root.findall(
+                self.game.config.i3d_files_xpath + f"/{self.game.config.i3d_file_tag}"
+            )
 
             density_map_file_id = None
             for file_node in file_nodes:
                 filename = file_node.get(self.game.config.i3d_attr_filename) or ""
-                if filename.replace("\\", "/").lower().endswith("densitymap_fruits.png"):
+                if (
+                    filename.replace("\\", "/")
+                    .lower()
+                    .endswith(Parameters.DENSITY_MAP_FRUITS.lower())
+                ):
                     density_map_file_id = file_node.get(self.game.config.i3d_attr_file_id)
                     break
 
             if not density_map_file_id:
                 self.logger.warning(
-                    "Could not find densityMap_fruits file entry in map.i3d; "
-                    "skipping FoliageMultiLayer numTypeIndexChannels sync."
+                    "Could not find %s file entry in map.i3d; "
+                    "skipping FoliageMultiLayer numTypeIndexChannels sync.",
+                    Parameters.DENSITY_MAP_FRUITS,
                 )
                 return
 
             updated_layers = 0
-            for foliage_layer in root.findall(".//FoliageMultiLayer"):
-                if foliage_layer.get("densityMapId") != density_map_file_id:
+            for foliage_layer in root.findall(self.game.config.i3d_foliage_multilayer_xpath):
+                if (
+                    foliage_layer.get(self.game.config.i3d_attr_density_map_id)
+                    != density_map_file_id
+                ):
                     continue
 
-                if foliage_layer.get("numTypeIndexChannels") == str(desired_channels):
+                if foliage_layer.get(self.game.config.i3d_attr_num_type_index_channels) == str(
+                    desired_channels
+                ):
                     continue
 
-                foliage_layer.set("numTypeIndexChannels", str(desired_channels))
+                foliage_layer.set(
+                    self.game.config.i3d_attr_num_type_index_channels,
+                    str(desired_channels),
+                )
                 updated_layers += 1
 
             if updated_layers > 0:

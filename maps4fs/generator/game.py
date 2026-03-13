@@ -61,6 +61,8 @@ class GameConfig:
     i3d_ocean_material_xpath: str = ".//Material[@name='OceanShader']"
     i3d_water_shader_file_xpath: str = "File[@fileId='3']"
     i3d_mapbounds_tg_xpath: str = ".//Scene/TransformGroup[@name='mapbounds']"
+    i3d_foliage_multilayer_xpath: str = ".//FoliageMultiLayer"
+    i3d_foliage_type_xpath: str = "FoliageType"
 
     # --- Buildings I3D element and attribute names ---
     i3d_buildings_group_name: str = "buildings"
@@ -109,6 +111,9 @@ class GameConfig:
     i3d_attr_collision_filter_mask: str = "collisionFilterMask"
     i3d_attr_casts_shadows: str = "castsShadows"
     i3d_attr_scale: str = "scale"
+    i3d_attr_density_map_id: str = "densityMapId"
+    i3d_attr_num_type_index_channels: str = "numTypeIndexChannels"
+    i3d_attr_foliage_type_name: str = "name"
 
     # --- I3D tuning values ---
     sun_bbox_y_min: int = -128
