@@ -51,6 +51,9 @@ class MapContext:
     # ---- Populated by Water component ----
     water_mask_path: str | None = None
 
+    # ---- Populated by GRLE component ----
+    foliage_density_map_uint16: bool = False
+
     # ---- Populated by Satellite component ----
     satellite_overview_path: str | None = None
     satellite_background_path: str | None = None

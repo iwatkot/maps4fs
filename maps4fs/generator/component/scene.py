@@ -44,6 +44,9 @@ class Scene(ImageComponent):
 
     def process(self) -> None:
         """Updates the map I3D file and creates splines in a separate I3D file."""
+        if self.map.context.foliage_density_map_uint16:
+            self._sync_foliage_num_type_index_channels()
+
         self.update_height_scale()
 
         self._update_parameters()
@@ -56,6 +59,31 @@ class Scene(ImageComponent):
 
         self.insert_meshes()
         self.insert_map_bounds()
+
+    def _sync_foliage_num_type_index_channels(self) -> None:
+        """Sync foliage channel count in map.i3d when GRLE uses uint16 density map values."""
+        if not self.map.context.foliage_density_map_uint16:
+            return
+
+        desired_channels = str(Parameters.FOLIAGE_NUM_TYPE_INDEX_CHANNELS_UINT16)
+        desired_compression_channels = str(Parameters.FOLIAGE_COMPRESSION_CHANNELS_UINT16)
+        desired_num_channels = str(Parameters.FOLIAGE_NUM_CHANNELS_UINT16)
+
+        with XmlDocument(self.xml_path) as doc:
+            root = doc.root
+            for foliage_layer in root.findall(self.game.config.i3d_foliage_multilayer_xpath):
+                current_channels = foliage_layer.get(
+                    self.game.config.i3d_attr_num_type_index_channels
+                )
+                if current_channels in (None, "0", desired_channels):
+                    continue
+
+                foliage_layer.set(
+                    self.game.config.i3d_attr_num_type_index_channels,
+                    desired_channels,
+                )
+                foliage_layer.set("compressionChannels", desired_compression_channels)
+                foliage_layer.set("numChannels", desired_num_channels)
 
     def update_height_scale(self, value: int | None = None) -> None:
         """Updates the height scale value in the map I3D file.
