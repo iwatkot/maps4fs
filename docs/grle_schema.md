@@ -15,19 +15,24 @@ The GRLE schema is located in your **Data Directory**:
     └── 📄 fs25-grle-schema.json  ← GRLE layer definitions
 ```
 
-## **🚨 Critical Warning: Do Not Modify**
+## **⚠️ Customization Policy: Customize With Caution**
 
-### **Modification Risks**
-- **GRLE schema cannot be safely customized** by end users
-- **Changes will break map generation** and cause system failures
-- **No customization benefits** - edits provide no meaningful improvements
-- **Designed for internal use** by Farming Simulator engine, not user modification
+### **Customization Risks**
+- **GRLE schema can be customized**, but only if you understand FS/GE layer requirements
+- **Invalid values can break generation** or produce unusable maps
+- **Not every layer should be changed** - many are engine-sensitive technical layers
+- **Always back up** your schema before editing
 
-### **Why Modifications Fail**
-- **Engine dependencies**: FS25 expects exact specifications for proper rendering
-- **Hardcoded relationships**: Layer parameters are tied to internal game systems
-- **Binary compatibility**: Generated files must match exact engine requirements
-- **No user benefits**: Schema defines technical specs, not customizable features
+### **When Customization Makes Sense**
+- **Template-specific workflows** (for example custom multifruit templates)
+- **Advanced compatibility adjustments** required by a specific map template
+- **Controlled experiments** where you can validate results in Giants Editor
+
+### **Extended Foliage Example (Supported Use Case)**
+- If your template uses **extended foliage types**, `densityMap_fruits.png` may need `data_type: "uint16"`
+- In this mode, Maps4FS can update `map.i3d` foliage layer channel settings to match extended foliage usage
+- This enables values beyond uint8 limits for foliage states/types
+- Use this only with templates that are prepared for extended foliage
 
 ## Schema Purpose
 
@@ -101,9 +106,9 @@ Maps4FS uses GRLE schema to:
 - **Optimize file sizes** while maintaining quality standards
 
 ### **No User Intervention Required**
-- **Transparent operation** - users don't interact with GRLE generation
-- **Automatic optimization** - Maps4FS handles all technical details
-- **Built-in validation** - Schema ensures output meets standards
+- **Transparent by default** - most users don't need to touch GRLE schema
+- **Automatic optimization** - Maps4FS handles standard cases
+- **Advanced mode available** - expert users can customize with caution
 
 ## Why This Schema Exists
 
@@ -134,11 +139,12 @@ Maps4FS uses GRLE schema to:
 
 ## Best Practices
 
-### **Hands-Off Approach**
-- **Never modify** the GRLE schema file
-- **Trust automation** - Maps4FS handles all GRLE generation
-- **Focus on inputs** - Customize DEMs, OSM data, textures instead
-- **Report issues** - Contact developers if GRLE generation fails
+### **Safe Customization Approach**
+- **Start from defaults** and modify only what you must
+- **Change one field at a time** and test generation after each change
+- **Validate output in Giants Editor** before using results in production
+- **Keep schema backups** so rollback is immediate
+- **Focus on inputs first** (DEM/OSM/textures), then adjust schema only when needed
 
 ### **Troubleshooting Strategy**
 - **GRLE problems**: Check input data (DEM, OSM) for corruption
@@ -147,17 +153,17 @@ Maps4FS uses GRLE schema to:
 
 ## ⚠️ Support Policy
 
-### **No Support for Modifications**
-- **Schema edits not supported** - modifications will break generation
-- **No troubleshooting assistance** for custom GRLE configurations
-- **Use at own risk** - any changes void support eligibility
-- **Restore defaults** if experiencing issues after modifications
+### **Support Scope for Custom Configurations**
+- **Default schema path** has full support
+- **Custom schema path** is supported on a best-effort basis
+- **Template-specific customizations** may require user-side validation and iteration
+- **If issues occur**, first retry with default schema to isolate the problem
 
 ### **Recommended Approach**
-- **Leave schema untouched** for reliable map generation
-- **Customize other components** - focus on OSM, DEM, textures, trees
-- **Trust the system** - GRLE generation is highly optimized already
-- **Report bugs** - help improve default schema instead of modifying
+- **Use defaults first** for reliability
+- **Customize with caution** only for clear use cases (e.g. extended foliage uint16)
+- **Document your changes** so they can be reproduced and reviewed
+- **Report bugs** with both default and customized behavior details
 
 
 
