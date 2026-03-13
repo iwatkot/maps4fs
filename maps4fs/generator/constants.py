@@ -208,6 +208,8 @@ class Parameters:
         16: [257, 385, 513, 641, 769, 897],
     }
     FOLIAGE_NUM_TYPE_INDEX_CHANNELS_UINT16 = 7
+    FOLIAGE_COMPRESSION_CHANNELS_UINT16 = 7
+    FOLIAGE_NUM_CHANNELS_UINT16 = 14
 
     # ---- Road Z-offset --------------------------------------------------
     PATCH_Z_OFFSET = -0.001

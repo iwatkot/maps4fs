@@ -44,7 +44,8 @@ class Scene(ImageComponent):
 
     def process(self) -> None:
         """Updates the map I3D file and creates splines in a separate I3D file."""
-        self._sync_foliage_num_type_index_channels()
+        if self.map.context.foliage_density_map_uint16:
+            self._sync_foliage_num_type_index_channels()
 
         self.update_height_scale()
 
@@ -65,6 +66,8 @@ class Scene(ImageComponent):
             return
 
         desired_channels = str(Parameters.FOLIAGE_NUM_TYPE_INDEX_CHANNELS_UINT16)
+        desired_compression_channels = str(Parameters.FOLIAGE_COMPRESSION_CHANNELS_UINT16)
+        desired_num_channels = str(Parameters.FOLIAGE_NUM_CHANNELS_UINT16)
 
         with XmlDocument(self.xml_path) as doc:
             root = doc.root
@@ -79,6 +82,8 @@ class Scene(ImageComponent):
                     self.game.config.i3d_attr_num_type_index_channels,
                     desired_channels,
                 )
+                foliage_layer.set("compressionChannels", desired_compression_channels)
+                foliage_layer.set("numChannels", desired_num_channels)
 
     def update_height_scale(self, value: int | None = None) -> None:
         """Updates the height scale value in the map I3D file.
