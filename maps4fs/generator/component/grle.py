@@ -481,7 +481,7 @@ class GRLE(ImageComponent):
         """
         bit_depth = 16 if use_extended_foliage_values else 8
         plant_values = Parameters.PLANT_PIXEL_VALUES_BY_BIT_DEPTH.get(bit_depth, {})
-        default_pixel_value = Parameters.DEFAULT_GRASS_PIXEL_VALUE_BY_BIT_DEPTH.get(bit_depth, 131)
+        default_pixel_value = Parameters.DEFAULT_GRASS_PIXEL_VALUE_BY_BIT_DEPTH.get(bit_depth)
         return plant_values.get(base_grass) or default_pixel_value
 
     @monitor_performance
@@ -503,7 +503,9 @@ class GRLE(ImageComponent):
         """
         # B and G channels remain the same (zeros), while we change the R channel.
         bit_depth = 16 if use_extended_foliage_values else 8
-        possible_r_values = list(Parameters.PLANT_ISLAND_PIXEL_VALUES_BY_BIT_DEPTH.get(bit_depth, []))
+        possible_r_values = list(
+            Parameters.PLANT_ISLAND_PIXEL_VALUES_BY_BIT_DEPTH.get(bit_depth, [])
+        )
 
         for _ in tqdm(range(count), desc="Adding islands of plants", unit="island"):
             # Randomly choose the value for the island.
