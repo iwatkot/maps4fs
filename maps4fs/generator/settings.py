@@ -81,7 +81,6 @@ class GRLESettings(SettingsModel):
         price_scale (int): scale for the price of the farmland.
         add_grass (bool): if True, grass will be added to the map.
         base_grass (tuple | str): base grass to be used on the map.
-        num_type_index_channels (int): value from map.i3d FoliageMultiLayer@numTypeIndexChannels.
         random_plants (bool): generate random plants on the map or use the default one.
         fill_empty_farmlands (bool): if True, empty farmlands will be filled with grass.
 
@@ -93,7 +92,6 @@ class GRLESettings(SettingsModel):
     price_scale: int = 100
     add_grass: bool = True
     base_grass: Literal["smallDenseMix", "meadow", "grass"] = "smallDenseMix"
-    num_type_index_channels: int = 5
     random_plants: bool = True
     fill_empty_farmlands: bool = True
 

@@ -64,63 +64,19 @@ class Scene(ImageComponent):
         if not self.map.context.foliage_density_map_uint16:
             return
 
-        desired_channels = self.map.context.foliage_num_type_index_channels
-        if not isinstance(desired_channels, int) or desired_channels <= 0:
-            self.logger.warning(
-                "Skipping FoliageMultiLayer sync because desired num_type_index_channels is invalid: %s",
-                desired_channels,
-            )
-            return
+        desired_channels = str(Parameters.FOLIAGE_NUM_TYPE_INDEX_CHANNELS_UINT16)
 
         with XmlDocument(self.xml_path) as doc:
             root = doc.root
-            file_nodes = root.findall(
-                self.game.config.i3d_files_xpath + f"/{self.game.config.i3d_file_tag}"
-            )
-
-            density_map_file_id = None
-            for file_node in file_nodes:
-                filename = file_node.get(self.game.config.i3d_attr_filename) or ""
-                if (
-                    filename.replace("\\", "/")
-                    .lower()
-                    .endswith(Parameters.DENSITY_MAP_FRUITS.lower())
-                ):
-                    density_map_file_id = file_node.get(self.game.config.i3d_attr_file_id)
-                    break
-
-            if not density_map_file_id:
-                self.logger.warning(
-                    "Could not find %s file entry in map.i3d; "
-                    "skipping FoliageMultiLayer numTypeIndexChannels sync.",
-                    Parameters.DENSITY_MAP_FRUITS,
-                )
-                return
-
-            updated_layers = 0
             for foliage_layer in root.findall(self.game.config.i3d_foliage_multilayer_xpath):
-                if (
-                    foliage_layer.get(self.game.config.i3d_attr_density_map_id)
-                    != density_map_file_id
-                ):
-                    continue
-
-                if foliage_layer.get(self.game.config.i3d_attr_num_type_index_channels) == str(
-                    desired_channels
-                ):
+                current_channels = foliage_layer.get(
+                    self.game.config.i3d_attr_num_type_index_channels
+                )
+                if current_channels in (None, "0", desired_channels):
                     continue
 
                 foliage_layer.set(
                     self.game.config.i3d_attr_num_type_index_channels,
-                    str(desired_channels),
-                )
-                updated_layers += 1
-
-            if updated_layers > 0:
-                self.logger.info(
-                    "Updated %s FoliageMultiLayer node(s) for densityMap_fruits to "
-                    "numTypeIndexChannels=%s.",
-                    updated_layers,
                     desired_channels,
                 )
 

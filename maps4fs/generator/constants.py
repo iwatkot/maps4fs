@@ -205,6 +205,7 @@ class Parameters:
         8: [65, 97, 129, 161, 193, 225],
         16: [600, 700, 800, 900, 1000, 1100],  # ! UPDATE!
     }
+    FOLIAGE_NUM_TYPE_INDEX_CHANNELS_UINT16 = 7
 
     # ---- Road Z-offset --------------------------------------------------
     PATCH_Z_OFFSET = -0.001

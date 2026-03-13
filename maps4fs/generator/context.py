@@ -53,7 +53,6 @@ class MapContext:
 
     # ---- Populated by GRLE component ----
     foliage_density_map_uint16: bool = False
-    foliage_num_type_index_channels: int | None = None
 
     # ---- Populated by Satellite component ----
     satellite_overview_path: str | None = None

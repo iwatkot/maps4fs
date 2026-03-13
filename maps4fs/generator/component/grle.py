@@ -372,13 +372,9 @@ class GRLE(ImageComponent):
                 "Density map for fruits InfoLayer PNG file not found in the GRLE schema."
             )
             return
-        use_extended_foliage_values = self._is_uint16_layer(grle_density_map_fruits)
-        effective_num_type_index_channels = self._get_effective_num_type_index_channels(
-            use_extended_foliage_values
-        )
-        self._foliage_num_type_index_channels = effective_num_type_index_channels
+        normalized_dtype = str(grle_density_map_fruits.data_type).strip().lower()
+        use_extended_foliage_values = normalized_dtype in {"uint16", "np.uint16", "numpy.uint16"}
         self.map.context.foliage_density_map_uint16 = use_extended_foliage_values
-        self.map.context.foliage_num_type_index_channels = effective_num_type_index_channels
 
         height_multiplier = int(grle_density_map_fruits.height_multiplier)
         width_multiplier = int(grle_density_map_fruits.width_multiplier)
@@ -434,7 +430,6 @@ class GRLE(ImageComponent):
                 grass_image_copy,
                 island_count,
                 use_extended_foliage_values=use_extended_foliage_values,
-                base_grass=str(base_grass),
             )
             self.logger.debug("Added %s islands of plants to the base image.", island_count)
 
@@ -472,19 +467,6 @@ class GRLE(ImageComponent):
 
         self.logger.debug("Updated density map for fruits saved in %s.", density_map_fruit_path)
 
-    @staticmethod
-    def _is_uint16_layer(layer: GRLELayer) -> bool:
-        """Return whether GRLE layer data type indicates uint16 storage.
-
-        Arguments:
-            layer (GRLELayer): The GRLE layer definition from schema.
-
-        Returns:
-            bool: True when layer dtype is uint16-compatible, otherwise False.
-        """
-        normalized_dtype = str(layer.data_type).strip().lower()
-        return normalized_dtype in {"uint16", "np.uint16", "numpy.uint16"}
-
     def _get_base_grass_pixel_value(
         self, base_grass: str, use_extended_foliage_values: bool
     ) -> int:
@@ -502,73 +484,12 @@ class GRLE(ImageComponent):
         default_pixel_value = Parameters.DEFAULT_GRASS_PIXEL_VALUE_BY_BIT_DEPTH.get(bit_depth, 131)
         return plant_values.get(base_grass) or default_pixel_value
 
-    def _get_num_type_index_channels(self) -> int:
-        """Return configured numTypeIndexChannels with safe fallback to FS defaults.
-
-        Returns:
-            int: Configured positive channel count, or 5 when invalid/missing.
-        """
-        value = getattr(self.map.grle_settings, "num_type_index_channels", 5)
-        if isinstance(value, int) and value > 0:
-            return value
-
-        self.logger.warning(
-            "Invalid num_type_index_channels setting '%s'. Falling back to 5.",
-            value,
-        )
-        return 5
-
-    def _get_effective_num_type_index_channels(self, use_extended_foliage_values: bool) -> int:
-        """Return channels used for foliage calculations and Scene sync.
-
-        Arguments:
-            use_extended_foliage_values (bool): Whether uint16 foliage mode is active.
-
-        If uint16 mode is enabled and channels are not configured above 5,
-        auto-promote to 7.
-
-        Returns:
-            int: Effective channel count used for value calculation and i3d sync.
-        """
-        configured_channels = self._get_num_type_index_channels()
-        if not use_extended_foliage_values:
-            return configured_channels
-
-        if configured_channels > 5:
-            return configured_channels
-
-        promoted_channels = 7
-        self.logger.warning(
-            "densityMap_fruits is uint16 but num_type_index_channels=%s. "
-            "Auto-promoting to %s. "
-            "Set GRLESettings.num_type_index_channels explicitly to override.",
-            configured_channels,
-            promoted_channels,
-        )
-        return promoted_channels
-
-    def _get_island_plant_values(
-        self, use_extended_foliage_values: bool, base_grass: str
-    ) -> list[int]:
-        """Return possible island pixel values for current foliage mode.
-
-        Arguments:
-            use_extended_foliage_values (bool): Whether uint16 foliage mode is active.
-            base_grass (str): Base grass type key from settings.
-
-        Returns:
-            list[int]: Candidate pixel values for random island generation.
-        """
-        bit_depth = 16 if use_extended_foliage_values else 8
-        return list(Parameters.PLANT_ISLAND_PIXEL_VALUES_BY_BIT_DEPTH.get(bit_depth, []))
-
     @monitor_performance
     def create_island_of_plants(
         self,
         image: np.ndarray,
         count: int,
         use_extended_foliage_values: bool = False,
-        base_grass: str = "smallDenseMix",
     ) -> np.ndarray:
         """Create an island of plants in the image.
 
@@ -576,16 +497,13 @@ class GRLE(ImageComponent):
             image (np.ndarray): The image where the island of plants will be created.
             count (int): The number of islands of plants to create.
             use_extended_foliage_values (bool): Whether uint16 foliage mode is active.
-            base_grass (str): Base grass type key used to compute island values.
 
         Returns:
             np.ndarray: The input image with randomly generated plant islands.
         """
         # B and G channels remain the same (zeros), while we change the R channel.
-        possible_r_values = self._get_island_plant_values(
-            use_extended_foliage_values,
-            base_grass,
-        )
+        bit_depth = 16 if use_extended_foliage_values else 8
+        possible_r_values = list(Parameters.PLANT_ISLAND_PIXEL_VALUES_BY_BIT_DEPTH.get(bit_depth, []))
 
         for _ in tqdm(range(count), desc="Adding islands of plants", unit="island"):
             # Randomly choose the value for the island.
