@@ -480,14 +480,29 @@ class GRLE(ImageComponent):
 
     @staticmethod
     def _is_uint16_layer(layer: GRLELayer) -> bool:
-        """Return True if GRLE layer data type indicates uint16 storage."""
+        """Return whether GRLE layer data type indicates uint16 storage.
+
+        Arguments:
+            layer (GRLELayer): The GRLE layer definition from schema.
+
+        Returns:
+            bool: True when layer dtype is uint16-compatible, otherwise False.
+        """
         normalized_dtype = str(layer.data_type).strip().lower()
         return normalized_dtype in {"uint16", "np.uint16", "numpy.uint16"}
 
     def _get_base_grass_pixel_value(
         self, base_grass: str, use_extended_foliage_values: bool
     ) -> int:
-        """Return base grass pixel value for standard or extended foliage mode."""
+        """Return base grass pixel value for standard or extended foliage mode.
+
+        Arguments:
+            base_grass (str): Base grass type key from settings.
+            use_extended_foliage_values (bool): Whether formula-based extended values are used.
+
+        Returns:
+            int: Pixel value to write into densityMap_fruits channel for base grass.
+        """
         default_pixel_value = (
             Parameters.PLANT_PIXEL_VALUES.get(base_grass) or Parameters.DEFAULT_GRASS_PIXEL_VALUE
         )
@@ -512,7 +527,11 @@ class GRLE(ImageComponent):
         return (foliage_state_index << num_type_index_channels) + foliage_type_index
 
     def _get_num_type_index_channels(self) -> int:
-        """Return configured numTypeIndexChannels with safe fallback to FS defaults."""
+        """Return configured numTypeIndexChannels with safe fallback to FS defaults.
+
+        Returns:
+            int: Configured positive channel count, or 5 when invalid/missing.
+        """
         value = getattr(self.map.grle_settings, "num_type_index_channels", 5)
         if isinstance(value, int) and value > 0:
             return value
@@ -526,8 +545,14 @@ class GRLE(ImageComponent):
     def _get_effective_num_type_index_channels(self, use_extended_foliage_values: bool) -> int:
         """Return channels used for foliage calculations and Scene sync.
 
+        Arguments:
+            use_extended_foliage_values (bool): Whether uint16 foliage mode is active.
+
         If uint16 mode is enabled and channels are not configured above 5,
         auto-promote to 7.
+
+        Returns:
+            int: Effective channel count used for value calculation and i3d sync.
         """
         configured_channels = self._get_num_type_index_channels()
         if not use_extended_foliage_values:
@@ -549,7 +574,15 @@ class GRLE(ImageComponent):
     def _get_island_plant_values(
         self, use_extended_foliage_values: bool, base_grass: str
     ) -> list[int]:
-        """Return possible island pixel values for current foliage mode."""
+        """Return possible island pixel values for current foliage mode.
+
+        Arguments:
+            use_extended_foliage_values (bool): Whether uint16 foliage mode is active.
+            base_grass (str): Base grass type key from settings.
+
+        Returns:
+            list[int]: Candidate pixel values for random island generation.
+        """
         if not use_extended_foliage_values:
             return [65, 97, 129, 161, 193, 225]
 
@@ -585,9 +618,11 @@ class GRLE(ImageComponent):
         Arguments:
             image (np.ndarray): The image where the island of plants will be created.
             count (int): The number of islands of plants to create.
+            use_extended_foliage_values (bool): Whether uint16 foliage mode is active.
+            base_grass (str): Base grass type key used to compute island values.
 
         Returns:
-            np.ndarray: The image with the islands of plants.
+            np.ndarray: The input image with randomly generated plant islands.
         """
         # B and G channels remain the same (zeros), while we change the R channel.
         possible_r_values = self._get_island_plant_values(
