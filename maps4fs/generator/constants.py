@@ -186,12 +186,25 @@ class Parameters:
     }
 
     # ---- Plant / grass pixel values -------------------------------------
-    PLANT_PIXEL_VALUES: dict[str, int] = {
-        "smallDenseMix": 33,
-        "meadow": 131,
-        "grass": 134,
+    PLANT_PIXEL_VALUES_BY_BIT_DEPTH: dict[int, dict[str, int]] = {
+        8: {
+            "smallDenseMix": 33,
+            "meadow": 131,
+        },
+        16: {  # ! UPDATE!
+            "smallDenseMix": 666,
+            "meadow": 515,
+        },
     }
-    DEFAULT_GRASS_PIXEL_VALUE = 131
+    DEFAULT_GRASS_PIXEL_VALUE_BY_BIT_DEPTH: dict[int, int] = {
+        8: 131,
+        16: 999,  # ! UPDATE!
+    }
+
+    PLANT_ISLAND_PIXEL_VALUES_BY_BIT_DEPTH: dict[int, list[int]] = {
+        8: [65, 97, 129, 161, 193, 225],
+        16: [600, 700, 800, 900, 1000, 1100],  # ! UPDATE!
+    }
 
     # ---- Road Z-offset --------------------------------------------------
     PATCH_Z_OFFSET = -0.001

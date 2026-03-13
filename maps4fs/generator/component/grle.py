@@ -57,12 +57,6 @@ class GRLE(ImageComponent):
         self.preview_paths: dict[str, str] = {}
         self.xml_path = self.game.farmlands_xml_path
 
-    FOLIAGE_TYPE_INDICES: dict[str, tuple[int, int]] = {
-        "smallDenseMix": (1, 1),
-        "meadow": (3, 4),
-        "grass": (6, 4),
-    }
-
     def _read_grle_schema(self) -> list[GRLELayer]:
         grle_schema_path = self.game.grle_schema
 
@@ -494,37 +488,19 @@ class GRLE(ImageComponent):
     def _get_base_grass_pixel_value(
         self, base_grass: str, use_extended_foliage_values: bool
     ) -> int:
-        """Return base grass pixel value for standard or extended foliage mode.
+        """Return base grass pixel value for uint8 or uint16 mode.
 
         Arguments:
             base_grass (str): Base grass type key from settings.
-            use_extended_foliage_values (bool): Whether formula-based extended values are used.
+            use_extended_foliage_values (bool): Whether uint16 foliage mode is active.
 
         Returns:
             int: Pixel value to write into densityMap_fruits channel for base grass.
         """
-        default_pixel_value = (
-            Parameters.PLANT_PIXEL_VALUES.get(base_grass) or Parameters.DEFAULT_GRASS_PIXEL_VALUE
-        )
-        if not use_extended_foliage_values:
-            return default_pixel_value
-
-        foliage_indices = self.FOLIAGE_TYPE_INDICES.get(base_grass)
-        if foliage_indices is None:
-            self.logger.warning(
-                "No foliage type indices configured for '%s'. Falling back to default pixel value %s.",
-                base_grass,
-                default_pixel_value,
-            )
-            return default_pixel_value
-
-        foliage_type_index, foliage_state_index = foliage_indices
-        num_type_index_channels = getattr(
-            self,
-            "_foliage_num_type_index_channels",
-            self._get_num_type_index_channels(),
-        )
-        return (foliage_state_index << num_type_index_channels) + foliage_type_index
+        bit_depth = 16 if use_extended_foliage_values else 8
+        plant_values = Parameters.PLANT_PIXEL_VALUES_BY_BIT_DEPTH.get(bit_depth, {})
+        default_pixel_value = Parameters.DEFAULT_GRASS_PIXEL_VALUE_BY_BIT_DEPTH.get(bit_depth, 131)
+        return plant_values.get(base_grass) or default_pixel_value
 
     def _get_num_type_index_channels(self) -> int:
         """Return configured numTypeIndexChannels with safe fallback to FS defaults.
@@ -583,27 +559,8 @@ class GRLE(ImageComponent):
         Returns:
             list[int]: Candidate pixel values for random island generation.
         """
-        if not use_extended_foliage_values:
-            return [65, 97, 129, 161, 193, 225]
-
-        foliage_indices = self.FOLIAGE_TYPE_INDICES.get(base_grass)
-        if foliage_indices is None:
-            self.logger.warning(
-                "No foliage type indices configured for '%s'. Using standard island values.",
-                base_grass,
-            )
-            return [65, 97, 129, 161, 193, 225]
-
-        foliage_type_index, _ = foliage_indices
-        num_type_index_channels = getattr(
-            self,
-            "_foliage_num_type_index_channels",
-            self._get_num_type_index_channels(),
-        )
-        return [
-            (foliage_state_index << num_type_index_channels) + foliage_type_index
-            for foliage_state_index in range(2, 8)
-        ]
+        bit_depth = 16 if use_extended_foliage_values else 8
+        return list(Parameters.PLANT_ISLAND_PIXEL_VALUES_BY_BIT_DEPTH.get(bit_depth, []))
 
     @monitor_performance
     def create_island_of_plants(
