@@ -420,6 +420,7 @@ class GRLE(ImageComponent):
             use_extended_foliage_values,
         )
 
+        grass_image_copy: np.ndarray
         if use_extended_foliage_values:
             # uint16 target values can exceed 255, so keep working buffer in uint16.
             grass_image_copy = grass_image.astype(np.uint16, copy=True)
