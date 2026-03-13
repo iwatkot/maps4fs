@@ -44,6 +44,8 @@ class Scene(ImageComponent):
 
     def process(self) -> None:
         """Updates the map I3D file and creates splines in a separate I3D file."""
+        self._sync_foliage_num_type_index_channels()
+
         self.update_height_scale()
 
         self._update_parameters()
@@ -56,6 +58,56 @@ class Scene(ImageComponent):
 
         self.insert_meshes()
         self.insert_map_bounds()
+
+    def _sync_foliage_num_type_index_channels(self) -> None:
+        """Sync foliage channel count in map.i3d when GRLE uses uint16 density map values."""
+        if not self.map.context.foliage_density_map_uint16:
+            return
+
+        desired_channels = self.map.context.foliage_num_type_index_channels
+        if not isinstance(desired_channels, int) or desired_channels <= 0:
+            self.logger.warning(
+                "Skipping FoliageMultiLayer sync because desired num_type_index_channels is invalid: %s",
+                desired_channels,
+            )
+            return
+
+        with XmlDocument(self.xml_path) as doc:
+            root = doc.root
+            file_nodes = root.findall(self.game.config.i3d_files_xpath + "/File")
+
+            density_map_file_id = None
+            for file_node in file_nodes:
+                filename = file_node.get(self.game.config.i3d_attr_filename) or ""
+                if filename.replace("\\", "/").lower().endswith("densitymap_fruits.png"):
+                    density_map_file_id = file_node.get(self.game.config.i3d_attr_file_id)
+                    break
+
+            if not density_map_file_id:
+                self.logger.warning(
+                    "Could not find densityMap_fruits file entry in map.i3d; "
+                    "skipping FoliageMultiLayer numTypeIndexChannels sync."
+                )
+                return
+
+            updated_layers = 0
+            for foliage_layer in root.findall(".//FoliageMultiLayer"):
+                if foliage_layer.get("densityMapId") != density_map_file_id:
+                    continue
+
+                if foliage_layer.get("numTypeIndexChannels") == str(desired_channels):
+                    continue
+
+                foliage_layer.set("numTypeIndexChannels", str(desired_channels))
+                updated_layers += 1
+
+            if updated_layers > 0:
+                self.logger.info(
+                    "Updated %s FoliageMultiLayer node(s) for densityMap_fruits to "
+                    "numTypeIndexChannels=%s.",
+                    updated_layers,
+                    desired_channels,
+                )
 
     def update_height_scale(self, value: int | None = None) -> None:
         """Updates the height scale value in the map I3D file.

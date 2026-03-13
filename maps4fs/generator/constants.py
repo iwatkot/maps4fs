@@ -189,6 +189,7 @@ class Parameters:
     PLANT_PIXEL_VALUES: dict[str, int] = {
         "smallDenseMix": 33,
         "meadow": 131,
+        "grass": 134,
     }
     DEFAULT_GRASS_PIXEL_VALUE = 131
 

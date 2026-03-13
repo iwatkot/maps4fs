@@ -56,7 +56,11 @@ background_settings = mfs.settings.BackgroundSettings(
     flatten_water=True,
 )
 grle_settings = mfs.settings.GRLESettings(
-    add_grass=True, farmland_margin=8, random_plants=True, add_farmyards=True
+    add_grass=True,
+    farmland_margin=8,
+    random_plants=True,
+    add_farmyards=True,
+    base_grass="meadow",
 )
 i3d_settings = mfs.settings.I3DSettings(
     forest_density=8,
