@@ -156,8 +156,23 @@ class Parameters:
 
     # ---- Info-layer / density map file names ----------------------------
     INFO_LAYER_FARMLANDS = "infoLayer_farmlands.png"
+    INFO_LAYER_SOIL_MAP = "infoLayer_soilMap.png"
     DENSITY_MAP_FRUITS = "densityMap_fruits.png"
     INFO_LAYER_ENVIRONMENT = "infoLayer_environment.png"
+
+    # ---- Precision farming soil map --------------------------------------
+    PRECISION_FARMING_TAG = "precisionFarming"
+    SOIL_MAP_TAG = "soilMap"
+    SOIL_MAP_GRLE_EXTENSION = ".grle"
+    SOIL_MAP_I3D_LAYER_NAME = "soilMap"
+    SOIL_MAP_I3D_NUM_CHANNELS = "3"
+    SOIL_MAP_FIXED_SIZE = 1024
+
+    # Soil classes for custom soil maps (RGB, uint8)
+    SOIL_COLOR_LOAMY_SAND = (255, 0, 0)
+    SOIL_COLOR_SANDY_LOAM = (0, 255, 0)
+    SOIL_COLOR_LOAM = (0, 0, 255)
+    SOIL_COLOR_SILTY_CLAY = (255, 255, 0)
 
     # ---- Plants / farmland limits ---------------------------------------
     FARMLAND_ID_LIMIT = 254

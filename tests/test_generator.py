@@ -14,6 +14,7 @@ import numpy as np
 import pytest
 
 from maps4fs import DTMProvider, GenerationSettings, Map
+from maps4fs.generator.constants import Parameters
 from maps4fs.generator.game import Game
 from maps4fs.generator.settings import (
     BackgroundSettings,
@@ -207,6 +208,51 @@ def test_map(
         assert os.path.isfile(grle_path), f"GRLE file not found: {grle_path}"
         grle_img = cv2.imread(grle_path, cv2.IMREAD_UNCHANGED)
         assert grle_img is not None, f"GRLE file unreadable: {grle_path}"
+
+    # --- Precision farming soil map and references ---
+    soil_map_png_path = os.path.join(game.weights_dir_path, Parameters.INFO_LAYER_SOIL_MAP)
+    assert os.path.isfile(soil_map_png_path), f"Soil map not found: {soil_map_png_path}"
+    soil_map_png = cv2.imread(soil_map_png_path, cv2.IMREAD_UNCHANGED)
+    assert soil_map_png is not None, f"Soil map unreadable: {soil_map_png_path}"
+    assert soil_map_png.ndim == 3 and soil_map_png.shape[2] == 3, (
+        "Soil map must be RGB (3 channels), got shape " f"{soil_map_png.shape}"
+    )
+    expected_soil_size = Parameters.SOIL_MAP_FIXED_SIZE
+    assert soil_map_png.shape[:2] == (
+        expected_soil_size,
+        expected_soil_size,
+    ), f"Soil map shape mismatch: {soil_map_png.shape[:2]} != {(expected_soil_size, expected_soil_size)}"
+
+    soil_i3d_filename = f"data/{Parameters.INFO_LAYER_SOIL_MAP}"
+    files_nodes = i3d_tree.getroot().findall(".//Files/File")
+    soil_file_node = next(
+        (node for node in files_nodes if node.get("filename") == soil_i3d_filename),
+        None,
+    )
+    assert soil_file_node is not None, "Soil map File entry missing in map.i3d"
+    soil_file_id = soil_file_node.get("fileId")
+    assert soil_file_id is not None, "Soil map File entry has no fileId"
+
+    soil_info_layer_node = i3d_tree.getroot().find(
+        f".//InfoLayer[@name='{Parameters.SOIL_MAP_I3D_LAYER_NAME}']"
+    )
+    assert soil_info_layer_node is not None, "soilMap InfoLayer missing in map.i3d"
+    assert (
+        soil_info_layer_node.get("fileId") == soil_file_id
+    ), "soilMap InfoLayer fileId does not match soil map File entry"
+    assert (
+        soil_info_layer_node.get("numChannels") == Parameters.SOIL_MAP_I3D_NUM_CHANNELS
+    ), "soilMap InfoLayer numChannels must be 3"
+
+    map_xml_root = ET.parse(game.map_xml_path).getroot()
+    precision_farming_node = map_xml_root.find(f"./{Parameters.PRECISION_FARMING_TAG}")
+    assert precision_farming_node is not None, "precisionFarming node missing in map.xml"
+    soil_map_node = precision_farming_node.find(Parameters.SOIL_MAP_TAG)
+    assert soil_map_node is not None, "precisionFarming/soilMap node missing in map.xml"
+    assert soil_map_node.get("filename") == (
+        f"data/{os.path.splitext(Parameters.INFO_LAYER_SOIL_MAP)[0]}"
+        f"{Parameters.SOIL_MAP_GRLE_EXTENSION}"
+    ), "precisionFarming soilMap filename is incorrect"
 
     # --- generation_info.json: present and contains all expected component keys ---
     info_path = os.path.join(directory, "generation_info.json")

@@ -42,9 +42,198 @@ class Config(ImageComponent):
 
         self._adjust_fog()
 
+        self._ensure_precision_farming_support()
+
         self._set_overview()
 
         self.update_license_plates()
+
+    @monitor_performance
+    def _ensure_precision_farming_support(self) -> None:
+        """Generate soil map from DEM and ensure required XML references exist."""
+        soil_map_path = self._generate_soil_map_from_dem()
+        if not soil_map_path:
+            return
+
+        self._update_i3d_soil_map_references(soil_map_path)
+        self._update_map_xml_precision_farming(soil_map_path)
+
+    def _generate_soil_map_from_dem(self) -> str | None:
+        """Create an 8-bit RGB soil map from the highest-fidelity available DEM variant."""
+        dem_image = self.get_dem_image_with_fallback()
+        if dem_image is None:
+            self.logger.warning(
+                "DEM image not found, precision farming soil map was not generated."
+            )
+            return None
+
+        if dem_image.ndim == 3:
+            dem_image = cv2.cvtColor(dem_image, cv2.COLOR_BGR2GRAY)
+
+        soil_map_size = Parameters.SOIL_MAP_FIXED_SIZE
+        resized_dem = cv2.resize(
+            dem_image.astype(np.float32),
+            (soil_map_size, soil_map_size),
+            interpolation=cv2.INTER_LINEAR,
+        )
+
+        normalized_height = cv2.normalize(
+            resized_dem,
+            None,
+            alpha=0.0,
+            beta=1.0,
+            norm_type=cv2.NORM_MINMAX,
+        )
+
+        slope_x = cv2.Sobel(normalized_height, cv2.CV_32F, 1, 0, ksize=3)
+        slope_y = cv2.Sobel(normalized_height, cv2.CV_32F, 0, 1, ksize=3)
+        slope = cv2.magnitude(slope_x, slope_y)
+        if float(slope.max()) > 0:
+            slope = cv2.normalize(slope, None, alpha=0.0, beta=1.0, norm_type=cv2.NORM_MINMAX)
+        else:
+            slope = np.zeros_like(normalized_height, dtype=np.float32)
+
+        lowland_mask = normalized_height <= 0.30
+        hilltop_mask = (normalized_height >= 0.72) & (slope <= 0.45)
+        slope_mask = (~lowland_mask) & (~hilltop_mask) & (slope >= 0.22)
+        loam_mask = ~(lowland_mask | hilltop_mask | slope_mask)
+
+        soil_map = np.zeros((soil_map_size, soil_map_size, 3), dtype=np.uint8)
+        soil_map[hilltop_mask] = Parameters.SOIL_COLOR_LOAMY_SAND
+        soil_map[slope_mask] = Parameters.SOIL_COLOR_SANDY_LOAM
+        soil_map[loam_mask] = Parameters.SOIL_COLOR_LOAM
+        soil_map[lowland_mask] = Parameters.SOIL_COLOR_SILTY_CLAY
+
+        soil_map_path = os.path.join(self.game.weights_dir_path, Parameters.INFO_LAYER_SOIL_MAP)
+        cv2.imwrite(soil_map_path, soil_map)
+
+        self.info["precision_farming"] = {
+            "soil_map": soil_map_path,
+            "soil_map_resolution": f"{soil_map_size}x{soil_map_size}",
+        }
+        self.logger.debug("Precision farming soil map created at: %s", soil_map_path)
+
+        return soil_map_path
+
+    def _update_i3d_soil_map_references(self, soil_map_path: str) -> None:
+        """Ensure map.i3d has both File and InfoLayer references for soil map."""
+        if not os.path.isfile(self.game.i3d_file_path):
+            self.logger.warning("I3D file not found, precision farming references were not added.")
+            return
+
+        soil_map_i3d_filename = self._relative_path_for_xml(
+            soil_map_path, os.path.dirname(self.game.i3d_file_path)
+        )
+
+        with XmlDocument(self.game.i3d_file_path) as doc:
+            if doc.get(self.game.config.i3d_files_xpath) is None:
+                self.logger.warning(
+                    "Files node not found in map.i3d, skipping soil map file reference."
+                )
+                return
+
+            soil_file_id = self._ensure_i3d_soil_file_entry(doc, soil_map_i3d_filename)
+            self._ensure_i3d_soil_info_layer(doc, soil_file_id)
+
+    def _ensure_i3d_soil_file_entry(self, doc: XmlDocument, soil_filename: str) -> str:
+        """Ensure File entry exists and points to the generated soil map PNG."""
+        info_layer_xpath = f".//InfoLayer[@name='{Parameters.SOIL_MAP_I3D_LAYER_NAME}']"
+        soil_info_layer = doc.get(info_layer_xpath)
+
+        if soil_info_layer is not None:
+            file_id = soil_info_layer.get("fileId")
+            if file_id:
+                file_xpath = f".//Files/File[@fileId='{file_id}']"
+                if doc.get(file_xpath) is not None:
+                    doc.set_attrs(file_xpath, filename=soil_filename)
+                    return file_id
+                doc.append_child(
+                    self.game.config.i3d_files_xpath, "File", fileId=file_id, filename=soil_filename
+                )
+                return file_id
+
+        existing_file = doc.get(f".//Files/File[@filename='{soil_filename}']")
+        if existing_file is not None:
+            existing_file_id = existing_file.get("fileId")
+            if existing_file_id:
+                return existing_file_id
+
+        next_file_id = str(self._next_i3d_file_id(doc))
+        doc.append_child(
+            self.game.config.i3d_files_xpath,
+            "File",
+            fileId=next_file_id,
+            filename=soil_filename,
+        )
+        return next_file_id
+
+    def _next_i3d_file_id(self, doc: XmlDocument) -> int:
+        """Return next available numeric fileId for I3D File entries."""
+        file_ids = []
+        for file_node in doc.find_all(".//File"):
+            file_id = file_node.get("fileId")
+            if file_id is None:
+                continue
+            try:
+                file_ids.append(int(file_id))
+            except ValueError:
+                continue
+        return (max(file_ids) + 1) if file_ids else 1
+
+    def _ensure_i3d_soil_info_layer(self, doc: XmlDocument, soil_file_id: str) -> None:
+        """Ensure InfoLayer entry for soil map exists with expected attributes."""
+        soil_layer_xpath = f".//InfoLayer[@name='{Parameters.SOIL_MAP_I3D_LAYER_NAME}']"
+        soil_layer = doc.get(soil_layer_xpath)
+        attrs = {
+            "fileId": soil_file_id,
+            "numChannels": Parameters.SOIL_MAP_I3D_NUM_CHANNELS,
+            "runtime": "true",
+        }
+
+        if soil_layer is not None:
+            doc.set_attrs(soil_layer_xpath, **attrs)
+            return
+
+        layer_data = {"name": Parameters.SOIL_MAP_I3D_LAYER_NAME, **attrs}
+        soil_element = XmlDocument.create_element("InfoLayer", layer_data)
+
+        inserted = doc.insert_after(".//InfoLayer[@name='farmlands']", soil_element)
+        if inserted:
+            return
+
+        layers_xpath = f"{self.game.config.i3d_terrain_xpath}/Layers"
+        doc.append_child(layers_xpath, "InfoLayer", **layer_data)
+
+    def _update_map_xml_precision_farming(self, soil_map_path: str) -> None:
+        """Ensure map.xml contains precisionFarming/soilMap reference to generated soil map."""
+        if not os.path.isfile(self.xml_path):
+            self.logger.warning("Map XML not found, precision farming section was not added.")
+            return
+
+        soil_map_filename = self._relative_path_for_xml(
+            soil_map_path, os.path.dirname(self.xml_path)
+        )
+        soil_map_grle_filename = (
+            os.path.splitext(soil_map_filename)[0] + Parameters.SOIL_MAP_GRLE_EXTENSION
+        )
+
+        precision_xpath = f"./{Parameters.PRECISION_FARMING_TAG}"
+        soil_xpath = f"{precision_xpath}/{Parameters.SOIL_MAP_TAG}"
+        with XmlDocument(self.xml_path) as doc:
+            if doc.get(precision_xpath) is None:
+                doc.append_child(".", Parameters.PRECISION_FARMING_TAG)
+
+            if doc.get(soil_xpath) is None:
+                doc.append_child(
+                    precision_xpath, Parameters.SOIL_MAP_TAG, filename=soil_map_grle_filename
+                )
+            else:
+                doc.set_attrs(soil_xpath, filename=soil_map_grle_filename)
+
+    @staticmethod
+    def _relative_path_for_xml(path: str, base_directory: str) -> str:
+        """Get normalized relative path with forward slashes for XML attributes."""
+        return os.path.relpath(path, start=base_directory).replace("\\", "/")
 
     def _set_map_size(self) -> None:
         """Edits map.xml file to set correct map size."""

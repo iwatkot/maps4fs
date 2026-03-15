@@ -116,14 +116,38 @@ class XmlDocument:
             child.set(key, value)
         return child
 
+    def insert_after(self, xpath: str, element: ET.Element) -> bool:
+        """Insert *element* immediately after the node at *xpath*.
+
+        Returns:
+            bool: True when inserted, False if target/parent is missing.
+        """
+        target = self.get(xpath)
+        if target is None:
+            return False
+
+        parent = self._find_parent(target)
+        if parent is None:
+            return False
+
+        insert_idx = list(parent).index(target) + 1
+        parent.insert(insert_idx, element)
+        return True
+
     def remove_element(self, xpath: str) -> XmlDocument:
         """Remove all elements matching *xpath* from their parents. Fluent."""
         for elem in self._root.findall(xpath):
-            parent_xpath = xpath.rsplit("/", 1)[0] or "."
-            parent = self._root.find(parent_xpath)
+            parent = self._find_parent(elem)
             if parent is not None:
                 parent.remove(elem)
         return self
+
+    def _find_parent(self, child: ET.Element) -> ET.Element | None:
+        """Return direct parent element for *child*, or None."""
+        for parent in self._root.iter():
+            if child in list(parent):
+                return parent
+        return None
 
     # ------------------------------------------------------------------
     # Persistence
