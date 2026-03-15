@@ -21,7 +21,6 @@ Maps4FS offers multiple deployment options to suit different user needs, from qu
 
 ### ⚠️ Important Notes
 - **🎯 Full Features**: Includes Presets, Settings, and all map components
-- **🎨 Blender Required**: For Background Terrain center removal (install Blender 4.3+)
 - **🪟 Windows Only**: Not available for Mac or Linux
 
 ### 🚀 Quick Start

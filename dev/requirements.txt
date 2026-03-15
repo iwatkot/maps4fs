@@ -22,3 +22,5 @@ python-dotenv
 pydtmdl
 manifold3d
 fast-simplification
+pyvista
+vtk

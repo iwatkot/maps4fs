@@ -95,13 +95,6 @@ See [DDS Conversion Guide](dds_conversion.md) for more details on DDS files and 
 - **Disk Space**: 5GB minimum free space
 - **Internet Connection**: Required for downloading map data
 
-### Background Terrain Feature
-For the **Background Terrain center removal** feature to work, you need:
-- **Blender 4.3** or later installed on your machine
-- Available from [blender.org](https://www.blender.org/download/)
-
-Without Blender, all other features will work normally, but the Background Terrain center removal will be unavailable.
-
 ## ✅ Advantages
 
 - **🛠️ No Complex Setup**: No Docker or Python required
@@ -113,8 +106,6 @@ Without Blender, all other features will work normally, but the Background Terra
 ## ⚠️ Limitations
 
 - **🪟 Windows Only**: Not available for Mac or Linux
-- **🔄 Manual Updates**: Need to download new versions manually
-- **🎨 Blender Required**: For Background Terrain center removal
 
 ## 📖 How to Use
 
@@ -137,9 +128,6 @@ For detailed instructions on map generation settings, see:
 
 **Q: Antivirus flags the executable**
 A: This is normal for new executables. The file is safe when downloaded from the official source. You may need to add an exception in your antivirus.
-
-**Q: Background Terrain center removal not working**
-A: Install Blender 4.3+ from [blender.org](https://www.blender.org/download/)
 
 **Q: App crashes on startup**
 A: Check Windows Event Viewer for details and report on GitHub with error logs
@@ -171,7 +159,7 @@ The Windows App does not auto-update. To get the latest version:
 | **Setup Time** | 2 minutes | 0 minutes | 15-30 minutes |
 | **Map Sizes** | All sizes | 2x2, 4x4 km | All sizes |
 | **Portability** | ✅ | ✅ | ❌ |
-| **Background Terrain** | ✅ (with Blender) | ❌ | ✅ |
+| **Background Terrain** | ✅ | ❌ | ✅ |
 | **Presets & Settings** | ✅ | ❌ | ✅ |
 
 ### When to Use Each Option
