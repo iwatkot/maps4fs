@@ -269,7 +269,7 @@ class Background(MeshComponent, ImageComponent):
             dem_data,
             save_path,
             create_preview=True,
-            remove_center=self.map.background_settings.remove_center,
+            remove_center=False,
         )
 
     @staticmethod
@@ -348,6 +348,19 @@ class Background(MeshComponent, ImageComponent):
         except Exception as e:
             self.logger.error("Could not decimate background mesh: %s", e)
             return
+
+        if self.map.background_settings.remove_center:
+            try:
+                self.logger.debug("Removing center from decimated background mesh.")
+                decimated_mesh = self.remove_center_from_mesh(
+                    decimated_mesh,
+                    self.scaled_size,
+                    logger=self.logger,
+                )
+                self.logger.debug("Center removal from decimated background mesh completed.")
+            except Exception as e:
+                self.logger.error("Could not remove center from decimated background mesh: %s", e)
+                return
 
         decimated_mesh.export(decimated_save_path)
         self.logger.debug("Decimated background mesh saved: %s", decimated_save_path)
