@@ -53,8 +53,6 @@ The generation info is organized into specialized components, each handling diff
 "Background": {
     "center_latitude": 45.2858,
     "center_longitude": 20.219,
-    "epsg3857_string": "2242026.418067859,2259511.150630538,5657889.513370422,5675374.254172803 [EPSG:3857]",
-    "epsg3857_string_with_margin": "2241526,2260011,5657389,5675874 [EPSG:3857]",
     "height": 8192,
     "width": 8192,
     "north": 45.341054241412685,
@@ -94,7 +92,6 @@ The generation info is organized into specialized components, each handling diff
 
 **Key Fields:**
 - **Geographic Boundaries**: `center_latitude/longitude`, `north/south/east/west` - Define the extended terrain area
-- **EPSG3857 Strings**: Ready-to-use coordinate strings for QGIS satellite imagery import
 - **DEM Processing**: Complete elevation data pipeline from original through final normalization
 - **Mesh Specifications**: Physical dimensions and positioning data for 3D terrain mesh
 - **Height Scaling**: Elevation processing parameters and scaling factors
@@ -140,8 +137,6 @@ The generation info is organized into specialized components, each handling diff
 ```json
 "Config": {
     "Overview": {
-        "epsg3857_string": "2244940.540161639,2256597.028536758,5660801.272973384,5672457.763789897 [EPSG:3857]",
-        "epsg3857_string_with_margin": "2244440,2257097,5660301,5672957 [EPSG:3857]",
         "height": 8192,
         "width": 8192
     },
@@ -152,8 +147,6 @@ The generation info is organized into specialized components, each handling diff
 }
 ```
 
-**Overview Settings**: QGIS-compatible coordinate strings for satellite imagery import, typically 2× map size for proper context coverage.
-
 **Environmental Parameters**: Automatically calculated settings like fog height ranges based on terrain elevation analysis.
 
 ## Practical Applications
@@ -162,7 +155,6 @@ The generation info is organized into specialized components, each handling diff
 Use the complete `generation_info.json` to regenerate identical maps with different settings or components.
 
 ### External Tool Integration
-- **QGIS**: Use `epsg3857_string` fields for precise satellite imagery import
 - **Blender**: Reference mesh dimensions and positioning for background terrain work
 - **Custom Tools**: Access coordinate systems and boundaries for specialized map modifications
 
