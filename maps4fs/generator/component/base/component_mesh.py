@@ -12,6 +12,7 @@ from typing import Any, Callable, NamedTuple
 
 import cv2
 import numpy as np
+import pyvista as pv
 import shapely
 import trimesh
 from PIL import Image
@@ -241,10 +242,10 @@ class MeshComponent(Component):
         return mesh_copy
 
     @staticmethod
-    def remove_center_from_mesh(
+    def remove_center_from_mesh_blender(
         mesh: trimesh.Trimesh, remove_size: int, **kwargs
     ) -> trimesh.Trimesh:
-        """Removes the center from the given mesh.
+        """Removes the center from the given mesh using Blender boolean backend.
 
         Arguments:
             mesh (trimesh.Trimesh): The mesh to remove the center from.
@@ -253,7 +254,6 @@ class MeshComponent(Component):
         Returns:
             trimesh.Trimesh: The mesh with the center removed.
         """
-        logger = kwargs.get("logger", None)
         mesh_copy = mesh.copy()
 
         _, _, z_size = mesh_copy.extents
@@ -273,17 +273,106 @@ class MeshComponent(Component):
         )
 
         if mesh_copy is None:
-            if logger:
-                logger.warning("Resulting mesh is None after removing center. Using original mesh.")
             return mesh
         if mesh_copy.is_empty:
-            if logger:
-                logger.warning(
-                    "Resulting mesh is empty after removing center. Using original mesh."
-                )
             return mesh
 
         return mesh_copy
+
+    @staticmethod
+    def remove_center_from_mesh_vtk(
+        mesh: trimesh.Trimesh, remove_size: int, **kwargs
+    ) -> trimesh.Trimesh:
+        """Removes the center from the given mesh using VTK/PyVista clipping.
+
+        Arguments:
+            mesh (trimesh.Trimesh): The mesh to remove the center from.
+            remove_size (int): The size of the center to remove.
+
+        Returns:
+            trimesh.Trimesh: The mesh with the center removed.
+
+        Raises:
+            RuntimeError: If PyVista/VTK is not available or clipping fails.
+        """
+        mesh_copy = mesh.copy()
+        try:
+            mesh_copy = MeshComponent.mesh_to_origin(mesh_copy)
+        except Exception:
+            pass
+
+        if len(mesh_copy.faces) == 0:
+            return mesh
+
+        vertices = np.asarray(mesh_copy.vertices, dtype=np.float64)
+        faces = np.asarray(mesh_copy.faces, dtype=np.int64)
+        pv_faces = np.hstack([np.full((len(faces), 1), 3, dtype=np.int64), faces]).ravel()
+
+        pv_mesh = pv.PolyData(vertices, pv_faces.tolist()).triangulate().clean()
+
+        _, _, _, _, z_min, z_max = pv_mesh.bounds
+        z_span = max(float(z_max - z_min), 1.0)
+        half = float(remove_size) / 2.0
+
+        clip_box = pv.Box(
+            bounds=(
+                -half,
+                half,
+                -half,
+                half,
+                z_min - z_span * 2.0,
+                z_max + z_span * 2.0,
+            )
+        )
+
+        try:
+            clipped = pv_mesh.clip_box(clip_box.bounds, invert=True)
+        except Exception as e:
+            raise RuntimeError(f"VTK clip_box failed: {e}") from e
+
+        if clipped is None or clipped.n_cells == 0 or clipped.n_points == 0:
+            return mesh
+
+        clipped = clipped.extract_surface(algorithm="dataset_surface").triangulate().clean()
+        faces_reshaped = clipped.faces.reshape(-1, 4)
+        if len(faces_reshaped) == 0:
+            return mesh
+
+        result_mesh = trimesh.Trimesh(
+            vertices=np.asarray(clipped.points),
+            faces=np.asarray(faces_reshaped[:, 1:4]),
+            process=False,
+        )
+
+        if result_mesh.is_empty:
+            return mesh
+
+        return result_mesh
+
+    @staticmethod
+    def remove_center_from_mesh(
+        mesh: trimesh.Trimesh, remove_size: int, **kwargs
+    ) -> trimesh.Trimesh:
+        """Removes the center from the given mesh.
+
+        Tries VTK/PyVista first, then falls back to Blender backend.
+
+        Arguments:
+            mesh (trimesh.Trimesh): The mesh to remove the center from.
+            remove_size (int): The size of the center to remove.
+
+        Returns:
+            trimesh.Trimesh: The mesh with the center removed.
+        """
+        try:
+            return MeshComponent.remove_center_from_mesh_vtk(mesh, remove_size, **kwargs)
+        except Exception:
+            pass
+
+        try:
+            return MeshComponent.remove_center_from_mesh_blender(mesh, remove_size, **kwargs)
+        except Exception:
+            return mesh
 
     @staticmethod
     def mesh_to_origin(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
