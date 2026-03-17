@@ -112,10 +112,10 @@ class Config(ImageComponent):
         loam_mask = ~(lowland_mask | hilltop_mask | slope_mask)
 
         soil_map = np.zeros((soil_map_size, soil_map_size, 3), dtype=np.uint8)
-        soil_map[hilltop_mask] = Parameters.SOIL_COLOR_LOAMY_SAND
-        soil_map[slope_mask] = Parameters.SOIL_COLOR_SANDY_LOAM
-        soil_map[loam_mask] = Parameters.SOIL_COLOR_LOAM
-        soil_map[lowland_mask] = Parameters.SOIL_COLOR_SILTY_CLAY
+        soil_map[hilltop_mask] = self._rgb_to_bgr(Parameters.SOIL_COLOR_LOAMY_SAND)
+        soil_map[slope_mask] = self._rgb_to_bgr(Parameters.SOIL_COLOR_SANDY_LOAM)
+        soil_map[loam_mask] = self._rgb_to_bgr(Parameters.SOIL_COLOR_LOAM)
+        soil_map[lowland_mask] = self._rgb_to_bgr(Parameters.SOIL_COLOR_SILTY_CLAY)
 
         soil_map_path = os.path.join(self.game.weights_dir_path, Parameters.INFO_LAYER_SOIL_MAP)
         cv2.imwrite(soil_map_path, soil_map)
@@ -401,6 +401,19 @@ class Config(ImageComponent):
             str: Relative path with forward slashes.
         """
         return os.path.relpath(path, start=base_directory).replace("\\", "/")
+
+    @staticmethod
+    def _rgb_to_bgr(color: tuple[int, int, int]) -> tuple[int, int, int]:
+        """Convert RGB tuple to BGR tuple for OpenCV image writes.
+
+        Arguments:
+            color (tuple[int, int, int]): RGB color tuple.
+
+        Returns:
+            tuple[int, int, int]: BGR color tuple.
+        """
+        red, green, blue = color
+        return blue, green, red
 
     def _set_map_size(self) -> None:
         """Update map dimensions in map.xml root attributes."""
