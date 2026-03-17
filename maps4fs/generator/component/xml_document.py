@@ -134,6 +134,24 @@ class XmlDocument:
         parent.insert(insert_idx, element)
         return True
 
+    def insert_before(self, xpath: str, element: ET.Element) -> bool:
+        """Insert *element* immediately before the node at *xpath*.
+
+        Returns:
+            bool: True when inserted, False if target/parent is missing.
+        """
+        target = self.get(xpath)
+        if target is None:
+            return False
+
+        parent = self._find_parent(target)
+        if parent is None:
+            return False
+
+        insert_idx = list(parent).index(target)
+        parent.insert(insert_idx, element)
+        return True
+
     def remove_element(self, xpath: str) -> XmlDocument:
         """Remove all elements matching *xpath* from their parents. Fluent."""
         for elem in self._root.findall(xpath):

@@ -167,6 +167,20 @@ class Parameters:
     SOIL_MAP_I3D_LAYER_NAME = "soilMap"
     SOIL_MAP_I3D_NUM_CHANNELS = "3"
     SOIL_MAP_FIXED_SIZE = 1024
+    SOIL_MAP_I3D_GROUP_NAME = "State"
+    SOIL_MAP_I3D_GROUP_FIRST_CHANNEL = "0"
+    SOIL_MAP_I3D_OPTION_OUTDOOR_VALUE = "0"
+    SOIL_MAP_I3D_OPTION_OUTDOOR_NAME = "Outdoor"
+    SOIL_MAP_I3D_OPTION_INDOOR_VALUE = "1"
+    SOIL_MAP_I3D_OPTION_INDOOR_NAME = "Indoor"
+    SOIL_MAP_I3D_OPTION_GROUP_XPATH = "{soil_layer_xpath}/Group[@name='{group_name}']"
+
+    INDOOR_MASK_I3D_LAYER_NAME = "indoorMask"
+    INDOOR_MASK_I3D_NUM_CHANNELS = "1"
+
+    I3D_XML_TAG_INFO_LAYER = "InfoLayer"
+    I3D_XML_TAG_GROUP = "Group"
+    I3D_XML_TAG_OPTION = "Option"
 
     # Soil classes for custom soil maps (RGB, uint8)
     SOIL_COLOR_LOAMY_SAND = (255, 0, 0)

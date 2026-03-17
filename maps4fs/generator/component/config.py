@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from typing import Any
+from xml.etree.ElementTree import Element
 
 import cv2
 import numpy as np
@@ -31,13 +32,13 @@ class Config(ImageComponent):
     """
 
     def preprocess(self) -> None:
-        """Gets the path to the map XML file and saves it to the instance variable."""
+        """Initialize Config component runtime state."""
         self.info: dict[str, Any] = {}
         self.xml_path = self.game.map_xml_path
         self.fog_parameters: dict[str, int] = {}
 
     def process(self) -> None:
-        """Sets the map size in the map.xml file."""
+        """Execute Config processing pipeline."""
         self._set_map_size()
 
         self._adjust_fog()
@@ -50,7 +51,7 @@ class Config(ImageComponent):
 
     @monitor_performance
     def _ensure_precision_farming_support(self) -> None:
-        """Generate soil map from DEM and ensure required XML references exist."""
+        """Generate precision-farming assets and XML references."""
         soil_map_path = self._generate_soil_map_from_dem()
         if not soil_map_path:
             return
@@ -59,7 +60,11 @@ class Config(ImageComponent):
         self._update_map_xml_precision_farming(soil_map_path)
 
     def _generate_soil_map_from_dem(self) -> str | None:
-        """Create an 8-bit RGB soil map from the highest-fidelity available DEM variant."""
+        """Create precision-farming soil map PNG from the best available DEM variant.
+
+        Returns:
+            str | None: Absolute path to the generated soil map PNG, or None when DEM is missing.
+        """
         dem_image = self.get_dem_image_with_fallback()
         if dem_image is None:
             self.logger.warning(
@@ -77,9 +82,10 @@ class Config(ImageComponent):
             interpolation=cv2.INTER_LINEAR,
         )
 
+        normalized_height_dst = np.empty_like(resized_dem, dtype=np.float32)
         normalized_height = cv2.normalize(
             resized_dem,
-            None,
+            normalized_height_dst,
             alpha=0.0,
             beta=1.0,
             norm_type=cv2.NORM_MINMAX,
@@ -87,9 +93,16 @@ class Config(ImageComponent):
 
         slope_x = cv2.Sobel(normalized_height, cv2.CV_32F, 1, 0, ksize=3)
         slope_y = cv2.Sobel(normalized_height, cv2.CV_32F, 0, 1, ksize=3)
-        slope = cv2.magnitude(slope_x, slope_y)
+        slope: np.ndarray = np.asarray(cv2.magnitude(slope_x, slope_y), dtype=np.float32)
         if float(slope.max()) > 0:
-            slope = cv2.normalize(slope, None, alpha=0.0, beta=1.0, norm_type=cv2.NORM_MINMAX)
+            slope_normalized = np.empty_like(slope, dtype=np.float32)
+            slope = cv2.normalize(
+                slope,
+                slope_normalized,
+                alpha=0.0,
+                beta=1.0,
+                norm_type=cv2.NORM_MINMAX,
+            )
         else:
             slope = np.zeros_like(normalized_height, dtype=np.float32)
 
@@ -116,7 +129,11 @@ class Config(ImageComponent):
         return soil_map_path
 
     def _update_i3d_soil_map_references(self, soil_map_path: str) -> None:
-        """Ensure map.i3d has both File and InfoLayer references for soil map."""
+        """Ensure map.i3d contains soil map file and InfoLayer entries.
+
+        Arguments:
+            soil_map_path (str): Absolute path to generated soil map PNG.
+        """
         if not os.path.isfile(self.game.i3d_file_path):
             self.logger.warning("I3D file not found, precision farming references were not added.")
             return
@@ -136,42 +153,70 @@ class Config(ImageComponent):
             self._ensure_i3d_soil_info_layer(doc, soil_file_id)
 
     def _ensure_i3d_soil_file_entry(self, doc: XmlDocument, soil_filename: str) -> str:
-        """Ensure File entry exists and points to the generated soil map PNG."""
-        info_layer_xpath = f".//InfoLayer[@name='{Parameters.SOIL_MAP_I3D_LAYER_NAME}']"
+        """Ensure Files section has an entry for soil map and return its file ID.
+
+        Arguments:
+            doc (XmlDocument): Parsed map.i3d wrapper.
+            soil_filename (str): Soil PNG filename relative to map.i3d directory.
+
+        Returns:
+            str: File ID used by soil map File/InfoLayer references.
+        """
+        cfg = self.game.config
+        info_layer_xpath = self.game.config.i3d_soil_map_info_layer_xpath
         soil_info_layer = doc.get(info_layer_xpath)
 
         if soil_info_layer is not None:
-            file_id = soil_info_layer.get("fileId")
+            file_id = soil_info_layer.get(cfg.i3d_attr_file_id)
             if file_id:
-                file_xpath = f".//Files/File[@fileId='{file_id}']"
+                file_xpath = cfg.i3d_file_by_id_xpath_template.format(file_id=file_id)
                 if doc.get(file_xpath) is not None:
-                    doc.set_attrs(file_xpath, filename=soil_filename)
+                    doc.set_attrs(file_xpath, **{cfg.i3d_attr_filename: soil_filename})
                     return file_id
+                file_attrs = {
+                    cfg.i3d_attr_file_id: file_id,
+                    cfg.i3d_attr_filename: soil_filename,
+                }
                 doc.append_child(
-                    self.game.config.i3d_files_xpath, "File", fileId=file_id, filename=soil_filename
+                    cfg.i3d_files_xpath,
+                    cfg.i3d_file_tag,
+                    **file_attrs,
                 )
                 return file_id
 
-        existing_file = doc.get(f".//Files/File[@filename='{soil_filename}']")
+        existing_file = doc.get(
+            cfg.i3d_file_by_filename_xpath_template.format(filename=soil_filename)
+        )
         if existing_file is not None:
-            existing_file_id = existing_file.get("fileId")
+            existing_file_id = existing_file.get(cfg.i3d_attr_file_id)
             if existing_file_id:
                 return existing_file_id
 
         next_file_id = str(self._next_i3d_file_id(doc))
+        file_attrs = {
+            cfg.i3d_attr_file_id: next_file_id,
+            cfg.i3d_attr_filename: soil_filename,
+        }
         doc.append_child(
-            self.game.config.i3d_files_xpath,
-            "File",
-            fileId=next_file_id,
-            filename=soil_filename,
+            cfg.i3d_files_xpath,
+            cfg.i3d_file_tag,
+            **file_attrs,
         )
         return next_file_id
 
     def _next_i3d_file_id(self, doc: XmlDocument) -> int:
-        """Return next available numeric fileId for I3D File entries."""
+        """Compute the next available numeric I3D file ID.
+
+        Arguments:
+            doc (XmlDocument): Parsed map.i3d wrapper.
+
+        Returns:
+            int: Next available file ID.
+        """
+        cfg = self.game.config
         file_ids = []
-        for file_node in doc.find_all(".//File"):
-            file_id = file_node.get("fileId")
+        for file_node in doc.find_all(cfg.i3d_all_file_nodes_xpath):
+            file_id = file_node.get(cfg.i3d_attr_file_id)
             if file_id is None:
                 continue
             try:
@@ -181,31 +226,145 @@ class Config(ImageComponent):
         return (max(file_ids) + 1) if file_ids else 1
 
     def _ensure_i3d_soil_info_layer(self, doc: XmlDocument, soil_file_id: str) -> None:
-        """Ensure InfoLayer entry for soil map exists with expected attributes."""
-        soil_layer_xpath = f".//InfoLayer[@name='{Parameters.SOIL_MAP_I3D_LAYER_NAME}']"
-        soil_layer = doc.get(soil_layer_xpath)
-        attrs = {
-            "fileId": soil_file_id,
-            "numChannels": Parameters.SOIL_MAP_I3D_NUM_CHANNELS,
-            "runtime": "true",
+        """Normalize soil/indoor InfoLayer schema and ordering in map.i3d.
+
+        Arguments:
+            doc (XmlDocument): Parsed map.i3d wrapper.
+            soil_file_id (str): File ID that soilMap InfoLayer must reference.
+        """
+        cfg = self.game.config
+        soil_layer_xpath = self.game.config.i3d_soil_map_info_layer_xpath
+        indoor_layer_xpath = self.game.config.i3d_indoor_mask_info_layer_xpath
+
+        # Normalize indoorMask to a simple runtime layer without Group children.
+        if doc.get(indoor_layer_xpath) is not None:
+            indoor_attrs = {
+                cfg.i3d_attr_num_channels: Parameters.INDOOR_MASK_I3D_NUM_CHANNELS,
+                cfg.i3d_attr_runtime: Parameters.I3D_TRUE,
+            }
+            doc.set_attrs(
+                indoor_layer_xpath,
+                **indoor_attrs,
+            )
+            doc.remove_element(cfg.i3d_indoor_mask_group_xpath)
+
+        # Recreate soil layer to enforce exact structure (attrs + Group/Option children).
+        doc.remove_element(soil_layer_xpath)
+        soil_element = self._create_soil_info_layer_element(soil_file_id)
+
+        # Prefer corrected order: soilMap immediately before indoorMask when available.
+        if doc.insert_before(indoor_layer_xpath, soil_element):
+            return
+
+        # Fallbacks for templates that don't have indoorMask.
+        if doc.insert_after(self.game.config.i3d_farmlands_info_layer_xpath, soil_element):
+            return
+
+        layers_xpath = self.game.config.i3d_layers_xpath
+        soil_layer_attrs = {
+            cfg.i3d_attr_name: Parameters.SOIL_MAP_I3D_LAYER_NAME,
+            cfg.i3d_attr_file_id: soil_file_id,
+            cfg.i3d_attr_num_channels: Parameters.SOIL_MAP_I3D_NUM_CHANNELS,
+            cfg.i3d_attr_runtime: Parameters.I3D_TRUE,
         }
+        doc.append_child(
+            layers_xpath,
+            Parameters.I3D_XML_TAG_INFO_LAYER,
+            **soil_layer_attrs,
+        )
+        soil_group_attrs = {
+            cfg.i3d_attr_name: Parameters.SOIL_MAP_I3D_GROUP_NAME,
+            cfg.i3d_attr_first_channel: Parameters.SOIL_MAP_I3D_GROUP_FIRST_CHANNEL,
+            cfg.i3d_attr_num_channels: Parameters.SOIL_MAP_I3D_NUM_CHANNELS,
+        }
+        doc.append_child(
+            self.game.config.i3d_soil_map_info_layer_xpath,
+            Parameters.I3D_XML_TAG_GROUP,
+            **soil_group_attrs,
+        )
+        group_xpath = Parameters.SOIL_MAP_I3D_OPTION_GROUP_XPATH.format(
+            soil_layer_xpath=self.game.config.i3d_soil_map_info_layer_xpath,
+            group_name=Parameters.SOIL_MAP_I3D_GROUP_NAME,
+        )
+        outdoor_option_attrs = {
+            cfg.i3d_attr_value: Parameters.SOIL_MAP_I3D_OPTION_OUTDOOR_VALUE,
+            cfg.i3d_attr_name: Parameters.SOIL_MAP_I3D_OPTION_OUTDOOR_NAME,
+        }
+        doc.append_child(
+            group_xpath,
+            Parameters.I3D_XML_TAG_OPTION,
+            **outdoor_option_attrs,
+        )
+        indoor_option_attrs = {
+            cfg.i3d_attr_value: Parameters.SOIL_MAP_I3D_OPTION_INDOOR_VALUE,
+            cfg.i3d_attr_name: Parameters.SOIL_MAP_I3D_OPTION_INDOOR_NAME,
+        }
+        doc.append_child(
+            group_xpath,
+            Parameters.I3D_XML_TAG_OPTION,
+            **indoor_option_attrs,
+        )
 
-        if soil_layer is not None:
-            doc.set_attrs(soil_layer_xpath, **attrs)
-            return
+    def _create_soil_info_layer_element(self, soil_file_id: str) -> Element:
+        """Build detached soilMap InfoLayer element with Group/Option children.
 
-        layer_data = {"name": Parameters.SOIL_MAP_I3D_LAYER_NAME, **attrs}
-        soil_element = XmlDocument.create_element("InfoLayer", layer_data)
+        Arguments:
+            soil_file_id (str): File ID that soilMap layer should reference.
 
-        inserted = doc.insert_after(".//InfoLayer[@name='farmlands']", soil_element)
-        if inserted:
-            return
+        Returns:
+            Element: Detached InfoLayer XML element ready for insertion.
+        """
+        cfg = self.game.config
+        soil_attrs = {
+            cfg.i3d_attr_name: Parameters.SOIL_MAP_I3D_LAYER_NAME,
+            cfg.i3d_attr_file_id: soil_file_id,
+            cfg.i3d_attr_num_channels: Parameters.SOIL_MAP_I3D_NUM_CHANNELS,
+            cfg.i3d_attr_runtime: Parameters.I3D_TRUE,
+        }
+        soil_element = XmlDocument.create_element(
+            Parameters.I3D_XML_TAG_INFO_LAYER,
+            soil_attrs,
+        )
 
-        layers_xpath = f"{self.game.config.i3d_terrain_xpath}/Layers"
-        doc.append_child(layers_xpath, "InfoLayer", **layer_data)
+        group_attrs = {
+            cfg.i3d_attr_name: Parameters.SOIL_MAP_I3D_GROUP_NAME,
+            cfg.i3d_attr_first_channel: Parameters.SOIL_MAP_I3D_GROUP_FIRST_CHANNEL,
+            cfg.i3d_attr_num_channels: Parameters.SOIL_MAP_I3D_NUM_CHANNELS,
+        }
+        group_element = XmlDocument.create_element(
+            Parameters.I3D_XML_TAG_GROUP,
+            group_attrs,
+        )
+        outdoor_option_attrs = {
+            cfg.i3d_attr_value: Parameters.SOIL_MAP_I3D_OPTION_OUTDOOR_VALUE,
+            cfg.i3d_attr_name: Parameters.SOIL_MAP_I3D_OPTION_OUTDOOR_NAME,
+        }
+        group_element.append(
+            XmlDocument.create_element(
+                Parameters.I3D_XML_TAG_OPTION,
+                outdoor_option_attrs,
+            )
+        )
+        indoor_option_attrs = {
+            cfg.i3d_attr_value: Parameters.SOIL_MAP_I3D_OPTION_INDOOR_VALUE,
+            cfg.i3d_attr_name: Parameters.SOIL_MAP_I3D_OPTION_INDOOR_NAME,
+        }
+        group_element.append(
+            XmlDocument.create_element(
+                Parameters.I3D_XML_TAG_OPTION,
+                indoor_option_attrs,
+            )
+        )
+        soil_element.append(group_element)
+
+        return soil_element
 
     def _update_map_xml_precision_farming(self, soil_map_path: str) -> None:
-        """Ensure map.xml contains precisionFarming/soilMap reference to generated soil map."""
+        """Ensure map.xml references generated soil map through precisionFarming node.
+
+        Arguments:
+            soil_map_path (str): Absolute path to generated soil map PNG.
+        """
         if not os.path.isfile(self.xml_path):
             self.logger.warning("Map XML not found, precision farming section was not added.")
             return
@@ -217,8 +376,8 @@ class Config(ImageComponent):
             os.path.splitext(soil_map_filename)[0] + Parameters.SOIL_MAP_GRLE_EXTENSION
         )
 
-        precision_xpath = f"./{Parameters.PRECISION_FARMING_TAG}"
-        soil_xpath = f"{precision_xpath}/{Parameters.SOIL_MAP_TAG}"
+        precision_xpath = self.game.config.map_xml_precision_farming_xpath
+        soil_xpath = self.game.config.map_xml_precision_farming_soil_map_xpath
         with XmlDocument(self.xml_path) as doc:
             if doc.get(precision_xpath) is None:
                 doc.append_child(".", Parameters.PRECISION_FARMING_TAG)
@@ -232,11 +391,19 @@ class Config(ImageComponent):
 
     @staticmethod
     def _relative_path_for_xml(path: str, base_directory: str) -> str:
-        """Get normalized relative path with forward slashes for XML attributes."""
+        """Convert absolute path into XML-safe relative path.
+
+        Arguments:
+            path (str): Absolute source path.
+            base_directory (str): Base directory used for relative conversion.
+
+        Returns:
+            str: Relative path with forward slashes.
+        """
         return os.path.relpath(path, start=base_directory).replace("\\", "/")
 
     def _set_map_size(self) -> None:
-        """Edits map.xml file to set correct map size."""
+        """Update map dimensions in map.xml root attributes."""
         with XmlDocument(self.xml_path) as doc:
             doc.set_attrs(".", width=str(self.scaled_size), height=str(self.scaled_size))
 
@@ -275,7 +442,7 @@ class Config(ImageComponent):
 
     @monitor_performance
     def _adjust_fog(self) -> None:
-        """Adjusts the fog settings in the environment XML file based on the DEM and height scale."""
+        """Adjust fog settings in environment.xml using DEM-derived elevation range."""
         self.logger.debug("Adjusting fog settings based on DEM and height scale...")
         environment_xml_path = self.game.environment_xml_path
 
@@ -385,7 +552,7 @@ class Config(ImageComponent):
 
     @monitor_performance
     def _set_overview(self) -> None:
-        """Generates and sets the overview image for the map."""
+        """Generate overview texture and convert it to DDS."""
         overview_image_path = self.game.overview_file_path
 
         overview_path = self.map.context.satellite_overview_path
@@ -494,7 +661,7 @@ class Config(ImageComponent):
 
     @monitor_performance
     def update_license_plates(self) -> None:
-        """Updates license plates for the specified country."""
+        """Update license-plate XML/I3D assets for map country."""
         license_plates_directory = self.game.license_plates_dir_path
 
         country_name = get_country_by_coordinates(self.map.coordinates).lower()
@@ -552,12 +719,7 @@ class Config(ImageComponent):
         self._update_map_xml_license_plates()
 
     def _update_map_xml_license_plates(self) -> None:
-        """Update map.xml to reference PL license plates.
-
-        Raises:
-            FileNotFoundError: If the map XML file is not found.
-            ValueError: If the map XML root element is None.
-        """
+        """Ensure map.xml references local license plate definition file."""
         doc = XmlDocument(self.xml_path)
         root = doc.root
 
@@ -761,7 +923,7 @@ class Config(ImageComponent):
         )
 
         # 6. Create the actual text image (black background for white text).
-        text_img = np.zeros((large_canvas_size, large_canvas_size, 3), dtype=np.uint8)
+        text_img: np.ndarray = np.zeros((large_canvas_size, large_canvas_size, 3), dtype=np.uint8)
         text_size = cv2.getTextSize(country_code, font, font_scale, thickness)[0]
 
         # 7. Center text on canvas.
@@ -903,7 +1065,9 @@ class Config(ImageComponent):
         # Iteratively reduce font size until rotated text fits
         for _ in range(15):  # More iterations for better fitting
             # Test on a large canvas first (black background for white text)
-            test_img = np.zeros((large_canvas_size, large_canvas_size, 3), dtype=np.uint8)
+            test_img: np.ndarray = np.zeros(
+                (large_canvas_size, large_canvas_size, 3), dtype=np.uint8
+            )
             text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
 
             # Center text on large canvas
