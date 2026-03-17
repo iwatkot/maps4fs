@@ -244,6 +244,38 @@ def test_map(
         soil_info_layer_node.get("numChannels") == Parameters.SOIL_MAP_I3D_NUM_CHANNELS
     ), "soilMap InfoLayer numChannels must be 3"
 
+    soil_group_node = soil_info_layer_node.find("./Group[@name='State']")
+    assert soil_group_node is not None, "soilMap Group(State) is missing"
+    assert (
+        soil_group_node.get("numChannels") == Parameters.SOIL_MAP_I3D_NUM_CHANNELS
+    ), "soilMap Group(State) numChannels must match soilMap numChannels"
+    soil_group_option_pairs = [
+        (option.get("value"), option.get("name")) for option in soil_group_node.findall("Option")
+    ]
+    assert soil_group_option_pairs == [
+        ("0", "Outdoor"),
+        ("1", "Indoor"),
+    ], f"soilMap Group(State) options mismatch: {soil_group_option_pairs}"
+
+    indoor_mask_layer_node = i3d_tree.getroot().find(".//InfoLayer[@name='indoorMask']")
+    assert indoor_mask_layer_node is not None, "indoorMask InfoLayer missing in map.i3d"
+    assert (
+        indoor_mask_layer_node.find("Group") is None
+    ), "indoorMask InfoLayer must not contain Group children"
+
+    layers_node = i3d_tree.getroot().find(".//Scene/TerrainTransformGroup/Layers")
+    assert layers_node is not None, "Layers node missing in map.i3d"
+    layer_names = [
+        node.get("name") for node in layers_node.findall("InfoLayer") if node.get("name")
+    ]
+    assert (
+        Parameters.SOIL_MAP_I3D_LAYER_NAME in layer_names
+    ), "soilMap layer missing from ordered list"
+    assert "indoorMask" in layer_names, "indoorMask layer missing from ordered list"
+    assert layer_names.index(Parameters.SOIL_MAP_I3D_LAYER_NAME) < layer_names.index(
+        "indoorMask"
+    ), "soilMap InfoLayer must precede indoorMask InfoLayer"
+
     map_xml_root = ET.parse(game.map_xml_path).getroot()
     precision_farming_node = map_xml_root.find(f"./{Parameters.PRECISION_FARMING_TAG}")
     assert precision_farming_node is not None, "precisionFarming node missing in map.xml"
