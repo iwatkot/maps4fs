@@ -139,38 +139,12 @@ class Soil(ImageComponent):
         slope_x = cv2.Sobel(normalized_height, cv2.CV_32F, 1, 0, ksize=3)
         slope_y = cv2.Sobel(normalized_height, cv2.CV_32F, 0, 1, ksize=3)
         slope = np.asarray(cv2.magnitude(slope_x, slope_y), dtype=np.float32)
-        if float(slope.max()) > 0:
-            slope_normalized = np.empty_like(slope, dtype=np.float32)
-            slope = np.asarray(
-                cv2.normalize(
-                    slope,
-                    dst=slope_normalized,
-                    alpha=0.0,
-                    beta=1.0,
-                    norm_type=cv2.NORM_MINMAX,
-                ),
-                dtype=np.float32,
-            )
-        else:
-            slope = np.zeros_like(normalized_height, dtype=np.float32)
+        slope = self._normalize_to_unit(slope)
 
-        # Local depression depth approximates water accumulation tendency in basins.
-        neighborhood = cv2.GaussianBlur(normalized_height, (0, 0), sigmaX=2.0, sigmaY=2.0)
-        depression_depth = np.clip(neighborhood - normalized_height, 0.0, None)
-        if float(depression_depth.max()) > 0:
-            depression_normalized = np.empty_like(depression_depth, dtype=np.float32)
-            depression_depth = np.asarray(
-                cv2.normalize(
-                    depression_depth,
-                    dst=depression_normalized,
-                    alpha=0.0,
-                    beta=1.0,
-                    norm_type=cv2.NORM_MINMAX,
-                ),
-                dtype=np.float32,
-            )
+        wetness = self._build_local_wetness(normalized_height, slope)
 
-        height_q20 = float(np.quantile(normalized_height, 0.20))
+        breakline_mask, break_strength = self._build_breakline_mask(normalized_height, slope)
+
         height_q60 = float(np.quantile(normalized_height, 0.60))
         height_q75 = float(np.quantile(normalized_height, 0.75))
 
@@ -179,9 +153,9 @@ class Soil(ImageComponent):
         slope_q70 = float(np.quantile(slope, 0.70))
         slope_q85 = float(np.quantile(slope, 0.85))
 
-        depression_q70 = float(np.quantile(depression_depth, 0.70))
+        wet_q75 = float(np.quantile(wetness, 0.75))
+        wet_q85 = float(np.quantile(wetness, 0.85))
 
-        very_low = normalized_height <= height_q20
         high = normalized_height >= height_q75
         mid_or_high = normalized_height >= height_q60
 
@@ -190,11 +164,20 @@ class Soil(ImageComponent):
         steep = slope >= slope_q70
         very_steep = slope >= slope_q85
 
-        depressional = depression_depth >= depression_q70
+        very_wet = wetness >= wet_q85
+        wet = wetness >= wet_q75
 
-        silty_clay_mask = very_low & flat & (depressional | (slope <= slope_q50))
+        # Allow wet pockets on elevated plateaus by using local wetness, not global low elevation.
+        silty_clay_mask = very_wet & (flat | (slope <= slope_q50))
         loamy_sand_mask = (high & steep) | (mid_or_high & very_steep)
-        sandy_loam_mask = moderate & ~silty_clay_mask & ~loamy_sand_mask
+
+        # Escarpments and abrupt relief changes should not collapse to loam.
+        breakline_sandy_mask = breakline_mask & ~silty_clay_mask
+        breakline_loamy_sand_mask = breakline_sandy_mask & high & (slope >= slope_q50)
+
+        sandy_loam_mask = (moderate | (wet & steep)) & ~silty_clay_mask & ~loamy_sand_mask
+        sandy_loam_mask = sandy_loam_mask | breakline_sandy_mask
+        loamy_sand_mask = loamy_sand_mask | breakline_loamy_sand_mask
         loam_mask = ~(silty_clay_mask | loamy_sand_mask | sandy_loam_mask)
 
         soil_map = np.full(normalized_height.shape, Parameters.SOIL_VALUE_LOAM, dtype=np.uint8)
@@ -203,7 +186,123 @@ class Soil(ImageComponent):
         soil_map[loam_mask] = Parameters.SOIL_VALUE_LOAM
         soil_map[silty_clay_mask] = Parameters.SOIL_VALUE_SILTY_CLAY
 
+        soil_map = self._smooth_soil_classes(soil_map)
+        soil_map = self._majority_filter(soil_map, kernel_size=5, iterations=2)
+
+        # Re-apply hard constraints after smoothing.
+        soil_map[silty_clay_mask] = Parameters.SOIL_VALUE_SILTY_CLAY
+        soil_map[breakline_sandy_mask] = Parameters.SOIL_VALUE_SANDY_LOAM
+        soil_map[breakline_loamy_sand_mask] = Parameters.SOIL_VALUE_LOAMY_SAND
+
+        self.logger.debug(
+            (
+                "Soil classifier stats: breakline_ratio=%.3f, mean_break_strength=%.3f, "
+                "mean_wetness=%.3f"
+            ),
+            float(np.mean(breakline_mask.astype(np.float32))),
+            float(np.mean(break_strength)),
+            float(np.mean(wetness)),
+        )
+
         return soil_map
+
+    def _build_local_wetness(self, normalized_height: np.ndarray, slope: np.ndarray) -> np.ndarray:
+        """Estimate local wetness from multi-scale depressions and low slope.
+
+        Arguments:
+            normalized_height (np.ndarray): DEM normalized to [0, 1].
+            slope (np.ndarray): Slope proxy normalized to [0, 1].
+
+        Returns:
+            np.ndarray: Wetness score in [0, 1].
+        """
+        local_mean_small = cv2.GaussianBlur(normalized_height, (0, 0), sigmaX=3.0, sigmaY=3.0)
+        local_mean_large = cv2.GaussianBlur(normalized_height, (0, 0), sigmaX=9.0, sigmaY=9.0)
+
+        depression_small = self._normalize_to_unit(
+            np.clip(local_mean_small - normalized_height, 0.0, None)
+        )
+        depression_large = self._normalize_to_unit(
+            np.clip(local_mean_large - normalized_height, 0.0, None)
+        )
+
+        inverse_slope = 1.0 - slope
+        wetness = (0.45 * depression_small) + (0.35 * depression_large) + (0.20 * inverse_slope)
+        return self._normalize_to_unit(np.asarray(wetness, dtype=np.float32))
+
+    @staticmethod
+    def _normalize_to_unit(image: np.ndarray) -> np.ndarray:
+        """Normalize a float image to [0, 1], returning zeros for constant input."""
+        image = np.asarray(image, dtype=np.float32)
+        if float(image.max()) <= float(image.min()):
+            return np.zeros_like(image, dtype=np.float32)
+        normalized = np.empty_like(image, dtype=np.float32)
+        return np.asarray(
+            cv2.normalize(
+                image,
+                dst=normalized,
+                alpha=0.0,
+                beta=1.0,
+                norm_type=cv2.NORM_MINMAX,
+            ),
+            dtype=np.float32,
+        )
+
+    def _build_breakline_mask(
+        self, normalized_height: np.ndarray, slope: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Build a mask of abrupt terrain transitions (scarps/breaklines)."""
+        kernel = np.ones((5, 5), np.uint8)
+        local_max = cv2.dilate(normalized_height, kernel)
+        local_min = cv2.erode(normalized_height, kernel)
+        local_relief = np.asarray(local_max - local_min, dtype=np.float32)
+        local_relief = self._normalize_to_unit(local_relief)
+
+        curvature = np.abs(cv2.Laplacian(normalized_height, cv2.CV_32F, ksize=3))
+        curvature = self._normalize_to_unit(np.asarray(curvature, dtype=np.float32))
+
+        break_strength = np.maximum(local_relief, curvature)
+        break_q85 = float(np.quantile(break_strength, 0.85))
+        slope_q50 = float(np.quantile(slope, 0.50))
+
+        breakline_mask = (break_strength >= break_q85) & (slope >= slope_q50)
+        return breakline_mask, break_strength
+
+    @staticmethod
+    def _smooth_soil_classes(soil_map: np.ndarray) -> np.ndarray:
+        """Apply light majority-like smoothing on class map to reduce speckle noise."""
+        return cv2.medianBlur(soil_map, 3)
+
+    @staticmethod
+    def _majority_filter(
+        soil_map: np.ndarray, kernel_size: int = 5, iterations: int = 1
+    ) -> np.ndarray:
+        """Apply class-wise local majority filtering to reduce tiny worm-like regions."""
+        result = soil_map.copy()
+        classes = np.array(
+            [
+                Parameters.SOIL_VALUE_LOAMY_SAND,
+                Parameters.SOIL_VALUE_SANDY_LOAM,
+                Parameters.SOIL_VALUE_LOAM,
+                Parameters.SOIL_VALUE_SILTY_CLAY,
+            ],
+            dtype=np.uint8,
+        )
+
+        for _ in range(iterations):
+            class_votes: list[np.ndarray] = []
+            for cls in classes:
+                mask = (result == cls).astype(np.float32)
+                votes = cv2.boxFilter(
+                    mask, ddepth=-1, ksize=(kernel_size, kernel_size), normalize=False
+                )
+                class_votes.append(votes)
+
+            stacked_votes = np.stack(class_votes, axis=0)
+            winner_idx = np.argmax(stacked_votes, axis=0)
+            result = classes[winner_idx]
+
+        return result.astype(np.uint8)
 
     def _update_i3d_soil_map_references(self, soil_map_path: str) -> None:
         """Ensure map.i3d contains soil map file and InfoLayer entries.
