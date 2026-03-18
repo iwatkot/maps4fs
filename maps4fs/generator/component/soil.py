@@ -17,6 +17,10 @@ from maps4fs.generator.settings import Parameters
 class Soil(ImageComponent):
     """Generate soil map and update map XML/I3D references."""
 
+    def preprocess(self) -> None:
+        """Initialize runtime state for Soil component."""
+        self.soil_map_path: str | None = None
+
     @monitor_performance
     def process(self) -> None:
         """Generate soil map and ensure required XML entries are present."""
@@ -24,8 +28,52 @@ class Soil(ImageComponent):
         if not soil_map_path:
             return
 
+        self.soil_map_path = soil_map_path
+
         self._update_i3d_soil_map_references(soil_map_path)
         self._update_map_xml_precision_farming(soil_map_path)
+
+    @monitor_performance
+    def previews(self) -> list[str]:
+        """Generate debug previews for the generated soil map.
+
+        Returns:
+            list[str]: Paths to the created preview images.
+        """
+        soil_map_path = self.soil_map_path or os.path.join(
+            self.game.weights_dir_path, Parameters.INFO_LAYER_SOIL_MAP
+        )
+
+        if not os.path.isfile(soil_map_path):
+            self.logger.warning("Soil map not found for preview generation: %s", soil_map_path)
+            return []
+
+        soil_map = cv2.imread(soil_map_path, cv2.IMREAD_UNCHANGED)
+        if soil_map is None:
+            self.logger.warning("Could not read soil map for preview generation: %s", soil_map_path)
+            return []
+
+        if soil_map.ndim == 3:
+            soil_map = cv2.cvtColor(soil_map, cv2.COLOR_BGR2GRAY)
+
+        normalized_preview_path = os.path.join(self.previews_directory, "soil_map_normalized.png")
+        colored_preview_path = os.path.join(self.previews_directory, "soil_map_colored.png")
+
+        normalized = cv2.normalize(
+            soil_map,
+            dst=np.empty_like(soil_map),
+            alpha=0,
+            beta=255,
+            norm_type=cv2.NORM_MINMAX,
+            dtype=cv2.CV_8U,
+        )
+
+        cv2.imwrite(normalized_preview_path, normalized)
+
+        colored = cv2.applyColorMap(normalized, cv2.COLORMAP_JET)
+        cv2.imwrite(colored_preview_path, colored)
+
+        return [normalized_preview_path, colored_preview_path]
 
     def _generate_soil_map_from_dem(self) -> str | None:
         """Create soil map PNG from the best available DEM variant.
