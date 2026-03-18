@@ -136,72 +136,99 @@ class Soil(ImageComponent):
         Returns:
             np.ndarray: Soil class map with values 0..3.
         """
-        slope_x = cv2.Sobel(normalized_height, cv2.CV_32F, 1, 0, ksize=3)
-        slope_y = cv2.Sobel(normalized_height, cv2.CV_32F, 0, 1, ksize=3)
-        slope = np.asarray(cv2.magnitude(slope_x, slope_y), dtype=np.float32)
-        slope = self._normalize_to_unit(slope)
+        # Macro-first classifier: build broad geomorphology signals, classify on a
+        # coarse grid for contiguous zones, then reinforce only strongest terrain cues.
+        h_macro = cv2.GaussianBlur(normalized_height, (0, 0), sigmaX=6.0, sigmaY=6.0)
+        h_regional = cv2.GaussianBlur(normalized_height, (0, 0), sigmaX=18.0, sigmaY=18.0)
 
-        wetness = self._build_local_wetness(normalized_height, slope)
+        slope_x = cv2.Sobel(h_macro, cv2.CV_32F, 1, 0, ksize=3)
+        slope_y = cv2.Sobel(h_macro, cv2.CV_32F, 0, 1, ksize=3)
+        slope = self._normalize_to_unit(
+            np.asarray(cv2.magnitude(slope_x, slope_y), dtype=np.float32)
+        )
 
-        breakline_mask, break_strength = self._build_breakline_mask(normalized_height, slope)
+        concavity = self._normalize_to_unit(np.clip(h_regional - h_macro, 0.0, None))
+        convexity = self._normalize_to_unit(np.clip(h_macro - h_regional, 0.0, None))
 
-        height_q60 = float(np.quantile(normalized_height, 0.60))
-        height_q75 = float(np.quantile(normalized_height, 0.75))
+        wetness = self._normalize_to_unit(
+            (0.55 * concavity) + (0.30 * (1.0 - slope)) + (0.15 * (1.0 - h_regional))
+        )
+        dryness = self._normalize_to_unit((0.50 * convexity) + (0.35 * slope) + (0.15 * h_regional))
 
-        slope_q30 = float(np.quantile(slope, 0.30))
-        slope_q50 = float(np.quantile(slope, 0.50))
-        slope_q70 = float(np.quantile(slope, 0.70))
-        slope_q85 = float(np.quantile(slope, 0.85))
+        coarse_size = max(128, min(normalized_height.shape) // 4)
+        wet_c = np.asarray(
+            cv2.resize(wetness, (coarse_size, coarse_size), interpolation=cv2.INTER_AREA),
+            dtype=np.float32,
+        )
+        dry_c = np.asarray(
+            cv2.resize(dryness, (coarse_size, coarse_size), interpolation=cv2.INTER_AREA),
+            dtype=np.float32,
+        )
+        slope_c = np.asarray(
+            cv2.resize(slope, (coarse_size, coarse_size), interpolation=cv2.INTER_AREA),
+            dtype=np.float32,
+        )
 
-        wet_q75 = float(np.quantile(wetness, 0.75))
-        wet_q85 = float(np.quantile(wetness, 0.85))
+        wet_c_q80 = float(np.quantile(wet_c, 0.80))
+        dry_c_q82 = float(np.quantile(dry_c, 0.82))
+        dry_c_q62 = float(np.quantile(dry_c, 0.62))
+        slope_c_q45 = float(np.quantile(slope_c, 0.45))
+        slope_c_q55 = float(np.quantile(slope_c, 0.55))
+        slope_c_q65 = float(np.quantile(slope_c, 0.65))
 
-        high = normalized_height >= height_q75
-        mid_or_high = normalized_height >= height_q60
+        coarse_map = np.full(wet_c.shape, Parameters.SOIL_VALUE_LOAM, dtype=np.uint8)
 
-        flat = slope <= slope_q30
-        moderate = (slope > slope_q30) & (slope <= slope_q70)
-        steep = slope >= slope_q70
-        very_steep = slope >= slope_q85
+        silty_coarse = (wet_c >= wet_c_q80) & (slope_c <= slope_c_q55)
+        loamy_sand_coarse = (dry_c >= dry_c_q82) & (slope_c >= slope_c_q45)
+        sandy_coarse = (
+            (~silty_coarse)
+            & (~loamy_sand_coarse)
+            & ((dry_c >= dry_c_q62) | (slope_c >= slope_c_q65))
+        )
 
-        very_wet = wetness >= wet_q85
-        wet = wetness >= wet_q75
+        coarse_map[silty_coarse] = Parameters.SOIL_VALUE_SILTY_CLAY
+        coarse_map[loamy_sand_coarse] = Parameters.SOIL_VALUE_LOAMY_SAND
+        coarse_map[sandy_coarse] = Parameters.SOIL_VALUE_SANDY_LOAM
 
-        # Allow wet pockets on elevated plateaus by using local wetness, not global low elevation.
-        silty_clay_mask = very_wet & (flat | (slope <= slope_q50))
-        loamy_sand_mask = (high & steep) | (mid_or_high & very_steep)
+        coarse_map = self._majority_filter(coarse_map, kernel_size=7, iterations=2)
+        coarse_map = self._remove_small_components(
+            coarse_map,
+            minimum_area=max(24, int(coarse_map.size * 0.0025)),
+        )
 
-        # Escarpments and abrupt relief changes should not collapse to loam.
-        breakline_sandy_mask = breakline_mask & ~silty_clay_mask
-        breakline_loamy_sand_mask = breakline_sandy_mask & high & (slope >= slope_q50)
+        soil_map = cv2.resize(
+            coarse_map,
+            (normalized_height.shape[1], normalized_height.shape[0]),
+            interpolation=cv2.INTER_NEAREST,
+        )
 
-        sandy_loam_mask = (moderate | (wet & steep)) & ~silty_clay_mask & ~loamy_sand_mask
-        sandy_loam_mask = sandy_loam_mask | breakline_sandy_mask
-        loamy_sand_mask = loamy_sand_mask | breakline_loamy_sand_mask
-        loam_mask = ~(silty_clay_mask | loamy_sand_mask | sandy_loam_mask)
+        # Reinforce only very strong terrain cues so major rivers/escarpments stay visible.
+        slope_q60 = float(np.quantile(slope, 0.60))
+        slope_q80 = float(np.quantile(slope, 0.80))
+        wet_q92 = float(np.quantile(wetness, 0.92))
+        dry_q92 = float(np.quantile(dryness, 0.92))
 
-        soil_map = np.full(normalized_height.shape, Parameters.SOIL_VALUE_LOAM, dtype=np.uint8)
-        soil_map[loamy_sand_mask] = Parameters.SOIL_VALUE_LOAMY_SAND
-        soil_map[sandy_loam_mask] = Parameters.SOIL_VALUE_SANDY_LOAM
-        soil_map[loam_mask] = Parameters.SOIL_VALUE_LOAM
-        soil_map[silty_clay_mask] = Parameters.SOIL_VALUE_SILTY_CLAY
+        strong_wet = (wetness >= wet_q92) & (slope <= slope_q60)
+        strong_dry = (dryness >= dry_q92) & (slope >= slope_q60)
+        escarpment = (slope >= slope_q80) & ~(strong_wet | strong_dry)
 
-        soil_map = self._smooth_soil_classes(soil_map)
-        soil_map = self._majority_filter(soil_map, kernel_size=5, iterations=2)
+        soil_map[strong_wet] = Parameters.SOIL_VALUE_SILTY_CLAY
+        soil_map[strong_dry] = Parameters.SOIL_VALUE_LOAMY_SAND
+        soil_map[escarpment] = Parameters.SOIL_VALUE_SANDY_LOAM
 
-        # Re-apply hard constraints after smoothing.
-        soil_map[silty_clay_mask] = Parameters.SOIL_VALUE_SILTY_CLAY
-        soil_map[breakline_sandy_mask] = Parameters.SOIL_VALUE_SANDY_LOAM
-        soil_map[breakline_loamy_sand_mask] = Parameters.SOIL_VALUE_LOAMY_SAND
+        soil_map = self._majority_filter(soil_map, kernel_size=5, iterations=1)
+        protected_mask = strong_wet | strong_dry | escarpment
+        soil_map = self._remove_small_components(
+            soil_map,
+            minimum_area=max(120, int(soil_map.size * 0.00025)),
+            protected_mask=protected_mask,
+        )
 
         self.logger.debug(
-            (
-                "Soil classifier stats: breakline_ratio=%.3f, mean_break_strength=%.3f, "
-                "mean_wetness=%.3f"
-            ),
-            float(np.mean(breakline_mask.astype(np.float32))),
-            float(np.mean(break_strength)),
+            "Soil classifier (macro-first): coarse_size=%s, mean_wetness=%.3f, mean_dryness=%.3f",
+            coarse_size,
             float(np.mean(wetness)),
+            float(np.mean(dryness)),
         )
 
         return soil_map
@@ -301,6 +328,53 @@ class Soil(ImageComponent):
             stacked_votes = np.stack(class_votes, axis=0)
             winner_idx = np.argmax(stacked_votes, axis=0)
             result = classes[winner_idx]
+
+        return result.astype(np.uint8)
+
+    @staticmethod
+    def _remove_small_components(
+        soil_map: np.ndarray,
+        minimum_area: int,
+        protected_mask: np.ndarray | None = None,
+    ) -> np.ndarray:
+        """Remove tiny class islands while optionally preserving protected regions."""
+        result = soil_map.copy()
+        classes = np.array(
+            [
+                Parameters.SOIL_VALUE_LOAMY_SAND,
+                Parameters.SOIL_VALUE_SANDY_LOAM,
+                Parameters.SOIL_VALUE_LOAM,
+                Parameters.SOIL_VALUE_SILTY_CLAY,
+            ],
+            dtype=np.uint8,
+        )
+        kernel = np.ones((3, 3), dtype=np.uint8)
+
+        for cls in classes:
+            class_mask = (result == cls).astype(np.uint8)
+            labels_count, labels, stats, _ = cv2.connectedComponentsWithStats(
+                class_mask,
+                connectivity=8,
+            )
+
+            for label in range(1, labels_count):
+                area = int(stats[label, cv2.CC_STAT_AREA])
+                if area >= minimum_area:
+                    continue
+
+                component = labels == label
+                if protected_mask is not None and np.any(protected_mask[component]):
+                    continue
+
+                border = cv2.dilate(component.astype(np.uint8), kernel, iterations=1).astype(bool)
+                border = border & ~component
+                neighbors = result[border]
+                if neighbors.size == 0:
+                    continue
+
+                class_votes = np.bincount(neighbors.astype(np.int64), minlength=4)
+                replacement_class = int(np.argmax(class_votes))
+                result[component] = replacement_class
 
         return result.astype(np.uint8)
 
