@@ -56,8 +56,12 @@ class Soil(ImageComponent):
         if soil_map.ndim == 3:
             soil_map = cv2.cvtColor(soil_map, cv2.COLOR_BGR2GRAY)
 
-        normalized_preview_path = os.path.join(self.previews_directory, "soil_map_normalized.png")
-        colored_preview_path = os.path.join(self.previews_directory, "soil_map_colored.png")
+        normalized_preview_path = os.path.join(
+            self.previews_directory, Parameters.SOIL_PREVIEW_NORMALIZED_FILENAME
+        )
+        colored_preview_path = os.path.join(
+            self.previews_directory, Parameters.SOIL_PREVIEW_COLORED_FILENAME
+        )
 
         normalized = cv2.normalize(
             soil_map,
@@ -138,11 +142,21 @@ class Soil(ImageComponent):
         """
         # Macro-first classifier: build broad geomorphology signals, classify on a
         # coarse grid for contiguous zones, then reinforce only strongest terrain cues.
-        h_macro = cv2.GaussianBlur(normalized_height, (0, 0), sigmaX=6.0, sigmaY=6.0)
-        h_regional = cv2.GaussianBlur(normalized_height, (0, 0), sigmaX=18.0, sigmaY=18.0)
+        h_macro = cv2.GaussianBlur(
+            normalized_height,
+            (0, 0),
+            sigmaX=Parameters.SOIL_MACRO_SMOOTH_SIGMA,
+            sigmaY=Parameters.SOIL_MACRO_SMOOTH_SIGMA,
+        )
+        h_regional = cv2.GaussianBlur(
+            normalized_height,
+            (0, 0),
+            sigmaX=Parameters.SOIL_REGIONAL_SMOOTH_SIGMA,
+            sigmaY=Parameters.SOIL_REGIONAL_SMOOTH_SIGMA,
+        )
 
-        slope_x = cv2.Sobel(h_macro, cv2.CV_32F, 1, 0, ksize=3)
-        slope_y = cv2.Sobel(h_macro, cv2.CV_32F, 0, 1, ksize=3)
+        slope_x = cv2.Sobel(h_macro, cv2.CV_32F, 1, 0, ksize=Parameters.SOIL_SOBEL_KERNEL_SIZE)
+        slope_y = cv2.Sobel(h_macro, cv2.CV_32F, 0, 1, ksize=Parameters.SOIL_SOBEL_KERNEL_SIZE)
         slope = self._normalize_to_unit(
             np.asarray(cv2.magnitude(slope_x, slope_y), dtype=np.float32)
         )
@@ -151,11 +165,20 @@ class Soil(ImageComponent):
         convexity = self._normalize_to_unit(np.clip(h_macro - h_regional, 0.0, None))
 
         wetness = self._normalize_to_unit(
-            (0.55 * concavity) + (0.30 * (1.0 - slope)) + (0.15 * (1.0 - h_regional))
+            (Parameters.SOIL_WETNESS_WEIGHT_CONCAVITY * concavity)
+            + (Parameters.SOIL_WETNESS_WEIGHT_LOW_SLOPE * (1.0 - slope))
+            + (Parameters.SOIL_WETNESS_WEIGHT_REGIONAL_LOW * (1.0 - h_regional))
         )
-        dryness = self._normalize_to_unit((0.50 * convexity) + (0.35 * slope) + (0.15 * h_regional))
+        dryness = self._normalize_to_unit(
+            (Parameters.SOIL_DRYNESS_WEIGHT_CONVEXITY * convexity)
+            + (Parameters.SOIL_DRYNESS_WEIGHT_SLOPE * slope)
+            + (Parameters.SOIL_DRYNESS_WEIGHT_REGIONAL_HIGH * h_regional)
+        )
 
-        coarse_size = max(128, min(normalized_height.shape) // 4)
+        coarse_size = max(
+            Parameters.SOIL_COARSE_GRID_MIN_SIZE,
+            min(normalized_height.shape) // Parameters.SOIL_COARSE_GRID_DIVISOR,
+        )
         wet_c = np.asarray(
             cv2.resize(wetness, (coarse_size, coarse_size), interpolation=cv2.INTER_AREA),
             dtype=np.float32,
@@ -169,12 +192,12 @@ class Soil(ImageComponent):
             dtype=np.float32,
         )
 
-        wet_c_q80 = float(np.quantile(wet_c, 0.80))
-        dry_c_q82 = float(np.quantile(dry_c, 0.82))
-        dry_c_q62 = float(np.quantile(dry_c, 0.62))
-        slope_c_q45 = float(np.quantile(slope_c, 0.45))
-        slope_c_q55 = float(np.quantile(slope_c, 0.55))
-        slope_c_q65 = float(np.quantile(slope_c, 0.65))
+        wet_c_q80 = float(np.quantile(wet_c, Parameters.SOIL_WET_COARSE_Q))
+        dry_c_q82 = float(np.quantile(dry_c, Parameters.SOIL_DRY_HIGH_COARSE_Q))
+        dry_c_q62 = float(np.quantile(dry_c, Parameters.SOIL_DRY_MID_COARSE_Q))
+        slope_c_q45 = float(np.quantile(slope_c, Parameters.SOIL_SLOPE_DRY_COARSE_Q))
+        slope_c_q55 = float(np.quantile(slope_c, Parameters.SOIL_SLOPE_WET_COARSE_Q))
+        slope_c_q65 = float(np.quantile(slope_c, Parameters.SOIL_SLOPE_SANDY_COARSE_Q))
 
         coarse_map = np.full(wet_c.shape, Parameters.SOIL_VALUE_LOAM, dtype=np.uint8)
 
@@ -190,10 +213,17 @@ class Soil(ImageComponent):
         coarse_map[loamy_sand_coarse] = Parameters.SOIL_VALUE_LOAMY_SAND
         coarse_map[sandy_coarse] = Parameters.SOIL_VALUE_SANDY_LOAM
 
-        coarse_map = self._majority_filter(coarse_map, kernel_size=7, iterations=2)
+        coarse_map = self._majority_filter(
+            coarse_map,
+            kernel_size=Parameters.SOIL_COARSE_MAJORITY_KERNEL,
+            iterations=Parameters.SOIL_COARSE_MAJORITY_ITERATIONS,
+        )
         coarse_map = self._remove_small_components(
             coarse_map,
-            minimum_area=max(24, int(coarse_map.size * 0.0025)),
+            minimum_area=max(
+                Parameters.SOIL_COARSE_MIN_COMPONENT_AREA,
+                int(coarse_map.size * Parameters.SOIL_COARSE_MIN_COMPONENT_AREA_RATIO),
+            ),
         )
 
         soil_map = cv2.resize(
@@ -203,10 +233,10 @@ class Soil(ImageComponent):
         )
 
         # Reinforce only very strong terrain cues so major rivers/escarpments stay visible.
-        slope_q60 = float(np.quantile(slope, 0.60))
-        slope_q80 = float(np.quantile(slope, 0.80))
-        wet_q92 = float(np.quantile(wetness, 0.92))
-        dry_q92 = float(np.quantile(dryness, 0.92))
+        slope_q60 = float(np.quantile(slope, Parameters.SOIL_SLOPE_MODERATE_Q))
+        slope_q80 = float(np.quantile(slope, Parameters.SOIL_SLOPE_ESCARPMENT_Q))
+        wet_q92 = float(np.quantile(wetness, Parameters.SOIL_WET_STRONG_Q))
+        dry_q92 = float(np.quantile(dryness, Parameters.SOIL_DRY_STRONG_Q))
 
         strong_wet = (wetness >= wet_q92) & (slope <= slope_q60)
         strong_dry = (dryness >= dry_q92) & (slope >= slope_q60)
@@ -216,19 +246,33 @@ class Soil(ImageComponent):
         soil_map[strong_dry] = Parameters.SOIL_VALUE_LOAMY_SAND
         soil_map[escarpment] = Parameters.SOIL_VALUE_SANDY_LOAM
 
-        soil_map = self._majority_filter(soil_map, kernel_size=5, iterations=1)
+        soil_map = self._majority_filter(
+            soil_map,
+            kernel_size=Parameters.SOIL_FINAL_MAJORITY_KERNEL,
+            iterations=Parameters.SOIL_FINAL_MAJORITY_ITERATIONS,
+        )
         protected_mask = strong_wet | strong_dry
         soil_map = self._remove_small_components(
             soil_map,
-            minimum_area=max(360, int(soil_map.size * 0.00065)),
+            minimum_area=max(
+                Parameters.SOIL_PROTECTED_MIN_COMPONENT_AREA,
+                int(soil_map.size * Parameters.SOIL_PROTECTED_MIN_COMPONENT_AREA_RATIO),
+            ),
             protected_mask=protected_mask,
         )
         # Final micro-island pass: remove very small artifacts everywhere.
         soil_map = self._remove_small_components(
             soil_map,
-            minimum_area=max(240, int(soil_map.size * 0.00040)),
+            minimum_area=max(
+                Parameters.SOIL_GLOBAL_MIN_COMPONENT_AREA,
+                int(soil_map.size * Parameters.SOIL_GLOBAL_MIN_COMPONENT_AREA_RATIO),
+            ),
         )
-        soil_map = self._majority_filter(soil_map, kernel_size=5, iterations=1)
+        soil_map = self._majority_filter(
+            soil_map,
+            kernel_size=Parameters.SOIL_FINAL_MAJORITY_KERNEL,
+            iterations=Parameters.SOIL_FINAL_MAJORITY_ITERATIONS,
+        )
 
         self.logger.debug(
             "Soil classifier (macro-first): coarse_size=%s, mean_wetness=%.3f, mean_dryness=%.3f",
@@ -249,8 +293,18 @@ class Soil(ImageComponent):
         Returns:
             np.ndarray: Wetness score in [0, 1].
         """
-        local_mean_small = cv2.GaussianBlur(normalized_height, (0, 0), sigmaX=3.0, sigmaY=3.0)
-        local_mean_large = cv2.GaussianBlur(normalized_height, (0, 0), sigmaX=9.0, sigmaY=9.0)
+        local_mean_small = cv2.GaussianBlur(
+            normalized_height,
+            (0, 0),
+            sigmaX=Parameters.SOIL_MACRO_SMOOTH_SIGMA / 2,
+            sigmaY=Parameters.SOIL_MACRO_SMOOTH_SIGMA / 2,
+        )
+        local_mean_large = cv2.GaussianBlur(
+            normalized_height,
+            (0, 0),
+            sigmaX=Parameters.SOIL_REGIONAL_SMOOTH_SIGMA / 2,
+            sigmaY=Parameters.SOIL_REGIONAL_SMOOTH_SIGMA / 2,
+        )
 
         depression_small = self._normalize_to_unit(
             np.clip(local_mean_small - normalized_height, 0.0, None)
@@ -260,7 +314,11 @@ class Soil(ImageComponent):
         )
 
         inverse_slope = 1.0 - slope
-        wetness = (0.45 * depression_small) + (0.35 * depression_large) + (0.20 * inverse_slope)
+        wetness = (
+            (Parameters.SOIL_WETNESS_WEIGHT_CONCAVITY * depression_small)
+            + (Parameters.SOIL_WETNESS_WEIGHT_LOW_SLOPE * depression_large)
+            + (Parameters.SOIL_WETNESS_WEIGHT_REGIONAL_LOW * inverse_slope)
+        )
         return self._normalize_to_unit(np.asarray(wetness, dtype=np.float32))
 
     @staticmethod
@@ -285,18 +343,27 @@ class Soil(ImageComponent):
         self, normalized_height: np.ndarray, slope: np.ndarray
     ) -> tuple[np.ndarray, np.ndarray]:
         """Build a mask of abrupt terrain transitions (scarps/breaklines)."""
-        kernel = np.ones((5, 5), np.uint8)
+        kernel = np.ones(
+            (Parameters.SOIL_BREAKLINE_KERNEL_SIZE, Parameters.SOIL_BREAKLINE_KERNEL_SIZE),
+            np.uint8,
+        )
         local_max = cv2.dilate(normalized_height, kernel)
         local_min = cv2.erode(normalized_height, kernel)
         local_relief = np.asarray(local_max - local_min, dtype=np.float32)
         local_relief = self._normalize_to_unit(local_relief)
 
-        curvature = np.abs(cv2.Laplacian(normalized_height, cv2.CV_32F, ksize=3))
+        curvature = np.abs(
+            cv2.Laplacian(
+                normalized_height,
+                cv2.CV_32F,
+                ksize=Parameters.SOIL_LAPLACIAN_KERNEL_SIZE,
+            )
+        )
         curvature = self._normalize_to_unit(np.asarray(curvature, dtype=np.float32))
 
         break_strength = np.maximum(local_relief, curvature)
-        break_q85 = float(np.quantile(break_strength, 0.85))
-        slope_q50 = float(np.quantile(slope, 0.50))
+        break_q85 = float(np.quantile(break_strength, Parameters.SOIL_BREAKLINE_STRENGTH_Q))
+        slope_q50 = float(np.quantile(slope, Parameters.SOIL_BREAKLINE_SLOPE_Q))
 
         breakline_mask = (break_strength >= break_q85) & (slope >= slope_q50)
         return breakline_mask, break_strength
@@ -343,7 +410,16 @@ class Soil(ImageComponent):
         minimum_area: int,
         protected_mask: np.ndarray | None = None,
     ) -> np.ndarray:
-        """Remove tiny class islands while optionally preserving protected regions."""
+        """Remove tiny class islands while optionally preserving protected regions.
+
+        Arguments:
+            soil_map (np.ndarray): Soil class map with values 0..3.
+            minimum_area (int): Connected-component area threshold for replacement.
+            protected_mask (np.ndarray | None): Pixels that should not be replaced.
+
+        Returns:
+            np.ndarray: Cleaned soil class map.
+        """
         result = soil_map.copy()
         classes = np.array(
             [
@@ -354,7 +430,13 @@ class Soil(ImageComponent):
             ],
             dtype=np.uint8,
         )
-        kernel = np.ones((5, 5), dtype=np.uint8)
+        kernel = np.ones(
+            (
+                Parameters.SOIL_COMPONENT_NEIGHBOR_KERNEL_SIZE,
+                Parameters.SOIL_COMPONENT_NEIGHBOR_KERNEL_SIZE,
+            ),
+            dtype=np.uint8,
+        )
 
         for cls in classes:
             class_mask = (result == cls).astype(np.uint8)
@@ -372,7 +454,11 @@ class Soil(ImageComponent):
                 if protected_mask is not None and np.any(protected_mask[component]):
                     continue
 
-                border = cv2.dilate(component.astype(np.uint8), kernel, iterations=3).astype(bool)
+                border = cv2.dilate(
+                    component.astype(np.uint8),
+                    kernel,
+                    iterations=Parameters.SOIL_COMPONENT_NEIGHBOR_DILATION_ITERATIONS,
+                ).astype(bool)
                 border = border & ~component
                 neighbors = result[border]
                 if neighbors.size == 0:
