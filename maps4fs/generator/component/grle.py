@@ -58,6 +58,11 @@ class GRLE(ImageComponent):
         self.xml_path = self.game.farmlands_xml_path
 
     def _read_grle_schema(self) -> list[GRLELayer]:
+        """Load and parse GRLE schema layers from the game configuration.
+
+        Returns:
+            list[GRLELayer]: Parsed GRLE layers, or an empty list on read/parse errors.
+        """
         grle_schema_path = self.game.grle_schema
 
         try:
@@ -86,7 +91,7 @@ class GRLE(ImageComponent):
 
     @monitor_performance
     def process(self) -> None:
-        """Generates InfoLayer PNG files based on the GRLE schema."""
+        """Generate all GRLE info layers and populate them with generated content."""
         grle_schema = self._read_grle_schema()
         if not grle_schema:
             self.logger.debug("GRLE schema is not obtained, skipping the processing.")
@@ -208,7 +213,7 @@ class GRLE(ImageComponent):
 
     @monitor_performance
     def _add_farmlands(self) -> None:
-        """Adds farmlands to the InfoLayer PNG file."""
+        """Add farmlands polygons to the farmland info layer and update farmlands XML."""
         farmlands = []
 
         fields = self.get_infolayer_data(Parameters.TEXTURES, Parameters.FIELDS)
@@ -329,7 +334,7 @@ class GRLE(ImageComponent):
 
     @monitor_performance
     def _add_plants(self) -> None:
-        """Adds plants to the InfoLayer PNG file."""
+        """Generate foliage values and write them into densityMap_fruits channel 0."""
         grass_layer = self.map.context.get_layer_by_usage("grass")
         if not grass_layer:
             self.logger.warning("Grass layer not found in the texture component.")
@@ -360,53 +365,24 @@ class GRLE(ImageComponent):
             self.logger.warning("Density map for fruits not found in %s.", density_map_fruit_path)
             return
 
-        # Single channeled 8-bit image, where non-zero values (255) are where the grass is.
-        grass_image = cv2.imread(grass_image_path, cv2.IMREAD_UNCHANGED)
+        grass_image = self._load_binary_mask_image(grass_image_path, "grass")
         if grass_image is None:
-            self.logger.warning("Could not load grass mask image: %s", grass_image_path)
             return
-        if grass_image.ndim == 3:
-            grass_image = np.any(grass_image > 0, axis=2).astype(np.uint8) * 255
 
-        grle_density_map_fruits = self.get_info_layer_by_name(Parameters.DENSITY_MAP_FRUITS)
-        if not grle_density_map_fruits:
-            self.logger.error(
-                "Density map for fruits InfoLayer PNG file not found in the GRLE schema."
-            )
+        use_extended_foliage_values, height_multiplier, width_multiplier = (
+            self._get_foliage_density_settings()
+        )
+        if height_multiplier <= 0 or width_multiplier <= 0:
             return
-        normalized_dtype = str(grle_density_map_fruits.data_type).strip().lower()
-        use_extended_foliage_values = normalized_dtype in {"uint16", "np.uint16", "numpy.uint16"}
+
         self.map.context.foliage_density_map_uint16 = use_extended_foliage_values
 
-        height_multiplier = int(grle_density_map_fruits.height_multiplier)
-        width_multiplier = int(grle_density_map_fruits.width_multiplier)
-        self.logger.debug(
-            "Resizing grass and forest images with height multiplier %s and width multiplier %s.",
+        grass_image = self._resize_and_merge_grass_forest_masks(
+            grass_image,
+            forest_image,
             height_multiplier,
             width_multiplier,
         )
-
-        # Density map of the fruits by default is 2X size of the base image, so we need to resize it.
-        # However, it's possible to customize the values in the schema, so we need to take that into account.
-        grass_image = cv2.resize(
-            grass_image,
-            (grass_image.shape[1] * width_multiplier, grass_image.shape[0] * height_multiplier),
-            interpolation=cv2.INTER_NEAREST,
-        )
-        if forest_image is not None:
-            if forest_image.ndim == 3:
-                forest_image = np.any(forest_image > 0, axis=2).astype(np.uint8) * 255
-            forest_image = cv2.resize(
-                forest_image,
-                (
-                    forest_image.shape[1] * width_multiplier,
-                    forest_image.shape[0] * height_multiplier,
-                ),
-                interpolation=cv2.INTER_NEAREST,
-            )
-
-            # Add non zero values from the forest image to the grass image.
-            grass_image[forest_image != 0] = 255
 
         base_grass = self.map.grle_settings.base_grass
         base_layer_pixel_value = self._get_base_grass_pixel_value(
@@ -414,22 +390,13 @@ class GRLE(ImageComponent):
             use_extended_foliage_values,
         )
 
-        # Build the allowed placement mask up front so we never draw outside valid foliage zones.
-        placement_mask = grass_image != 0
-        kernel = np.ones((3, 3), np.uint8)
-        placement_mask = cv2.erode(placement_mask.astype(np.uint8), kernel, iterations=1) > 0
-
-        # Strip one-pixel frame to avoid artifacts on map edges.
-        placement_mask_frame = self.remove_edge_pixel_values(placement_mask.astype(np.uint8) * 255)
-        placement_mask = placement_mask_frame > 0
-
-        grass_image_copy: np.ndarray
-        if use_extended_foliage_values:
-            grass_image_copy = np.zeros(grass_image.shape, dtype=np.uint16)
-        else:
-            grass_image_copy = np.zeros(grass_image.shape, dtype=np.uint8)
-
-        grass_image_copy[placement_mask] = base_layer_pixel_value
+        placement_mask = self._build_placement_mask(grass_image)
+        grass_image_copy = self._create_base_grass_image(
+            grass_image.shape,
+            placement_mask,
+            base_layer_pixel_value,
+            use_extended_foliage_values,
+        )
 
         # Create organic diversity directly inside the valid placement mask.
         island_count = int(self.scaled_size * Parameters.PLANTS_ISLAND_PERCENT // 100)
@@ -450,29 +417,210 @@ class GRLE(ImageComponent):
 
         grass_image_copy = self.remove_edge_pixel_values(grass_image_copy)
 
-        # Three channeled density map image where non-zero values in channel 0
-        # represent foliage types. Depending on schema, dtype can be uint8 or uint16.
+        if not self._save_plants_to_density_map(density_map_fruit_path, grass_image_copy):
+            return
+
+        self.assets.plants = density_map_fruit_path
+
+        self.logger.debug("Updated density map for fruits saved in %s.", density_map_fruit_path)
+
+    def _load_binary_mask_image(self, image_path: str, image_kind: str) -> np.ndarray | None:
+        """Load an image and normalize it to a binary uint8 mask.
+
+        Arguments:
+            image_path (str): Source image path.
+            image_kind (str): Human-readable image type used in logs.
+
+        Returns:
+            np.ndarray | None: Binary mask where non-zero means active pixels, or None on failure.
+        """
+        image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+        if image is None:
+            self.logger.warning("Could not load %s mask image: %s", image_kind, image_path)
+            return None
+
+        if image.ndim == 3:
+            return np.any(image > 0, axis=2).astype(np.uint8) * Parameters.PLANT_BINARY_MASK_VALUE
+
+        return (image > 0).astype(np.uint8) * Parameters.PLANT_BINARY_MASK_VALUE
+
+    def _get_foliage_density_settings(self) -> tuple[bool, int, int]:
+        """Resolve foliage bit depth mode and density map resize multipliers.
+
+        Returns:
+            tuple[bool, int, int]:
+                - Whether uint16 foliage encoding is active.
+                - Height multiplier for density map dimensions.
+                - Width multiplier for density map dimensions.
+        """
+        grle_density_map_fruits = self.get_info_layer_by_name(Parameters.DENSITY_MAP_FRUITS)
+        if not grle_density_map_fruits:
+            self.logger.error(
+                "Density map for fruits InfoLayer PNG file not found in the GRLE schema."
+            )
+            return False, 0, 0
+
+        normalized_dtype = str(grle_density_map_fruits.data_type).strip().lower()
+        use_extended_foliage_values = normalized_dtype in {"uint16", "np.uint16", "numpy.uint16"}
+
+        height_multiplier = int(grle_density_map_fruits.height_multiplier)
+        width_multiplier = int(grle_density_map_fruits.width_multiplier)
+        self.logger.debug(
+            "Resizing grass and forest images with height multiplier %s and width multiplier %s.",
+            height_multiplier,
+            width_multiplier,
+        )
+        return use_extended_foliage_values, height_multiplier, width_multiplier
+
+    def _resize_and_merge_grass_forest_masks(
+        self,
+        grass_image: np.ndarray,
+        forest_image: np.ndarray | None,
+        height_multiplier: int,
+        width_multiplier: int,
+    ) -> np.ndarray:
+        """Resize grass and optional forest masks, then merge them into one mask.
+
+        Arguments:
+            grass_image (np.ndarray): Base grass mask image.
+            forest_image (np.ndarray | None): Optional forest mask image.
+            height_multiplier (int): Y-axis scale factor to density map size.
+            width_multiplier (int): X-axis scale factor to density map size.
+
+        Returns:
+            np.ndarray: Resized binary mask with forest pixels merged into grass mask.
+        """
+        resized_grass = cv2.resize(
+            grass_image,
+            (grass_image.shape[1] * width_multiplier, grass_image.shape[0] * height_multiplier),
+            interpolation=cv2.INTER_NEAREST,
+        )
+
+        if forest_image is None:
+            return resized_grass
+
+        prepared_forest = self._prepare_optional_forest_mask(
+            forest_image,
+            height_multiplier,
+            width_multiplier,
+        )
+        if prepared_forest is None:
+            return resized_grass
+
+        resized_grass[prepared_forest != 0] = Parameters.PLANT_BINARY_MASK_VALUE
+        return resized_grass
+
+    def _prepare_optional_forest_mask(
+        self,
+        forest_image: np.ndarray,
+        height_multiplier: int,
+        width_multiplier: int,
+    ) -> np.ndarray | None:
+        """Normalize and resize optional forest mask to density map resolution.
+
+        Arguments:
+            forest_image (np.ndarray): Source forest mask image.
+            height_multiplier (int): Y-axis scale factor to density map size.
+            width_multiplier (int): X-axis scale factor to density map size.
+
+        Returns:
+            np.ndarray | None: Resized binary forest mask, or None if conversion fails.
+        """
+        if forest_image.ndim == 3:
+            forest_image = (
+                np.any(forest_image > 0, axis=2).astype(np.uint8)
+                * Parameters.PLANT_BINARY_MASK_VALUE
+            )
+        else:
+            forest_image = (forest_image > 0).astype(np.uint8) * Parameters.PLANT_BINARY_MASK_VALUE
+
+        return cv2.resize(
+            forest_image,
+            (
+                forest_image.shape[1] * width_multiplier,
+                forest_image.shape[0] * height_multiplier,
+            ),
+            interpolation=cv2.INTER_NEAREST,
+        )
+
+    def _build_placement_mask(self, grass_image: np.ndarray) -> np.ndarray:
+        """Create the final valid placement mask for plant generation.
+
+        Arguments:
+            grass_image (np.ndarray): Resized binary grass mask.
+
+        Returns:
+            np.ndarray: Boolean mask where True indicates plant placement is allowed.
+        """
+        placement_mask = grass_image != 0
+        kernel_size = Parameters.PLANT_MASK_EROSION_KERNEL_SIZE
+        kernel = np.ones((kernel_size, kernel_size), np.uint8)
+        placement_mask = (
+            cv2.erode(
+                placement_mask.astype(np.uint8),
+                kernel,
+                iterations=Parameters.PLANT_MASK_EROSION_ITERATIONS,
+            )
+            > 0
+        )
+
+        placement_mask_frame = self.remove_edge_pixel_values(
+            placement_mask.astype(np.uint8) * Parameters.PLANT_BINARY_MASK_VALUE
+        )
+        return placement_mask_frame > 0
+
+    def _create_base_grass_image(
+        self,
+        shape: tuple[int, ...],
+        placement_mask: np.ndarray,
+        base_layer_pixel_value: int,
+        use_extended_foliage_values: bool,
+    ) -> np.ndarray:
+        """Create an output image prefilled with base grass value in valid pixels.
+
+        Arguments:
+            shape (tuple[int, ...]): Target image shape.
+            placement_mask (np.ndarray): Boolean valid placement mask.
+            base_layer_pixel_value (int): Base foliage value to write.
+            use_extended_foliage_values (bool): Whether uint16 output mode is active.
+
+        Returns:
+            np.ndarray: Initialized base image in uint8 or uint16 format.
+        """
+        dtype = np.uint16 if use_extended_foliage_values else np.uint8
+        grass_image_copy = np.zeros(shape, dtype=dtype)
+        grass_image_copy[placement_mask] = base_layer_pixel_value
+        return grass_image_copy
+
+    def _save_plants_to_density_map(
+        self,
+        density_map_fruit_path: str,
+        grass_image_copy: np.ndarray,
+    ) -> bool:
+        """Write generated plant values into densityMap_fruits and save it.
+
+        Arguments:
+            density_map_fruit_path (str): Path to densityMap_fruits image file.
+            grass_image_copy (np.ndarray): Generated channel-0 foliage values.
+
+        Returns:
+            bool: True if the file was updated and saved, False if loading failed.
+        """
         density_map_fruits = cv2.imread(density_map_fruit_path, cv2.IMREAD_UNCHANGED)
         if density_map_fruits is None:
             self.logger.warning("Could not load density map for fruits: %s", density_map_fruit_path)
-            return
+            return False
         self.logger.debug("Density map for fruits loaded, shape: %s.", density_map_fruits.shape)
 
         if grass_image_copy.dtype != density_map_fruits.dtype:
             grass_image_copy = grass_image_copy.astype(density_map_fruits.dtype)
 
-        # Put the updated base image as the B channel in the density map.
         density_map_fruits[:, :, 0] = grass_image_copy
         self.logger.debug("Updated base image added as the B channel in the density map.")
 
-        # Save the updated density map.
-        # Ensure that order of channels is correct because CV2 uses BGR and we need RGB.
         density_map_fruits = cv2.cvtColor(density_map_fruits, cv2.COLOR_BGR2RGB)
         cv2.imwrite(density_map_fruit_path, density_map_fruits)
-
-        self.assets.plants = density_map_fruit_path
-
-        self.logger.debug("Updated density map for fruits saved in %s.", density_map_fruit_path)
+        return True
 
     def _get_base_grass_pixel_value(
         self, base_grass: str, use_extended_foliage_values: bool
@@ -522,14 +670,93 @@ class GRLE(ImageComponent):
 
         height, width = image.shape[:2]
 
-        # Keep large patches away from mask boundaries to avoid road-cut islands.
+        valid_mask_u8 = valid_mask.astype(np.uint8)
+        macro_mask = self._build_macro_plant_mask(valid_mask, height, width)
+        coverage = self._calculate_plant_coverage(complexity_value)
+
+        # Build diversity independently in each connected region, so roads split vegetation naturally.
+        num_labels, label_map = cv2.connectedComponents(valid_mask_u8, connectivity=8)
+        smooth_size = Parameters.PLANT_SMOOTH_KERNEL_SIZE
+        smooth_kernel = np.ones((smooth_size, smooth_size), np.uint8)
+        assigned_mask = np.zeros_like(valid_mask, dtype=bool)
+        large_sigma, small_sigma, selector_sigma = self._get_component_noise_sigmas(height, width)
+
+        for label in range(1, num_labels):
+            component_mask = label_map == label
+            component_macro = macro_mask & component_mask
+            component_pixels = int(np.count_nonzero(component_macro))
+            if component_pixels < Parameters.PLANT_COMPONENT_MIN_PIXELS:
+                continue
+
+            component_diversity = self._build_component_diversity_mask(
+                component_macro,
+                height,
+                width,
+                coverage,
+                smooth_kernel,
+                large_sigma,
+                small_sigma,
+            )
+
+            if np.count_nonzero(component_diversity) == 0:
+                continue
+
+            self._assign_component_plant_values(
+                image,
+                component_diversity,
+                possible_values,
+                selector_sigma,
+                assigned_mask,
+                height,
+                width,
+            )
+
+        # Add sparse single plants and tiny clumps for micro diversity, including near edges.
+        self._apply_micro_plant_diversity(
+            image,
+            valid_mask,
+            valid_pixels,
+            possible_values,
+            coverage,
+        )
+
+        return image
+
+    def _build_macro_plant_mask(
+        self,
+        valid_mask: np.ndarray,
+        height: int,
+        width: int,
+    ) -> np.ndarray:
+        """Create macro placement mask offset from invalid borders with randomized wobble.
+
+        Arguments:
+            valid_mask (np.ndarray): Boolean mask of all valid foliage pixels.
+            height (int): Image height.
+            width (int): Image width.
+
+        Returns:
+            np.ndarray: Boolean mask suitable for large-scale plant patch generation.
+        """
         valid_mask_u8 = valid_mask.astype(np.uint8)
         distance_to_invalid = cv2.distanceTransform(valid_mask_u8, cv2.DIST_L2, 3)
-        edge_buffer_px = max(2.0, min(6.0, float(max(height, width)) / 320.0))
+        edge_buffer_px = max(
+            Parameters.PLANT_EDGE_BUFFER_MIN,
+            min(
+                Parameters.PLANT_EDGE_BUFFER_MAX,
+                float(max(height, width)) / Parameters.PLANT_EDGE_BUFFER_DIVISOR,
+            ),
+        )
 
-        # Use multi-scale smooth random edge offsets so borders are clearly organic.
-        edge_jitter_sigma_coarse = max(3.0, float(max(height, width)) / 170.0)
-        edge_jitter_sigma_fine = max(1.5, float(max(height, width)) / 480.0)
+        edge_jitter_sigma_coarse = max(
+            Parameters.PLANT_EDGE_JITTER_COARSE_SIGMA_MIN,
+            float(max(height, width)) / Parameters.PLANT_EDGE_JITTER_COARSE_SIGMA_DIVISOR,
+        )
+        edge_jitter_sigma_fine = max(
+            Parameters.PLANT_EDGE_JITTER_FINE_SIGMA_MIN,
+            float(max(height, width)) / Parameters.PLANT_EDGE_JITTER_FINE_SIGMA_DIVISOR,
+        )
+
         edge_jitter_noise_coarse = cv2.GaussianBlur(
             np.random.random((height, width)).astype(np.float32),
             (0, 0),
@@ -540,121 +767,230 @@ class GRLE(ImageComponent):
             (0, 0),
             edge_jitter_sigma_fine,
         )
-        edge_jitter_noise = (edge_jitter_noise_coarse * 0.7) + (edge_jitter_noise_fine * 0.3)
+        edge_jitter_noise = (
+            edge_jitter_noise_coarse * Parameters.PLANT_EDGE_JITTER_COARSE_WEIGHT
+            + edge_jitter_noise_fine * Parameters.PLANT_EDGE_JITTER_FINE_WEIGHT
+        )
+        normalized_edge_jitter = np.empty_like(edge_jitter_noise)
         edge_jitter_noise = cv2.normalize(
             edge_jitter_noise,
-            None,
-            alpha=-1.0,
-            beta=1.2,
+            normalized_edge_jitter,
+            alpha=Parameters.PLANT_EDGE_JITTER_NORMALIZE_ALPHA,
+            beta=Parameters.PLANT_EDGE_JITTER_NORMALIZE_BETA,
             norm_type=cv2.NORM_MINMAX,
             dtype=cv2.CV_32F,
         )
+
         local_edge_buffer = np.clip(
             edge_buffer_px * (1.0 + edge_jitter_noise),
-            0.9,
-            edge_buffer_px * 2.4,
+            Parameters.PLANT_EDGE_BUFFER_CLIP_MIN,
+            edge_buffer_px * Parameters.PLANT_EDGE_BUFFER_CLIP_MAX_FACTOR,
         )
-        macro_mask = valid_mask & (distance_to_invalid >= local_edge_buffer)
+        return valid_mask & (distance_to_invalid >= local_edge_buffer)
 
-        # Derive macro-coverage from complexity while keeping realistic cap to preserve base grass.
-        coverage = min(0.52, max(0.14, 0.14 + (complexity_value / max(1, self.scaled_size)) * 0.34))
+    def _calculate_plant_coverage(self, complexity_value: int) -> float:
+        """Calculate macro diversity coverage ratio from complexity input.
 
-        # Build diversity independently in each connected region, so roads split vegetation naturally.
-        num_labels, label_map = cv2.connectedComponents(valid_mask_u8, connectivity=8)
-        smooth_kernel = np.ones((3, 3), np.uint8)
-        assigned_mask = np.zeros_like(valid_mask, dtype=bool)
-        large_sigma = max(3.0, float(max(height, width)) / 80.0)
-        small_sigma = max(1.0, float(max(height, width)) / 260.0)
-        selector_sigma = max(1.0, float(max(height, width)) / 170.0)
+        Arguments:
+            complexity_value (int): Complexity value used to scale variation density.
 
-        for label in range(1, num_labels):
-            component_mask = label_map == label
-            component_macro = macro_mask & component_mask
-            component_pixels = int(np.count_nonzero(component_macro))
-            if component_pixels < 24:
-                continue
+        Returns:
+            float: Coverage ratio in the configured min/max range.
+        """
+        return min(
+            Parameters.PLANT_COVERAGE_MAX,
+            max(
+                Parameters.PLANT_COVERAGE_MIN,
+                Parameters.PLANT_COVERAGE_BASE
+                + (complexity_value / max(1, self.scaled_size))
+                * Parameters.PLANT_COVERAGE_COMPLEXITY_SCALE,
+            ),
+        )
 
-            # Local smooth noise keeps each component's patch geometry independent.
-            component_large_noise = cv2.GaussianBlur(
-                np.random.random((height, width)).astype(np.float32),
-                (0, 0),
-                large_sigma,
-            )
-            component_small_noise = cv2.GaussianBlur(
-                np.random.random((height, width)).astype(np.float32),
-                (0, 0),
-                small_sigma,
-            )
-            component_noise = (component_large_noise * 0.76) + (component_small_noise * 0.24)
+    def _get_component_noise_sigmas(self, height: int, width: int) -> tuple[float, float, float]:
+        """Return Gaussian blur sigmas used by component and selector noise layers.
 
-            threshold = float(np.quantile(component_noise[component_macro], 1.0 - coverage))
-            component_diversity = component_macro & (component_noise >= threshold)
+        Arguments:
+            height (int): Image height.
+            width (int): Image width.
 
-            component_diversity = cv2.morphologyEx(
-                component_diversity.astype(np.uint8),
-                cv2.MORPH_OPEN,
-                smooth_kernel,
-                iterations=1,
-            )
-            component_diversity = cv2.morphologyEx(
-                component_diversity,
-                cv2.MORPH_CLOSE,
-                smooth_kernel,
-                iterations=1,
-            ).astype(bool)
-            component_diversity &= component_macro
+        Returns:
+            tuple[float, float, float]: Large, small, and selector blur sigma values.
+        """
+        max_dim = float(max(height, width))
+        large_sigma = max(
+            Parameters.PLANT_COMPONENT_LARGE_SIGMA_MIN,
+            max_dim / Parameters.PLANT_COMPONENT_LARGE_SIGMA_DIVISOR,
+        )
+        small_sigma = max(
+            Parameters.PLANT_COMPONENT_SMALL_SIGMA_MIN,
+            max_dim / Parameters.PLANT_COMPONENT_SMALL_SIGMA_DIVISOR,
+        )
+        selector_sigma = max(
+            Parameters.PLANT_SELECTOR_SIGMA_MIN,
+            max_dim / Parameters.PLANT_SELECTOR_SIGMA_DIVISOR,
+        )
+        return large_sigma, small_sigma, selector_sigma
 
-            if np.count_nonzero(component_diversity) == 0:
-                continue
+    def _build_component_diversity_mask(
+        self,
+        component_macro: np.ndarray,
+        height: int,
+        width: int,
+        coverage: float,
+        smooth_kernel: np.ndarray,
+        large_sigma: float,
+        small_sigma: float,
+    ) -> np.ndarray:
+        """Build and smooth one connected component's diversity mask from blended noise.
 
-            selector_noise = cv2.GaussianBlur(
-                np.random.random((height, width)).astype(np.float32),
-                (0, 0),
-                selector_sigma,
-            )
-            selector_values = selector_noise[component_diversity]
-            quantile_edges = np.linspace(0.0, 1.0, len(possible_values) + 1)
+        Arguments:
+            component_macro (np.ndarray): Macro mask for a single connected component.
+            height (int): Image height.
+            width (int): Image width.
+            coverage (float): Target component coverage ratio.
+            smooth_kernel (np.ndarray): Morphology kernel used for open/close smoothing.
+            large_sigma (float): Sigma for coarse noise layer.
+            small_sigma (float): Sigma for fine noise layer.
 
-            for idx, plant_value in enumerate(possible_values):
-                low_q = float(np.quantile(selector_values, quantile_edges[idx]))
-                high_q = float(np.quantile(selector_values, quantile_edges[idx + 1]))
-                if idx == len(possible_values) - 1:
-                    band_mask = component_diversity & (selector_noise >= low_q)
-                else:
-                    band_mask = (
-                        component_diversity & (selector_noise >= low_q) & (selector_noise < high_q)
-                    )
-                band_mask &= ~assigned_mask
-                image[band_mask] = plant_value
-                assigned_mask |= band_mask
+        Returns:
+            np.ndarray: Smoothed boolean diversity mask for the component.
+        """
+        component_large_noise = cv2.GaussianBlur(
+            np.random.random((height, width)).astype(np.float32),
+            (0, 0),
+            large_sigma,
+        )
+        component_small_noise = cv2.GaussianBlur(
+            np.random.random((height, width)).astype(np.float32),
+            (0, 0),
+            small_sigma,
+        )
+        component_noise = (
+            component_large_noise * Parameters.PLANT_COMPONENT_LARGE_NOISE_WEIGHT
+            + component_small_noise * Parameters.PLANT_COMPONENT_SMALL_NOISE_WEIGHT
+        )
 
-        # Add sparse single plants and tiny clumps for micro diversity, including near edges.
-        sprinkle_ratio = min(0.012, max(0.0025, coverage / 55.0))
+        threshold = float(np.quantile(component_noise[component_macro], 1.0 - coverage))
+        component_diversity_bool = component_macro & (component_noise >= threshold)
+
+        component_diversity_u8 = cv2.morphologyEx(
+            component_diversity_bool.astype(np.uint8),
+            cv2.MORPH_OPEN,
+            smooth_kernel,
+            iterations=Parameters.PLANT_SMOOTH_ITERATIONS,
+        )
+        component_diversity_u8 = cv2.morphologyEx(
+            component_diversity_u8,
+            cv2.MORPH_CLOSE,
+            smooth_kernel,
+            iterations=Parameters.PLANT_SMOOTH_ITERATIONS,
+        )
+        component_diversity = component_diversity_u8.astype(bool)
+        component_diversity &= component_macro
+        return component_diversity
+
+    def _assign_component_plant_values(
+        self,
+        image: np.ndarray,
+        component_diversity: np.ndarray,
+        possible_values: list[int],
+        selector_sigma: float,
+        assigned_mask: np.ndarray,
+        height: int,
+        width: int,
+    ) -> None:
+        """Assign disjoint plant-value bands inside one component diversity mask.
+
+        Arguments:
+            image (np.ndarray): Output foliage image to update.
+            component_diversity (np.ndarray): Boolean component diversity mask.
+            possible_values (list[int]): Plant pixel values available for assignment.
+            selector_sigma (float): Blur sigma for selector noise.
+            assigned_mask (np.ndarray): Global mask tracking already assigned pixels.
+            height (int): Image height.
+            width (int): Image width.
+        """
+        selector_noise = cv2.GaussianBlur(
+            np.random.random((height, width)).astype(np.float32),
+            (0, 0),
+            selector_sigma,
+        )
+        selector_values = selector_noise[component_diversity]
+        quantile_edges = np.linspace(0.0, 1.0, len(possible_values) + 1)
+
+        for idx, plant_value in enumerate(possible_values):
+            low_q = float(np.quantile(selector_values, quantile_edges[idx]))
+            high_q = float(np.quantile(selector_values, quantile_edges[idx + 1]))
+            if idx == len(possible_values) - 1:
+                band_mask = component_diversity & (selector_noise >= low_q)
+            else:
+                band_mask = (
+                    component_diversity & (selector_noise >= low_q) & (selector_noise < high_q)
+                )
+            band_mask &= ~assigned_mask
+            image[band_mask] = plant_value
+            assigned_mask |= band_mask
+
+    def _apply_micro_plant_diversity(
+        self,
+        image: np.ndarray,
+        valid_mask: np.ndarray,
+        valid_pixels: int,
+        possible_values: list[int],
+        coverage: float,
+    ) -> None:
+        """Apply sparse single-pixel and tiny-clump diversity across valid mask.
+
+        Arguments:
+            image (np.ndarray): Output foliage image to update.
+            valid_mask (np.ndarray): Boolean mask of valid placement pixels.
+            valid_pixels (int): Number of valid pixels in the mask.
+            possible_values (list[int]): Plant pixel values available for assignment.
+            coverage (float): Coverage ratio used to derive sprinkle density.
+        """
+        sprinkle_ratio = min(
+            Parameters.PLANT_MICRO_SPRINKLE_RATIO_MAX,
+            max(
+                Parameters.PLANT_MICRO_SPRINKLE_RATIO_MIN,
+                coverage / Parameters.PLANT_MICRO_SPRINKLE_RATIO_DIVISOR,
+            ),
+        )
         sprinkle_count = int(valid_pixels * sprinkle_ratio)
-        if sprinkle_count > 0:
-            available_y, available_x = np.where(valid_mask)
-            sample_size = min(sprinkle_count, available_y.size)
-            if sample_size > 0:
-                selected_indices = np.random.choice(
-                    available_y.size, size=sample_size, replace=False
-                )
-                sprinkle_y = available_y[selected_indices]
-                sprinkle_x = available_x[selected_indices]
-                sprinkle_values = np.random.choice(possible_values, size=sample_size)
-                image[sprinkle_y, sprinkle_x] = sprinkle_values
+        if sprinkle_count <= 0:
+            return
 
-                # Tiny local expansions create occasional pairs/triples instead of only single pixels.
-                clump_mask = np.zeros_like(valid_mask, dtype=np.uint8)
-                clump_mask[sprinkle_y, sprinkle_x] = 255
-                clump_mask = cv2.dilate(clump_mask, np.ones((2, 2), np.uint8), iterations=1) > 0
-                clump_mask &= valid_mask
-                random_clump_values = np.random.choice(
-                    possible_values,
-                    size=int(np.count_nonzero(clump_mask)),
-                )
-                image[clump_mask] = random_clump_values
+        available_y, available_x = np.where(valid_mask)
+        sample_size = min(sprinkle_count, available_y.size)
+        if sample_size <= 0:
+            return
 
-        return image
+        selected_indices = np.random.choice(available_y.size, size=sample_size, replace=False)
+        sprinkle_y = available_y[selected_indices]
+        sprinkle_x = available_x[selected_indices]
+        sprinkle_values = np.random.choice(possible_values, size=sample_size)
+        image[sprinkle_y, sprinkle_x] = sprinkle_values
+
+        clump_mask = np.zeros_like(valid_mask, dtype=np.uint8)
+        clump_mask[sprinkle_y, sprinkle_x] = Parameters.PLANT_BINARY_MASK_VALUE
+        clump_kernel_size = Parameters.PLANT_MICRO_CLUMP_KERNEL_SIZE
+        clump_kernel = np.ones((clump_kernel_size, clump_kernel_size), np.uint8)
+        clump_mask_bool = (
+            cv2.dilate(
+                clump_mask,
+                clump_kernel,
+                iterations=Parameters.PLANT_MICRO_CLUMP_ITERATIONS,
+            )
+            > 0
+        )
+        clump_mask_bool &= valid_mask
+
+        clump_count = int(np.count_nonzero(clump_mask_bool))
+        if clump_count <= 0:
+            return
+
+        random_clump_values = np.random.choice(possible_values, size=clump_count)
+        image[clump_mask_bool] = random_clump_values
 
     @monitor_performance
     def create_island_of_plants(
@@ -764,6 +1100,7 @@ class GRLE(ImageComponent):
 
     @monitor_performance
     def _process_environment(self) -> None:
+        """Populate environment info layer using area type and water texture masks."""
         info_layer_environment_path = self.game.environment_path
         if not info_layer_environment_path or not os.path.isfile(info_layer_environment_path):
             self.logger.warning(
@@ -879,7 +1216,7 @@ class GRLE(ImageComponent):
         return dilated_weight_image
 
     def _process_indoor(self) -> None:
-        """Processes the indoor layers."""
+        """Populate indoor info layer from indoor texture masks."""
         info_layer_indoor_path = self.game.indoor_mask_path
         if not info_layer_indoor_path or not os.path.isfile(info_layer_indoor_path):
             self.logger.warning(
