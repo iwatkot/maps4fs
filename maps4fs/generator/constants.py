@@ -165,14 +165,18 @@ class Parameters:
     SOIL_MAP_TAG = "soilMap"
     SOIL_MAP_GRLE_EXTENSION = ".grle"
     SOIL_MAP_I3D_LAYER_NAME = "soilMap"
-    SOIL_MAP_I3D_NUM_CHANNELS = "3"
+    SOIL_MAP_I3D_NUM_CHANNELS = "2"
     SOIL_MAP_FIXED_SIZE = 1024
-    SOIL_MAP_I3D_GROUP_NAME = "State"
+    SOIL_MAP_I3D_GROUP_NAME = "Type"
     SOIL_MAP_I3D_GROUP_FIRST_CHANNEL = "0"
-    SOIL_MAP_I3D_OPTION_OUTDOOR_VALUE = "0"
-    SOIL_MAP_I3D_OPTION_OUTDOOR_NAME = "Outdoor"
-    SOIL_MAP_I3D_OPTION_INDOOR_VALUE = "1"
-    SOIL_MAP_I3D_OPTION_INDOOR_NAME = "Indoor"
+    SOIL_MAP_I3D_OPTION_LOAMY_SAND_VALUE = "0"
+    SOIL_MAP_I3D_OPTION_LOAMY_SAND_NAME = "Loamy Sand"
+    SOIL_MAP_I3D_OPTION_SANDY_LOAM_VALUE = "1"
+    SOIL_MAP_I3D_OPTION_SANDY_LOAM_NAME = "Sandy Loam"
+    SOIL_MAP_I3D_OPTION_LOAM_VALUE = "2"
+    SOIL_MAP_I3D_OPTION_LOAM_NAME = "Loam"
+    SOIL_MAP_I3D_OPTION_SILTY_CLAY_VALUE = "3"
+    SOIL_MAP_I3D_OPTION_SILTY_CLAY_NAME = "Silty Clay"
     SOIL_MAP_I3D_OPTION_GROUP_XPATH = "{soil_layer_xpath}/Group[@name='{group_name}']"
 
     INDOOR_MASK_I3D_LAYER_NAME = "indoorMask"
@@ -182,11 +186,11 @@ class Parameters:
     I3D_XML_TAG_GROUP = "Group"
     I3D_XML_TAG_OPTION = "Option"
 
-    # Soil classes for custom soil maps (RGB, uint8)
-    SOIL_COLOR_LOAMY_SAND = (255, 0, 0)
-    SOIL_COLOR_SANDY_LOAM = (0, 255, 0)
-    SOIL_COLOR_LOAM = (0, 0, 255)
-    SOIL_COLOR_SILTY_CLAY = (255, 255, 0)
+    # Soil classes for custom soil maps (grayscale class IDs)
+    SOIL_VALUE_LOAMY_SAND = 0
+    SOIL_VALUE_SANDY_LOAM = 1
+    SOIL_VALUE_LOAM = 2
+    SOIL_VALUE_SILTY_CLAY = 3
 
     # ---- Plants / farmland limits ---------------------------------------
     FARMLAND_ID_LIMIT = 254

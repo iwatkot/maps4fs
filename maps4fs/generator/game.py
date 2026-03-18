@@ -25,6 +25,7 @@ from maps4fs.generator.component.grle import GRLE
 from maps4fs.generator.component.road import Road
 from maps4fs.generator.component.satellite import Satellite
 from maps4fs.generator.component.scene import Scene
+from maps4fs.generator.component.soil import Soil
 from maps4fs.generator.component.texture import Texture
 from maps4fs.generator.component.water import Water
 from maps4fs.generator.constants import Paths
@@ -178,6 +179,7 @@ class Game:
         Background,
         GRLE,
         Config,
+        Soil,
         Road,
         Scene,
         Building,

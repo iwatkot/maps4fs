@@ -214,14 +214,19 @@ def test_map(
     assert os.path.isfile(soil_map_png_path), f"Soil map not found: {soil_map_png_path}"
     soil_map_png = cv2.imread(soil_map_png_path, cv2.IMREAD_UNCHANGED)
     assert soil_map_png is not None, f"Soil map unreadable: {soil_map_png_path}"
-    assert soil_map_png.ndim == 3 and soil_map_png.shape[2] == 3, (
-        "Soil map must be RGB (3 channels), got shape " f"{soil_map_png.shape}"
-    )
+    assert (
+        soil_map_png.ndim == 2
+    ), f"Soil map must be single-channel grayscale, got {soil_map_png.shape}"
+    assert soil_map_png.dtype == np.uint8, f"Soil map dtype must be uint8, got {soil_map_png.dtype}"
     expected_soil_size = Parameters.SOIL_MAP_FIXED_SIZE
     assert soil_map_png.shape[:2] == (
         expected_soil_size,
         expected_soil_size,
     ), f"Soil map shape mismatch: {soil_map_png.shape[:2]} != {(expected_soil_size, expected_soil_size)}"
+    unique_soil_values = set(np.unique(soil_map_png).tolist())
+    assert unique_soil_values.issubset(
+        {0, 1, 2, 3}
+    ), f"Soil map contains unexpected class values: {sorted(unique_soil_values)}"
 
     soil_i3d_filename = f"data/{Parameters.INFO_LAYER_SOIL_MAP}"
     files_nodes = i3d_tree.getroot().findall(".//Files/File")
@@ -242,20 +247,33 @@ def test_map(
     ), "soilMap InfoLayer fileId does not match soil map File entry"
     assert (
         soil_info_layer_node.get("numChannels") == Parameters.SOIL_MAP_I3D_NUM_CHANNELS
-    ), "soilMap InfoLayer numChannels must be 3"
+    ), "soilMap InfoLayer numChannels mismatch"
 
-    soil_group_node = soil_info_layer_node.find("./Group[@name='State']")
-    assert soil_group_node is not None, "soilMap Group(State) is missing"
+    soil_group_node = soil_info_layer_node.find(
+        f"./Group[@name='{Parameters.SOIL_MAP_I3D_GROUP_NAME}']"
+    )
+    assert soil_group_node is not None, "soilMap Group is missing"
     assert (
         soil_group_node.get("numChannels") == Parameters.SOIL_MAP_I3D_NUM_CHANNELS
-    ), "soilMap Group(State) numChannels must match soilMap numChannels"
+    ), "soilMap Group numChannels must match soilMap numChannels"
     soil_group_option_pairs = [
         (option.get("value"), option.get("name")) for option in soil_group_node.findall("Option")
     ]
     assert soil_group_option_pairs == [
-        ("0", "Outdoor"),
-        ("1", "Indoor"),
-    ], f"soilMap Group(State) options mismatch: {soil_group_option_pairs}"
+        (
+            Parameters.SOIL_MAP_I3D_OPTION_LOAMY_SAND_VALUE,
+            Parameters.SOIL_MAP_I3D_OPTION_LOAMY_SAND_NAME,
+        ),
+        (
+            Parameters.SOIL_MAP_I3D_OPTION_SANDY_LOAM_VALUE,
+            Parameters.SOIL_MAP_I3D_OPTION_SANDY_LOAM_NAME,
+        ),
+        (Parameters.SOIL_MAP_I3D_OPTION_LOAM_VALUE, Parameters.SOIL_MAP_I3D_OPTION_LOAM_NAME),
+        (
+            Parameters.SOIL_MAP_I3D_OPTION_SILTY_CLAY_VALUE,
+            Parameters.SOIL_MAP_I3D_OPTION_SILTY_CLAY_NAME,
+        ),
+    ], f"soilMap Group options mismatch: {soil_group_option_pairs}"
 
     indoor_mask_layer_node = i3d_tree.getroot().find(".//InfoLayer[@name='indoorMask']")
     assert indoor_mask_layer_node is not None, "indoorMask InfoLayer missing in map.i3d"
