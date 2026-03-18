@@ -217,12 +217,18 @@ class Soil(ImageComponent):
         soil_map[escarpment] = Parameters.SOIL_VALUE_SANDY_LOAM
 
         soil_map = self._majority_filter(soil_map, kernel_size=5, iterations=1)
-        protected_mask = strong_wet | strong_dry | escarpment
+        protected_mask = strong_wet | strong_dry
         soil_map = self._remove_small_components(
             soil_map,
-            minimum_area=max(120, int(soil_map.size * 0.00025)),
+            minimum_area=max(220, int(soil_map.size * 0.00040)),
             protected_mask=protected_mask,
         )
+        # Final micro-island pass: remove very small artifacts everywhere.
+        soil_map = self._remove_small_components(
+            soil_map,
+            minimum_area=max(64, int(soil_map.size * 0.00010)),
+        )
+        soil_map = self._majority_filter(soil_map, kernel_size=3, iterations=1)
 
         self.logger.debug(
             "Soil classifier (macro-first): coarse_size=%s, mean_wetness=%.3f, mean_dryness=%.3f",
