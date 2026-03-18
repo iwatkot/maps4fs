@@ -105,48 +105,105 @@ class Soil(ImageComponent):
             norm_type=cv2.NORM_MINMAX,
         )
 
-        slope_x = cv2.Sobel(normalized_height, cv2.CV_32F, 1, 0, ksize=3)
-        slope_y = cv2.Sobel(normalized_height, cv2.CV_32F, 0, 1, ksize=3)
-        slope: np.ndarray = np.asarray(cv2.magnitude(slope_x, slope_y), dtype=np.float32)
-        if float(slope.max()) > 0:
-            slope_normalized = np.empty_like(slope, dtype=np.float32)
-            slope = cv2.normalize(
-                slope,
-                slope_normalized,
-                alpha=0.0,
-                beta=1.0,
-                norm_type=cv2.NORM_MINMAX,
-            )
-        else:
-            slope = np.zeros_like(normalized_height, dtype=np.float32)
-
-        lowland_mask = normalized_height <= 0.30
-        hilltop_mask = (normalized_height >= 0.72) & (slope <= 0.45)
-        slope_mask = (~lowland_mask) & (~hilltop_mask) & (slope >= 0.22)
-        loam_mask = ~(lowland_mask | hilltop_mask | slope_mask)
-
-        soil_map = np.full(
-            (soil_map_size, soil_map_size),
-            Parameters.SOIL_VALUE_LOAMY_SAND,
-            dtype=np.uint8,
-        )
-        soil_map[slope_mask] = Parameters.SOIL_VALUE_SANDY_LOAM
-        soil_map[loam_mask] = Parameters.SOIL_VALUE_LOAM
-        soil_map[lowland_mask] = Parameters.SOIL_VALUE_SILTY_CLAY
+        soil_map = self._classify_soils(normalized_height)
 
         soil_map_path = os.path.join(self.game.weights_dir_path, Parameters.INFO_LAYER_SOIL_MAP)
         cv2.imwrite(soil_map_path, soil_map)
+
+        values, counts = np.unique(soil_map, return_counts=True)
+        class_distribution = {
+            int(value): float(count / soil_map.size) for value, count in zip(values, counts)
+        }
 
         self.update_generation_info(
             {
                 "soil_map": soil_map_path,
                 "soil_map_resolution": f"{soil_map_size}x{soil_map_size}",
                 "soil_values": [0, 1, 2, 3],
+                "soil_distribution": class_distribution,
             }
         )
         self.logger.debug("Soil map created at: %s", soil_map_path)
 
         return soil_map_path
+
+    def _classify_soils(self, normalized_height: np.ndarray) -> np.ndarray:
+        """Classify soils from normalized elevation and terrain-derived proxies.
+
+        Arguments:
+            normalized_height (np.ndarray): DEM normalized to [0, 1].
+
+        Returns:
+            np.ndarray: Soil class map with values 0..3.
+        """
+        slope_x = cv2.Sobel(normalized_height, cv2.CV_32F, 1, 0, ksize=3)
+        slope_y = cv2.Sobel(normalized_height, cv2.CV_32F, 0, 1, ksize=3)
+        slope = np.asarray(cv2.magnitude(slope_x, slope_y), dtype=np.float32)
+        if float(slope.max()) > 0:
+            slope_normalized = np.empty_like(slope, dtype=np.float32)
+            slope = np.asarray(
+                cv2.normalize(
+                    slope,
+                    dst=slope_normalized,
+                    alpha=0.0,
+                    beta=1.0,
+                    norm_type=cv2.NORM_MINMAX,
+                ),
+                dtype=np.float32,
+            )
+        else:
+            slope = np.zeros_like(normalized_height, dtype=np.float32)
+
+        # Local depression depth approximates water accumulation tendency in basins.
+        neighborhood = cv2.GaussianBlur(normalized_height, (0, 0), sigmaX=2.0, sigmaY=2.0)
+        depression_depth = np.clip(neighborhood - normalized_height, 0.0, None)
+        if float(depression_depth.max()) > 0:
+            depression_normalized = np.empty_like(depression_depth, dtype=np.float32)
+            depression_depth = np.asarray(
+                cv2.normalize(
+                    depression_depth,
+                    dst=depression_normalized,
+                    alpha=0.0,
+                    beta=1.0,
+                    norm_type=cv2.NORM_MINMAX,
+                ),
+                dtype=np.float32,
+            )
+
+        height_q20 = float(np.quantile(normalized_height, 0.20))
+        height_q60 = float(np.quantile(normalized_height, 0.60))
+        height_q75 = float(np.quantile(normalized_height, 0.75))
+
+        slope_q30 = float(np.quantile(slope, 0.30))
+        slope_q50 = float(np.quantile(slope, 0.50))
+        slope_q70 = float(np.quantile(slope, 0.70))
+        slope_q85 = float(np.quantile(slope, 0.85))
+
+        depression_q70 = float(np.quantile(depression_depth, 0.70))
+
+        very_low = normalized_height <= height_q20
+        high = normalized_height >= height_q75
+        mid_or_high = normalized_height >= height_q60
+
+        flat = slope <= slope_q30
+        moderate = (slope > slope_q30) & (slope <= slope_q70)
+        steep = slope >= slope_q70
+        very_steep = slope >= slope_q85
+
+        depressional = depression_depth >= depression_q70
+
+        silty_clay_mask = very_low & flat & (depressional | (slope <= slope_q50))
+        loamy_sand_mask = (high & steep) | (mid_or_high & very_steep)
+        sandy_loam_mask = moderate & ~silty_clay_mask & ~loamy_sand_mask
+        loam_mask = ~(silty_clay_mask | loamy_sand_mask | sandy_loam_mask)
+
+        soil_map = np.full(normalized_height.shape, Parameters.SOIL_VALUE_LOAM, dtype=np.uint8)
+        soil_map[loamy_sand_mask] = Parameters.SOIL_VALUE_LOAMY_SAND
+        soil_map[sandy_loam_mask] = Parameters.SOIL_VALUE_SANDY_LOAM
+        soil_map[loam_mask] = Parameters.SOIL_VALUE_LOAM
+        soil_map[silty_clay_mask] = Parameters.SOIL_VALUE_SILTY_CLAY
+
+        return soil_map
 
     def _update_i3d_soil_map_references(self, soil_map_path: str) -> None:
         """Ensure map.i3d contains soil map file and InfoLayer entries.
