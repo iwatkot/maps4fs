@@ -156,8 +156,98 @@ class Parameters:
 
     # ---- Info-layer / density map file names ----------------------------
     INFO_LAYER_FARMLANDS = "infoLayer_farmlands.png"
+    INFO_LAYER_SOIL_MAP = "infoLayer_soilMap.png"
     DENSITY_MAP_FRUITS = "densityMap_fruits.png"
     INFO_LAYER_ENVIRONMENT = "infoLayer_environment.png"
+
+    # ---- Precision farming soil map --------------------------------------
+    PRECISION_FARMING_TAG = "precisionFarming"
+    SOIL_MAP_TAG = "soilMap"
+    SOIL_MAP_GRLE_EXTENSION = ".grle"
+    SOIL_MAP_I3D_LAYER_NAME = "soilMap"
+    SOIL_MAP_I3D_NUM_CHANNELS = "2"
+    SOIL_MAP_FIXED_SIZE = 1024
+    SOIL_MAP_I3D_GROUP_NAME = "Type"
+    SOIL_MAP_I3D_GROUP_FIRST_CHANNEL = "0"
+    SOIL_MAP_I3D_OPTION_LOAMY_SAND_VALUE = "0"
+    SOIL_MAP_I3D_OPTION_LOAMY_SAND_NAME = "Loamy Sand"
+    SOIL_MAP_I3D_OPTION_SANDY_LOAM_VALUE = "1"
+    SOIL_MAP_I3D_OPTION_SANDY_LOAM_NAME = "Sandy Loam"
+    SOIL_MAP_I3D_OPTION_LOAM_VALUE = "2"
+    SOIL_MAP_I3D_OPTION_LOAM_NAME = "Loam"
+    SOIL_MAP_I3D_OPTION_SILTY_CLAY_VALUE = "3"
+    SOIL_MAP_I3D_OPTION_SILTY_CLAY_NAME = "Silty Clay"
+    SOIL_MAP_I3D_OPTION_GROUP_XPATH = "{soil_layer_xpath}/Group[@name='{group_name}']"
+
+    INDOOR_MASK_I3D_LAYER_NAME = "indoorMask"
+    INDOOR_MASK_I3D_NUM_CHANNELS = "1"
+
+    I3D_XML_TAG_INFO_LAYER = "InfoLayer"
+    I3D_XML_TAG_GROUP = "Group"
+    I3D_XML_TAG_OPTION = "Option"
+
+    # Soil classes for custom soil maps (grayscale class IDs)
+    SOIL_VALUE_LOAMY_SAND = 0
+    SOIL_VALUE_SANDY_LOAM = 1
+    SOIL_VALUE_LOAM = 2
+    SOIL_VALUE_SILTY_CLAY = 3
+
+    # Soil preview outputs
+    SOIL_PREVIEW_NORMALIZED_FILENAME = "soil_map_normalized.png"
+    SOIL_PREVIEW_COLORED_FILENAME = "soil_map_colored.png"
+
+    # Soil signal extraction and macro model settings
+    SOIL_MACRO_SMOOTH_SIGMA = 6.0
+    SOIL_REGIONAL_SMOOTH_SIGMA = 18.0
+    SOIL_SOBEL_KERNEL_SIZE = 3
+    SOIL_LAPLACIAN_KERNEL_SIZE = 3
+    SOIL_BREAKLINE_KERNEL_SIZE = 5
+
+    # Coarse-grid classification sizing
+    SOIL_COARSE_GRID_MIN_SIZE = 128
+    SOIL_COARSE_GRID_DIVISOR = 4
+
+    # Soil tendency blend weights
+    SOIL_WETNESS_WEIGHT_CONCAVITY = 0.55
+    SOIL_WETNESS_WEIGHT_LOW_SLOPE = 0.30
+    SOIL_WETNESS_WEIGHT_REGIONAL_LOW = 0.15
+    SOIL_DRYNESS_WEIGHT_CONVEXITY = 0.50
+    SOIL_DRYNESS_WEIGHT_SLOPE = 0.35
+    SOIL_DRYNESS_WEIGHT_REGIONAL_HIGH = 0.15
+
+    # Coarse-grid quantiles
+    SOIL_WET_COARSE_Q = 0.80
+    SOIL_DRY_HIGH_COARSE_Q = 0.82
+    SOIL_DRY_MID_COARSE_Q = 0.62
+    SOIL_SLOPE_DRY_COARSE_Q = 0.45
+    SOIL_SLOPE_WET_COARSE_Q = 0.55
+    SOIL_SLOPE_SANDY_COARSE_Q = 0.65
+
+    # Strong terrain cue quantiles on full grid
+    SOIL_SLOPE_MODERATE_Q = 0.60
+    SOIL_SLOPE_ESCARPMENT_Q = 0.80
+    SOIL_WET_STRONG_Q = 0.92
+    SOIL_DRY_STRONG_Q = 0.92
+    SOIL_BREAKLINE_STRENGTH_Q = 0.85
+    SOIL_BREAKLINE_SLOPE_Q = 0.50
+
+    # Soil cleanup/generation smoothing settings
+    SOIL_COARSE_MAJORITY_KERNEL = 7
+    SOIL_COARSE_MAJORITY_ITERATIONS = 2
+    SOIL_FINAL_MAJORITY_KERNEL = 5
+    SOIL_FINAL_MAJORITY_ITERATIONS = 1
+
+    # Small component cleanup thresholds
+    SOIL_COARSE_MIN_COMPONENT_AREA = 24
+    SOIL_COARSE_MIN_COMPONENT_AREA_RATIO = 0.0025
+    SOIL_PROTECTED_MIN_COMPONENT_AREA = 360
+    SOIL_PROTECTED_MIN_COMPONENT_AREA_RATIO = 0.00065
+    SOIL_GLOBAL_MIN_COMPONENT_AREA = 240
+    SOIL_GLOBAL_MIN_COMPONENT_AREA_RATIO = 0.00040
+
+    # Component-neighbor merge window
+    SOIL_COMPONENT_NEIGHBOR_KERNEL_SIZE = 5
+    SOIL_COMPONENT_NEIGHBOR_DILATION_ITERATIONS = 3
 
     # ---- Plants / farmland limits ---------------------------------------
     FARMLAND_ID_LIMIT = 254

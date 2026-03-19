@@ -25,6 +25,7 @@ from maps4fs.generator.component.grle import GRLE
 from maps4fs.generator.component.road import Road
 from maps4fs.generator.component.satellite import Satellite
 from maps4fs.generator.component.scene import Scene
+from maps4fs.generator.component.soil import Soil
 from maps4fs.generator.component.texture import Texture
 from maps4fs.generator.component.water import Water
 from maps4fs.generator.constants import Paths
@@ -44,6 +45,7 @@ class GameConfig:
     i3d_terrain_xpath: str = ".//Scene/TerrainTransformGroup"
     i3d_sun_xpath: str = ".//Scene/Light[@name='sun']"
     i3d_displacement_layer_xpath: str = ".//Scene/TerrainTransformGroup/Layers/DisplacementLayer"
+    i3d_layers_xpath: str = ".//Scene/TerrainTransformGroup/Layers"
     i3d_gameplay_xpath: str = ".//TransformGroup[@name='gameplay']"
     i3d_fields_xpath: str = ".//TransformGroup[@name='fields']"
 
@@ -62,6 +64,13 @@ class GameConfig:
     i3d_water_shader_file_xpath: str = "File[@fileId='3']"
     i3d_mapbounds_tg_xpath: str = ".//Scene/TransformGroup[@name='mapbounds']"
     i3d_foliage_multilayer_xpath: str = ".//FoliageMultiLayer"
+    i3d_farmlands_info_layer_xpath: str = ".//InfoLayer[@name='farmlands']"
+    i3d_soil_map_info_layer_xpath: str = ".//InfoLayer[@name='soilMap']"
+    i3d_indoor_mask_info_layer_xpath: str = ".//InfoLayer[@name='indoorMask']"
+    i3d_indoor_mask_group_xpath: str = ".//InfoLayer[@name='indoorMask']/Group"
+    i3d_all_file_nodes_xpath: str = ".//File"
+    i3d_file_by_id_xpath_template: str = ".//Files/File[@fileId='{file_id}']"
+    i3d_file_by_filename_xpath_template: str = ".//Files/File[@filename='{filename}']"
 
     # --- Buildings I3D element and attribute names ---
     i3d_buildings_group_name: str = "buildings"
@@ -111,6 +120,9 @@ class GameConfig:
     i3d_attr_casts_shadows: str = "castsShadows"
     i3d_attr_scale: str = "scale"
     i3d_attr_num_type_index_channels: str = "numTypeIndexChannels"
+    i3d_attr_num_channels: str = "numChannels"
+    i3d_attr_runtime: str = "runtime"
+    i3d_attr_first_channel: str = "firstChannel"
 
     # --- I3D tuning values ---
     sun_bbox_y_min: int = -128
@@ -125,6 +137,8 @@ class GameConfig:
     # --- Map XML ---
     map_xml_license_plates_xpath: str = ".//licensePlates"
     map_xml_license_plates_filename: str = "map/licensePlates/licensePlatesPL.xml"
+    map_xml_precision_farming_xpath: str = "./precisionFarming"
+    map_xml_precision_farming_soil_map_xpath: str = "./precisionFarming/soilMap"
 
     # --- License plate XML structure ---
     lp_xml_license_plate_xpath: str = ".//licensePlate"
@@ -165,6 +179,7 @@ class Game:
         Background,
         GRLE,
         Config,
+        Soil,
         Road,
         Scene,
         Building,

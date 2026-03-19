@@ -31,23 +31,20 @@ class Config(ImageComponent):
     """
 
     def preprocess(self) -> None:
-        """Gets the path to the map XML file and saves it to the instance variable."""
+        """Initialize Config component runtime state."""
         self.info: dict[str, Any] = {}
         self.xml_path = self.game.map_xml_path
         self.fog_parameters: dict[str, int] = {}
 
     def process(self) -> None:
-        """Sets the map size in the map.xml file."""
+        """Execute Config processing pipeline."""
         self._set_map_size()
-
         self._adjust_fog()
-
         self._set_overview()
-
         self.update_license_plates()
 
     def _set_map_size(self) -> None:
-        """Edits map.xml file to set correct map size."""
+        """Update map dimensions in map.xml root attributes."""
         with XmlDocument(self.xml_path) as doc:
             doc.set_attrs(".", width=str(self.scaled_size), height=str(self.scaled_size))
 
@@ -86,7 +83,7 @@ class Config(ImageComponent):
 
     @monitor_performance
     def _adjust_fog(self) -> None:
-        """Adjusts the fog settings in the environment XML file based on the DEM and height scale."""
+        """Adjust fog settings in environment.xml using DEM-derived elevation range."""
         self.logger.debug("Adjusting fog settings based on DEM and height scale...")
         environment_xml_path = self.game.environment_xml_path
 
@@ -196,7 +193,7 @@ class Config(ImageComponent):
 
     @monitor_performance
     def _set_overview(self) -> None:
-        """Generates and sets the overview image for the map."""
+        """Generate overview texture and convert it to DDS."""
         overview_image_path = self.game.overview_file_path
 
         overview_path = self.map.context.satellite_overview_path
@@ -305,7 +302,7 @@ class Config(ImageComponent):
 
     @monitor_performance
     def update_license_plates(self) -> None:
-        """Updates license plates for the specified country."""
+        """Update license-plate XML/I3D assets for map country."""
         license_plates_directory = self.game.license_plates_dir_path
 
         country_name = get_country_by_coordinates(self.map.coordinates).lower()
@@ -363,12 +360,7 @@ class Config(ImageComponent):
         self._update_map_xml_license_plates()
 
     def _update_map_xml_license_plates(self) -> None:
-        """Update map.xml to reference PL license plates.
-
-        Raises:
-            FileNotFoundError: If the map XML file is not found.
-            ValueError: If the map XML root element is None.
-        """
+        """Ensure map.xml references local license plate definition file."""
         doc = XmlDocument(self.xml_path)
         root = doc.root
 
@@ -572,7 +564,7 @@ class Config(ImageComponent):
         )
 
         # 6. Create the actual text image (black background for white text).
-        text_img = np.zeros((large_canvas_size, large_canvas_size, 3), dtype=np.uint8)
+        text_img: np.ndarray = np.zeros((large_canvas_size, large_canvas_size, 3), dtype=np.uint8)
         text_size = cv2.getTextSize(country_code, font, font_scale, thickness)[0]
 
         # 7. Center text on canvas.
@@ -714,7 +706,9 @@ class Config(ImageComponent):
         # Iteratively reduce font size until rotated text fits
         for _ in range(15):  # More iterations for better fitting
             # Test on a large canvas first (black background for white text)
-            test_img = np.zeros((large_canvas_size, large_canvas_size, 3), dtype=np.uint8)
+            test_img: np.ndarray = np.zeros(
+                (large_canvas_size, large_canvas_size, 3), dtype=np.uint8
+            )
             text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
 
             # Center text on large canvas
