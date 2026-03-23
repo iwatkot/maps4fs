@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import shutil
 from typing import Any, NamedTuple
 from xml.etree import ElementTree as ET
 
@@ -26,6 +27,7 @@ class ElectricityEntry(NamedTuple):
     categories: list[str]
     connectors: list["ConnectorEntry"]
     rotation_offset_degrees: float
+    template_file: str | None = None
     type: str | None = None
 
 
@@ -76,6 +78,8 @@ class Electricity(MeshComponent):
         self.info: dict[str, Any] = {}
         self.xml_path = self.game.i3d_file_path
         self.electricity_collection: ElectricityEntryCollection | None = None
+        self._schema_base_dir: str | None = None
+        self._resolved_template_assets: dict[tuple[str, str], str] = {}
 
         entries = self._load_electricity_schema()
         if not entries:
@@ -188,6 +192,7 @@ class Electricity(MeshComponent):
             if not schema_path or not os.path.isfile(schema_path):
                 self.logger.info("Electricity schema not found: %s", schema_path)
                 return None
+            self._schema_base_dir = os.path.dirname(schema_path)
             try:
                 with open(schema_path, "r", encoding="utf-8") as schema_file:
                     raw_schema = json.load(schema_file)
@@ -206,6 +211,7 @@ class Electricity(MeshComponent):
             categories = row.get("categories") or [Parameters.DEFAULT_ELECTRICITY_CATEGORY]
             connectors = self._parse_connectors(row.get("connectors"))
             entry_type = row.get("type")
+            template_file = row.get("template_file")
             rotation_offset_degrees = float(row.get("rotation_offset_degrees", 0.0))
 
             entries.append(
@@ -215,6 +221,7 @@ class Electricity(MeshComponent):
                     categories=list(categories),
                     connectors=connectors,
                     rotation_offset_degrees=rotation_offset_degrees,
+                    template_file=str(template_file) if template_file else None,
                     type=str(entry_type) if entry_type is not None else None,
                 )
             )
@@ -314,11 +321,13 @@ class Electricity(MeshComponent):
         if best_match is None:
             return False, file_id_counter, node_id_counter, None
 
+        resolved_asset_file = self._resolve_entry_asset_file(best_match)
+
         file_id, next_file_id = self._ensure_file_id(
             files_section,
             used_files,
             used_file_ids,
-            best_match.file,
+            resolved_asset_file,
             file_id_counter,
         )
 
@@ -857,6 +866,89 @@ class Electricity(MeshComponent):
         used_file_ids.add(file_id)
 
         return file_id, self._next_free_id(file_id + 1, used_file_ids)
+
+    def _resolve_entry_asset_file(self, entry: ElectricityEntry) -> str:
+        """Return i3d file path for entry, copying template_file when provided."""
+        if not entry.template_file:
+            return entry.file
+
+        cache_key = (entry.file, entry.template_file)
+        cached = self._resolved_template_assets.get(cache_key)
+        if cached:
+            return cached
+
+        source_path = self._resolve_template_source_path(entry.template_file)
+        if source_path is None:
+            self.logger.warning(
+                "template_file not found for electricity entry '%s': %s",
+                entry.name,
+                entry.template_file,
+            )
+            return entry.file
+
+        target_relative = entry.file.replace("\\", "/")
+        mod_root = self._mod_root_directory()
+        target_path = os.path.normpath(os.path.join(mod_root, target_relative))
+        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+
+        if os.path.abspath(source_path) != os.path.abspath(target_path):
+            shutil.copy2(source_path, target_path)
+        self._copy_optional_shapes_file(source_path, target_path)
+
+        target_reference = os.path.relpath(
+            target_path,
+            os.path.dirname(self.xml_path),
+        ).replace("\\", "/")
+
+        self._resolved_template_assets[cache_key] = target_reference
+        return target_reference
+
+    def _mod_root_directory(self) -> str:
+        """Return mod root directory (the folder containing modDesc.xml)."""
+        candidates = [self.map_directory, os.path.dirname(self.xml_path)]
+        for start in candidates:
+            current = os.path.abspath(start)
+            for _ in range(4):
+                if os.path.isfile(os.path.join(current, "modDesc.xml")):
+                    return current
+                parent = os.path.dirname(current)
+                if parent == current:
+                    break
+                current = parent
+        return self.map_directory
+
+    @staticmethod
+    def _copy_optional_shapes_file(source_i3d_path: str, target_i3d_path: str) -> None:
+        """Copy companion .i3d.shapes file next to target i3d when present."""
+        source_shapes = f"{source_i3d_path}.shapes"
+        target_shapes = f"{target_i3d_path}.shapes"
+        if not os.path.isfile(source_shapes):
+            return
+        if os.path.abspath(source_shapes) == os.path.abspath(target_shapes):
+            return
+        shutil.copy2(source_shapes, target_shapes)
+
+    def _resolve_template_source_path(self, template_file: str) -> str | None:
+        """Resolve template_file to an existing path using common schema-relative roots."""
+        candidates: list[str] = []
+        mod_root = self._mod_root_directory()
+        if os.path.isabs(template_file):
+            candidates.append(template_file)
+        else:
+            candidates.append(template_file)
+            candidates.append(os.path.join(self.map_directory, template_file))
+            candidates.append(os.path.join(mod_root, template_file))
+            if self._schema_base_dir:
+                candidates.append(os.path.join(self._schema_base_dir, template_file))
+                candidates.append(
+                    os.path.join(os.path.dirname(self._schema_base_dir), template_file)
+                )
+
+        for candidate in candidates:
+            normalized = os.path.normpath(candidate)
+            if os.path.isfile(normalized):
+                return normalized
+        return None
 
     def _collect_used_file_ids(self, files_section: ET.Element) -> set[int]:
         """Collect numeric file IDs already present in I3D <Files>."""

@@ -151,6 +151,19 @@ class Bootstrap:
                                 zipf.write(file_path, arcname)
             _logger.debug("Finished processing directory: %s", fs_dir_name)
 
+        # Handle any top-level directories non-conforming to "fs*" pattern (e.g. "common").
+        other_dirs = [
+            d
+            for d in os.listdir(repo_dir)
+            if os.path.isdir(os.path.join(repo_dir, d)) and not d.startswith("fs")
+        ]
+        for other_dir_name in other_dirs:
+            # Copy directories as-is without zipping, since they likely contain shared assets.
+            other_dir_path = os.path.join(repo_dir, other_dir_name)
+            _logger.debug("Copying non-fs directory %s to templates directory", other_dir_name)
+            template_dir_path = os.path.join(output_dir, other_dir_name)
+            shutil.copytree(other_dir_path, template_dir_path, dirs_exist_ok=True)
+
     @staticmethod
     def ensure_templates() -> None:
         """Ensure templates directory exists and is populated.
@@ -178,14 +191,14 @@ class Bootstrap:
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
                 _logger.info("Downloading maps4fsdata repository as ZIP archive...")
-                zip_url = "https://github.com/iwatkot/maps4fsdata/archive/refs/heads/main.zip"
+                zip_url = "https://github.com/iwatkot/maps4fsdata/archive/refs/heads/shared.zip"
                 zip_data = Bootstrap._fetch(zip_url)
 
                 _logger.info("Extracting repository archive...")
                 with zipfile.ZipFile(io.BytesIO(zip_data)) as zip_ref:
                     zip_ref.extractall(temp_dir)
 
-                repo_dir = os.path.join(temp_dir, "maps4fsdata-main")
+                repo_dir = os.path.join(temp_dir, "maps4fsdata-shared")
                 if not os.path.exists(repo_dir):
                     raise FileNotFoundError(f"Expected repository directory not found: {repo_dir}")
 

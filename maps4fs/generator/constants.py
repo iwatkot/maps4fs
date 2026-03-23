@@ -19,6 +19,7 @@ class Paths:
 
     # ---- Directory roots ------------------------------------------------
     TEMPLATES_DIR = os.path.join(os.getcwd(), "templates")
+    SHARED_DIR = os.path.join(TEMPLATES_DIR, "shared")
     EXECUTABLES_DIR = os.path.join(os.getcwd(), "executables")
     DEFAULTS_DIR = os.path.join(os.getcwd(), "defaults")
     LOCALE_DIR = os.path.join(os.getcwd(), "locale")
@@ -61,8 +62,8 @@ class Paths:
     @staticmethod
     def get_map_bounds_file_paths() -> tuple[str, str] | None:
         """Return paths to map_bounds.i3d and map_bounds.i3d.shapes, or None if missing."""
-        i3d_path = os.path.join(Paths.TEMPLATES_DIR, f"{Paths.MAP_BOUNDS_FILENAME}.i3d")
-        shapes_path = os.path.join(Paths.TEMPLATES_DIR, f"{Paths.MAP_BOUNDS_FILENAME}.i3d.shapes")
+        i3d_path = os.path.join(Paths.SHARED_DIR, f"{Paths.MAP_BOUNDS_FILENAME}.i3d")
+        shapes_path = os.path.join(Paths.SHARED_DIR, f"{Paths.MAP_BOUNDS_FILENAME}.i3d.shapes")
         if all(os.path.isfile(p) for p in (i3d_path, shapes_path)):
             return i3d_path, shapes_path
         return None
