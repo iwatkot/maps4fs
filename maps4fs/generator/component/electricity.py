@@ -628,7 +628,7 @@ class Electricity(MeshComponent):
             node = nodes_by_id.get(pole.node_id)
             if node is None:
                 continue
-            node.set(cfg.i3d_attr_rotation, f"0 {self._effective_pole_yaw(pole):.3f} 0")
+            node.set(cfg.i3d_attr_rotation, f"0 {self._visual_pole_yaw(pole):.3f} 0")
 
     def _line_pole_sequence(
         self,
@@ -785,6 +785,20 @@ class Electricity(MeshComponent):
     def _effective_pole_yaw(self, pole: PolePlacement) -> float:
         """Return pole yaw with model-specific schema offset applied."""
         return pole.yaw_degrees + pole.entry.rotation_offset_degrees
+
+    def _visual_pole_yaw(self, pole: PolePlacement) -> float:
+        """Return display yaw for poles without affecting connector/wire geometry.
+
+        We fold to a direction-agnostic axis (mod 180) and flip sign to match
+        current pole asset orientation in GE.
+        """
+        axis_yaw = self._fold_axis_degrees(self._effective_pole_yaw(pole))
+        return -axis_yaw
+
+    @staticmethod
+    def _fold_axis_degrees(value: float) -> float:
+        """Fold angle to [-90, 90] so 180-degree direction flips map to same axis."""
+        return (value + 90.0) % 180.0 - 90.0
 
     def _build_sagging_polyline(
         self,
