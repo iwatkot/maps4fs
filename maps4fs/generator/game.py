@@ -21,6 +21,7 @@ from maps4fs.generator.component.background import Background
 from maps4fs.generator.component.building import Building
 from maps4fs.generator.component.config import Config
 from maps4fs.generator.component.dem import DEM
+from maps4fs.generator.component.electricity import Electricity
 from maps4fs.generator.component.grle import GRLE
 from maps4fs.generator.component.road import Road
 from maps4fs.generator.component.satellite import Satellite
@@ -183,6 +184,7 @@ class Game:
         Road,
         Scene,
         Building,
+        Electricity,
     ]
 
     # Subclasses must set a non-empty code.
@@ -205,6 +207,7 @@ class Game:
     _GRLE_SCHEMA: str = ""
     _TREE_SCHEMA: str = ""
     _BUILDINGS_SCHEMA: str = ""
+    _ELECTRICITY_SCHEMA: str = ""
     _MAP_TEMPLATE: str = ""
 
     # Game-specific XML paths and tuning values.
@@ -236,6 +239,7 @@ class Game:
         self.grle_schema: str = os.path.join(templates_dir, self._GRLE_SCHEMA)
         self.tree_schema: str = os.path.join(templates_dir, self._TREE_SCHEMA)
         self.buildings_schema: str = os.path.join(templates_dir, self._BUILDINGS_SCHEMA)
+        self.electricity_schema: str = os.path.join(templates_dir, self._ELECTRICITY_SCHEMA)
 
         # Map-relative paths — populated by set_map_directory()
         self.dem_file_path: str = ""
@@ -317,4 +321,5 @@ class FS25(Game):
     _GRLE_SCHEMA = "fs25-grle-schema.json"
     _TREE_SCHEMA = "fs25-tree-schema.json"
     _BUILDINGS_SCHEMA = "fs25-buildings-schema.json"
+    _ELECTRICITY_SCHEMA = "fs25-electricity-schema.json"
     _MAP_TEMPLATE = "fs25-map-template.zip"

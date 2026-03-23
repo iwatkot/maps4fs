@@ -103,10 +103,15 @@ class Parameters:
     FOREST = "forest"
     ROADS = "roads"
     ROADS_POLYLINES = "roads_polylines"
+    ELECTRICITY_LINES = "electricity_lines"
+    ELECTRICITY_LINES_POLYLINES = "electricity_lines_polylines"
+    ELECTRICITY_POLES = "electricity_poles"
+    ELECTRICITY_POLES_POINTS = "electricity_poles_points"
     WATER_POLYLINES = "water_polylines"
     WATER = "water"
     FARMYARDS = "farmyards"
 
+    POINT = "point"
     POINTS = "points"
     TAGS = "tags"
     WIDTH = "width"
@@ -418,6 +423,12 @@ class Parameters:
     BUILDINGS_DIRECTORY = "buildings"
     BUILDING_CATEGORIES_FILENAME = "building_categories.png"
     DEFAULT_BUILDING_CATEGORY = "residential"
+
+    # ---- Electricity constants ------------------------------------------
+    ELECTRICITY_GROUP_NAME = "electricity"
+    ELECTRICITY_STARTING_NODE_ID = 210000
+    ELECTRICITY_STARTING_FILE_ID = 170000
+    DEFAULT_ELECTRICITY_CATEGORY = "default"
 
     AREA_TYPES = {
         "residential": 10,

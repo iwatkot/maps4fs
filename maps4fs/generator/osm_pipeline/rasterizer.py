@@ -8,7 +8,7 @@ from typing import Any, Generator
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-from shapely import LineString, Point, Polygon
+from shapely import LineString, MultiLineString, MultiPoint, Point, Polygon
 
 from maps4fs.generator.osm_pipeline.projector import LatLonProjector
 
@@ -63,6 +63,26 @@ class OSMGeometryRasterizer:
             if isinstance(geometry, LineString):
                 points = [self.projector.latlon_to_pixel(lat, lon) for lon, lat in geometry.coords]
                 yield points, osm_tags
+            elif isinstance(geometry, MultiLineString):
+                for linestring in geometry.geoms:
+                    points = [
+                        self.projector.latlon_to_pixel(lat, lon) for lon, lat in linestring.coords
+                    ]
+                    yield points, osm_tags
+
+    def points(
+        self,
+        objects: gpd.GeoDataFrame,
+    ) -> Generator[tuple[tuple[int, int], dict[str, Any]], None, None]:
+        """Yield pixel-space points and tags."""
+        for _, obj in objects.iterrows():
+            geometry = obj["geometry"]
+            osm_tags = self._get_tags_from_osm_object(obj)
+            if isinstance(geometry, Point):
+                yield self.projector.latlon_to_pixel(geometry.y, geometry.x), osm_tags
+            elif isinstance(geometry, MultiPoint):
+                for point in geometry.geoms:
+                    yield self.projector.latlon_to_pixel(point.y, point.x), osm_tags
 
     def _to_polygon(self, obj: pd.core.series.Series, width: int | None) -> Polygon | None:
         geometry = obj["geometry"]

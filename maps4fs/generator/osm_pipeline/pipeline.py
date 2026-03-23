@@ -129,3 +129,16 @@ class OSMRasterPipeline:
 
         self.logger.debug("Fetched %s elements for tags: %s.", len(objects), tags)
         yield from self.rasterizer.linestrings(objects)
+
+    def points(
+        self,
+        tags: dict[str, str | list[str] | bool],
+    ) -> Generator[tuple[tuple[int, int], dict[str, Any]], None, None]:
+        """Yield rasterized points for a tag filter."""
+        objects = self._get_or_fetch_objects(tags)
+        if objects is None or objects.empty:
+            self.logger.debug("No objects found for tags: %s.", tags)
+            return
+
+        self.logger.debug("Fetched %s elements for tags: %s.", len(objects), tags)
+        yield from self.rasterizer.points(objects)

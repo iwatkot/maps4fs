@@ -695,14 +695,24 @@ class Texture(ImageComponent):
             ctx.roads_polylines = cast(
                 list[dict[str, Any]], info_layer_data.get(Parameters.ROADS_POLYLINES, [])
             )
+            ctx.electricity_lines_polylines = cast(
+                list[dict[str, Any]],
+                info_layer_data.get(Parameters.ELECTRICITY_LINES_POLYLINES, []),
+            )
+            ctx.electricity_poles_points = cast(
+                list[dict[str, Any]],
+                info_layer_data.get(Parameters.ELECTRICITY_POLES_POINTS, []),
+            )
             ctx.water_polylines = cast(
                 list[dict[str, Any]], info_layer_data.get(Parameters.WATER_POLYLINES, [])
             )
             self.logger.debug(
-                "Map context populated: %d fields, %d buildings, %d roads, %d water polylines.",
+                "Map context populated: %d fields, %d buildings, %d roads, %d electricity lines, %d electricity poles, %d water polylines.",
                 len(ctx.fields),
                 len(ctx.buildings),
                 len(ctx.roads_polylines),
+                len(ctx.electricity_lines_polylines),
+                len(ctx.electricity_poles_points),
                 len(ctx.water_polylines),
             )
             return
@@ -745,6 +755,8 @@ class Texture(ImageComponent):
                 continue
             self._append_info_layer_entry(layer, polygon, osm_tags, geom_type, info_layer_data)
             self._fill_layer_polygon(layer, layer_image, polygon)
+
+        self._add_points(layer, tags, info_layer_data, layer_image)
 
     def _resolve_layer_tags(self, layer: Layer) -> dict[str, str | list[str] | bool] | None:
         """Resolve OSM tags for a layer, honoring precise-tags setting."""
@@ -799,24 +811,60 @@ class Texture(ImageComponent):
             layer (Layer): Layer with textures and tags.
             info_layer_data (dict[list[list[int]]]): Dictionary to store info layer data.
         """
-        linestring_infolayers = [Parameters.ROADS, Parameters.WATER]
+        linestring_infolayers = [
+            Parameters.ROADS,
+            Parameters.WATER,
+            Parameters.ELECTRICITY_LINES,
+        ]
 
         if layer.info_layer in linestring_infolayers:
             if self.osm_pipeline is None:
                 raise RuntimeError("OSM pipeline is not initialized. Call process() first.")
 
-            if layer.tags is None:
+            tags = self._resolve_layer_tags(layer)
+            if tags is None:
                 return
 
-            for linestring, _ in self.osm_pipeline.linestrings(layer.tags):
+            for linestring, osm_tags in self.osm_pipeline.linestrings(tags):
                 linestring = self.scale_point_tuples(linestring, self.map.size_scale)
                 linestring_entry = {
                     Parameters.POINTS: linestring,
-                    Parameters.TAGS: str(layer.tags),
+                    Parameters.TAGS: osm_tags if layer.save_tags else str(tags),
                     Parameters.WIDTH: layer.width,
                     Parameters.ROAD_TEXTURE: layer.road_texture,
                 }
                 info_layer_data[f"{layer.info_layer}_polylines"].append(linestring_entry)
+
+    def _add_points(
+        self,
+        layer: Layer,
+        tags: dict[str, str | list[str] | bool],
+        info_layer_data: dict[str, list[Any]],
+        layer_image: np.ndarray,
+    ) -> None:
+        """Adds point features to info layer data and optionally draws them."""
+        if not layer.info_layer:
+            return
+
+        if self.osm_pipeline is None:
+            raise RuntimeError("OSM pipeline is not initialized. Call process() first.")
+
+        for point, osm_tags in self.osm_pipeline.points(tags):
+            scaled_point = self.scale_point_tuples([point], self.map.size_scale)[0]
+            point_entry = {
+                Parameters.POINT: scaled_point,
+                Parameters.TAGS: osm_tags if layer.save_tags else str(tags),
+            }
+            info_layer_data[f"{layer.info_layer}_points"].append(point_entry)
+
+            if layer.invisible:
+                continue
+
+            radius = max(1, int(layer.width or 1))
+            try:
+                cv2.circle(layer_image, point, radius=radius, color=255, thickness=-1)
+            except Exception as e:
+                self.logger.warning("Error drawing point: %s.", repr(e))
 
     @monitor_performance
     def dissolve(self) -> None:

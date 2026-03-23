@@ -444,6 +444,8 @@ class Component:
         ("textures", "fields"): "fields",
         ("textures", "buildings"): "buildings",
         ("textures", "roads_polylines"): "roads_polylines",
+        ("textures", "electricity_lines_polylines"): "electricity_lines_polylines",
+        ("textures", "electricity_poles_points"): "electricity_poles_points",
         ("textures", "water_polylines"): "water_polylines",
         ("textures", "farmyards"): "farmyards",
         ("textures", "forest"): "forest",

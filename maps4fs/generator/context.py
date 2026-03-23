@@ -28,6 +28,8 @@ class MapContext:
 
     # Polyline dicts: {"points": [...], "tags": "...", "width": N, "road_texture": "..."}
     roads_polylines: list[dict[str, Any]] = field(default_factory=list)
+    electricity_lines_polylines: list[dict[str, Any]] = field(default_factory=list)
+    electricity_poles_points: list[dict[str, Any]] = field(default_factory=list)
     water_polylines: list[dict[str, Any]] = field(default_factory=list)
 
     # Layer objects from Texture component — used by later components to query layer metadata
