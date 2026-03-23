@@ -27,6 +27,7 @@ class ElectricityEntry(NamedTuple):
     categories: list[str]
     regions: list[str]
     connectors: list["ConnectorEntry"]
+    rotation_offset_degrees: float
     type: str | None = None
 
 
@@ -46,6 +47,7 @@ class PolePlacement(NamedTuple):
     z_world: float
     ground_height: float
     yaw_degrees: float
+    node_id: int
     entry: ElectricityEntry
 
 
@@ -219,6 +221,7 @@ class Electricity(MeshComponent):
             regions = row.get("regions") or [Parameters.ALL_REGIONS]
             connectors = self._parse_connectors(row.get("connectors"))
             entry_type = row.get("type")
+            rotation_offset_degrees = float(row.get("rotation_offset_degrees", 0.0))
 
             entries.append(
                 ElectricityEntry(
@@ -227,6 +230,7 @@ class Electricity(MeshComponent):
                     categories=list(categories),
                     regions=list(regions),
                     connectors=connectors,
+                    rotation_offset_degrees=rotation_offset_degrees,
                     type=str(entry_type) if entry_type is not None else None,
                 )
             )
@@ -364,6 +368,7 @@ class Electricity(MeshComponent):
             z_world=float(y_center),
             ground_height=float(z),
             yaw_degrees=0.0,
+            node_id=node_id_counter,
             entry=best_match,
         )
 
@@ -389,9 +394,11 @@ class Electricity(MeshComponent):
         if len(poles) < 2 or not line_records:
             return 0
 
-        segments = self._build_powerline_segments(poles, line_records)
+        segments, oriented_poles = self._build_powerline_segments(poles, line_records)
         if not segments:
             return 0
+
+        self._apply_pole_rotations(electricity_group, oriented_poles)
 
         mesh = self._build_powerline_mesh(segments)
         if mesh is None:
@@ -476,10 +483,46 @@ class Electricity(MeshComponent):
         self,
         poles: list[PolePlacement],
         line_records: list[dict[str, Any]],
-    ) -> list[list[tuple[float, float, float]]]:
-        """Build connector-to-connector sagging 3D polylines following OSM electricity lines."""
+    ) -> tuple[list[list[tuple[float, float, float]]], list[PolePlacement]]:
+        """Build sagging powerline polylines and return oriented poles."""
         segments: list[list[tuple[float, float, float]]] = []
-        used_pairs: set[tuple[int, int]] = set()
+        links = self._extract_pole_links(poles, line_records)
+        if not links:
+            return segments, poles
+
+        pole_yaws = self._compute_pole_yaws(poles, links)
+        oriented_poles = self._with_updated_pole_yaws(poles, pole_yaws)
+
+        for idx_a, idx_b in links:
+            pole_a = oriented_poles[idx_a]
+            pole_b = oriented_poles[idx_b]
+
+            connectors_a_world = self._connector_world_positions(pole_a)
+            connectors_b_world = self._connector_world_positions(pole_b)
+            if not connectors_a_world or not connectors_b_world:
+                continue
+
+            _, _, right_x, right_z = self._pair_directions(pole_a, pole_b)
+            if right_x == 0.0 and right_z == 0.0:
+                continue
+
+            for connector_a, connector_b in self._match_connectors_non_overlapping(
+                connectors_a_world,
+                connectors_b_world,
+                right_x,
+                right_z,
+            ):
+                segments.append(self._build_sagging_polyline(connector_a, connector_b))
+
+        return segments, oriented_poles
+
+    def _extract_pole_links(
+        self,
+        poles: list[PolePlacement],
+        line_records: list[dict[str, Any]],
+    ) -> list[tuple[int, int]]:
+        """Extract unique pole-pole links by walking fitted OSM line sequences."""
+        unique_pairs: set[tuple[int, int]] = set()
 
         for record in line_records:
             points = record.get(Parameters.POINTS) if isinstance(record, dict) else None
@@ -505,37 +548,87 @@ class Electricity(MeshComponent):
                     continue
 
                 pair = (min(start_idx, end_idx), max(start_idx, end_idx))
-                if pair in used_pairs:
-                    continue
-                used_pairs.add(pair)
+                unique_pairs.add(pair)
 
-                pole_a = poles[start_idx]
-                pole_b = poles[end_idx]
+        return sorted(unique_pairs)
 
-                dir_x, dir_z, right_x, right_z = self._pair_directions(pole_a, pole_b)
-                if dir_x == 0.0 and dir_z == 0.0:
-                    continue
+    def _compute_pole_yaws(
+        self,
+        poles: list[PolePlacement],
+        links: list[tuple[int, int]],
+    ) -> dict[int, float]:
+        """Compute yaw for each pole from connected neighbor vectors in XZ plane."""
+        vectors: dict[int, list[tuple[float, float]]] = {idx: [] for idx in range(len(poles))}
 
-                connectors_a = sorted(pole_a.entry.connectors, key=lambda c: c.side)
-                connectors_b = sorted(pole_b.entry.connectors, key=lambda c: c.side)
+        for idx_a, idx_b in links:
+            pole_a = poles[idx_a]
+            pole_b = poles[idx_b]
+            dx = pole_b.x_world - pole_a.x_world
+            dz = pole_b.z_world - pole_a.z_world
+            length = math.hypot(dx, dz)
+            if length <= 1e-6:
+                continue
+            vx = dx / length
+            vz = dz / length
+            vectors[idx_a].append((vx, vz))
+            vectors[idx_b].append((-vx, -vz))
 
-                connectors_count = min(len(connectors_a), len(connectors_b))
-                for idx in range(connectors_count):
-                    p1 = self._connector_world_position(
-                        pole_a,
-                        connectors_a[idx],
-                        right_x,
-                        right_z,
-                    )
-                    p2 = self._connector_world_position(
-                        pole_b,
-                        connectors_b[idx],
-                        right_x,
-                        right_z,
-                    )
-                    segments.append(self._build_sagging_polyline(p1, p2))
+        result: dict[int, float] = {}
+        for idx, vecs in vectors.items():
+            if not vecs:
+                result[idx] = 0.0
+                continue
+            avg_x = sum(v[0] for v in vecs)
+            avg_z = sum(v[1] for v in vecs)
+            if math.hypot(avg_x, avg_z) <= 1e-6:
+                first_x, first_z = vecs[0]
+                yaw = math.degrees(math.atan2(first_z, first_x))
+            else:
+                yaw = math.degrees(math.atan2(avg_z, avg_x))
+            result[idx] = yaw
 
-        return segments
+        return result
+
+    def _with_updated_pole_yaws(
+        self,
+        poles: list[PolePlacement],
+        yaws: dict[int, float],
+    ) -> list[PolePlacement]:
+        """Return new pole placements with topology-derived yaw values."""
+        result: list[PolePlacement] = []
+        for idx, pole in enumerate(poles):
+            result.append(
+                PolePlacement(
+                    x_pixel=pole.x_pixel,
+                    y_pixel=pole.y_pixel,
+                    x_world=pole.x_world,
+                    z_world=pole.z_world,
+                    ground_height=pole.ground_height,
+                    yaw_degrees=float(yaws.get(idx, pole.yaw_degrees)),
+                    node_id=pole.node_id,
+                    entry=pole.entry,
+                )
+            )
+        return result
+
+    def _apply_pole_rotations(
+        self,
+        electricity_group: ET.Element,
+        poles: list[PolePlacement],
+    ) -> None:
+        """Apply computed yaw values to already placed pole reference nodes."""
+        cfg = self.game.config
+        nodes_by_id = {
+            int(node.get(cfg.i3d_attr_node_id)): node
+            for node in electricity_group.findall(cfg.i3d_reference_node_tag)
+            if node.get(cfg.i3d_attr_node_id, "").isdigit()
+        }
+
+        for pole in poles:
+            node = nodes_by_id.get(pole.node_id)
+            if node is None:
+                continue
+            node.set(cfg.i3d_attr_rotation, f"0 {self._effective_pole_yaw(pole):.3f} 0")
 
     def _line_pole_sequence(
         self,
@@ -557,7 +650,7 @@ class Electricity(MeshComponent):
         pole_a: PolePlacement,
         pole_b: PolePlacement,
     ) -> tuple[float, float, float, float]:
-        """Return normalized forward and right vectors in XZ plane for a pole pair."""
+        """Return normalized forward/right vectors in XZ plane for a pole pair."""
         dx = pole_b.x_world - pole_a.x_world
         dz = pole_b.z_world - pole_a.z_world
         length = math.hypot(dx, dz)
@@ -597,19 +690,101 @@ class Electricity(MeshComponent):
         self,
         pole: PolePlacement,
         connector: ConnectorEntry,
-        right_x: float,
-        right_z: float,
     ) -> tuple[float, float, float]:
         """Convert connector local pole coordinates to world XYZ coordinates.
 
-        The connector side offset is applied along the pair-right vector so wires stay
-        parallel regardless of map orientation.
+        The connector side offset is applied in the pole-local right direction
+        derived from its yaw.
         """
+        yaw_rad = math.radians(self._effective_pole_yaw(pole))
+        right_x = -math.sin(yaw_rad)
+        right_z = math.cos(yaw_rad)
 
         x = pole.x_world + connector.side * right_x
         y = pole.ground_height + connector.height
         z = pole.z_world + connector.side * right_z
         return (x, y, z)
+
+    def _connector_world_positions(self, pole: PolePlacement) -> list[tuple[float, float, float]]:
+        """Return connector world positions for one pole in schema order."""
+        return [
+            self._connector_world_position(pole, connector) for connector in pole.entry.connectors
+        ]
+
+    @staticmethod
+    def _distance3(a: tuple[float, float, float], b: tuple[float, float, float]) -> float:
+        return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2)
+
+    @staticmethod
+    def _project_on_right(
+        pos: tuple[float, float, float],
+        right_x: float,
+        right_z: float,
+    ) -> float:
+        return pos[0] * right_x + pos[2] * right_z
+
+    def _match_connectors_non_overlapping(
+        self,
+        connectors_a: list[tuple[float, float, float]],
+        connectors_b: list[tuple[float, float, float]],
+        right_x: float,
+        right_z: float,
+    ) -> list[tuple[tuple[float, float, float], tuple[float, float, float]]]:
+        """Match connectors by sorted right-axis order to avoid crossing spans.
+
+        Tries both same-order and reversed-order pairings and picks the lower total length.
+        """
+        if not connectors_a or not connectors_b:
+            return []
+
+        a_sorted = sorted(connectors_a, key=lambda p: self._project_on_right(p, right_x, right_z))
+        b_sorted = sorted(connectors_b, key=lambda p: self._project_on_right(p, right_x, right_z))
+
+        limit = min(len(a_sorted), len(b_sorted))
+        pairs_normal = list(zip(a_sorted[:limit], b_sorted[:limit]))
+        pairs_reversed = list(zip(a_sorted[:limit], list(reversed(b_sorted))[:limit]))
+
+        cost_normal = sum(self._distance3(a, b) for a, b in pairs_normal)
+        cost_reversed = sum(self._distance3(a, b) for a, b in pairs_reversed)
+
+        return pairs_normal if cost_normal <= cost_reversed else pairs_reversed
+
+    def _match_connectors_by_distance(
+        self,
+        connectors_a: list[tuple[float, float, float]],
+        connectors_b: list[tuple[float, float, float]],
+    ) -> list[tuple[tuple[float, float, float], tuple[float, float, float]]]:
+        """Match connectors by shortest distance, up to min(len(a), len(b))."""
+        candidates: list[tuple[float, int, int]] = []
+        for idx_a, pos_a in enumerate(connectors_a):
+            for idx_b, pos_b in enumerate(connectors_b):
+                distance = math.sqrt(
+                    (pos_a[0] - pos_b[0]) ** 2
+                    + (pos_a[1] - pos_b[1]) ** 2
+                    + (pos_a[2] - pos_b[2]) ** 2
+                )
+                candidates.append((distance, idx_a, idx_b))
+
+        candidates.sort(key=lambda item: item[0])
+        used_a: set[int] = set()
+        used_b: set[int] = set()
+        limit = min(len(connectors_a), len(connectors_b))
+        pairs: list[tuple[tuple[float, float, float], tuple[float, float, float]]] = []
+
+        for _, idx_a, idx_b in candidates:
+            if idx_a in used_a or idx_b in used_b:
+                continue
+            used_a.add(idx_a)
+            used_b.add(idx_b)
+            pairs.append((connectors_a[idx_a], connectors_b[idx_b]))
+            if len(pairs) >= limit:
+                break
+
+        return pairs
+
+    def _effective_pole_yaw(self, pole: PolePlacement) -> float:
+        """Return pole yaw with model-specific schema offset applied."""
+        return pole.yaw_degrees + pole.entry.rotation_offset_degrees
 
     def _build_sagging_polyline(
         self,
