@@ -15,7 +15,6 @@ from tqdm import tqdm
 
 from maps4fs.generator.component.base.component_mesh import MeshComponent
 from maps4fs.generator.component.xml_document import XmlDocument
-from maps4fs.generator.geo import get_region_by_coordinates
 from maps4fs.generator.settings import Parameters
 
 
@@ -25,7 +24,6 @@ class ElectricityEntry(NamedTuple):
     file: str
     name: str
     categories: list[str]
-    regions: list[str]
     connectors: list["ConnectorEntry"]
     rotation_offset_degrees: float
     type: str | None = None
@@ -54,18 +52,8 @@ class PolePlacement(NamedTuple):
 class ElectricityEntryCollection:
     """Collection of electricity entries with category lookup."""
 
-    def __init__(self, entries: list[ElectricityEntry], region: str):
-        self.region = region
-        self.entries = [
-            entry
-            for entry in entries
-            if not entry.regions
-            or region in entry.regions
-            or Parameters.ALL_REGIONS in entry.regions
-        ]
-        if not self.entries:
-            # Fall back to all entries so generation still works outside tagged regions.
-            self.entries = entries
+    def __init__(self, entries: list[ElectricityEntry]):
+        self.entries = entries
 
         self.by_category: dict[str, list[ElectricityEntry]] = {}
         for entry in self.entries:
@@ -93,12 +81,10 @@ class Electricity(MeshComponent):
         if not entries:
             return
 
-        region = get_region_by_coordinates(self.coordinates)
-        self.electricity_collection = ElectricityEntryCollection(entries, region)
+        self.electricity_collection = ElectricityEntryCollection(entries)
         self.logger.info(
-            "Electricity collection created with %d entries for region '%s'.",
+            "Electricity collection created with %d entries.",
             len(self.electricity_collection.entries),
-            region,
         )
 
     def process(self) -> None:
@@ -218,7 +204,6 @@ class Electricity(MeshComponent):
                 continue
 
             categories = row.get("categories") or [Parameters.DEFAULT_ELECTRICITY_CATEGORY]
-            regions = row.get("regions") or [Parameters.ALL_REGIONS]
             connectors = self._parse_connectors(row.get("connectors"))
             entry_type = row.get("type")
             rotation_offset_degrees = float(row.get("rotation_offset_degrees", 0.0))
@@ -228,7 +213,6 @@ class Electricity(MeshComponent):
                     file=file,
                     name=name,
                     categories=list(categories),
-                    regions=list(regions),
                     connectors=connectors,
                     rotation_offset_degrees=rotation_offset_degrees,
                     type=str(entry_type) if entry_type is not None else None,
