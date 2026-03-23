@@ -836,7 +836,7 @@ class Electricity(MeshComponent):
                 if shapely.LineString([(p1[0], p1[2]), (p2[0], p2[2])]).length < 0.01:
                     continue
                 cylinder = trimesh.creation.cylinder(
-                    radius=0.04,
+                    radius=0.01,
                     segment=np.array([p1, p2], dtype=float),
                     sections=8,
                 )
