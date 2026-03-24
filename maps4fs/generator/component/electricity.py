@@ -27,6 +27,7 @@ class ElectricityEntry(NamedTuple):
     categories: list[str]
     connectors: list["ConnectorEntry"]
     rotation_offset_degrees: float
+    visual_rotation_offset_degrees: float | None = None
     template_file: str | None = None
     type: str | None = None
 
@@ -213,6 +214,10 @@ class Electricity(MeshComponent):
             entry_type = row.get("type")
             template_file = row.get("template_file")
             rotation_offset_degrees = float(row.get("rotation_offset_degrees", 0.0))
+            raw_visual_rotation = row.get("visual_rotation_offset_degrees")
+            visual_rotation_offset_degrees = (
+                float(raw_visual_rotation) if raw_visual_rotation is not None else None
+            )
 
             entries.append(
                 ElectricityEntry(
@@ -221,6 +226,7 @@ class Electricity(MeshComponent):
                     categories=list(categories),
                     connectors=connectors,
                     rotation_offset_degrees=rotation_offset_degrees,
+                    visual_rotation_offset_degrees=visual_rotation_offset_degrees,
                     template_file=str(template_file) if template_file else None,
                     type=str(entry_type) if entry_type is not None else None,
                 )
@@ -484,6 +490,7 @@ class Electricity(MeshComponent):
             return segments, poles
 
         pole_yaws = self._compute_pole_yaws(poles, links)
+        pole_yaws = self._force_endpoint_quarter_turn(pole_yaws, len(poles), links)
         oriented_poles = self._with_updated_pole_yaws(poles, pole_yaws)
 
         for idx_a, idx_b in links:
@@ -602,6 +609,24 @@ class Electricity(MeshComponent):
                     entry=pole.entry,
                 )
             )
+        return result
+
+    def _force_endpoint_quarter_turn(
+        self,
+        yaws: dict[int, float],
+        pole_count: int,
+        links: list[tuple[int, int]],
+    ) -> dict[int, float]:
+        """Apply a deterministic +90 degree turn to chain endpoints (degree == 1)."""
+        degrees: dict[int, int] = {idx: 0 for idx in range(pole_count)}
+        for idx_a, idx_b in links:
+            degrees[idx_a] += 1
+            degrees[idx_b] += 1
+
+        result = dict(yaws)
+        for idx, degree in degrees.items():
+            if degree == 1:
+                result[idx] = float(result.get(idx, 0.0) + 90.0)
         return result
 
     def _apply_pole_rotations(
@@ -776,8 +801,15 @@ class Electricity(MeshComponent):
         return pairs
 
     def _effective_pole_yaw(self, pole: PolePlacement) -> float:
-        """Return pole yaw with model-specific schema offset applied."""
+        """Return connector yaw with schema offset applied (used for wire endpoints)."""
         return pole.yaw_degrees + pole.entry.rotation_offset_degrees
+
+    def _effective_visual_pole_yaw(self, pole: PolePlacement) -> float:
+        """Return visual yaw source angle before axis folding/sign mapping."""
+        visual_offset = pole.entry.visual_rotation_offset_degrees
+        if visual_offset is None:
+            visual_offset = pole.entry.rotation_offset_degrees
+        return pole.yaw_degrees + visual_offset
 
     def _visual_pole_yaw(self, pole: PolePlacement) -> float:
         """Return display yaw for poles without affecting connector/wire geometry.
@@ -785,7 +817,7 @@ class Electricity(MeshComponent):
         We fold to a direction-agnostic axis (mod 180) and flip sign to match
         current pole asset orientation in GE.
         """
-        axis_yaw = self._fold_axis_degrees(self._effective_pole_yaw(pole))
+        axis_yaw = self._fold_axis_degrees(self._effective_visual_pole_yaw(pole))
         return -axis_yaw
 
     @staticmethod
