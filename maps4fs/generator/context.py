@@ -19,8 +19,8 @@ class MapContext:
     """
 
     # ---- Populated by Texture component ----
-    # Polygon point lists (pixel coordinates on the scaled canvas)
-    fields: list[list[tuple[int, int]]] = field(default_factory=list)
+    # Polygon records for fields (either plain point lists or dicts with holes metadata).
+    fields: list[Any] = field(default_factory=list)
     buildings: list[list[tuple[int, int]]] = field(default_factory=list)
     farmyards: list[list[tuple[int, int]]] = field(default_factory=list)
     forest: list[list[tuple[int, int]]] = field(default_factory=list)

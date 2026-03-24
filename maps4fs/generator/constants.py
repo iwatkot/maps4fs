@@ -114,7 +114,9 @@ class Parameters:
 
     POINT = "point"
     POINTS = "points"
+    HOLES = "holes"
     TAGS = "tags"
+    IS_FIELD = "is_field"
     WIDTH = "width"
     ROAD_TEXTURE = "road_texture"
     ELECTRICITY_CATEGORY = "electricity_category"

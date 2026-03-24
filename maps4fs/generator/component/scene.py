@@ -222,6 +222,12 @@ class Scene(ImageComponent):
     def _resolve_spline_source(self, road_info: Any) -> tuple[Any, Any, bool]:
         """Normalize spline source record into (points, tags, is_field)."""
         if isinstance(road_info, dict):
+            if road_info.get(Parameters.IS_FIELD):
+                return (
+                    road_info.get(Parameters.POINTS),
+                    road_info.get(Parameters.TAGS, Parameters.SPLINE_TAG_FIELD),
+                    True,
+                )
             return road_info.get(Parameters.POINTS), road_info.get(Parameters.TAGS), False
         return road_info, Parameters.SPLINE_TAG_FIELD, True
 
@@ -348,9 +354,14 @@ class Scene(ImageComponent):
         skipped_field_ids: list[int] = []
 
         for field in tqdm(fields, desc="Adding fields", unit="field"):
+            field_points, field_holes = self._extract_field_rings(field)
+            if not field_points:
+                skipped_fields += 1
+                continue
+
             try:
                 fitted_field = self.fit_object_into_bounds(
-                    polygon_points=field, angle=self.rotation, border=border
+                    polygon_points=field_points, angle=self.rotation, border=border
                 )
             except ValueError as e:
                 self.logger.debug(
@@ -362,6 +373,14 @@ class Scene(ImageComponent):
                 continue
 
             field_ccs = [self.top_left_coordinates_to_center(point) for point in fitted_field]
+            fitted_holes = self._fit_field_holes_into_bounds(field_holes, border)
+            holes_ccs = [
+                [self.top_left_coordinates_to_center(point) for point in hole]
+                for hole in fitted_holes
+                if len(hole) >= 3
+            ]
+            if holes_ccs:
+                field_ccs = self._bridge_field_holes(field_ccs, holes_ccs)
 
             field_node, updated_node_id = self._get_field_xml_entry(field_id, field_ccs, node_id)
             if field_node is None:
@@ -386,6 +405,95 @@ class Scene(ImageComponent):
         fields_doc.save()
 
         self.assets.fields = self.xml_path
+
+    def _extract_field_rings(self, field: Any) -> tuple[list[tuple[int, int]], list[list[tuple[int, int]]]]:
+        """Normalize field record into (outer_ring, holes)."""
+        if isinstance(field, dict):
+            outer = field.get(Parameters.POINTS, [])
+            holes = field.get(Parameters.HOLES, [])
+            return outer, holes
+        if isinstance(field, list):
+            return field, []
+        return [], []
+
+    def _fit_field_holes_into_bounds(
+        self, field_holes: list[list[tuple[int, int]]], border: int
+    ) -> list[list[tuple[int, int]]]:
+        """Fit field holes to map bounds using the same transform as the outer ring."""
+        fitted_holes: list[list[tuple[int, int]]] = []
+        for hole in field_holes:
+            try:
+                fitted_hole = self.fit_object_into_bounds(
+                    polygon_points=hole, angle=self.rotation, border=border
+                )
+            except ValueError:
+                continue
+            fitted_holes.append(fitted_hole)
+        return fitted_holes
+
+    @staticmethod
+    def _bridge_field_holes(
+        outer_ring: list[tuple[int, int]], holes: list[list[tuple[int, int]]]
+    ) -> list[tuple[int, int]]:
+        """Convert polygon-with-holes to a GE-compatible single ring using bridge links."""
+        stitched_ring = Scene._open_ring(outer_ring)
+        for hole in holes:
+            stitched_ring = Scene._bridge_single_hole(stitched_ring, Scene._open_ring(hole))
+        return Scene._close_ring(stitched_ring)
+
+    @staticmethod
+    def _bridge_single_hole(
+        outer_ring: list[tuple[int, int]], hole_ring: list[tuple[int, int]]
+    ) -> list[tuple[int, int]]:
+        """Insert one inner ring into the outer ring by connecting nearest vertices."""
+        if len(outer_ring) < 3 or len(hole_ring) < 3:
+            return outer_ring
+
+        outer_idx, hole_idx = Scene._nearest_ring_vertices(outer_ring, hole_ring)
+        hole_start = hole_ring[hole_idx]
+        rotated_hole = hole_ring[hole_idx:] + hole_ring[:hole_idx]
+
+        return (
+            outer_ring[: outer_idx + 1]
+            + [hole_start]
+            + rotated_hole[1:]
+            + [hole_start, outer_ring[outer_idx]]
+            + outer_ring[outer_idx + 1 :]
+        )
+
+    @staticmethod
+    def _nearest_ring_vertices(
+        outer_ring: list[tuple[int, int]], hole_ring: list[tuple[int, int]]
+    ) -> tuple[int, int]:
+        """Return indices of the nearest vertex pair between outer and hole rings."""
+        best_outer_idx = best_hole_idx = 0
+        min_distance_sq: int | float = float("inf")
+        for outer_idx, outer_point in enumerate(outer_ring):
+            ox, oy = outer_point
+            for hole_idx, hole_point in enumerate(hole_ring):
+                hx, hy = hole_point
+                distance_sq = (ox - hx) ** 2 + (oy - hy) ** 2
+                if distance_sq < min_distance_sq:
+                    min_distance_sq = distance_sq
+                    best_outer_idx = outer_idx
+                    best_hole_idx = hole_idx
+        return best_outer_idx, best_hole_idx
+
+    @staticmethod
+    def _open_ring(ring: list[tuple[int, int]]) -> list[tuple[int, int]]:
+        """Return ring without duplicate closing vertex."""
+        if len(ring) > 1 and ring[0] == ring[-1]:
+            return ring[:-1]
+        return ring
+
+    @staticmethod
+    def _close_ring(ring: list[tuple[int, int]]) -> list[tuple[int, int]]:
+        """Ensure ring is closed by repeating the first vertex at the end."""
+        if not ring:
+            return []
+        if ring[0] != ring[-1]:
+            return ring + [ring[0]]
+        return ring
 
     def _get_field_xml_entry(
         self, field_id: int, field_ccs: list[tuple[int, int]], node_id: int

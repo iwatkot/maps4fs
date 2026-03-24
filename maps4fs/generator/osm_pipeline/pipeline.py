@@ -107,7 +107,7 @@ class OSMRasterPipeline:
         tags: dict[str, str | list[str] | bool],
         width: int | None,
         is_fields: bool,
-    ) -> Generator[tuple[np.ndarray, dict[str, Any], str], None, None]:
+    ) -> Generator[tuple[np.ndarray, list[np.ndarray], dict[str, Any], str], None, None]:
         """Yield rasterized polygons for a tag filter."""
         objects = self._get_or_fetch_objects(tags)
         if objects is None or objects.empty:

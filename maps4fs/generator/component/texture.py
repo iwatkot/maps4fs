@@ -680,7 +680,7 @@ class Texture(ImageComponent):
         ctx = self.map.context
         if self.options.channel == Parameters.TEXTURE_CHANNEL_TEXTURES:
             ctx.fields = cast(
-                list[list[tuple[int, int]]], info_layer_data.get(Parameters.FIELDS, [])
+                list[Any], info_layer_data.get(Parameters.FIELDS, [])
             )
             ctx.buildings = cast(
                 list[list[tuple[int, int]]], info_layer_data.get(Parameters.BUILDINGS, [])
@@ -747,14 +747,16 @@ class Texture(ImageComponent):
             raise RuntimeError("OSM pipeline is not initialized. Call process() first.")
 
         is_fields = layer.info_layer == Parameters.FIELDS
-        for polygon, osm_tags, geom_type in self.osm_pipeline.polygons(
+        for polygon, holes, osm_tags, geom_type in self.osm_pipeline.polygons(
             tags, layer.width, is_fields
         ):
             if not len(polygon) > 2:
                 self.logger.debug("Skipping polygon with less than 3 points.")
                 continue
-            self._append_info_layer_entry(layer, polygon, osm_tags, geom_type, info_layer_data)
-            self._fill_layer_polygon(layer, layer_image, polygon)
+            self._append_info_layer_entry(
+                layer, polygon, holes, osm_tags, geom_type, info_layer_data
+            )
+            self._fill_layer_polygon(layer, layer_image, polygon, holes)
 
         self._add_points(layer, tags, info_layer_data, layer_image)
 
@@ -772,6 +774,7 @@ class Texture(ImageComponent):
         self,
         layer: Layer,
         polygon: np.ndarray,
+        holes: list[np.ndarray],
         osm_tags: dict[str, Any],
         geom_type: str,
         info_layer_data: dict[str, list[Any]],
@@ -785,8 +788,18 @@ class Texture(ImageComponent):
             return
 
         scaled_points = self.np_array_to_scaled_points(polygon, self.map.size_scale)
+        scaled_holes = [self.np_array_to_scaled_points(hole, self.map.size_scale) for hole in holes]
         entry: Any
-        if layer.save_tags:
+        if layer.info_layer == Parameters.FIELDS:
+            entry = {
+                Parameters.POINTS: scaled_points,
+                Parameters.IS_FIELD: True,
+            }
+            if scaled_holes:
+                entry[Parameters.HOLES] = scaled_holes
+            if layer.save_tags:
+                entry[Parameters.TAGS] = osm_tags
+        elif layer.save_tags:
             entry = {Parameters.POINTS: scaled_points, Parameters.TAGS: osm_tags}
         else:
             entry = scaled_points
@@ -794,13 +807,19 @@ class Texture(ImageComponent):
         info_layer_data[layer.info_layer].append(entry)
 
     def _fill_layer_polygon(
-        self, layer: Layer, layer_image: np.ndarray, polygon: np.ndarray
+        self,
+        layer: Layer,
+        layer_image: np.ndarray,
+        polygon: np.ndarray,
+        holes: list[np.ndarray],
     ) -> None:
         """Fill one polygon into layer image if layer is visible."""
         if layer.invisible:
             return
         try:
             cv2.fillPoly(layer_image, [polygon], color=255)
+            if holes:
+                cv2.fillPoly(layer_image, holes, color=0)
         except Exception as e:
             self.logger.warning("Error drawing polygon: %s.", repr(e))
 
