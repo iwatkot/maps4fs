@@ -832,6 +832,8 @@ class Texture(ImageComponent):
                     Parameters.TAGS: osm_tags if layer.save_tags else str(tags),
                     Parameters.WIDTH: layer.width,
                     Parameters.ROAD_TEXTURE: layer.road_texture,
+                    Parameters.ELECTRICITY_CATEGORY: layer.electricity_category,
+                    Parameters.ELECTRICITY_RADIUS: layer.electricity_radius,
                 }
                 info_layer_data[f"{layer.info_layer}_polylines"].append(linestring_entry)
 

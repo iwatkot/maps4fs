@@ -117,6 +117,8 @@ class Parameters:
     TAGS = "tags"
     WIDTH = "width"
     ROAD_TEXTURE = "road_texture"
+    ELECTRICITY_CATEGORY = "electricity_category"
+    ELECTRICITY_RADIUS = "electricity_radius"
     DRAIN = "drain"
 
     # ---- Texture channels / runtime keys -------------------------------

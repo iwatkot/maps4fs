@@ -459,6 +459,11 @@ class Electricity(MeshComponent):
             if material is not None:
                 material.set("diffuseColor", "0.03 0.03 0.03 1")
                 material.set("specularColor", "0.02 0.02 0.02")
+            for shape in doc.root.findall(".//Scene//Shape"):
+                shape.set(
+                    self.game.config.i3d_attr_casts_shadows,
+                    Parameters.I3D_TRUE,
+                )
                 doc.save()
                 return
         except Exception:
@@ -482,18 +487,19 @@ class Electricity(MeshComponent):
         self,
         poles: list[PolePlacement],
         line_records: list[dict[str, Any]],
-    ) -> tuple[list[list[tuple[float, float, float]]], list[PolePlacement]]:
+    ) -> tuple[list[tuple[list[tuple[float, float, float]], float]], list[PolePlacement]]:
         """Build sagging powerline polylines and return oriented poles."""
-        segments: list[list[tuple[float, float, float]]] = []
-        links = self._extract_pole_links(poles, line_records)
-        if not links:
+        segments: list[tuple[list[tuple[float, float, float]], float]] = []
+        links_with_radius = self._extract_pole_links(poles, line_records)
+        if not links_with_radius:
             return segments, poles
 
+        links = [pair for pair, _ in links_with_radius]
         pole_yaws = self._compute_pole_yaws(poles, links)
         pole_yaws = self._force_endpoint_quarter_turn(pole_yaws, len(poles), links)
         oriented_poles = self._with_updated_pole_yaws(poles, pole_yaws)
 
-        for idx_a, idx_b in links:
+        for (idx_a, idx_b), line_radius in links_with_radius:
             pole_a = oriented_poles[idx_a]
             pole_b = oriented_poles[idx_b]
 
@@ -512,7 +518,9 @@ class Electricity(MeshComponent):
                 right_x,
                 right_z,
             ):
-                segments.append(self._build_sagging_polyline(connector_a, connector_b))
+                segments.append(
+                    (self._build_sagging_polyline(connector_a, connector_b), line_radius)
+                )
 
         return segments, oriented_poles
 
@@ -520,11 +528,12 @@ class Electricity(MeshComponent):
         self,
         poles: list[PolePlacement],
         line_records: list[dict[str, Any]],
-    ) -> list[tuple[int, int]]:
-        """Extract unique pole-pole links by walking fitted OSM line sequences."""
-        unique_pairs: set[tuple[int, int]] = set()
+    ) -> list[tuple[tuple[int, int], float]]:
+        """Extract unique pole-pole links with radius by walking fitted OSM sequences."""
+        unique_pairs: dict[tuple[int, int], float] = {}
 
         for record in line_records:
+            line_radius = self._line_radius(record)
             points = record.get(Parameters.POINTS) if isinstance(record, dict) else None
             if not isinstance(points, list) or len(points) < 2:
                 continue
@@ -548,9 +557,21 @@ class Electricity(MeshComponent):
                     continue
 
                 pair = (min(start_idx, end_idx), max(start_idx, end_idx))
-                unique_pairs.add(pair)
+                existing = unique_pairs.get(pair, 0.0)
+                unique_pairs[pair] = max(existing, line_radius)
 
-        return sorted(unique_pairs)
+        return sorted(unique_pairs.items(), key=lambda item: item[0])
+
+    def _line_radius(self, record: dict[str, Any]) -> float:
+        """Resolve line radius from line record metadata with safe fallback."""
+        raw = record.get(Parameters.ELECTRICITY_RADIUS) if isinstance(record, dict) else None
+        try:
+            radius = float(raw)
+        except (TypeError, ValueError):
+            radius = 0.01
+        if radius <= 0:
+            return 0.01
+        return radius
 
     def _compute_pole_yaws(
         self,
@@ -850,18 +871,18 @@ class Electricity(MeshComponent):
 
     def _build_powerline_mesh(
         self,
-        segments: list[list[tuple[float, float, float]]],
+        segments: list[tuple[list[tuple[float, float, float]], float]],
     ) -> trimesh.Trimesh | None:
         """Build a single mesh from cylinder strips representing powerlines."""
         cylinders: list[trimesh.Trimesh] = []
-        for segment in segments:
+        for segment, radius in segments:
             if len(segment) < 2:
                 continue
             for p1, p2 in zip(segment[:-1], segment[1:]):
                 if shapely.LineString([(p1[0], p1[2]), (p2[0], p2[2])]).length < 0.01:
                     continue
                 cylinder = trimesh.creation.cylinder(
-                    radius=0.01,
+                    radius=radius,
                     segment=np.array([p1, p2], dtype=float),
                     sections=8,
                 )
