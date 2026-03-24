@@ -30,6 +30,8 @@ class ElectricityEntry(NamedTuple):
     visual_rotation_offset_degrees: float | None = None
     template_file: str | None = None
     type: str | None = None
+    align_to_road: bool = False
+    align_to_road_max_distance: float | None = None
 
 
 class ConnectorEntry(NamedTuple):
@@ -156,6 +158,10 @@ class Electricity(MeshComponent):
 
         placed_count = 0
         placed_poles: list[PolePlacement] = []
+        roads_data = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
+        fitted_road_segments = self._build_fitted_road_segments(
+            roads_data if isinstance(roads_data, list) else []
+        )
 
         for point_data in tqdm(points_data, desc="Placing electricity poles", unit="pole"):
             placed, file_id_counter, node_id_counter, placement = self._place_single_pole(
@@ -168,6 +174,7 @@ class Electricity(MeshComponent):
                 used_node_ids,
                 file_id_counter,
                 node_id_counter,
+                fitted_road_segments,
             )
             if placed:
                 placed_count += 1
@@ -234,6 +241,16 @@ class Electricity(MeshComponent):
             visual_rotation_offset_degrees = (
                 float(raw_visual_rotation) if raw_visual_rotation is not None else None
             )
+            align_to_road = bool(row.get("align_to_road", False))
+            raw_align_to_road_max_distance = row.get("align_to_road_max_distance")
+            align_to_road_max_distance: float | None = None
+            if raw_align_to_road_max_distance is not None:
+                try:
+                    parsed_distance = float(raw_align_to_road_max_distance)
+                    if parsed_distance > 0:
+                        align_to_road_max_distance = parsed_distance
+                except (TypeError, ValueError):
+                    align_to_road_max_distance = None
 
             entries.append(
                 ElectricityEntry(
@@ -245,6 +262,8 @@ class Electricity(MeshComponent):
                     visual_rotation_offset_degrees=visual_rotation_offset_degrees,
                     template_file=str(template_file) if template_file else None,
                     type=str(entry_type) if entry_type is not None else None,
+                    align_to_road=align_to_road,
+                    align_to_road_max_distance=align_to_road_max_distance,
                 )
             )
 
@@ -340,6 +359,7 @@ class Electricity(MeshComponent):
         used_node_ids: set[int],
         file_id_counter: int,
         node_id_counter: int,
+        fitted_road_segments: list[tuple[tuple[float, float], tuple[float, float]]],
     ) -> tuple[bool, int, int, PolePlacement | None]:
         """Attempt to place a single pole from one point record.
 
@@ -353,6 +373,8 @@ class Electricity(MeshComponent):
             used_node_ids (set[int]): Set of already used node IDs.
             file_id_counter (int): Candidate file ID for new assets.
             node_id_counter (int): Candidate node ID for new reference nodes.
+            fitted_road_segments (list[tuple[tuple[float, float], tuple[float, float]]]):
+                Pre-fitted road segments for optional road-facing light orientation.
 
         Returns:
             tuple[bool, int, int, PolePlacement | None]:
@@ -398,20 +420,11 @@ class Electricity(MeshComponent):
         except Exception:
             z = Parameters.DEFAULT_HEIGHT
 
-        cfg = self.game.config
-        pole_node = XmlDocument.create_element(
-            cfg.i3d_reference_node_tag,
-            {
-                cfg.i3d_attr_name: f"{best_match.name}_{node_id_counter}",
-                cfg.i3d_attr_translation: f"{x_center:.3f} {z:.3f} {y_center:.3f}",
-                cfg.i3d_attr_rotation: "0 0 0",
-                cfg.i3d_attr_reference_id: str(file_id),
-                cfg.i3d_attr_node_id: str(node_id_counter),
-            },
+        yaw_degrees = self._initial_pole_yaw(
+            fitted_point,
+            best_match,
+            fitted_road_segments,
         )
-        electricity_group.append(pole_node)
-
-        used_node_ids.add(node_id_counter)
 
         placement = PolePlacement(
             x_pixel=fitted_point[0],
@@ -419,10 +432,25 @@ class Electricity(MeshComponent):
             x_world=float(x_center),
             z_world=float(y_center),
             ground_height=float(z),
-            yaw_degrees=0.0,
+            yaw_degrees=yaw_degrees,
             node_id=node_id_counter,
             entry=best_match,
         )
+
+        cfg = self.game.config
+        pole_node = XmlDocument.create_element(
+            cfg.i3d_reference_node_tag,
+            {
+                cfg.i3d_attr_name: f"{best_match.name}_{node_id_counter}",
+                cfg.i3d_attr_translation: f"{x_center:.3f} {z:.3f} {y_center:.3f}",
+                cfg.i3d_attr_rotation: f"0 {self._visual_pole_yaw(placement):.3f} 0",
+                cfg.i3d_attr_reference_id: str(file_id),
+                cfg.i3d_attr_node_id: str(node_id_counter),
+            },
+        )
+        electricity_group.append(pole_node)
+
+        used_node_ids.add(node_id_counter)
 
         return (
             True,
@@ -618,6 +646,9 @@ class Electricity(MeshComponent):
             list[tuple[tuple[int, int], float]]: Sorted unique pole index pairs and line radius.
         """
         unique_pairs: dict[tuple[int, int], float] = {}
+        wire_indices = {idx for idx, pole in enumerate(poles) if self._is_wire_capable(pole)}
+        if len(wire_indices) < 2:
+            return []
 
         for record in line_records:
             line_radius = self._line_radius(record)
@@ -635,7 +666,7 @@ class Electricity(MeshComponent):
             if len(fitted_line) < 2:
                 continue
 
-            line_pole_sequence = self._line_pole_sequence(poles, fitted_line)
+            line_pole_sequence = self._line_pole_sequence(poles, fitted_line, wire_indices)
             if len(line_pole_sequence) < 2:
                 continue
 
@@ -796,6 +827,8 @@ class Electricity(MeshComponent):
             nodes_by_id[int(node_id)] = group_node
 
         for pole in poles:
+            if not self._is_wire_capable(pole):
+                continue
             pole_node = nodes_by_id.get(pole.node_id)
             if pole_node is None:
                 continue
@@ -805,19 +838,21 @@ class Electricity(MeshComponent):
         self,
         poles: list[PolePlacement],
         fitted_line: list[tuple[int, int]],
+        allowed_indices: set[int] | None = None,
     ) -> list[int]:
         """Map a fitted line to an ordered sequence of nearby pole indices.
 
         Arguments:
             poles (list[PolePlacement]): Available pole placements.
             fitted_line (list[tuple[int, int]]): In-bounds fitted polyline in pixel coordinates.
+            allowed_indices (set[int] | None, optional): Restrict matching to these pole indices.
 
         Returns:
             list[int]: Ordered pole index sequence without immediate duplicates.
         """
         sequence: list[int] = []
         for point in fitted_line:
-            idx = self._nearest_pole_index(poles, point)
+            idx = self._nearest_pole_index(poles, point, allowed_indices=allowed_indices)
             if idx is None:
                 continue
             if not sequence or sequence[-1] != idx:
@@ -855,6 +890,7 @@ class Electricity(MeshComponent):
         poles: list[PolePlacement],
         point: tuple[int, int],
         max_distance: float = 96.0,
+        allowed_indices: set[int] | None = None,
     ) -> int | None:
         """Return index of nearest pole in fitted pixel space within max distance.
 
@@ -862,6 +898,7 @@ class Electricity(MeshComponent):
             poles (list[PolePlacement]): Candidate pole placements.
             point (tuple[int, int]): Pixel-space point to match.
             max_distance (float, optional): Maximum allowed pixel distance.
+            allowed_indices (set[int] | None, optional): Restrict matching to these indices.
 
         Returns:
             int | None: Nearest pole index or None when no pole is close enough.
@@ -871,6 +908,8 @@ class Electricity(MeshComponent):
         best_distance = float("inf")
 
         for idx, pole in enumerate(poles):
+            if allowed_indices is not None and idx not in allowed_indices:
+                continue
             dx = pole.x_pixel - px
             dy = pole.y_pixel - py
             distance = math.hypot(dx, dy)
@@ -1067,6 +1106,10 @@ class Electricity(MeshComponent):
         Returns:
             float: Visual yaw in degrees used in i3d node rotation.
         """
+        if pole.entry.align_to_road and (pole.entry.type or "").lower() == "light":
+            # Light assets are directional, so keep full heading (no axis folding).
+            return -self._effective_visual_pole_yaw(pole)
+
         axis_yaw = self._fold_axis_degrees(self._effective_visual_pole_yaw(pole))
         return -axis_yaw
 
@@ -1404,6 +1447,140 @@ class Electricity(MeshComponent):
                         return electricity_category
 
         return Parameters.DEFAULT_ELECTRICITY_CATEGORY
+
+    @staticmethod
+    def _is_wire_capable(pole: PolePlacement) -> bool:
+        """Return whether pole entry should participate in wire topology and yaw updates.
+
+        Arguments:
+            pole (PolePlacement): Pole placement to check.
+
+        Returns:
+            bool: True when the entry can carry wires, False for light-only assets.
+        """
+        entry_type = (pole.entry.type or "").lower()
+        if entry_type == "light":
+            return False
+        return bool(pole.entry.connectors)
+
+    def _build_fitted_road_segments(
+        self,
+        road_records: list[dict[str, Any]],
+    ) -> list[tuple[tuple[float, float], tuple[float, float]]]:
+        """Build fitted road segment list in output pixel space.
+
+        Arguments:
+            road_records (list[dict[str, Any]]): Road polyline records from texture info layer.
+
+        Returns:
+            list[tuple[tuple[float, float], tuple[float, float]]]: Fitted road segment endpoints.
+        """
+        segments: list[tuple[tuple[float, float], tuple[float, float]]] = []
+        for road in road_records:
+            points = road.get(Parameters.POINTS) if isinstance(road, dict) else None
+            if not isinstance(points, list) or len(points) < 2:
+                continue
+            try:
+                fitted_line = self.fit_object_into_bounds(
+                    linestring_points=points, angle=self.rotation
+                )
+            except ValueError:
+                continue
+            if len(fitted_line) < 2:
+                continue
+            for start, end in zip(fitted_line[:-1], fitted_line[1:]):
+                dx = float(end[0] - start[0])
+                dy = float(end[1] - start[1])
+                if math.hypot(dx, dy) <= 1e-6:
+                    continue
+                segments.append(
+                    (
+                        (float(start[0]), float(start[1])),
+                        (float(end[0]), float(end[1])),
+                    )
+                )
+        return segments
+
+    def _initial_pole_yaw(
+        self,
+        fitted_point: tuple[int, int],
+        entry: ElectricityEntry,
+        fitted_road_segments: list[tuple[tuple[float, float], tuple[float, float]]],
+    ) -> float:
+        """Resolve initial pole yaw, optionally orienting light assets toward nearby roads.
+
+        Arguments:
+            fitted_point (tuple[int, int]): Pole point in fitted output pixel space.
+            entry (ElectricityEntry): Matched electricity asset entry.
+            fitted_road_segments (list[tuple[tuple[float, float], tuple[float, float]]]):
+                Pre-fitted road segment endpoints.
+
+        Returns:
+            float: Initial yaw in degrees.
+        """
+        if not entry.align_to_road:
+            return 0.0
+
+        point_x = float(fitted_point[0])
+        point_y = float(fitted_point[1])
+        nearest_road = self._nearest_road_point(point_x, point_y, fitted_road_segments)
+        if nearest_road is None:
+            return 0.0
+
+        road_target, road_distance = nearest_road
+        max_distance = entry.align_to_road_max_distance
+        if max_distance is not None and road_distance > max_distance:
+            return 0.0
+
+        dx = road_target[0] - point_x
+        dy = road_target[1] - point_y
+        if math.hypot(dx, dy) <= 1e-6:
+            return 0.0
+
+        return math.degrees(math.atan2(dy, dx))
+
+    @staticmethod
+    def _nearest_road_point(
+        point_x: float,
+        point_y: float,
+        fitted_road_segments: list[tuple[tuple[float, float], tuple[float, float]]],
+    ) -> tuple[tuple[float, float], float] | None:
+        """Return nearest projected point on fitted road segments.
+
+        Arguments:
+            point_x (float): Query point X coordinate.
+            point_y (float): Query point Y coordinate.
+            fitted_road_segments (list[tuple[tuple[float, float], tuple[float, float]]]):
+                Road segment endpoints in fitted pixel space.
+
+        Returns:
+            tuple[tuple[float, float], float] | None:
+                Closest point on any road segment and euclidean distance,
+                or None if unavailable.
+        """
+        best_point: tuple[float, float] | None = None
+        best_distance_sq = float("inf")
+
+        for (x1, y1), (x2, y2) in fitted_road_segments:
+            seg_dx = x2 - x1
+            seg_dy = y2 - y1
+            seg_len_sq = seg_dx * seg_dx + seg_dy * seg_dy
+            if seg_len_sq <= 1e-12:
+                continue
+
+            t = ((point_x - x1) * seg_dx + (point_y - y1) * seg_dy) / seg_len_sq
+            t = max(0.0, min(1.0, t))
+            proj_x = x1 + t * seg_dx
+            proj_y = y1 + t * seg_dy
+            dist_sq = (point_x - proj_x) ** 2 + (point_y - proj_y) ** 2
+
+            if dist_sq < best_distance_sq:
+                best_distance_sq = dist_sq
+                best_point = (proj_x, proj_y)
+
+        if best_point is None:
+            return None
+        return best_point, math.sqrt(best_distance_sq)
 
     def info_sequence(self) -> dict[str, Any]:
         """Return electricity placement info for generation report.
