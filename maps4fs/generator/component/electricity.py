@@ -55,7 +55,12 @@ class PolePlacement(NamedTuple):
 class ElectricityEntryCollection:
     """Collection of electricity entries with category lookup."""
 
-    def __init__(self, entries: list[ElectricityEntry]):
+    def __init__(self, entries: list[ElectricityEntry]) -> None:
+        """Build in-memory category index for fast entry lookup.
+
+        Arguments:
+            entries (list[ElectricityEntry]): Parsed electricity entries from schema.
+        """
         self.entries = entries
 
         self.by_category: dict[str, list[ElectricityEntry]] = {}
@@ -64,7 +69,14 @@ class ElectricityEntryCollection:
                 self.by_category.setdefault(category, []).append(entry)
 
     def find_first(self, category: str) -> ElectricityEntry | None:
-        """Return first entry for category, then default category fallback."""
+        """Return first entry for a category with default fallback.
+
+        Arguments:
+            category (str): Electricity category to resolve.
+
+        Returns:
+            ElectricityEntry | None: Matching entry, default-category entry, or None.
+        """
         if category in self.by_category and self.by_category[category]:
             return self.by_category[category][0]
         default_entries = self.by_category.get(Parameters.DEFAULT_ELECTRICITY_CATEGORY, [])
@@ -184,7 +196,11 @@ class Electricity(MeshComponent):
         self.logger.info("Electricity placement completed and saved to map.i3d")
 
     def _load_electricity_schema(self) -> list[ElectricityEntry] | None:
-        """Load electricity schema from custom map config or default game schema."""
+        """Load electricity schema from custom map config or default game schema.
+
+        Returns:
+            list[ElectricityEntry] | None: Parsed entries, or None when no valid schema is available.
+        """
         custom_schema = getattr(self.map, "electricity_custom_schema", None)
         if custom_schema:
             raw_schema = custom_schema
@@ -239,7 +255,14 @@ class Electricity(MeshComponent):
         return entries
 
     def _parse_connectors(self, raw_connectors: Any) -> list[ConnectorEntry]:
-        """Parse connectors from schema with sane defaults."""
+        """Parse connector definitions from schema with sane defaults.
+
+        Arguments:
+            raw_connectors (Any): Raw schema value for connector definitions.
+
+        Returns:
+            list[ConnectorEntry]: Parsed connectors, or default two-wire connectors.
+        """
         if not isinstance(raw_connectors, list):
             return [ConnectorEntry(side=2.0, height=10.0), ConnectorEntry(side=-2.0, height=10.0)]
 
@@ -261,7 +284,13 @@ class Electricity(MeshComponent):
     def _prepare_i3d_targets(
         self,
     ) -> tuple[XmlDocument, ET.Element, ET.Element, ET.Element] | None:
-        """Open map I3D XML and return required sections for electricity placement."""
+        """Open map I3D XML and resolve sections needed for electricity placement.
+
+        Returns:
+            tuple[XmlDocument, ET.Element, ET.Element, ET.Element] | None:
+                Loaded XML document, Files section, Scene node, and electricity group,
+                or None when the Scene element is missing.
+        """
         doc = XmlDocument(self.xml_path)
         scene_node = doc.get(self.game.config.i3d_scene_xpath)
         if scene_node is None:
@@ -276,7 +305,14 @@ class Electricity(MeshComponent):
         return doc, files_section, scene_node, electricity_group
 
     def _find_or_create_electricity_group(self, scene_node: ET.Element) -> ET.Element:
-        """Find or create electricity transform group in scene."""
+        """Find or create electricity transform group in scene.
+
+        Arguments:
+            scene_node (ET.Element): Root scene node where transform groups are stored.
+
+        Returns:
+            ET.Element: Existing or newly created electricity transform group element.
+        """
         cfg = self.game.config
         for transform_group in scene_node.iter(cfg.i3d_transform_group_tag):
             if transform_group.get(cfg.i3d_attr_name) == Parameters.ELECTRICITY_GROUP_NAME:
@@ -296,7 +332,7 @@ class Electricity(MeshComponent):
     def _place_single_pole(
         self,
         point_data: dict[str, Any],
-        not_resized_dem,
+        not_resized_dem: np.ndarray,
         files_section: ET.Element,
         electricity_group: ET.Element,
         used_files: dict[str, int],
@@ -305,7 +341,24 @@ class Electricity(MeshComponent):
         file_id_counter: int,
         node_id_counter: int,
     ) -> tuple[bool, int, int, PolePlacement | None]:
-        """Attempt to place one pole and return (placed, next_file_id, next_node_id)."""
+        """Attempt to place a single pole from one point record.
+
+        Arguments:
+            point_data (dict[str, Any]): Infolayer point record with pixel point and tags.
+            not_resized_dem (np.ndarray): Source DEM used to sample ground elevation.
+            files_section (ET.Element): I3D Files section for registering referenced assets.
+            electricity_group (ET.Element): I3D group where pole reference nodes are appended.
+            used_files (dict[str, int]): Cache from asset path to assigned fileId.
+            used_file_ids (set[int]): Set of already used file IDs.
+            used_node_ids (set[int]): Set of already used node IDs.
+            file_id_counter (int): Candidate file ID for new assets.
+            node_id_counter (int): Candidate node ID for new reference nodes.
+
+        Returns:
+            tuple[bool, int, int, PolePlacement | None]:
+                Placement flag, next file ID candidate, next node ID candidate,
+                and created pole placement metadata when successful.
+        """
         point_raw = point_data.get(Parameters.POINT) if isinstance(point_data, dict) else None
         if not point_raw or len(point_raw) < 2:
             return False, file_id_counter, node_id_counter, None
@@ -389,7 +442,21 @@ class Electricity(MeshComponent):
         next_file_id: int,
         next_node_id: int,
     ) -> int:
-        """Build one mesh network from line topology and attach as one referenced I3D asset."""
+        """Build one mesh network from line topology and attach it as one I3D reference.
+
+        Arguments:
+            poles (list[PolePlacement]): Placed poles participating in the network.
+            line_records (list[dict[str, Any]]): Electricity line records from texture context.
+            files_section (ET.Element): I3D Files section where the generated asset is registered.
+            electricity_group (ET.Element): I3D group where the network reference node is added.
+            used_file_ids (set[int]): Set of already used file IDs.
+            used_node_ids (set[int]): Set of already used node IDs.
+            next_file_id (int): Candidate file ID for the generated network asset.
+            next_node_id (int): Candidate node ID for the generated network node.
+
+        Returns:
+            int: Number of generated connector-to-connector line segments.
+        """
         if len(poles) < 2 or not line_records:
             return 0
 
@@ -451,6 +518,9 @@ class Electricity(MeshComponent):
     def _set_network_material_black(self, i3d_path: str) -> None:
         """Set generated network material color to black.
 
+        Arguments:
+            i3d_path (str): Path to generated powerline network i3d file.
+
         Works for XML i3d and text-readable converted i3d outputs.
         """
         try:
@@ -464,8 +534,8 @@ class Electricity(MeshComponent):
                     self.game.config.i3d_attr_casts_shadows,
                     Parameters.I3D_TRUE,
                 )
-                doc.save()
-                return
+            doc.save()
+            return
         except Exception:
             pass
 
@@ -488,7 +558,16 @@ class Electricity(MeshComponent):
         poles: list[PolePlacement],
         line_records: list[dict[str, Any]],
     ) -> tuple[list[tuple[list[tuple[float, float, float]], float]], list[PolePlacement]]:
-        """Build sagging powerline polylines and return oriented poles."""
+        """Build sagging connector polylines and oriented poles from topology.
+
+        Arguments:
+            poles (list[PolePlacement]): Placed poles available for linking.
+            line_records (list[dict[str, Any]]): Fitted electricity lines with metadata.
+
+        Returns:
+            tuple[list[tuple[list[tuple[float, float, float]], float]], list[PolePlacement]]:
+                Segment polylines paired with radius and poles with resolved yaws.
+        """
         segments: list[tuple[list[tuple[float, float, float]], float]] = []
         links_with_radius = self._extract_pole_links(poles, line_records)
         if not links_with_radius:
@@ -529,7 +608,15 @@ class Electricity(MeshComponent):
         poles: list[PolePlacement],
         line_records: list[dict[str, Any]],
     ) -> list[tuple[tuple[int, int], float]]:
-        """Extract unique pole-pole links with radius by walking fitted OSM sequences."""
+        """Extract unique pole-to-pole links and resolved radius per link.
+
+        Arguments:
+            poles (list[PolePlacement]): Candidate poles mapped in output pixel space.
+            line_records (list[dict[str, Any]]): Raw line records from texture info layer.
+
+        Returns:
+            list[tuple[tuple[int, int], float]]: Sorted unique pole index pairs and line radius.
+        """
         unique_pairs: dict[tuple[int, int], float] = {}
 
         for record in line_records:
@@ -563,11 +650,23 @@ class Electricity(MeshComponent):
         return sorted(unique_pairs.items(), key=lambda item: item[0])
 
     def _line_radius(self, record: dict[str, Any]) -> float:
-        """Resolve line radius from line record metadata with safe fallback."""
+        """Resolve line radius from line record metadata with safe fallback.
+
+        Arguments:
+            record (dict[str, Any]): One electricity line record.
+
+        Returns:
+            float: Positive radius value, defaulting to 0.01 when invalid or missing.
+        """
         raw = record.get(Parameters.ELECTRICITY_RADIUS) if isinstance(record, dict) else None
-        try:
+        if isinstance(raw, (int, float)):
             radius = float(raw)
-        except (TypeError, ValueError):
+        elif isinstance(raw, str):
+            try:
+                radius = float(raw)
+            except ValueError:
+                radius = 0.01
+        else:
             radius = 0.01
         if radius <= 0:
             return 0.01
@@ -578,7 +677,15 @@ class Electricity(MeshComponent):
         poles: list[PolePlacement],
         links: list[tuple[int, int]],
     ) -> dict[int, float]:
-        """Compute yaw for each pole from connected neighbor vectors in XZ plane."""
+        """Compute yaw for each pole from connected neighbor vectors in XZ plane.
+
+        Arguments:
+            poles (list[PolePlacement]): Pole placements with world positions.
+            links (list[tuple[int, int]]): Connected pole index pairs.
+
+        Returns:
+            dict[int, float]: Pole index to computed yaw angle in degrees.
+        """
         vectors: dict[int, list[tuple[float, float]]] = {idx: [] for idx in range(len(poles))}
 
         for idx_a, idx_b in links:
@@ -615,7 +722,15 @@ class Electricity(MeshComponent):
         poles: list[PolePlacement],
         yaws: dict[int, float],
     ) -> list[PolePlacement]:
-        """Return new pole placements with topology-derived yaw values."""
+        """Return new pole placements with topology-derived yaw values.
+
+        Arguments:
+            poles (list[PolePlacement]): Source pole placements.
+            yaws (dict[int, float]): Yaw overrides keyed by pole index.
+
+        Returns:
+            list[PolePlacement]: New pole placement list with updated yaw values.
+        """
         result: list[PolePlacement] = []
         for idx, pole in enumerate(poles):
             result.append(
@@ -638,7 +753,16 @@ class Electricity(MeshComponent):
         pole_count: int,
         links: list[tuple[int, int]],
     ) -> dict[int, float]:
-        """Apply a deterministic +90 degree turn to chain endpoints (degree == 1)."""
+        """Apply deterministic +90 degree turn to chain endpoints (degree == 1).
+
+        Arguments:
+            yaws (dict[int, float]): Current pole yaw mapping.
+            pole_count (int): Total number of poles.
+            links (list[tuple[int, int]]): Connected pole index pairs.
+
+        Returns:
+            dict[int, float]: Adjusted yaw mapping with endpoint quarter-turn applied.
+        """
         degrees: dict[int, int] = {idx: 0 for idx in range(pole_count)}
         for idx_a, idx_b in links:
             degrees[idx_a] += 1
@@ -655,26 +779,42 @@ class Electricity(MeshComponent):
         electricity_group: ET.Element,
         poles: list[PolePlacement],
     ) -> None:
-        """Apply computed yaw values to already placed pole reference nodes."""
+        """Apply computed yaw values to already placed pole reference nodes.
+
+        Arguments:
+            electricity_group (ET.Element): XML group containing pole ReferenceNode elements.
+            poles (list[PolePlacement]): Pole placements with resolved visual yaw values.
+        """
         cfg = self.game.config
-        nodes_by_id = {
-            int(node.get(cfg.i3d_attr_node_id)): node
-            for node in electricity_group.findall(cfg.i3d_reference_node_tag)
-            if node.get(cfg.i3d_attr_node_id, "").isdigit()
-        }
+        nodes_by_id: dict[int, ET.Element] = {}
+        for group_node in electricity_group.findall(cfg.i3d_reference_node_tag):
+            if group_node is None:
+                continue
+            node_id = group_node.get(cfg.i3d_attr_node_id)
+            if node_id is None or not node_id.isdigit():
+                continue
+            nodes_by_id[int(node_id)] = group_node
 
         for pole in poles:
-            node = nodes_by_id.get(pole.node_id)
-            if node is None:
+            pole_node = nodes_by_id.get(pole.node_id)
+            if pole_node is None:
                 continue
-            node.set(cfg.i3d_attr_rotation, f"0 {self._visual_pole_yaw(pole):.3f} 0")
+            pole_node.set(cfg.i3d_attr_rotation, f"0 {self._visual_pole_yaw(pole):.3f} 0")
 
     def _line_pole_sequence(
         self,
         poles: list[PolePlacement],
         fitted_line: list[tuple[int, int]],
     ) -> list[int]:
-        """Map a fitted OSM line to an ordered sequence of nearby pole indices."""
+        """Map a fitted line to an ordered sequence of nearby pole indices.
+
+        Arguments:
+            poles (list[PolePlacement]): Available pole placements.
+            fitted_line (list[tuple[int, int]]): In-bounds fitted polyline in pixel coordinates.
+
+        Returns:
+            list[int]: Ordered pole index sequence without immediate duplicates.
+        """
         sequence: list[int] = []
         for point in fitted_line:
             idx = self._nearest_pole_index(poles, point)
@@ -689,7 +829,15 @@ class Electricity(MeshComponent):
         pole_a: PolePlacement,
         pole_b: PolePlacement,
     ) -> tuple[float, float, float, float]:
-        """Return normalized forward/right vectors in XZ plane for a pole pair."""
+        """Return normalized forward/right vectors in XZ plane for a pole pair.
+
+        Arguments:
+            pole_a (PolePlacement): Start pole.
+            pole_b (PolePlacement): End pole.
+
+        Returns:
+            tuple[float, float, float, float]: (dir_x, dir_z, right_x, right_z).
+        """
         dx = pole_b.x_world - pole_a.x_world
         dz = pole_b.z_world - pole_a.z_world
         length = math.hypot(dx, dz)
@@ -708,7 +856,16 @@ class Electricity(MeshComponent):
         point: tuple[int, int],
         max_distance: float = 96.0,
     ) -> int | None:
-        """Return index of nearest pole in fitted pixel space within max distance."""
+        """Return index of nearest pole in fitted pixel space within max distance.
+
+        Arguments:
+            poles (list[PolePlacement]): Candidate pole placements.
+            point (tuple[int, int]): Pixel-space point to match.
+            max_distance (float, optional): Maximum allowed pixel distance.
+
+        Returns:
+            int | None: Nearest pole index or None when no pole is close enough.
+        """
         px, py = point
         best_idx: int | None = None
         best_distance = float("inf")
@@ -734,6 +891,13 @@ class Electricity(MeshComponent):
 
         The connector side offset is applied in the pole-local right direction
         derived from its yaw.
+
+        Arguments:
+            pole (PolePlacement): Pole placement record.
+            connector (ConnectorEntry): Local connector coordinates on the pole asset.
+
+        Returns:
+            tuple[float, float, float]: Connector world-space XYZ position.
         """
         yaw_rad = math.radians(self._effective_pole_yaw(pole))
         right_x = -math.sin(yaw_rad)
@@ -745,13 +909,29 @@ class Electricity(MeshComponent):
         return (x, y, z)
 
     def _connector_world_positions(self, pole: PolePlacement) -> list[tuple[float, float, float]]:
-        """Return connector world positions for one pole in schema order."""
+        """Return connector world positions for one pole in schema order.
+
+        Arguments:
+            pole (PolePlacement): Pole placement record.
+
+        Returns:
+            list[tuple[float, float, float]]: World positions for all pole connectors.
+        """
         return [
             self._connector_world_position(pole, connector) for connector in pole.entry.connectors
         ]
 
     @staticmethod
     def _distance3(a: tuple[float, float, float], b: tuple[float, float, float]) -> float:
+        """Return Euclidean distance between two 3D points.
+
+        Arguments:
+            a (tuple[float, float, float]): First point.
+            b (tuple[float, float, float]): Second point.
+
+        Returns:
+            float: 3D distance between points.
+        """
         return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2)
 
     @staticmethod
@@ -760,6 +940,16 @@ class Electricity(MeshComponent):
         right_x: float,
         right_z: float,
     ) -> float:
+        """Project an XZ position onto the local right-axis scalar.
+
+        Arguments:
+            pos (tuple[float, float, float]): 3D position to project.
+            right_x (float): Right-axis X component.
+            right_z (float): Right-axis Z component.
+
+        Returns:
+            float: Signed scalar projection along the right axis.
+        """
         return pos[0] * right_x + pos[2] * right_z
 
     def _match_connectors_non_overlapping(
@@ -772,6 +962,16 @@ class Electricity(MeshComponent):
         """Match connectors by sorted right-axis order to avoid crossing spans.
 
         Tries both same-order and reversed-order pairings and picks the lower total length.
+
+        Arguments:
+            connectors_a (list[tuple[float, float, float]]): Connectors on first pole.
+            connectors_b (list[tuple[float, float, float]]): Connectors on second pole.
+            right_x (float): Right-axis X component for ordering.
+            right_z (float): Right-axis Z component for ordering.
+
+        Returns:
+            list[tuple[tuple[float, float, float], tuple[float, float, float]]]:
+                Paired connectors between poles.
         """
         if not connectors_a or not connectors_b:
             return []
@@ -793,7 +993,16 @@ class Electricity(MeshComponent):
         connectors_a: list[tuple[float, float, float]],
         connectors_b: list[tuple[float, float, float]],
     ) -> list[tuple[tuple[float, float, float], tuple[float, float, float]]]:
-        """Match connectors by shortest distance, up to min(len(a), len(b))."""
+        """Match connectors by shortest pairwise distance.
+
+        Arguments:
+            connectors_a (list[tuple[float, float, float]]): Connectors on first pole.
+            connectors_b (list[tuple[float, float, float]]): Connectors on second pole.
+
+        Returns:
+            list[tuple[tuple[float, float, float], tuple[float, float, float]]]:
+                Greedy minimum-distance connector pairs.
+        """
         candidates: list[tuple[float, int, int]] = []
         for idx_a, pos_a in enumerate(connectors_a):
             for idx_b, pos_b in enumerate(connectors_b):
@@ -822,11 +1031,25 @@ class Electricity(MeshComponent):
         return pairs
 
     def _effective_pole_yaw(self, pole: PolePlacement) -> float:
-        """Return connector yaw with schema offset applied (used for wire endpoints)."""
+        """Return connector yaw with schema offset applied.
+
+        Arguments:
+            pole (PolePlacement): Pole placement and schema entry.
+
+        Returns:
+            float: Effective connector yaw in degrees.
+        """
         return pole.yaw_degrees + pole.entry.rotation_offset_degrees
 
     def _effective_visual_pole_yaw(self, pole: PolePlacement) -> float:
-        """Return visual yaw source angle before axis folding/sign mapping."""
+        """Return visual yaw source angle before axis folding/sign mapping.
+
+        Arguments:
+            pole (PolePlacement): Pole placement and schema entry.
+
+        Returns:
+            float: Visual source yaw in degrees.
+        """
         visual_offset = pole.entry.visual_rotation_offset_degrees
         if visual_offset is None:
             visual_offset = pole.entry.rotation_offset_degrees
@@ -837,13 +1060,26 @@ class Electricity(MeshComponent):
 
         We fold to a direction-agnostic axis (mod 180) and flip sign to match
         current pole asset orientation in GE.
+
+        Arguments:
+            pole (PolePlacement): Pole placement with computed topology yaw.
+
+        Returns:
+            float: Visual yaw in degrees used in i3d node rotation.
         """
         axis_yaw = self._fold_axis_degrees(self._effective_visual_pole_yaw(pole))
         return -axis_yaw
 
     @staticmethod
     def _fold_axis_degrees(value: float) -> float:
-        """Fold angle to [-90, 90] so 180-degree direction flips map to same axis."""
+        """Fold angle to [-90, 90] so direction flips map to the same axis.
+
+        Arguments:
+            value (float): Input angle in degrees.
+
+        Returns:
+            float: Folded axis angle in degrees.
+        """
         return (value + 90.0) % 180.0 - 90.0
 
     def _build_sagging_polyline(
@@ -852,7 +1088,16 @@ class Electricity(MeshComponent):
         p2: tuple[float, float, float],
         steps: int = 10,
     ) -> list[tuple[float, float, float]]:
-        """Build a sagging polyline between two connector points using a parabola."""
+        """Build a sagging polyline between connector points using a parabola.
+
+        Arguments:
+            p1 (tuple[float, float, float]): Start connector position.
+            p2 (tuple[float, float, float]): End connector position.
+            steps (int, optional): Number of interpolation segments.
+
+        Returns:
+            list[tuple[float, float, float]]: Polyline points from start to end.
+        """
         dx = p2[0] - p1[0]
         dz = p2[2] - p1[2]
         horizontal_length = math.hypot(dx, dz)
@@ -873,7 +1118,15 @@ class Electricity(MeshComponent):
         self,
         segments: list[tuple[list[tuple[float, float, float]], float]],
     ) -> trimesh.Trimesh | None:
-        """Build a single mesh from cylinder strips representing powerlines."""
+        """Build one trimesh mesh from cylinder strips representing powerlines.
+
+        Arguments:
+            segments (list[tuple[list[tuple[float, float, float]], float]]):
+                Segment polylines paired with radius.
+
+        Returns:
+            trimesh.Trimesh | None: Combined mesh, or None when no geometry is generated.
+        """
         cylinders: list[trimesh.Trimesh] = []
         for segment, radius in segments:
             if len(segment) < 2:
@@ -901,7 +1154,18 @@ class Electricity(MeshComponent):
         asset_file: str,
         next_file_id: int,
     ) -> tuple[int, int]:
-        """Return file ID for an electricity asset, appending <File> on first use."""
+        """Return file ID for an electricity asset, appending File on first use.
+
+        Arguments:
+            files_section (ET.Element): I3D Files section.
+            used_files (dict[str, int]): Cache of registered assets by path.
+            used_file_ids (set[int]): Set of already used file IDs.
+            asset_file (str): Asset file path to register.
+            next_file_id (int): Candidate file ID.
+
+        Returns:
+            tuple[int, int]: Assigned file ID and next file ID candidate.
+        """
         if asset_file in used_files:
             return used_files[asset_file], next_file_id
 
@@ -921,7 +1185,16 @@ class Electricity(MeshComponent):
         return file_id, self._next_free_id(file_id + 1, used_file_ids)
 
     def _resolve_entry_asset_file(self, entry: ElectricityEntry) -> str:
-        """Return i3d file path for entry, copying template_file when provided."""
+        """Resolve final i3d asset path for an entry.
+
+        Copies template_file to its target location when requested.
+
+        Arguments:
+            entry (ElectricityEntry): Electricity schema entry.
+
+        Returns:
+            str: Asset path relative to map.i3d directory.
+        """
         if not entry.template_file:
             return entry.file
 
@@ -957,7 +1230,11 @@ class Electricity(MeshComponent):
         return target_reference
 
     def _mod_root_directory(self) -> str:
-        """Return mod root directory (the folder containing modDesc.xml)."""
+        """Return mod root directory (the folder containing modDesc.xml).
+
+        Returns:
+            str: Best-effort mod root path.
+        """
         candidates = [self.map_directory, os.path.dirname(self.xml_path)]
         for start in candidates:
             current = os.path.abspath(start)
@@ -972,7 +1249,12 @@ class Electricity(MeshComponent):
 
     @staticmethod
     def _copy_optional_shapes_file(source_i3d_path: str, target_i3d_path: str) -> None:
-        """Copy companion .i3d.shapes file next to target i3d when present."""
+        """Copy companion .i3d.shapes file next to target i3d when present.
+
+        Arguments:
+            source_i3d_path (str): Source i3d path.
+            target_i3d_path (str): Destination i3d path.
+        """
         source_shapes = f"{source_i3d_path}.shapes"
         target_shapes = f"{target_i3d_path}.shapes"
         if not os.path.isfile(source_shapes):
@@ -982,7 +1264,14 @@ class Electricity(MeshComponent):
         shutil.copy2(source_shapes, target_shapes)
 
     def _resolve_template_source_path(self, template_file: str) -> str | None:
-        """Resolve template_file to an existing path using common schema-relative roots."""
+        """Resolve template file to an existing source path.
+
+        Arguments:
+            template_file (str): Raw template path from schema entry.
+
+        Returns:
+            str | None: Resolved existing file path, or None if no candidate exists.
+        """
         candidates: list[str] = []
         mod_root = self._mod_root_directory()
         if os.path.isabs(template_file):
@@ -1004,7 +1293,14 @@ class Electricity(MeshComponent):
         return None
 
     def _collect_used_file_ids(self, files_section: ET.Element) -> set[int]:
-        """Collect numeric file IDs already present in I3D <Files>."""
+        """Collect numeric file IDs already present in I3D Files section.
+
+        Arguments:
+            files_section (ET.Element): I3D Files element.
+
+        Returns:
+            set[int]: Used file IDs parsed from existing File elements.
+        """
         used: set[int] = set()
         attr = self.game.config.i3d_attr_file_id
         for file_elem in files_section.iter(self.game.config.i3d_file_tag):
@@ -1018,7 +1314,14 @@ class Electricity(MeshComponent):
         return used
 
     def _collect_used_node_ids(self, scene_node: ET.Element) -> set[int]:
-        """Collect numeric node IDs already present in I3D <Scene> subtree."""
+        """Collect numeric node IDs already present in I3D Scene subtree.
+
+        Arguments:
+            scene_node (ET.Element): Root Scene element.
+
+        Returns:
+            set[int]: Used node IDs parsed from scene descendants.
+        """
         used: set[int] = set()
         attr = self.game.config.i3d_attr_node_id
         for elem in scene_node.iter():
@@ -1033,14 +1336,29 @@ class Electricity(MeshComponent):
 
     @staticmethod
     def _next_free_id(start_id: int, used_ids: set[int]) -> int:
-        """Return first free numeric ID starting from start_id."""
+        """Return first free numeric ID starting from start_id.
+
+        Arguments:
+            start_id (int): Starting candidate ID.
+            used_ids (set[int]): IDs already taken.
+
+        Returns:
+            int: First available ID not in used_ids.
+        """
         candidate = start_id
         while candidate in used_ids:
             candidate += 1
         return candidate
 
     def _fit_point_into_bounds(self, point: tuple[int, int]) -> tuple[int, int] | None:
-        """Fit point into output bounds by using a tiny line through the point."""
+        """Fit point into output bounds by using a tiny line through the point.
+
+        Arguments:
+            point (tuple[int, int]): Source point in pixel coordinates.
+
+        Returns:
+            tuple[int, int] | None: Fitted in-bounds point or None if fitting fails.
+        """
         x, y = point
         try:
             fitted = self.fit_object_into_bounds(
@@ -1055,7 +1373,14 @@ class Electricity(MeshComponent):
             return None
 
     def _resolve_electricity_category(self, osm_tags: dict[str, Any]) -> str:
-        """Resolve electricity category from texture layer tag rules."""
+        """Resolve electricity category from texture layer tag rules.
+
+        Arguments:
+            osm_tags (dict[str, Any]): OSM tags for the current point feature.
+
+        Returns:
+            str: Matched electricity category or default fallback category.
+        """
         if osm_tags:
             for layer in self.map.context.texture_layers:
                 electricity_category = getattr(layer, "electricity_category", None)
@@ -1081,5 +1406,9 @@ class Electricity(MeshComponent):
         return Parameters.DEFAULT_ELECTRICITY_CATEGORY
 
     def info_sequence(self) -> dict[str, Any]:
-        """Return electricity placement info for generation report."""
+        """Return electricity placement info for generation report.
+
+        Returns:
+            dict[str, Any]: Aggregated runtime counters for generation reporting.
+        """
         return self.info
