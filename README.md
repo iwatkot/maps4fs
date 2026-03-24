@@ -66,6 +66,7 @@
 
 🚧 **3D Road Generation** - Automatic road mesh creation with custom textures<br>
 🚧 **Complete Spline Networks** - Roads and infrastructure<br>
+⚡ **Electricity Networks** - Automatic powerlines plus road-facing street light placement<br>
 🔷 **Background Terrain** - 3D *.obj files for surrounding landscape<br>
 📦 **Giants Editor Ready** - Import and start building immediately<br>
 
@@ -86,6 +87,8 @@ The core idea originates from the excellent [maps4cim](https://github.com/klaman
 The main goal of this project is to generate map templates based on real-world data for Farming Simulator. It's important to understand that **templates are not finished maps**. They serve as a foundation for map creation, using built-in textures to represent different terrain types and structures with accurate shapes and scales, along with generating realistic height maps. The detailed work of creating a complete, playable map remains with you. If you expected to simply run this tool and receive a ready-to-play map, this may not meet those expectations. However, if you're a map creator, this tool will significantly reduce your development time.<br>
 
 ### 🆕 Latest Features
+
+**⚡ [Electricity Networks](docs/electricity.md)** - NEW schema-driven electricity system for poles, towers, wire generation with configurable line thickness, and street lights that can auto-orient toward nearby roads.<br>
 
 **🪟 [Windows App](https://maps4fs.gitbook.io/docs/setup-and-installation/windows_app)** - NEW standalone application for Windows! No Docker required - download, extract, and run. Perfect for users who want the simplest setup experience.<br>
 
