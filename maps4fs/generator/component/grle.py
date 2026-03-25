@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 from random import choice, randint
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 import cv2
 import numpy as np
@@ -253,9 +253,14 @@ class GRLE(ImageComponent):
         farmland_id = 1
 
         for farmland in tqdm(farmlands, desc="Adding farmlands", unit="farmland"):
+            farmland_points = self._extract_farmland_points(farmland)
+            if not farmland_points:
+                self.logger.debug("Skipping farmland %s due to invalid polygon format.", farmland_id)
+                continue
+
             try:
                 fitted_farmland = self.fit_object_into_bounds(
-                    polygon_points=farmland,
+                    polygon_points=farmland_points,
                     margin=self.map.grle_settings.farmland_margin,
                     angle=self.rotation,
                 )
@@ -326,6 +331,20 @@ class GRLE(ImageComponent):
         self.assets.farmlands = info_layer_farmlands_path
 
         self.preview_paths["farmlands"] = info_layer_farmlands_path
+
+    @staticmethod
+    def _extract_farmland_points(farmland: Any) -> list[tuple[int, int]]:
+        """Return legacy polygon point list for farmland rasterization.
+
+        Field entries may contain hole metadata for scene export. Farmlands should keep
+        the previous behavior and use only the exterior ring.
+        """
+        if isinstance(farmland, dict):
+            points = farmland.get(Parameters.POINTS)
+            return points if isinstance(points, list) else []
+        if isinstance(farmland, list):
+            return farmland
+        return []
 
     @monitor_performance
     def _add_plants(self) -> None:
