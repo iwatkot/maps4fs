@@ -1003,7 +1003,10 @@ class MeshComponent(Component):
         dem_image: np.ndarray,
     ) -> tuple[list[tuple[float, float, float]], list[tuple[float, float]]]:
         """Build one linestring strip as paired left/right vertices plus UVs."""
-        coords = list(linestring.coords)
+        coords = self._densify_linestring_coords(
+            linestring,
+            target_segment_length=Parameters.SEGMENT_LENGTH,
+        )
         if len(coords) < 2:
             return [], []
 
@@ -1034,6 +1037,28 @@ class MeshComponent(Component):
             strip_uvs.extend([(0.0, v_coord_raw), (1.0, v_coord_raw)])
 
         return strip_vertices, strip_uvs
+
+    def _densify_linestring_coords(
+        self,
+        linestring: shapely.LineString,
+        target_segment_length: float,
+    ) -> list[tuple[float, float]]:
+        """Sample points along a linestring at near-constant spacing."""
+        coords = list(linestring.coords)
+        if len(coords) < 2:
+            return coords
+
+        road_length = float(linestring.length)
+        if road_length <= target_segment_length:
+            return [(float(x), float(y)) for x, y in coords]
+
+        # Dense centerline sampling preserves local DEM bumps on long straight roads.
+        num_steps = max(1, int(np.ceil(road_length / target_segment_length)))
+        distances = np.linspace(0.0, road_length, num_steps + 1)
+        return [
+            (float(linestring.interpolate(distance).x), float(linestring.interpolate(distance).y))
+            for distance in distances
+        ]
 
     def _perpendicular_direction(
         self,

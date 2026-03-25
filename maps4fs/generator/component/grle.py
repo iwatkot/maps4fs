@@ -255,7 +255,9 @@ class GRLE(ImageComponent):
         for farmland in tqdm(farmlands, desc="Adding farmlands", unit="farmland"):
             farmland_points = self._extract_farmland_points(farmland)
             if not farmland_points:
-                self.logger.debug("Skipping farmland %s due to invalid polygon format.", farmland_id)
+                self.logger.debug(
+                    "Skipping farmland %s due to invalid polygon format.", farmland_id
+                )
                 continue
 
             try:
