@@ -448,8 +448,7 @@ class Road(MeshComponent):
         road_entries: list[LineSurfaceEntry],
     ) -> Polygon | MultiPolygon | None:
         """Build a unioned polygonal road surface from centerline entries."""
-        buffered_geometries: list[Polygon] = []
-
+        prepared_lines: list[tuple[shapely.LineString, float]] = []
         for linestring, width, _ in road_entries:
             if linestring.is_empty or linestring.length <= 0:
                 continue
@@ -461,55 +460,74 @@ class Road(MeshComponent):
             if len(dense_coords) < 2:
                 continue
 
-            dense_line = shapely.LineString(dense_coords)
-            safe_width = max(float(width), 0.5)
+            prepared_lines.append((shapely.LineString(dense_coords), max(float(width), 0.5)))
+
+        if not prepared_lines:
+            return None
+
+        components = self._build_road_components(prepared_lines)
+        component_polygons: list[Polygon] = []
+
+        for component_indices in components:
+            component_buffers: list[Polygon] = []
+            for index in component_indices:
+                component_line, component_width = prepared_lines[index]
+                try:
+                    buffered = component_line.buffer(
+                        component_width,
+                        cap_style=2,
+                        join_style=1,
+                    )
+                except Exception as e:
+                    self.logger.debug("Failed to buffer road line: %s", e)
+                    continue
+
+                if buffered.is_empty:
+                    continue
+                component_buffers.extend(self._extract_polygons(buffered))
+
+            if not component_buffers:
+                continue
+
             try:
-                buffered = dense_line.buffer(
-                    safe_width,
-                    cap_style=2,
-                    join_style=1,
-                )
+                unioned_component = shapely.unary_union(component_buffers)
             except Exception as e:
-                self.logger.debug("Failed to buffer road line: %s", e)
+                self.logger.debug("Failed to union connected road component: %s", e)
                 continue
 
-            if buffered.is_empty:
+            if not unioned_component.is_valid:
+                try:
+                    unioned_component = shapely.make_valid(unioned_component)
+                except Exception:
+                    pass
+
+            component_polygons.extend(self._extract_polygons(unioned_component))
+
+        if not component_polygons:
+            return None
+
+        # Keep disconnected groups separated to avoid geometric bridges between close roads.
+        disjoint_polygons: list[Polygon] = []
+        occupied: Polygon | MultiPolygon | None = None
+        for polygon in sorted(component_polygons, key=lambda poly: float(poly.area), reverse=True):
+            candidate = polygon if occupied is None else polygon.difference(occupied)
+            new_parts = self._extract_polygons(candidate)
+            if not new_parts:
+                occupied = polygon if occupied is None else shapely.unary_union([occupied, polygon])
                 continue
-            buffered_geometries.extend(self._extract_polygons(buffered))
 
-        if not buffered_geometries:
+            disjoint_polygons.extend(new_parts)
+            occupied = (
+                shapely.unary_union(new_parts)
+                if occupied is None
+                else shapely.unary_union([occupied, *new_parts])
+            )
+
+        if not disjoint_polygons:
             return None
-
-        try:
-            unioned = shapely.unary_union(buffered_geometries)
-        except Exception as e:
-            self.logger.warning("Failed to union buffered roads: %s", e)
-            return None
-
-        if not unioned.is_valid:
-            try:
-                unioned = shapely.make_valid(unioned)
-            except Exception:
-                pass
-
-        polygons = self._extract_polygons(unioned)
-        if not polygons:
-            return None
-
-        merged = shapely.unary_union(polygons)
-        if merged.is_empty:
-            return None
-
-        if isinstance(merged, (Polygon, MultiPolygon)):
-            return merged
-
-        merged_polygons = self._extract_polygons(merged)
-        if not merged_polygons:
-            return None
-
-        if len(merged_polygons) == 1:
-            return merged_polygons[0]
-        return shapely.MultiPolygon(merged_polygons)
+        if len(disjoint_polygons) == 1:
+            return disjoint_polygons[0]
+        return shapely.MultiPolygon(disjoint_polygons)
 
     def _triangulate_road_surface(
         self,
@@ -528,29 +546,6 @@ class Road(MeshComponent):
 
         sampling_step = self._get_network_sampling_step(road_entries)
 
-        xy_points: dict[tuple[int, int], tuple[float, float]] = {}
-        for polygon in polygons:
-            self._add_ring_points(xy_points, polygon.exterior.coords)
-            for interior in polygon.interiors:
-                self._add_ring_points(xy_points, interior.coords)
-            representative = polygon.representative_point()
-            self._add_point(xy_points, float(representative.x), float(representative.y))
-
-        self._add_centerline_points(
-            points=xy_points,
-            road_entries=road_entries,
-            road_surface=road_surface,
-            sampling_step=sampling_step,
-        )
-
-        if len(xy_points) < 3:
-            return [], [], []
-
-        point_cloud = shapely.MultiPoint(list(xy_points.values()))
-        raw_triangles = shapely.ops.triangulate(point_cloud)
-        if not raw_triangles:
-            return [], [], []
-
         vertices: list[tuple[float, float, float]] = []
         faces: list[tuple[int, int, int, int, int, int]] = []
         uvs: list[tuple[float, float]] = []
@@ -561,60 +556,235 @@ class Road(MeshComponent):
             for entry in road_entries
             if not entry.linestring.is_empty and entry.linestring.length > 0
         ]
+        source_cache: dict[tuple[int, int], tuple[shapely.LineString, float] | None] = {}
+        cache_cell_size = max(2.0, sampling_step)
 
-        for triangle in raw_triangles:
-            if triangle.is_empty or triangle.area <= 0.0:
-                continue
+        for polygon in polygons:
+            polygon_points: dict[tuple[int, int], tuple[float, float]] = {}
+            self._add_ring_points(polygon_points, polygon.exterior.coords)
+            for interior in polygon.interiors:
+                self._add_ring_points(polygon_points, interior.coords)
 
-            representative = triangle.representative_point()
-            if not road_surface.covers(representative):
-                continue
+            representative = polygon.representative_point()
+            self._add_point(polygon_points, float(representative.x), float(representative.y))
 
-            coords = [(float(x), float(y)) for x, y in list(triangle.exterior.coords)[:3]]
-            # Keep triangles clockwise in XY so after +90deg X-rotation normals face +Y.
-            if self._signed_triangle_area(coords) > 0.0:
-                coords[1], coords[2] = coords[2], coords[1]
-
-            triangle_source = self._select_triangle_uv_source(
-                triangle_coords=coords,
-                uv_sources=uv_sources,
+            self._add_centerline_points(
+                points=polygon_points,
+                road_entries=road_entries,
+                road_surface=polygon,
+                sampling_step=sampling_step,
             )
 
-            face_vertex_indices: list[int] = []
-            face_uv_indices: list[int] = []
-            for x, y in coords:
-                key = self._point_key(x, y)
-                idx = vertex_index.get(key)
-                if idx is None:
-                    z = -float(self.get_z_coordinate_from_dem(dem_image, x, y))
-                    idx = len(vertices)
-                    vertex_index[key] = idx
-                    vertices.append((x, y, z))
-                face_vertex_indices.append(idx)
-
-                uv = self._compute_triangle_vertex_uv(
-                    x=x,
-                    y=y,
-                    tile_size=tile_size,
-                    triangle_source=triangle_source,
-                )
-                face_uv_indices.append(len(uvs))
-                uvs.append(uv)
-
-            if len(set(face_vertex_indices)) != 3:
+            if len(polygon_points) < 3:
                 continue
-            faces.append(
-                (
-                    face_vertex_indices[0],
-                    face_vertex_indices[1],
-                    face_vertex_indices[2],
-                    face_uv_indices[0],
-                    face_uv_indices[1],
-                    face_uv_indices[2],
-                )
-            )
+
+            point_cloud = shapely.MultiPoint(list(polygon_points.values()))
+            raw_triangles = shapely.ops.triangulate(point_cloud)
+            if not raw_triangles:
+                continue
+
+            for triangle in raw_triangles:
+                if triangle.is_empty or triangle.area <= 0.0:
+                    continue
+
+                clipped = triangle.intersection(polygon)
+                for coords in self._triangulate_clipped_geometry(clipped):
+                    # Keep triangles clockwise in XY so after +90deg X-rotation normals face +Y.
+                    if self._signed_triangle_area(coords) > 0.0:
+                        coords[1], coords[2] = coords[2], coords[1]
+
+                    source_key = self._triangle_source_cache_key(coords, cache_cell_size)
+                    triangle_source = source_cache.get(source_key)
+                    if source_key not in source_cache:
+                        triangle_source = self._select_triangle_uv_source(
+                            triangle_coords=coords,
+                            uv_sources=uv_sources,
+                        )
+                        source_cache[source_key] = triangle_source
+
+                    face_vertex_indices: list[int] = []
+                    face_uv_indices: list[int] = []
+                    for x, y in coords:
+                        key = self._point_key(x, y)
+                        idx = vertex_index.get(key)
+                        if idx is None:
+                            z = -float(self.get_z_coordinate_from_dem(dem_image, x, y))
+                            idx = len(vertices)
+                            vertex_index[key] = idx
+                            vertices.append((x, y, z))
+                        face_vertex_indices.append(idx)
+
+                        uv = self._compute_triangle_vertex_uv(
+                            x=x,
+                            y=y,
+                            tile_size=tile_size,
+                            triangle_source=triangle_source,
+                        )
+                        face_uv_indices.append(len(uvs))
+                        uvs.append(uv)
+
+                    if len(set(face_vertex_indices)) != 3:
+                        continue
+                    faces.append(
+                        (
+                            face_vertex_indices[0],
+                            face_vertex_indices[1],
+                            face_vertex_indices[2],
+                            face_uv_indices[0],
+                            face_uv_indices[1],
+                            face_uv_indices[2],
+                        )
+                    )
 
         return vertices, faces, uvs
+
+    def _triangulate_clipped_geometry(
+        self,
+        geometry: Any,
+    ) -> list[list[tuple[float, float]]]:
+        """Triangulate a clipped geometry and return robust triangle coordinate triplets."""
+        min_area = 1e-5
+        result: list[list[tuple[float, float]]] = []
+        clipped_polygons = self._extract_polygons(geometry)
+
+        for polygon in clipped_polygons:
+            if polygon.is_empty or float(polygon.area) <= min_area:
+                continue
+
+            if len(polygon.interiors) == 0 and len(polygon.exterior.coords) == 4:
+                coords = [(float(x), float(y)) for x, y in list(polygon.exterior.coords)[:3]]
+                if abs(self._signed_triangle_area(coords)) > min_area:
+                    result.append(coords)
+                continue
+
+            for triangle in shapely.ops.triangulate(polygon):
+                if triangle.is_empty or float(triangle.area) <= min_area:
+                    continue
+
+                representative = triangle.representative_point()
+                if not polygon.covers(representative):
+                    continue
+
+                coords = [(float(x), float(y)) for x, y in list(triangle.exterior.coords)[:3]]
+                if abs(self._signed_triangle_area(coords)) <= min_area:
+                    continue
+                result.append(coords)
+
+        return result
+
+    def _build_road_components(
+        self,
+        lines: list[tuple[shapely.LineString, float]],
+    ) -> list[list[int]]:
+        """Build connectivity components so nearby parallel roads don't get merged."""
+        if not lines:
+            return []
+
+        tolerance = Parameters.ROAD_INTERSECTION_TOLERANCE
+        adjacency: list[set[int]] = [set() for _ in range(len(lines))]
+
+        for i in range(len(lines)):
+            line_i, _ = lines[i]
+            for j in range(i + 1, len(lines)):
+                line_j, _ = lines[j]
+                if self._are_roads_connected(line_i, line_j, tolerance):
+                    adjacency[i].add(j)
+                    adjacency[j].add(i)
+
+        visited: set[int] = set()
+        components: list[list[int]] = []
+        for start in range(len(lines)):
+            if start in visited:
+                continue
+
+            stack = [start]
+            component: list[int] = []
+            visited.add(start)
+            while stack:
+                current = stack.pop()
+                component.append(current)
+                for neighbor in adjacency[current]:
+                    if neighbor in visited:
+                        continue
+                    visited.add(neighbor)
+                    stack.append(neighbor)
+
+            components.append(component)
+
+        return components
+
+    def _are_roads_connected(
+        self,
+        line_a: shapely.LineString,
+        line_b: shapely.LineString,
+        tolerance: float,
+    ) -> bool:
+        """Return True only for topologically related roads (cross/touch/endpoint-near)."""
+        try:
+            if line_a.intersects(line_b):
+                return True
+        except Exception:
+            return False
+
+        endpoint_pairs_a = [
+            (Point(line_a.coords[0]), Point(line_a.coords[1])),
+            (Point(line_a.coords[-1]), Point(line_a.coords[-2])),
+        ]
+        endpoint_pairs_b = [
+            (Point(line_b.coords[0]), Point(line_b.coords[1])),
+            (Point(line_b.coords[-1]), Point(line_b.coords[-2])),
+        ]
+
+        for endpoint, neighbor in endpoint_pairs_a:
+            if self._endpoint_connects_to_line(endpoint, neighbor, line_b, tolerance):
+                return True
+        for endpoint, neighbor in endpoint_pairs_b:
+            if self._endpoint_connects_to_line(endpoint, neighbor, line_a, tolerance):
+                return True
+
+        return False
+
+    @staticmethod
+    def _endpoint_connects_to_line(
+        endpoint: Point,
+        endpoint_neighbor: Point,
+        other_line: shapely.LineString,
+        tolerance: float,
+    ) -> bool:
+        """Return True when endpoint is near and directed toward the other line."""
+        distance = float(endpoint.distance(other_line))
+        if distance > tolerance:
+            return False
+
+        projected = float(other_line.project(endpoint))
+        closest = other_line.interpolate(projected)
+        toward_x = float(closest.x - endpoint.x)
+        toward_y = float(closest.y - endpoint.y)
+        toward_len = float(np.hypot(toward_x, toward_y))
+        if toward_len <= 1e-9:
+            return True
+
+        dir_x = float(endpoint.x - endpoint_neighbor.x)
+        dir_y = float(endpoint.y - endpoint_neighbor.y)
+        dir_len = float(np.hypot(dir_x, dir_y))
+        if dir_len <= 1e-9:
+            return False
+
+        approach = (dir_x * toward_x + dir_y * toward_y) / (dir_len * toward_len)
+        return approach > 0.2
+
+    @staticmethod
+    def _triangle_source_cache_key(
+        triangle_coords: list[tuple[float, float]],
+        cell_size: float,
+    ) -> tuple[int, int]:
+        """Quantize triangle centroid into a grid cell for UV-source caching."""
+        centroid_x = (triangle_coords[0][0] + triangle_coords[1][0] + triangle_coords[2][0]) / 3.0
+        centroid_y = (triangle_coords[0][1] + triangle_coords[1][1] + triangle_coords[2][1]) / 3.0
+        return (
+            int(np.floor(centroid_x / cell_size)),
+            int(np.floor(centroid_y / cell_size)),
+        )
 
     def _compute_triangle_vertex_uv(
         self,
