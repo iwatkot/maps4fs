@@ -579,8 +579,6 @@ class Road(MeshComponent):
         vertex_index: dict[tuple[int, int], int] = {}
         tile_size = max(Parameters.TEXTURE_TILE_SIZE_METERS, 1.0)
         texture_sources = self._build_texture_sources(road_entries)
-        source_cache: dict[tuple[int, int], tuple[shapely.LineString, float] | None] = {}
-        cache_cell_size = max(1.0, sampling_step * 0.5)
 
         for polygon in polygons:
             polygon_points: dict[tuple[int, int], tuple[float, float]] = {}
@@ -616,14 +614,10 @@ class Road(MeshComponent):
                     if self._signed_triangle_area(coords) > 0.0:
                         coords[1], coords[2] = coords[2], coords[1]
 
-                    source_key = self._triangle_source_cache_key(coords, cache_cell_size)
-                    triangle_source = source_cache.get(source_key)
-                    if source_key not in source_cache:
-                        triangle_source = self._select_triangle_uv_source(
-                            triangle_coords=coords,
-                            texture_sources=texture_sources,
-                        )
-                        source_cache[source_key] = triangle_source
+                    triangle_source = self._select_triangle_uv_source(
+                        triangle_coords=coords,
+                        texture_sources=texture_sources,
+                    )
 
                     face_vertex_indices: list[int] = []
                     face_uv_indices: list[int] = []
@@ -889,19 +883,6 @@ class Road(MeshComponent):
 
         approach = (dir_x * toward_x + dir_y * toward_y) / (dir_len * toward_len)
         return approach > 0.2
-
-    @staticmethod
-    def _triangle_source_cache_key(
-        triangle_coords: list[tuple[float, float]],
-        cell_size: float,
-    ) -> tuple[int, int]:
-        """Quantize triangle centroid into a grid cell for UV-source caching."""
-        centroid_x = (triangle_coords[0][0] + triangle_coords[1][0] + triangle_coords[2][0]) / 3.0
-        centroid_y = (triangle_coords[0][1] + triangle_coords[1][1] + triangle_coords[2][1]) / 3.0
-        return (
-            int(np.floor(centroid_x / cell_size)),
-            int(np.floor(centroid_y / cell_size)),
-        )
 
     def _compute_triangle_vertex_uv(
         self,
