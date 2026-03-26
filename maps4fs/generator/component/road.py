@@ -426,8 +426,14 @@ class Road(MeshComponent):
                 obj_file.write(f"usemtl {Parameters.ROAD_MATERIAL_NAME}\n")
 
             for face in faces:
-                v1, v2, v3 = [idx + Parameters.OBJ_INDEX_OFFSET for idx in face]
-                obj_file.write(f"f {v1}/{v1} {v2}/{v2} {v3}/{v3}\n")
+                v1, v2, v3, t1, t2, t3 = face
+                v1 += Parameters.OBJ_INDEX_OFFSET
+                v2 += Parameters.OBJ_INDEX_OFFSET
+                v3 += Parameters.OBJ_INDEX_OFFSET
+                t1 += Parameters.OBJ_INDEX_OFFSET
+                t2 += Parameters.OBJ_INDEX_OFFSET
+                t3 += Parameters.OBJ_INDEX_OFFSET
+                obj_file.write(f"f {v1}/{t1} {v2}/{t2} {v3}/{t3}\n")
 
         self.logger.debug(
             "Connected road mesh written to %s with %d vertices and %d faces",
@@ -512,7 +518,7 @@ class Road(MeshComponent):
         road_entries: list[LineSurfaceEntry],
     ) -> tuple[
         list[tuple[float, float, float]],
-        list[tuple[int, int, int]],
+        list[tuple[int, int, int, int, int, int]],
         list[tuple[float, float]],
     ]:
         """Triangulate the connected road surface and sample DEM height per vertex."""
@@ -546,11 +552,11 @@ class Road(MeshComponent):
             return [], [], []
 
         vertices: list[tuple[float, float, float]] = []
-        faces: list[tuple[int, int, int]] = []
+        faces: list[tuple[int, int, int, int, int, int]] = []
         uvs: list[tuple[float, float]] = []
         vertex_index: dict[tuple[int, int], int] = {}
         tile_size = max(Parameters.TEXTURE_TILE_SIZE_METERS, 1.0)
-        uv_sources = [
+        uv_sources: list[tuple[shapely.LineString, float]] = [
             (entry.linestring, max(float(entry.width), 1.0))
             for entry in road_entries
             if not entry.linestring.is_empty and entry.linestring.length > 0
@@ -569,7 +575,13 @@ class Road(MeshComponent):
             if self._signed_triangle_area(coords) > 0.0:
                 coords[1], coords[2] = coords[2], coords[1]
 
-            face_indices: list[int] = []
+            triangle_source = self._select_triangle_uv_source(
+                triangle_coords=coords,
+                uv_sources=uv_sources,
+            )
+
+            face_vertex_indices: list[int] = []
+            face_uv_indices: list[int] = []
             for x, y in coords:
                 key = self._point_key(x, y)
                 idx = vertex_index.get(key)
@@ -578,40 +590,46 @@ class Road(MeshComponent):
                     idx = len(vertices)
                     vertex_index[key] = idx
                     vertices.append((x, y, z))
-                    uvs.append(self._compute_vertex_uv(x, y, uv_sources, tile_size))
-                face_indices.append(idx)
+                face_vertex_indices.append(idx)
 
-            if len(set(face_indices)) != 3:
+                uv = self._compute_triangle_vertex_uv(
+                    x=x,
+                    y=y,
+                    tile_size=tile_size,
+                    triangle_source=triangle_source,
+                )
+                face_uv_indices.append(len(uvs))
+                uvs.append(uv)
+
+            if len(set(face_vertex_indices)) != 3:
                 continue
-            faces.append((face_indices[0], face_indices[1], face_indices[2]))
+            faces.append(
+                (
+                    face_vertex_indices[0],
+                    face_vertex_indices[1],
+                    face_vertex_indices[2],
+                    face_uv_indices[0],
+                    face_uv_indices[1],
+                    face_uv_indices[2],
+                )
+            )
 
         return vertices, faces, uvs
 
-    def _compute_vertex_uv(
+    def _compute_triangle_vertex_uv(
         self,
         x: float,
         y: float,
-        uv_sources: list[tuple[shapely.LineString, float]],
         tile_size: float,
+        triangle_source: tuple[shapely.LineString, float] | None,
     ) -> tuple[float, float]:
-        """Map UVs using the nearest road centerline like strip-based generation."""
-        if not uv_sources:
+        """Compute per-corner UV in the triangle-selected mapping frame."""
+        if triangle_source is None:
             return (x / tile_size, y / tile_size)
 
+        best_line, best_width = triangle_source
         point = Point(x, y)
-        best_line: shapely.LineString | None = None
-        best_width = 1.0
-        best_distance = float("inf")
-
-        for linestring, width in uv_sources:
-            distance = float(linestring.distance(point))
-            if distance < best_distance:
-                best_distance = distance
-                best_line = linestring
-                best_width = width
-
-        if best_line is None:
-            return (x / tile_size, y / tile_size)
+        best_distance = float(best_line.distance(point))
 
         along = float(best_line.project(point))
         signed_lateral = self._signed_lateral_distance(best_line, point, along, best_distance)
@@ -619,6 +637,112 @@ class Road(MeshComponent):
         u = float(np.clip(0.5 + (signed_lateral / max(best_width, 1.0)), 0.0, 1.0))
         v = along / tile_size
         return (u, v)
+
+    def _select_triangle_uv_source(
+        self,
+        triangle_coords: list[tuple[float, float]],
+        uv_sources: list[tuple[shapely.LineString, float]],
+    ) -> tuple[shapely.LineString, float] | None:
+        """Pick one centerline for the entire triangle using distance + direction fit."""
+        if not uv_sources:
+            return None
+
+        centroid_x = (triangle_coords[0][0] + triangle_coords[1][0] + triangle_coords[2][0]) / 3.0
+        centroid_y = (triangle_coords[0][1] + triangle_coords[1][1] + triangle_coords[2][1]) / 3.0
+        centroid = Point(centroid_x, centroid_y)
+
+        preliminary: list[tuple[float, shapely.LineString, float]] = []
+        for linestring, width in uv_sources:
+            preliminary.append((float(linestring.distance(centroid)), linestring, width))
+
+        preliminary.sort(key=lambda item: item[0])
+        candidate_sources = preliminary[: min(6, len(preliminary))]
+
+        tri_direction = self._triangle_longest_edge_direction(triangle_coords)
+
+        best_score = float("inf")
+        best_source: tuple[shapely.LineString, float] | None = None
+        for _, linestring, width in candidate_sources:
+            safe_width = max(width, 1.0)
+            vertex_points = [Point(x, y) for x, y in triangle_coords]
+            mean_distance = float(
+                np.mean([linestring.distance(vertex_point) for vertex_point in vertex_points])
+            )
+            distance_score = mean_distance / safe_width
+
+            direction_score = 0.5
+            if tri_direction is not None:
+                along = float(linestring.project(centroid))
+                tangent = self._line_tangent_direction(linestring, along)
+                if tangent is not None:
+                    dot = abs(tri_direction[0] * tangent[0] + tri_direction[1] * tangent[1])
+                    direction_score = 1.0 - float(np.clip(dot, 0.0, 1.0))
+
+            score = distance_score + direction_score * 0.75
+            if score < best_score:
+                best_score = score
+                best_source = (linestring, width)
+
+        return best_source
+
+    @staticmethod
+    def _triangle_longest_edge_direction(
+        triangle_coords: list[tuple[float, float]],
+    ) -> tuple[float, float] | None:
+        """Return normalized direction vector of the longest triangle edge."""
+        edges = [
+            (
+                triangle_coords[0],
+                triangle_coords[1],
+            ),
+            (
+                triangle_coords[1],
+                triangle_coords[2],
+            ),
+            (
+                triangle_coords[2],
+                triangle_coords[0],
+            ),
+        ]
+
+        longest_length = 0.0
+        longest_vector: tuple[float, float] | None = None
+        for start, end in edges:
+            dx = float(end[0] - start[0])
+            dy = float(end[1] - start[1])
+            length = float(np.hypot(dx, dy))
+            if length > longest_length:
+                longest_length = length
+                longest_vector = (dx, dy)
+
+        if longest_vector is None or longest_length <= 1e-9:
+            return None
+
+        return (longest_vector[0] / longest_length, longest_vector[1] / longest_length)
+
+    @staticmethod
+    def _line_tangent_direction(
+        linestring: shapely.LineString,
+        along: float,
+    ) -> tuple[float, float] | None:
+        """Return normalized tangent vector of a linestring at a projected distance."""
+        line_length = float(linestring.length)
+        if line_length <= 0.0:
+            return None
+
+        epsilon = min(1.0, max(line_length * 0.01, 0.01))
+        start_d = max(0.0, along - epsilon)
+        end_d = min(line_length, along + epsilon)
+        p0 = linestring.interpolate(start_d)
+        p1 = linestring.interpolate(end_d)
+
+        dx = float(p1.x - p0.x)
+        dy = float(p1.y - p0.y)
+        tangent_len = float(np.hypot(dx, dy))
+        if tangent_len <= 1e-9:
+            return None
+
+        return (dx / tangent_len, dy / tangent_len)
 
     @staticmethod
     def _signed_lateral_distance(
