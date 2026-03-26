@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import shutil
 from collections import defaultdict
-from typing import Any
+from typing import Any, NamedTuple
 
 import numpy as np
 import shapely
@@ -18,6 +18,14 @@ from maps4fs.generator.component.base.component_mesh import (
 )
 from maps4fs.generator.constants import Paths
 from maps4fs.generator.settings import Parameters
+
+
+class TextureSource(NamedTuple):
+    """Road texture source and its allowed UV influence region."""
+
+    linestring: shapely.LineString
+    width: float
+    influence: Polygon | MultiPolygon
 
 
 class Road(MeshComponent):
@@ -551,13 +559,9 @@ class Road(MeshComponent):
         uvs: list[tuple[float, float]] = []
         vertex_index: dict[tuple[int, int], int] = {}
         tile_size = max(Parameters.TEXTURE_TILE_SIZE_METERS, 1.0)
-        uv_sources: list[tuple[shapely.LineString, float]] = [
-            (entry.linestring, max(float(entry.width), 1.0))
-            for entry in road_entries
-            if not entry.linestring.is_empty and entry.linestring.length > 0
-        ]
+        texture_sources = self._build_texture_sources(road_entries)
         source_cache: dict[tuple[int, int], tuple[shapely.LineString, float] | None] = {}
-        cache_cell_size = max(2.0, sampling_step)
+        cache_cell_size = max(1.0, sampling_step * 0.5)
 
         for polygon in polygons:
             polygon_points: dict[tuple[int, int], tuple[float, float]] = {}
@@ -598,7 +602,7 @@ class Road(MeshComponent):
                     if source_key not in source_cache:
                         triangle_source = self._select_triangle_uv_source(
                             triangle_coords=coords,
-                            uv_sources=uv_sources,
+                            texture_sources=texture_sources,
                         )
                         source_cache[source_key] = triangle_source
 
@@ -637,6 +641,100 @@ class Road(MeshComponent):
                     )
 
         return vertices, faces, uvs
+
+    def _build_texture_sources(
+        self,
+        road_entries: list[LineSurfaceEntry],
+    ) -> list[TextureSource]:
+        """Build per-road UV ownership regions so side roads are cut at dominant roads."""
+        prepared: list[tuple[shapely.LineString, float, Polygon | MultiPolygon]] = []
+        for linestring, width, _ in road_entries:
+            if linestring.is_empty or linestring.length <= 0:
+                continue
+
+            dense_coords = self._densify_linestring_coords(
+                linestring,
+                target_segment_length=Parameters.INTERPOLATION_TARGET_SEGMENT_LENGTH,
+            )
+            if len(dense_coords) < 2:
+                continue
+
+            dense_line = shapely.LineString(dense_coords)
+            safe_width = max(float(width), 1.0)
+            try:
+                base_influence = dense_line.buffer(safe_width, cap_style=2, join_style=1)
+            except Exception:
+                continue
+
+            normalized = self._normalize_surface_geometry(base_influence)
+            if normalized is None:
+                continue
+            prepared.append((dense_line, safe_width, normalized))
+
+        if not prepared:
+            return []
+
+        # Priority order: wider and longer roads remain continuous through intersections.
+        order = sorted(
+            range(len(prepared)),
+            key=lambda idx: (prepared[idx][1], float(prepared[idx][0].length)),
+            reverse=True,
+        )
+
+        blockers: list[Polygon | MultiPolygon] = []
+        sources: list[TextureSource] = []
+        for idx in order:
+            linestring, width, base_influence = prepared[idx]
+            owned = base_influence
+
+            for blocker in blockers:
+                if owned.is_empty:
+                    break
+                if not owned.intersects(blocker):
+                    continue
+                try:
+                    owned = owned.difference(blocker)
+                except Exception:
+                    continue
+
+            normalized_owned = self._normalize_surface_geometry(owned)
+            if normalized_owned is not None:
+                sources.append(
+                    TextureSource(
+                        linestring=linestring,
+                        width=width,
+                        influence=normalized_owned,
+                    )
+                )
+
+            blockers.append(base_influence)
+
+        if not sources:
+            return [
+                TextureSource(linestring=line, width=width, influence=influence)
+                for line, width, influence in prepared
+            ]
+        return sources
+
+    def _normalize_surface_geometry(
+        self,
+        geometry: Any,
+    ) -> Polygon | MultiPolygon | None:
+        """Normalize arbitrary geometry into polygon or multipolygon surface."""
+        polygons = self._extract_polygons(geometry)
+        if not polygons:
+            return None
+
+        merged = shapely.unary_union(polygons)
+        if isinstance(merged, (Polygon, MultiPolygon)):
+            return merged
+
+        fallback_polygons = self._extract_polygons(merged)
+        if not fallback_polygons:
+            return None
+        if len(fallback_polygons) == 1:
+            return fallback_polygons[0]
+        return shapely.MultiPolygon(fallback_polygons)
 
     def _triangulate_clipped_geometry(
         self,
@@ -811,28 +909,43 @@ class Road(MeshComponent):
     def _select_triangle_uv_source(
         self,
         triangle_coords: list[tuple[float, float]],
-        uv_sources: list[tuple[shapely.LineString, float]],
+        texture_sources: list[TextureSource],
     ) -> tuple[shapely.LineString, float] | None:
         """Pick one centerline for the entire triangle using distance + direction fit."""
-        if not uv_sources:
+        if not texture_sources:
             return None
 
         centroid_x = (triangle_coords[0][0] + triangle_coords[1][0] + triangle_coords[2][0]) / 3.0
         centroid_y = (triangle_coords[0][1] + triangle_coords[1][1] + triangle_coords[2][1]) / 3.0
         centroid = Point(centroid_x, centroid_y)
 
-        preliminary: list[tuple[float, shapely.LineString, float]] = []
-        for linestring, width in uv_sources:
-            preliminary.append((float(linestring.distance(centroid)), linestring, width))
+        owned_sources: list[tuple[shapely.LineString, float]] = []
+        for source in texture_sources:
+            min_x, min_y, max_x, max_y = source.influence.bounds
+            if centroid_x < min_x or centroid_x > max_x or centroid_y < min_y or centroid_y > max_y:
+                continue
+            if source.influence.covers(centroid):
+                owned_sources.append((source.linestring, source.width))
 
-        preliminary.sort(key=lambda item: item[0])
-        candidate_sources = preliminary[: min(6, len(preliminary))]
+        candidate_pool = owned_sources
+        if not candidate_pool:
+            preliminary_all: list[tuple[float, shapely.LineString, float]] = []
+            for source in texture_sources:
+                preliminary_all.append(
+                    (
+                        float(source.linestring.distance(centroid)),
+                        source.linestring,
+                        source.width,
+                    )
+                )
+            preliminary_all.sort(key=lambda item: item[0])
+            candidate_pool = [(line, width) for _, line, width in preliminary_all[:6]]
 
         tri_direction = self._triangle_longest_edge_direction(triangle_coords)
 
         best_score = float("inf")
         best_source: tuple[shapely.LineString, float] | None = None
-        for _, linestring, width in candidate_sources:
+        for linestring, width in candidate_pool:
             safe_width = max(width, 1.0)
             vertex_points = [Point(x, y) for x, y in triangle_coords]
             mean_distance = float(
