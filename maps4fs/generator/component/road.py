@@ -455,7 +455,26 @@ class Road(MeshComponent):
         self,
         road_entries: list[LineSurfaceEntry],
     ) -> Polygon | MultiPolygon | None:
-        """Build a unioned polygonal road surface from centerline entries."""
+        """Build a polygonal road surface from centerline entries.
+
+        Prefer dominance-clipped ownership polygons so lower-priority roads
+        terminate at the edge of dominant roads instead of overlapping through
+        intersections. Fall back to raw buffered unions if ownership polygons
+        cannot be built.
+        """
+        texture_sources = self._build_texture_sources(road_entries)
+        ownership_polygons: list[Polygon] = []
+        for source in texture_sources:
+            ownership_polygons.extend(self._extract_polygons(source.influence))
+
+        normalized_surface = None
+        if ownership_polygons:
+            normalized_surface = self._normalize_surface_geometry(
+                shapely.unary_union(ownership_polygons)
+            )
+        if normalized_surface is not None:
+            return normalized_surface
+
         prepared_lines: list[tuple[shapely.LineString, float]] = []
         for linestring, width, _ in road_entries:
             if linestring.is_empty or linestring.length <= 0:
