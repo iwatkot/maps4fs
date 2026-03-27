@@ -131,9 +131,10 @@ Each entry in `fs25-electricity-schema.json` defines one placeable asset profile
 - `connectors` (array): Connector points for wire generation.
   - `side` (number): Horizontal offset in local pole right-axis.
   - `height` (number): Vertical offset above ground.
-- `align_to_road` (bool): If true (typically lights), initial yaw faces nearest road.
-- `align_to_road_max_distance` (number): Optional max distance to road for alignment.
-  - If nearest road is farther than this, default yaw is kept.
+- `align_to_road` (number): Max distance to nearest road centerline for orientation.
+  - If nearest road is farther than this value, default yaw is kept.
+- `snap_to_road` (number): Offset from road edge where the point is snapped.
+  - Final snap offset is: half road width + `snap_to_road`.
 - `template_file` (string): Source i3d to copy into map package before use.
 
 ## Connectors Deep Dive
@@ -327,8 +328,8 @@ Behavior:
 For light entries:
 
 - Set `type` to `light`.
-- Set `align_to_road` to `true`.
-- Optionally set `align_to_road_max_distance`.
+- Set `align_to_road` to a numeric distance threshold (for example `96`).
+- Optionally set `snap_to_road` to place the light near the road edge.
 
 Example:
 
@@ -338,8 +339,8 @@ Example:
   "name": "streetLight01",
   "type": "light",
   "rotation_offset_degrees": 90,
-  "align_to_road": true,
-  "align_to_road_max_distance": 96,
+  "align_to_road": 96,
+  "snap_to_road": 2,
   "categories": ["road_light"]
 }
 ```
@@ -347,8 +348,8 @@ Example:
 Alignment behavior:
 
 - Nearest point on fitted road segments is found.
-- Light yaw is aimed toward that road point.
-- Threshold is applied if `align_to_road_max_distance` is set.
+- Light yaw is aimed toward that road point when it is within `align_to_road`.
+- If `snap_to_road` is set, the point is moved to road edge offset (`half width + snap_to_road`).
 
 If a light faces backward, tune `rotation_offset_degrees` by +90, -90, or 180 depending on the asset's local forward axis.
 
@@ -381,8 +382,8 @@ If a light faces backward, tune `rotation_offset_degrees` by +90, -90, or 180 de
 ### Lights do not face roads
 
 - Ensure roads exist in texture schema and produce `roads_polylines` context.
-- Enable `align_to_road`.
-- Increase `align_to_road_max_distance` if roads are sparse.
+- Set `align_to_road` to a larger numeric threshold if roads are sparse.
+- Set or tune `snap_to_road` to keep lights close to road edges.
 - Tune `rotation_offset_degrees` for local model orientation.
 
 ## Related Docs

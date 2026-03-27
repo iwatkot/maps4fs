@@ -30,8 +30,8 @@ class ElectricityEntry(NamedTuple):
     visual_rotation_offset_degrees: float | None = None
     template_file: str | None = None
     type: str | None = None
-    align_to_road: bool = False
-    align_to_road_max_distance: float | None = None
+    align_to_road: float | None = None
+    snap_to_road: float | None = None
 
 
 class ConnectorEntry(NamedTuple):
@@ -52,6 +52,23 @@ class PolePlacement(NamedTuple):
     yaw_degrees: float
     node_id: int
     entry: ElectricityEntry
+
+
+class RoadSegment(NamedTuple):
+    """Fitted road segment with source road width metadata."""
+
+    start: tuple[float, float]
+    end: tuple[float, float]
+    width: float
+
+
+class NearestRoadHit(NamedTuple):
+    """Nearest road query result used by alignment and snapping."""
+
+    point: tuple[float, float]
+    distance: float
+    normal: tuple[float, float]
+    half_width: float
 
 
 class ElectricityEntryCollection:
@@ -241,16 +258,11 @@ class Electricity(MeshComponent):
             visual_rotation_offset_degrees = (
                 float(raw_visual_rotation) if raw_visual_rotation is not None else None
             )
-            align_to_road = bool(row.get("align_to_road", False))
-            raw_align_to_road_max_distance = row.get("align_to_road_max_distance")
-            align_to_road_max_distance: float | None = None
-            if raw_align_to_road_max_distance is not None:
-                try:
-                    parsed_distance = float(raw_align_to_road_max_distance)
-                    if parsed_distance > 0:
-                        align_to_road_max_distance = parsed_distance
-                except (TypeError, ValueError):
-                    align_to_road_max_distance = None
+            align_to_road = self._parse_optional_distance(row.get("align_to_road"))
+            snap_to_road = self._parse_optional_distance(
+                row.get("snap_to_road"),
+                allow_zero=True,
+            )
 
             entries.append(
                 ElectricityEntry(
@@ -263,7 +275,7 @@ class Electricity(MeshComponent):
                     template_file=str(template_file) if template_file else None,
                     type=str(entry_type) if entry_type is not None else None,
                     align_to_road=align_to_road,
-                    align_to_road_max_distance=align_to_road_max_distance,
+                    snap_to_road=snap_to_road,
                 )
             )
 
@@ -359,7 +371,7 @@ class Electricity(MeshComponent):
         used_node_ids: set[int],
         file_id_counter: int,
         node_id_counter: int,
-        fitted_road_segments: list[tuple[tuple[float, float], tuple[float, float]]],
+        fitted_road_segments: list[RoadSegment],
     ) -> tuple[bool, int, int, PolePlacement | None]:
         """Attempt to place a single pole from one point record.
 
@@ -374,6 +386,7 @@ class Electricity(MeshComponent):
             file_id_counter (int): Candidate file ID for new assets.
             node_id_counter (int): Candidate node ID for new reference nodes.
             fitted_road_segments (list[tuple[tuple[float, float], tuple[float, float]]]):
+            fitted_road_segments (list[RoadSegment]):
                 Pre-fitted road segments for optional road-facing light orientation.
 
         Returns:
@@ -413,6 +426,8 @@ class Electricity(MeshComponent):
         )
 
         node_id_counter = self._next_free_id(node_id_counter, used_node_ids)
+
+        fitted_point = self._snap_point_to_road(fitted_point, best_match, fitted_road_segments)
 
         x_center, y_center = self.top_left_coordinates_to_center(fitted_point)
         try:
@@ -1466,20 +1481,30 @@ class Electricity(MeshComponent):
     def _build_fitted_road_segments(
         self,
         road_records: list[dict[str, Any]],
-    ) -> list[tuple[tuple[float, float], tuple[float, float]]]:
+    ) -> list[RoadSegment]:
         """Build fitted road segment list in output pixel space.
 
         Arguments:
             road_records (list[dict[str, Any]]): Road polyline records from texture info layer.
 
         Returns:
-            list[tuple[tuple[float, float], tuple[float, float]]]: Fitted road segment endpoints.
+            list[RoadSegment]: Fitted road segment endpoints with source width metadata.
         """
-        segments: list[tuple[tuple[float, float], tuple[float, float]]] = []
+        segments: list[RoadSegment] = []
         for road in road_records:
             points = road.get(Parameters.POINTS) if isinstance(road, dict) else None
             if not isinstance(points, list) or len(points) < 2:
                 continue
+            road_width = 0.0
+            if isinstance(road, dict):
+                raw_road_width = road.get(Parameters.WIDTH)
+                if isinstance(raw_road_width, (int, float)):
+                    road_width = max(0.0, float(raw_road_width))
+                elif isinstance(raw_road_width, str):
+                    try:
+                        road_width = max(0.0, float(raw_road_width))
+                    except ValueError:
+                        road_width = 0.0
             try:
                 fitted_line = self.fit_object_into_bounds(
                     linestring_points=points, angle=self.rotation
@@ -1494,31 +1519,84 @@ class Electricity(MeshComponent):
                 if math.hypot(dx, dy) <= 1e-6:
                     continue
                 segments.append(
-                    (
-                        (float(start[0]), float(start[1])),
-                        (float(end[0]), float(end[1])),
+                    RoadSegment(
+                        start=(float(start[0]), float(start[1])),
+                        end=(float(end[0]), float(end[1])),
+                        width=road_width,
                     )
                 )
         return segments
+
+    def _snap_point_to_road(
+        self,
+        fitted_point: tuple[int, int],
+        entry: ElectricityEntry,
+        fitted_road_segments: list[RoadSegment],
+    ) -> tuple[int, int]:
+        """Snap fitted point to nearest road edge with configured offset.
+
+        Arguments:
+            fitted_point (tuple[int, int]): Original fitted point coordinates.
+            entry (ElectricityEntry): Matched electricity entry.
+            fitted_road_segments (list[RoadSegment]): Fitted road segments in output space.
+
+        Returns:
+            tuple[int, int]: Snapped fitted point when configured, otherwise original point.
+        """
+        if entry.snap_to_road is None:
+            return fitted_point
+
+        point_x = float(fitted_point[0])
+        point_y = float(fitted_point[1])
+        nearest_road = self._nearest_road_point(point_x, point_y, fitted_road_segments)
+        if nearest_road is None:
+            return fitted_point
+
+        road_point = nearest_road.point
+        normal_x, normal_y = nearest_road.normal
+        from_center_x = point_x - road_point[0]
+        from_center_y = point_y - road_point[1]
+        side_projection = from_center_x * normal_x + from_center_y * normal_y
+        side_sign = 1.0 if side_projection >= 0.0 else -1.0
+
+        edge_offset = nearest_road.half_width + entry.snap_to_road
+        snapped_x = road_point[0] + normal_x * side_sign * edge_offset
+        snapped_y = road_point[1] + normal_y * side_sign * edge_offset
+        return self._clamp_fitted_point(snapped_x, snapped_y)
+
+    def _clamp_fitted_point(self, x: float, y: float) -> tuple[int, int]:
+        """Clamp floating fitted coordinates to valid map pixel bounds.
+
+        Arguments:
+            x (float): Fitted X coordinate.
+            y (float): Fitted Y coordinate.
+
+        Returns:
+            tuple[int, int]: In-bounds integer pixel coordinates.
+        """
+        max_index = max(0, int(self.scaled_size) - 1)
+        clamped_x = max(0, min(max_index, int(round(x))))
+        clamped_y = max(0, min(max_index, int(round(y))))
+        return clamped_x, clamped_y
 
     def _initial_pole_yaw(
         self,
         fitted_point: tuple[int, int],
         entry: ElectricityEntry,
-        fitted_road_segments: list[tuple[tuple[float, float], tuple[float, float]]],
+        fitted_road_segments: list[RoadSegment],
     ) -> float:
         """Resolve initial pole yaw, optionally orienting light assets toward nearby roads.
 
         Arguments:
             fitted_point (tuple[int, int]): Pole point in fitted output pixel space.
             entry (ElectricityEntry): Matched electricity asset entry.
-            fitted_road_segments (list[tuple[tuple[float, float], tuple[float, float]]]):
+            fitted_road_segments (list[RoadSegment]):
                 Pre-fitted road segment endpoints.
 
         Returns:
             float: Initial yaw in degrees.
         """
-        if not entry.align_to_road:
+        if entry.align_to_road is None:
             return 0.0
 
         point_x = float(fitted_point[0])
@@ -1527,9 +1605,9 @@ class Electricity(MeshComponent):
         if nearest_road is None:
             return 0.0
 
-        road_target, road_distance = nearest_road
-        max_distance = entry.align_to_road_max_distance
-        if max_distance is not None and road_distance > max_distance:
+        road_target = nearest_road.point
+        road_distance = nearest_road.distance
+        if road_distance > entry.align_to_road:
             return 0.0
 
         dx = road_target[0] - point_x
@@ -1543,30 +1621,35 @@ class Electricity(MeshComponent):
     def _nearest_road_point(
         point_x: float,
         point_y: float,
-        fitted_road_segments: list[tuple[tuple[float, float], tuple[float, float]]],
-    ) -> tuple[tuple[float, float], float] | None:
+        fitted_road_segments: list[RoadSegment],
+    ) -> NearestRoadHit | None:
         """Return nearest projected point on fitted road segments.
 
         Arguments:
             point_x (float): Query point X coordinate.
             point_y (float): Query point Y coordinate.
-            fitted_road_segments (list[tuple[tuple[float, float], tuple[float, float]]]):
+            fitted_road_segments (list[RoadSegment]):
                 Road segment endpoints in fitted pixel space.
 
         Returns:
-            tuple[tuple[float, float], float] | None:
-                Closest point on any road segment and euclidean distance,
-                or None if unavailable.
+            NearestRoadHit | None: Closest road projection details, or None if unavailable.
         """
         best_point: tuple[float, float] | None = None
         best_distance_sq = float("inf")
+        best_normal: tuple[float, float] | None = None
+        best_half_width = 0.0
 
-        for (x1, y1), (x2, y2) in fitted_road_segments:
+        for segment in fitted_road_segments:
+            x1, y1 = segment.start
+            x2, y2 = segment.end
             seg_dx = x2 - x1
             seg_dy = y2 - y1
             seg_len_sq = seg_dx * seg_dx + seg_dy * seg_dy
             if seg_len_sq <= 1e-12:
                 continue
+            seg_len = math.sqrt(seg_len_sq)
+            normal_x = -seg_dy / seg_len
+            normal_y = seg_dx / seg_len
 
             t = ((point_x - x1) * seg_dx + (point_y - y1) * seg_dy) / seg_len_sq
             t = max(0.0, min(1.0, t))
@@ -1577,10 +1660,42 @@ class Electricity(MeshComponent):
             if dist_sq < best_distance_sq:
                 best_distance_sq = dist_sq
                 best_point = (proj_x, proj_y)
+                best_normal = (normal_x, normal_y)
+                best_half_width = max(0.0, segment.width * 0.5)
 
-        if best_point is None:
+        if best_point is None or best_normal is None:
             return None
-        return best_point, math.sqrt(best_distance_sq)
+        return NearestRoadHit(
+            point=best_point,
+            distance=math.sqrt(best_distance_sq),
+            normal=best_normal,
+            half_width=best_half_width,
+        )
+
+    @staticmethod
+    def _parse_optional_distance(value: Any, allow_zero: bool = False) -> float | None:
+        """Parse optional numeric distance from schema values.
+
+        Arguments:
+            value (Any): Raw schema value.
+            allow_zero (bool, optional): Whether zero is considered valid.
+
+        Returns:
+            float | None: Parsed distance when valid, otherwise None.
+        """
+        if value is None or isinstance(value, bool):
+            return None
+
+        try:
+            distance = float(value)
+        except (TypeError, ValueError):
+            return None
+
+        if allow_zero and distance >= 0:
+            return distance
+        if distance > 0:
+            return distance
+        return None
 
     def info_sequence(self) -> dict[str, Any]:
         """Return electricity placement info for generation report.
