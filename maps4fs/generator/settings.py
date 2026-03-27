@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, cast
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from maps4fs.generator.bootstrap import Bootstrap
 from maps4fs.generator.constants import Parameters
@@ -109,6 +109,8 @@ class I3DSettings(SettingsModel):
         add_reversed_splines (bool): if True, reversed splines will be added to the map.
         field_splines (bool): if True, splines will be added to the fields.
         license_plate_prefix (str): prefix for the license plates.
+        displacement_layer_max_height (float): displacement layer maximum height value written
+            to map.i3d.
     """
 
     add_trees: bool = True
@@ -123,6 +125,7 @@ class I3DSettings(SettingsModel):
     license_plate_prefix: str = "M4S"
 
     self_clear: bool = False
+    displacement_layer_max_height: float = Field(default=0.2, ge=0.0, le=1.0)
 
 
 class TextureSettings(SettingsModel):

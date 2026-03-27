@@ -107,7 +107,7 @@ class Scene(ImageComponent):
             )
 
     def _update_parameters(self) -> None:
-        """Updates the map I3D file with the sun bounding box and displacement layer size."""
+        """Updates the map I3D file with sun bounds and displacement layer parameters."""
         distance = self.map_size // 2
         y_min = self.game.config.sun_bbox_y_min
         y_max = self.game.config.sun_bbox_y_max
@@ -125,7 +125,10 @@ class Scene(ImageComponent):
                 **{
                     cfg.i3d_attr_size: str(
                         int(self.map_size * self.game.config.displacement_size_multiplier)
-                    )
+                    ),
+                    cfg.i3d_attr_max_height: str(
+                        self.map.i3d_settings.displacement_layer_max_height
+                    ),
                 },
             )
 
@@ -406,7 +409,9 @@ class Scene(ImageComponent):
 
         self.assets.fields = self.xml_path
 
-    def _extract_field_rings(self, field: Any) -> tuple[list[tuple[int, int]], list[list[tuple[int, int]]]]:
+    def _extract_field_rings(
+        self, field: Any
+    ) -> tuple[list[tuple[int, int]], list[list[tuple[int, int]]]]:
         """Normalize field record into (outer_ring, holes)."""
         if isinstance(field, dict):
             outer = field.get(Parameters.POINTS, [])

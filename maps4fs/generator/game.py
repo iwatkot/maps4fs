@@ -111,6 +111,7 @@ class GameConfig:
     i3d_attr_last_shadow_min: str = "lastShadowMapSplitBboxMin"
     i3d_attr_last_shadow_max: str = "lastShadowMapSplitBboxMax"
     i3d_attr_size: str = "size"
+    i3d_attr_max_height: str = "maxHeight"
     i3d_attr_receive_shadows: str = "receiveShadows"
     i3d_attr_specular_color: str = "specularColor"
     i3d_attr_custom_shader_id: str = "customShaderId"
