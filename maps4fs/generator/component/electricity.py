@@ -752,13 +752,36 @@ class Electricity(MeshComponent):
             if not vecs:
                 result[idx] = 0.0
                 continue
-            avg_x = sum(v[0] for v in vecs)
-            avg_z = sum(v[1] for v in vecs)
-            if math.hypot(avg_x, avg_z) <= 1e-6:
-                first_x, first_z = vecs[0]
-                yaw = math.degrees(math.atan2(first_z, first_x))
+            yaw: float
+            if len(vecs) == 2:
+                v1x, v1z = vecs[0]
+                v2x, v2z = vecs[1]
+                dot = v1x * v2x + v1z * v2z
+                # Near-opposite vectors indicate a straight-through chain segment.
+                # Use one axis direction directly to avoid unstable perpendicular bisectors.
+                if dot < -0.85:
+                    yaw = math.degrees(math.atan2(v1z, v1x))
+                else:
+                    avg_x = sum(v[0] for v in vecs)
+                    avg_z = sum(v[1] for v in vecs)
+                    if math.hypot(avg_x, avg_z) <= 1e-6:
+                        first_x, first_z = vecs[0]
+                        yaw = math.degrees(math.atan2(first_z, first_x))
+                    else:
+                        yaw = math.degrees(math.atan2(avg_z, avg_x))
             else:
-                yaw = math.degrees(math.atan2(avg_z, avg_x))
+                avg_x = sum(v[0] for v in vecs)
+                avg_z = sum(v[1] for v in vecs)
+                if math.hypot(avg_x, avg_z) <= 1e-6:
+                    first_x, first_z = vecs[0]
+                    yaw = math.degrees(math.atan2(first_z, first_x))
+                else:
+                    yaw = math.degrees(math.atan2(avg_z, avg_x))
+
+            # Internal poles (degree > 1) use axis-based pole assets that are
+            # visually aligned when yaw is shifted by -90 degrees.
+            if len(vecs) > 1:
+                yaw -= 90.0
             result[idx] = yaw
 
         return result
