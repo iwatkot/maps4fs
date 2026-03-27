@@ -753,6 +753,7 @@ class Electricity(MeshComponent):
                 result[idx] = 0.0
                 continue
             yaw: float
+            is_near_straight_internal = False
             if len(vecs) == 2:
                 v1x, v1z = vecs[0]
                 v2x, v2z = vecs[1]
@@ -761,6 +762,7 @@ class Electricity(MeshComponent):
                 # Use one axis direction directly to avoid unstable perpendicular bisectors.
                 if dot < -0.85:
                     yaw = math.degrees(math.atan2(v1z, v1x))
+                    is_near_straight_internal = True
                 else:
                     avg_x = sum(v[0] for v in vecs)
                     avg_z = sum(v[1] for v in vecs)
@@ -778,9 +780,8 @@ class Electricity(MeshComponent):
                 else:
                     yaw = math.degrees(math.atan2(avg_z, avg_x))
 
-            # Internal poles (degree > 1) use axis-based pole assets that are
-            # visually aligned when yaw is shifted by -90 degrees.
-            if len(vecs) > 1:
+            # Apply this asset-axis correction only for straight-through poles.
+            if is_near_straight_internal:
                 yaw -= 90.0
             result[idx] = yaw
 
