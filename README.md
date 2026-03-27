@@ -43,6 +43,7 @@
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
 [![Build Status](https://github.com/iwatkot/maps4fs/actions/workflows/checks.yml/badge.svg)](https://github.com/iwatkot/maps4fs/actions)
 [![codecov](https://codecov.io/gh/iwatkot/maps4fs/graph/badge.svg?token=NSKPFSKJXI)](https://codecov.io/gh/iwatkot/maps4fs)
+[![Core LOC](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/iwatkot/maps4fs/gh-pages/loc.json)](https://github.com/iwatkot/maps4fs/actions/workflows/loc_badge.yml)
 [![GitHub Repo stars](https://img.shields.io/github/stars/iwatkot/maps4fs)](https://github.com/iwatkot/maps4fs/stargazers)<br>
 
 </div>
