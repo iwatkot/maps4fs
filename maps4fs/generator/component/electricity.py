@@ -890,8 +890,23 @@ class Electricity(MeshComponent):
             list[int]: Ordered pole index sequence without immediate duplicates.
         """
         sequence: list[int] = []
-        for point in fitted_line:
-            idx = self._nearest_pole_index(poles, point, allowed_indices=allowed_indices)
+        # Use stricter matching on line endpoints to avoid creating synthetic
+        # links when a line exits map bounds and no actual endpoint pole exists.
+        endpoint_max_distance = 24.0
+        interior_max_distance = 64.0
+        last_index = len(fitted_line) - 1
+
+        for i, point in enumerate(fitted_line):
+            max_distance = interior_max_distance
+            if i == 0 or i == last_index:
+                max_distance = endpoint_max_distance
+
+            idx = self._nearest_pole_index(
+                poles,
+                point,
+                max_distance=max_distance,
+                allowed_indices=allowed_indices,
+            )
             if idx is None:
                 continue
             if not sequence or sequence[-1] != idx:
