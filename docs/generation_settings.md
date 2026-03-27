@@ -143,6 +143,25 @@ If enabled, the tool will add trees to the map in areas defined as forests in th
 
 ⚠️ **Limits**: Maximum 3 characters (letters or numbers). Longer strings will be truncated.
 
+### Displacement Layer Max Height
+**Units:** Height value in meters
+**Range:** `0.0` to `1.0`
+This value updates the `maxHeight` attribute of the `DisplacementLayer` in `map.i3d`. In practice, it controls how strong the terrain ground deformation can be. Higher values allow deeper visible ground deformation, including more pronounced tractor tracks.
+
+**Default:** `0.2`
+
+**When to increase it**:
+- You want stronger ground deformation
+- You want deeper visible vehicle tracks
+
+**When to keep it low**:
+- You want more stable in-game ground deformation
+- You want to avoid exaggerated or unrealistic track depth
+
+⚠️ **Note:** Higher values can look impressive in screenshots, but they usually do not behave as well during actual gameplay. Use them carefully.
+
+⚠️ **Technical Note:** This setting only changes the I3D displacement layer limit. It does not rescale the DEM itself.
+
 ### Forest Density
 **Units:** Meters between trees
 The density of the forest in meters. The lower the value, the lower the distance between trees, which makes the forest denser. Note that low values will lead to an enormous number of trees, which may cause Giants Editor to crash or lead to performance issues. By default, it's set to 10.
@@ -235,6 +254,7 @@ Maps4FS can export your complete settings configuration as `generation_settings.
         "water_blurriness": 20
     },
     "I3DSettings": {
+        "displacement_layer_max_height": 0.2,
         "forest_density": 8,
         "tree_limit": 50000
     }
