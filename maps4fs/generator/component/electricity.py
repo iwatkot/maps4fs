@@ -118,7 +118,7 @@ class Electricity(MeshComponent):
             return
 
         self.electricity_collection = ElectricityEntryCollection(entries)
-        self.logger.info(
+        self.logger.debug(
             "Electricity collection created with %d entries.",
             len(self.electricity_collection.entries),
         )
@@ -126,7 +126,7 @@ class Electricity(MeshComponent):
     def process(self) -> None:
         """Place electricity poles from context point data into map.i3d."""
         if self.electricity_collection is None:
-            self.logger.info("Electricity schema is not loaded; skipping electricity placement.")
+            self.logger.debug("Electricity schema is not loaded; skipping electricity placement.")
             return
 
         try:
@@ -140,7 +140,7 @@ class Electricity(MeshComponent):
             Parameters.TEXTURES, Parameters.ELECTRICITY_POLES_POINTS
         )
         if not points_data:
-            self.logger.info("No electricity pole points found in context; skipping.")
+            self.logger.warning("No electricity pole points found in context; skipping.")
             return
 
         if self.electricity_collection is None:
@@ -217,7 +217,7 @@ class Electricity(MeshComponent):
         self.info["total_line_segments_created"] = network_segments
 
         doc.save()
-        self.logger.info("Electricity placement completed and saved to map.i3d")
+        self.logger.debug("Electricity placement completed and saved to map.i3d")
 
     def _load_electricity_schema(self) -> list[ElectricityEntry] | None:
         """Load electricity schema from custom map config or default game schema.
@@ -231,7 +231,7 @@ class Electricity(MeshComponent):
         else:
             schema_path = getattr(self.game, "electricity_schema", "")
             if not schema_path or not os.path.isfile(schema_path):
-                self.logger.info("Electricity schema not found: %s", schema_path)
+                self.logger.warning("Electricity schema not found: %s", schema_path)
                 return None
             self._schema_base_dir = os.path.dirname(schema_path)
             try:
