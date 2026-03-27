@@ -399,6 +399,7 @@ class Parameters:
     MESH_CENTROID_Z = "mesh_centroid_z"
 
     BINARY_I3D_SUFFIX = "_binary.i3d"
+    REMOVE_RAW_I3D_AFTER_BINARY_CONVERSION = True
     BACKGROUND_ASSET_DIRNAME = "background"
     WATER_ASSET_DIRNAME = "water"
     MAP_BOUNDS_DIRNAME = "map_bounds"
