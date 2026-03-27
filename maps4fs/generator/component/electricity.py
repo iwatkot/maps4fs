@@ -898,7 +898,7 @@ class Electricity(MeshComponent):
 
         for i, point in enumerate(fitted_line):
             max_distance = interior_max_distance
-            if i == 0 or i == last_index:
+            if i in (0, last_index):
                 max_distance = endpoint_max_distance
 
             idx = self._nearest_pole_index(
