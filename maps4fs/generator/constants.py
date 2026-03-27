@@ -313,6 +313,7 @@ class Parameters:
 
     # ---- Road Z-offset --------------------------------------------------
     PATCH_Z_OFFSET = -0.001
+    ROAD_MESH_DEFAULT_Z_OFFSET = 0.05
     ROAD_INTERSECTION_TOLERANCE = 1.0
     ROAD_PATCH_SEGMENT_PADDING = 2
     ROAD_SURFACE_MIN_WIDTH = 0.5

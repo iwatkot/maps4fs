@@ -1134,6 +1134,8 @@ class Scene(ImageComponent):
 
         mesh_centroid_y = position_data.get(Parameters.MESH_CENTROID_Y)
         ge_elevation = float(mesh_centroid_y) if mesh_centroid_y is not None else 0.0
+        if asset_name not in water_assets:
+            ge_elevation += Parameters.ROAD_MESH_DEFAULT_Z_OFFSET
 
         # GE translation string order: X (east-west), Y (elevation), Z (north-south).
         translation = f"{ge_x} {ge_elevation} {ge_y}"
