@@ -528,13 +528,13 @@ class Component:
         """
         return self.map_size if self.map.output_size is None else self.map.output_size
 
-    def get_z_coordinate_from_dem(self, not_resized_dem: np.ndarray, x: int, y: int) -> float:
+    def get_z_coordinate_from_dem(self, not_resized_dem: np.ndarray, x: float, y: float) -> float:
         """Gets the Z coordinate from the DEM image for the given coordinates.
 
         Arguments:
             not_resized_dem (np.ndarray): The not resized DEM image.
-            x (int): The x coordinate.
-            y (int): The y coordinate.
+            x (float): The x coordinate.
+            y (float): The y coordinate.
 
         Returns:
             float: The Z coordinate.

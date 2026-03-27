@@ -43,14 +43,13 @@ class OSMGeometryRasterizer:
                 continue
 
             for polygon in polygons:
+                polygons_to_emit = [polygon]
                 if is_fields and self.fields_padding > 0:
                     padded_polygons = self._extract_polygons(polygon.buffer(-self.fields_padding))
                     if not padded_polygons:
                         self.logger.debug("The padding value is too high, field will not padded.")
                     else:
                         polygons_to_emit = padded_polygons
-                else:
-                    polygons_to_emit = [polygon]
 
                 for polygon_to_emit in polygons_to_emit:
                     exterior, interiors = self._polygon_to_np(polygon_to_emit)
