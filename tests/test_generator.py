@@ -442,7 +442,7 @@ def test_dem_minimum_height_scale_respected() -> None:
 
 
 def test_background_terrain_i3d_generated() -> None:
-    """BackgroundSettings.generate_background=True produces background_terrain.i3d.
+    """BackgroundSettings.generate_background=True produces split background terrain i3d assets.
 
     Satellite images are required to texture the background mesh before it can be
     converted to i3d, so download_images=True is used here.
@@ -472,8 +472,39 @@ def test_background_terrain_i3d_generated() -> None:
     for _ in mp.generate():
         pass
 
-    bg_i3d = os.path.join(directory, "assets", "background", "background_terrain.i3d")
-    assert os.path.isfile(bg_i3d), f"background_terrain.i3d not found: {bg_i3d}"
+    background_assets_directory = os.path.join(directory, "assets", "background")
+    part_names = [
+        f"{Parameters.BACKGROUND_TERRAIN_PART_PREFIX}{part_idx + 1:02d}"
+        for part_idx in range(Parameters.BACKGROUND_TERRAIN_PARTS)
+    ]
+
+    for part_name in part_names:
+        raw_i3d_path = os.path.join(background_assets_directory, f"{part_name}.i3d")
+        binary_i3d_path = os.path.join(
+            background_assets_directory,
+            f"{part_name}{Parameters.BINARY_I3D_SUFFIX}",
+        )
+        assert os.path.isfile(raw_i3d_path) or os.path.isfile(
+            binary_i3d_path
+        ), f"Background terrain part not found: {part_name}"
+
+    i3d_root = ET.parse(game.i3d_file_path).getroot()
+    terrain_group_node = i3d_root.find(
+        f".//Scene/TransformGroup[@name='{Parameters.BACKGROUND_TERRAIN_GROUP_NAME}']"
+    )
+    assert terrain_group_node is not None, "backgroundTerrain transform group not found in map.i3d"
+
+    terrain_references = terrain_group_node.findall("ReferenceNode")
+    assert len(terrain_references) == Parameters.BACKGROUND_TERRAIN_PARTS, (
+        "Unexpected number of background terrain references in backgroundTerrain group: "
+        f"{len(terrain_references)}"
+    )
+
+    referenced_names = {node.get("name", "") for node in terrain_references}
+    assert referenced_names == set(part_names), (
+        "backgroundTerrain group references do not match expected split part names: "
+        f"{sorted(referenced_names)}"
+    )
 
 
 def test_grle_base_price_written_to_farmlands_xml() -> None:
