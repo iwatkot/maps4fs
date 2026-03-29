@@ -214,6 +214,7 @@ class Water(MeshComponent, ImageComponent):
         water_mask: np.ndarray,
         transition_scale: int,
         blur_kernel: int,
+        steepness_level: int,
     ) -> np.ndarray:
         """Build smooth depth factor map from shoreline (0) to deep water (approaches 1)."""
         if not np.any(water_mask):
@@ -222,9 +223,41 @@ class Water(MeshComponent, ImageComponent):
         mask_u8 = water_mask.astype(np.uint8)
         inside_distance = cv2.distanceTransform(mask_u8, cv2.DIST_L2, 5).astype(np.float32)
 
-        scale = max(1.0, float(transition_scale))
+        level = int(np.clip(steepness_level, 1, 5))
+        scale_multiplier_map = {
+            1: 1.8,
+            2: 1.35,
+            3: 1.0,
+            4: 0.65,
+            5: 0.35,
+        }
+        scale = max(1.0, float(transition_scale) * scale_multiplier_map.get(level, 1.0))
+
         # Exponential profile gives smooth banks and rounded bottoms.
         factor = 1.0 - np.exp(-inside_distance / scale)
+        factor = np.clip(factor, 0.0, 1.0)
+
+        # Normalize depth factor inside water so narrow channels can still reach configured depth.
+        valid = water_mask & (factor > 0)
+        if np.any(valid):
+            reference = float(np.percentile(factor[valid], 95))
+            if reference > 1e-6:
+                factor[valid] = np.clip(factor[valid] / reference, 0.0, 1.0)
+
+        # User-friendly steepness control using an S-curve remap.
+        steepness_map = {
+            1: 0.7,
+            2: 0.9,
+            3: 1.0,
+            4: 1.45,
+            5: 2.2,
+        }
+        curve_power = steepness_map.get(level, 1.0)
+        eps = 1e-6
+        x = np.clip(factor, eps, 1.0 - eps)
+        shaped = np.power(x, curve_power)
+        inv_shaped = np.power(1.0 - x, curve_power)
+        factor = shaped / (shaped + inv_shaped)
         factor = np.clip(factor, 0.0, 1.0)
 
         kernel_size = cls._normalize_kernel_size(blur_kernel)
@@ -394,11 +427,23 @@ class Water(MeshComponent, ImageComponent):
         flatten_applied = False
 
         transition_scale = max(2, int(self.map.background_settings.water_blurriness))
-        blur_kernel = max(3, transition_scale // 2)
+        steepness_level = getattr(self.map.dem_settings, "water_bank_steepness", 3)
+
+        blur_multiplier_map = {
+            1: 1.6,
+            2: 1.3,
+            3: 1.0,
+            4: 0.75,
+            5: 0.5,
+        }
+        blur_multiplier = blur_multiplier_map.get(int(np.clip(steepness_level, 1, 5)), 1.0)
+        blur_kernel = max(1, int((transition_scale // 2) * blur_multiplier))
+
         depth_factor = self._build_water_depth_factor(
             water_mask,
             transition_scale=transition_scale,
             blur_kernel=blur_kernel,
+            steepness_level=steepness_level,
         )
 
         target_dem = source_dem.copy()

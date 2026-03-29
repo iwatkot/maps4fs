@@ -36,6 +36,8 @@ class DEMSettings(SettingsModel):
         plateau (int): plateau height.
         ceiling (int): ceiling height.
         water_depth (int): water depth.
+        water_bank_steepness (int): shoreline steepness profile level for water depth
+            transition (1=smoothest, 5=steepest).
     """
 
     adjust_terrain_to_ground_level: bool = True
@@ -46,6 +48,7 @@ class DEMSettings(SettingsModel):
     water_depth: int = 0
     blur_radius: int = 3
     add_foundations: bool = False
+    water_bank_steepness: int = Field(default=3, ge=1, le=5)
 
 
 class BackgroundSettings(SettingsModel):
