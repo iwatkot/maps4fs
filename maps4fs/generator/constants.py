@@ -154,6 +154,7 @@ class Parameters:
     BACKGROUND_TERRAIN = "background_terrain"
     BACKGROUND_TERRAIN_PARTS = 4
     BACKGROUND_TERRAIN_PART_PREFIX = "background_terrain_part_"
+    BACKGROUND_TERRAIN_GROUP_NAME = "backgroundTerrain"
     BACKGROUND_TREES = "background_trees"
     BACKGROUND_TREES_CATEGORY = "trees"
     BACKGROUND_TREES_ASSET_PREFIX = "background_trees_"

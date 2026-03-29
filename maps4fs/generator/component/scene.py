@@ -989,6 +989,7 @@ class Scene(ImageComponent):
             self.logger.warning("Required nodes (Files, Scene) not found in I3D file.")
             return
         i3d_dir = os.path.dirname(self.xml_path)
+        background_terrain_group_node: ET.Element | None = None
         background_trees_group_node: ET.Element | None = None
 
         for asset_name, asset_path in assets_directories.items():
@@ -1006,7 +1007,14 @@ class Scene(ImageComponent):
             self.logger.debug("Relative path for the binary I3D file: %s.", binary_rel_path)
 
             parent_node = scene_node
-            if asset_name.startswith(Parameters.BACKGROUND_TREES_ASSET_PREFIX):
+            if self._is_background_terrain_asset(asset_name):
+                if background_terrain_group_node is None:
+                    background_terrain_group_node, node_id = self._ensure_background_terrain_group(
+                        scene_node,
+                        node_id,
+                    )
+                parent_node = background_terrain_group_node
+            elif asset_name.startswith(Parameters.BACKGROUND_TREES_ASSET_PREFIX):
                 if background_trees_group_node is None:
                     background_trees_group_node, node_id = self._ensure_background_trees_group(
                         scene_node,
@@ -1120,6 +1128,23 @@ class Scene(ImageComponent):
             self.game.config.i3d_transform_group_tag,
             {
                 self.game.config.i3d_attr_name: Parameters.BACKGROUND_TREES_GROUP_NAME,
+                self.game.config.i3d_attr_translation: Parameters.DEFAULT_TRANSLATION,
+                self.game.config.i3d_attr_node_id: str(node_id),
+            },
+        )
+        scene_node.append(group_node)
+        return group_node, node_id + 1
+
+    def _ensure_background_terrain_group(
+        self,
+        scene_node: ET.Element,
+        node_id: int,
+    ) -> tuple[ET.Element, int]:
+        """Create and append the background terrain transform group in scene."""
+        group_node = XmlDocument.create_element(
+            self.game.config.i3d_transform_group_tag,
+            {
+                self.game.config.i3d_attr_name: Parameters.BACKGROUND_TERRAIN_GROUP_NAME,
                 self.game.config.i3d_attr_translation: Parameters.DEFAULT_TRANSLATION,
                 self.game.config.i3d_attr_node_id: str(node_id),
             },

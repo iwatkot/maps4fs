@@ -1053,8 +1053,15 @@ class Background(MeshComponent, ImageComponent):
             if len(face_indices) == 0:
                 continue
 
-            chunk_mesh = mesh.submesh([face_indices], append=True, repair=False)
-            if chunk_mesh is None or len(chunk_mesh.faces) == 0:
+            chunk_mesh_result = mesh.submesh([face_indices], append=True, repair=False)
+            if isinstance(chunk_mesh_result, list):
+                if not chunk_mesh_result:
+                    continue
+                chunk_mesh = chunk_mesh_result[0]
+            else:
+                chunk_mesh = chunk_mesh_result
+
+            if len(chunk_mesh.faces) == 0:
                 continue
 
             chunks.append((self._background_terrain_chunk_name(quadrant_index), chunk_mesh))
