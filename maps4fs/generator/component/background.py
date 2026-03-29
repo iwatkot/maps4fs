@@ -1594,7 +1594,9 @@ class Background(MeshComponent, ImageComponent):
 
         roads_polylines = self.get_infolayer_data(Parameters.EXTENDED, Parameters.ROADS_POLYLINES)
         if not roads_polylines:
-            roads_polylines = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
+            roads_polylines = self.get_infolayer_data(
+                Parameters.TEXTURES, Parameters.ROADS_POLYLINES
+            )
         if not roads_polylines:
             self.logger.warning("No roads polylines found in textures info layer.")
             return
@@ -1681,9 +1683,7 @@ class Background(MeshComponent, ImageComponent):
             return None
 
         center_offset = self._dem_center_offset(dem_image.shape)
-        fitted_road = [
-            (int(x) + center_offset, int(y) + center_offset) for x, y in fitted_road
-        ]
+        fitted_road = [(int(x) + center_offset, int(y) + center_offset) for x, y in fitted_road]
 
         polyline = shapely.LineString(fitted_road)
         total_length = polyline.length

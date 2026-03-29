@@ -137,7 +137,9 @@ class Electricity(MeshComponent):
 
     def add_electricity(self) -> None:
         """Read electricity point data from context and append reference nodes to I3D."""
-        points_data = self.get_infolayer_data(Parameters.EXTENDED, Parameters.ELECTRICITY_POLES_POINTS)
+        points_data = self.get_infolayer_data(
+            Parameters.EXTENDED, Parameters.ELECTRICITY_POLES_POINTS
+        )
         if not points_data:
             points_data = self.get_infolayer_data(
                 Parameters.TEXTURES, Parameters.ELECTRICITY_POLES_POINTS

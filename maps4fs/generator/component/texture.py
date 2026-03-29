@@ -679,9 +679,7 @@ class Texture(ImageComponent):
         """Publish drawn info-layer data into map context."""
         ctx = self.map.context
         if self.options.channel == Parameters.TEXTURE_CHANNEL_TEXTURES:
-            ctx.fields = cast(
-                list[Any], info_layer_data.get(Parameters.FIELDS, [])
-            )
+            ctx.fields = cast(list[Any], info_layer_data.get(Parameters.FIELDS, []))
             ctx.buildings = cast(
                 list[list[tuple[int, int]]], info_layer_data.get(Parameters.BUILDINGS, [])
             )
