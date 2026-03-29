@@ -12,9 +12,7 @@ import trimesh
 from trimesh import Trimesh
 
 from maps4fs.generator.component.base.component_image import ImageComponent
-from maps4fs.generator.component.base.component_mesh import (
-    MeshComponent,
-)
+from maps4fs.generator.component.base.component_mesh import MeshComponent
 from maps4fs.generator.component.texture import Texture, TextureOptions
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
@@ -592,6 +590,8 @@ class Water(MeshComponent, ImageComponent):
         if mesh is None:
             self.logger.warning("No mesh could be created from polyline water features.")
             return
+
+        mesh = self.invert_faces(mesh)
 
         mesh.export(obj_output_path)
 
