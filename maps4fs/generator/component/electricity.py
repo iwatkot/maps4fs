@@ -108,6 +108,7 @@ class Electricity(MeshComponent):
     def preprocess(self) -> None:
         """Load schema and prepare electricity component state."""
         self.info: dict[str, Any] = {}
+        self._extended_border = int(round(Parameters.EXTENDED_DISTANCE * self.map.size_scale))
         self.xml_path = self.game.i3d_file_path
         self.electricity_collection: ElectricityEntryCollection | None = None
         self._schema_base_dir: str | None = None
@@ -136,9 +137,11 @@ class Electricity(MeshComponent):
 
     def add_electricity(self) -> None:
         """Read electricity point data from context and append reference nodes to I3D."""
-        points_data = self.get_infolayer_data(
-            Parameters.TEXTURES, Parameters.ELECTRICITY_POLES_POINTS
-        )
+        points_data = self.get_infolayer_data(Parameters.EXTENDED, Parameters.ELECTRICITY_POLES_POINTS)
+        if not points_data:
+            points_data = self.get_infolayer_data(
+                Parameters.TEXTURES, Parameters.ELECTRICITY_POLES_POINTS
+            )
         if not points_data:
             self.logger.warning("No electricity pole points found in context; skipping.")
             return
@@ -175,7 +178,9 @@ class Electricity(MeshComponent):
 
         placed_count = 0
         placed_poles: list[PolePlacement] = []
-        roads_data = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
+        roads_data = self.get_infolayer_data(Parameters.EXTENDED, Parameters.ROADS_POLYLINES)
+        if not roads_data:
+            roads_data = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
         fitted_road_segments = self._build_fitted_road_segments(
             roads_data if isinstance(roads_data, list) else []
         )
@@ -199,8 +204,12 @@ class Electricity(MeshComponent):
                 placed_poles.append(placement)
 
         network_lines_data = self.get_infolayer_data(
-            Parameters.TEXTURES, Parameters.ELECTRICITY_LINES_POLYLINES
+            Parameters.EXTENDED, Parameters.ELECTRICITY_LINES_POLYLINES
         )
+        if not network_lines_data:
+            network_lines_data = self.get_infolayer_data(
+                Parameters.TEXTURES, Parameters.ELECTRICITY_LINES_POLYLINES
+            )
         network_segments = self._create_and_attach_powerline_network(
             placed_poles,
             network_lines_data if isinstance(network_lines_data, list) else [],
@@ -673,7 +682,9 @@ class Electricity(MeshComponent):
 
             try:
                 fitted_line = self.fit_object_into_bounds(
-                    linestring_points=points, angle=self.rotation
+                    linestring_points=points,
+                    angle=self.rotation,
+                    border=-self._extended_border,
                 )
             except ValueError:
                 continue
@@ -1461,6 +1472,7 @@ class Electricity(MeshComponent):
             fitted = self.fit_object_into_bounds(
                 linestring_points=[(x, y), (x + 1, y)],
                 angle=self.rotation,
+                border=-self._extended_border,
             )
             if not fitted:
                 return None
@@ -1546,7 +1558,9 @@ class Electricity(MeshComponent):
                         road_width = 0.0
             try:
                 fitted_line = self.fit_object_into_bounds(
-                    linestring_points=points, angle=self.rotation
+                    linestring_points=points,
+                    angle=self.rotation,
+                    border=-self._extended_border,
                 )
             except ValueError:
                 continue
@@ -1614,8 +1628,10 @@ class Electricity(MeshComponent):
             tuple[int, int]: In-bounds integer pixel coordinates.
         """
         max_index = max(0, int(self.scaled_size) - 1)
-        clamped_x = max(0, min(max_index, int(round(x))))
-        clamped_y = max(0, min(max_index, int(round(y))))
+        min_index = -self._extended_border
+        max_extended = max_index + self._extended_border
+        clamped_x = max(min_index, min(max_extended, int(round(x))))
+        clamped_y = max(min_index, min(max_extended, int(round(y))))
         return clamped_x, clamped_y
 
     def _initial_pole_yaw(

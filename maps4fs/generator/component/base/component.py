@@ -450,6 +450,9 @@ class Component:
         ("textures", "farmyards"): "farmyards",
         ("textures", "forest"): "forest",
         ("textures", "water"): "water",
+        ("extended", "roads_polylines"): "extended_roads_polylines",
+        ("extended", "electricity_lines_polylines"): "extended_electricity_lines_polylines",
+        ("extended", "electricity_poles_points"): "extended_electricity_poles_points",
         ("background", "water"): "background_water",
         ("background", "water_polylines"): "background_water_polylines",
     }

@@ -101,6 +101,7 @@ class Parameters:
     BUILDINGS = "buildings"
     TEXTURES = "textures"
     BACKGROUND = "background"
+    EXTENDED = "extended"
     FOREST = "forest"
     ROADS = "roads"
     ROADS_POLYLINES = "roads_polylines"
@@ -126,6 +127,7 @@ class Parameters:
     # ---- Texture channels / runtime keys -------------------------------
     TEXTURE_CHANNEL_TEXTURES = "textures"
     TEXTURE_CHANNEL_BACKGROUND = "background"
+    TEXTURE_CHANNEL_EXTENDED = "extended"
     OSM_REQUESTS_TIMEOUT = 10
     OSM_PREFETCH_WORKERS = 3
 
@@ -147,6 +149,7 @@ class Parameters:
 
     # ---- Map geometry ---------------------------------------------------
     BACKGROUND_DISTANCE = 2048
+    EXTENDED_DISTANCE = 512
     RESIZE_FACTOR = 8
 
     # ---- Terrain layer names --------------------------------------------

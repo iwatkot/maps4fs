@@ -74,6 +74,10 @@ class Background(MeshComponent, ImageComponent):
             self.background_directory,
             f"{Parameters.FULL}.png",
         )
+        self.full_foundations_path = os.path.join(
+            self.background_directory,
+            "full_with_foundations.png",
+        )
         self.not_substracted_path: str = self.map.context.dem_not_subtracted_path or os.path.join(
             self.background_directory, "not_substracted.png"
         )
@@ -82,6 +86,7 @@ class Background(MeshComponent, ImageComponent):
         """Launches the component processing. Iterates over all tiles and processes them
         as a result the DEM files will be saved, then based on them the obj files will be
         generated."""
+        self.generate_extended_linear_features()
         cutted_dem_path = self._prepare_main_dem()
 
         if self.game.additional_dem_name is not None:
@@ -89,6 +94,66 @@ class Background(MeshComponent, ImageComponent):
 
         self._generate_optional_assets()
         self.process_road_masks()
+
+    def generate_extended_linear_features(self) -> None:
+        """Generate map-edge extension data for roads and electricity infolayers."""
+        layers = self._collect_extended_linear_layers()
+        if not layers:
+            self.logger.debug("No texture layers available for extended roads/electricity pass.")
+            return
+
+        output_size_multiplier = 1.5 if self.rotation else 1
+        extended_size = self.map_size + Parameters.EXTENDED_DISTANCE * 2
+        extended_rotated_size = int(extended_size * output_size_multiplier)
+
+        extended_texture = Texture(
+            self.game,
+            self.map,
+            map_size=extended_size,
+            map_rotated_size=extended_rotated_size,
+            options=TextureOptions(
+                texture_custom_schema=layers,
+                skip_scaling=True,
+                channel=Parameters.TEXTURE_CHANNEL_EXTENDED,
+                cap_style="round",
+            ),
+        )
+        extended_texture.preprocess()
+        extended_texture.process()
+
+    def _collect_extended_linear_layers(self) -> list[dict[str, Any]]:
+        """Collect schema layers used to build extended roads/electricity infolayers."""
+        layers_schema = self.map.texture_schema or []
+        if not layers_schema:
+            return []
+
+        eligible_info_layers = {
+            Parameters.ROADS,
+            Parameters.ELECTRICITY_LINES,
+            Parameters.ELECTRICITY_POLES,
+        }
+        linear_layers = [
+            layer
+            for layer in layers_schema
+            if isinstance(layer, dict) and layer.get("info_layer") in eligible_info_layers
+        ]
+        if not linear_layers:
+            return []
+
+        explicitly_extended = [layer for layer in linear_layers if layer.get("extended") is True]
+        source_layers = explicitly_extended if explicitly_extended else linear_layers
+
+        normalized_layers: list[dict[str, Any]] = []
+        for idx, layer in enumerate(source_layers, start=1):
+            if not layer.get("name"):
+                continue
+            normalized = dict(layer)
+            normalized["name"] = f"{layer['name']}_extended_{idx}"
+            normalized["count"] = 1
+            normalized["invisible"] = True
+            normalized["extended"] = True
+            normalized_layers.append(normalized)
+        return normalized_layers
 
     def _prepare_main_dem(self) -> str:
         """Prepare and save DEM outputs used by downstream generation steps."""
@@ -834,11 +899,12 @@ class Background(MeshComponent, ImageComponent):
         return os.path.join(self.background_directory, dem_type)
 
     @monitor_performance
-    def create_foundations(self, dem_image: np.ndarray) -> np.ndarray:
+    def create_foundations(self, dem_image: np.ndarray, to_full_dem: bool = False) -> np.ndarray:
         """Creates foundations for buildings based on the DEM data.
 
         Arguments:
             dem_image (np.ndarray): The DEM data as a numpy array.
+            to_full_dem (bool, optional): Whether to project footprints into full DEM space.
 
         Returns:
             np.ndarray: The DEM data with the foundations added.
@@ -851,7 +917,7 @@ class Background(MeshComponent, ImageComponent):
         self.logger.debug("Found %s buildings in textures info layer.", len(buildings))
 
         for building in tqdm(buildings, desc="Creating foundations", unit="building"):
-            mask = self._get_building_mask(building, dem_image.shape)
+            mask = self._get_building_mask(building, dem_image.shape, to_full_dem=to_full_dem)
             if mask is None:
                 continue
 
@@ -866,6 +932,7 @@ class Background(MeshComponent, ImageComponent):
         self,
         building: list[tuple[int, int]],
         dem_shape: tuple[int, ...],
+        to_full_dem: bool = False,
     ) -> np.ndarray | None:
         """Create a raster mask for one building footprint in DEM coordinates."""
         try:
@@ -877,6 +944,12 @@ class Background(MeshComponent, ImageComponent):
             self.logger.debug("Building could not be fitted into the map bounds: %s", e)
             return None
 
+        if to_full_dem:
+            center_offset = self._dem_center_offset(dem_shape)
+            fitted_building = [
+                (int(x) + center_offset, int(y) + center_offset) for x, y in fitted_building
+            ]
+
         building_np = self.polygon_points_to_np(fitted_building)
         mask = np.zeros(dem_shape, dtype=np.uint8)
         try:
@@ -885,6 +958,11 @@ class Background(MeshComponent, ImageComponent):
         except Exception as e:
             self.logger.debug("Could not create building mask: %s", e)
             return None
+
+    def _dem_center_offset(self, dem_shape: tuple[int, ...]) -> int:
+        """Return pixel offset between playable-map and full-DEM coordinate spaces."""
+        dem_size = int(dem_shape[0])
+        return max(0, (dem_size - int(self.scaled_size)) // 2)
 
     def make_copy(self, dem_path: str, dem_name: str) -> None:
         """Copies DEM data to additional DEM file.
@@ -1296,6 +1374,13 @@ class Background(MeshComponent, ImageComponent):
         dem_data = cv2.imread(dem_path, cv2.IMREAD_UNCHANGED)
         if dem_data is None:
             raise ValueError(f"Could not load DEM image: {dem_path}")
+
+        if save_path is None and self.map.dem_settings.add_foundations:
+            dem_data = self.create_foundations(dem_data, to_full_dem=True)
+            cv2.imwrite(self.full_foundations_path, dem_data)
+            cv2.imwrite(dem_path, dem_data)
+            self.logger.debug("Full DEM with foundations saved: %s", self.full_foundations_path)
+
         half_size = self.map_size // 2
         dem_data = self.cut_out_np(dem_data, half_size, return_cutout=True)
 
@@ -1305,7 +1390,6 @@ class Background(MeshComponent, ImageComponent):
             return save_path
 
         if self.map.dem_settings.add_foundations:
-            dem_data = self.create_foundations(dem_data)
             cv2.imwrite(self.not_resized_path(Parameters.NOT_RESIZED_DEM_FOUNDATIONS), dem_data)
             self.logger.debug(
                 "Not resized DEM with foundations saved: %s",
@@ -1508,7 +1592,9 @@ class Background(MeshComponent, ImageComponent):
         if dem_image is None:
             return
 
-        roads_polylines = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
+        roads_polylines = self.get_infolayer_data(Parameters.EXTENDED, Parameters.ROADS_POLYLINES)
+        if not roads_polylines:
+            roads_polylines = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
         if not roads_polylines:
             self.logger.warning("No roads polylines found in textures info layer.")
             return
@@ -1526,12 +1612,17 @@ class Background(MeshComponent, ImageComponent):
             dem_image[road_y, road_x] = interpolated_elevations
             full_mask[road_y, road_x] = 255
 
-        main_dem_path = self.game.dem_file_path
         dem_image = self.blur_by_mask(dem_image, full_mask, blur_radius=5)
         dem_image = self.blur_edges_by_mask(dem_image, full_mask)
 
+        cv2.imwrite(self.output_path, dem_image)
+        self.logger.debug("Flattened roads saved to full DEM file: %s", self.output_path)
+
+        half_size = self.map_size // 2
+        map_dem = self.cut_out_np(dem_image, half_size, return_cutout=True)
+
         # Save the not resized DEM with flattened roads.
-        cv2.imwrite(self.not_resized_path(Parameters.NOT_RESIZED_DEM_ROADS), dem_image)
+        cv2.imwrite(self.not_resized_path(Parameters.NOT_RESIZED_DEM_ROADS), map_dem)
         self.logger.debug(
             "Not resized DEM with flattened roads saved to: %s",
             self.not_resized_path(Parameters.NOT_RESIZED_DEM_ROADS),
@@ -1539,15 +1630,18 @@ class Background(MeshComponent, ImageComponent):
 
         output_size = self.map_dem_size()
         resized_dem = cv2.resize(
-            dem_image, (output_size, output_size), interpolation=cv2.INTER_NEAREST
+            map_dem, (output_size, output_size), interpolation=cv2.INTER_NEAREST
         )
 
+        main_dem_path = self.game.dem_file_path
         cv2.imwrite(main_dem_path, resized_dem)
         self.logger.debug("Flattened roads saved to DEM file: %s", main_dem_path)
 
     def _load_roads_base_dem(self) -> np.ndarray | None:
         """Load the highest-priority DEM available for road flattening."""
         candidate_paths = [
+            self.full_foundations_path,
+            self.output_path,
             self.not_resized_path(Parameters.NOT_RESIZED_DEM_FOUNDATIONS),
             self.not_resized_path(Parameters.NOT_RESIZED_DEM),
         ]
@@ -1574,11 +1668,22 @@ class Background(MeshComponent, ImageComponent):
             self.logger.warning("Skipping road with insufficient data: %s", road_polyline)
             return None
 
+        border = -int(round(Parameters.EXTENDED_DISTANCE * self.map.size_scale))
+
         try:
-            fitted_road = self.fit_object_into_bounds(linestring_points=points, angle=self.rotation)
+            fitted_road = self.fit_object_into_bounds(
+                linestring_points=points,
+                angle=self.rotation,
+                border=border,
+            )
         except ValueError as e:
             self.logger.debug("Road polyline could not be fitted into bounds: %s", e)
             return None
+
+        center_offset = self._dem_center_offset(dem_image.shape)
+        fitted_road = [
+            (int(x) + center_offset, int(y) + center_offset) for x, y in fitted_road
+        ]
 
         polyline = shapely.LineString(fitted_road)
         total_length = polyline.length

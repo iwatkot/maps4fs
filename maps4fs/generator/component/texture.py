@@ -32,7 +32,7 @@ class TextureOptions:
 
     texture_custom_schema: list[dict[str, Any]] | None = None
     skip_scaling: bool = False
-    channel: Literal["textures", "background"] = "textures"
+    channel: Literal["textures", "background", "extended"] = "textures"
     cap_style: str = "round"
 
 
@@ -717,6 +717,35 @@ class Texture(ImageComponent):
             )
             return
 
+        if self.options.channel == Parameters.TEXTURE_CHANNEL_EXTENDED:
+            shift_pixels = self._extended_channel_shift_pixels()
+            ctx.extended_roads_polylines = self._shift_polyline_entries(
+                cast(list[dict[str, Any]], info_layer_data.get(Parameters.ROADS_POLYLINES, [])),
+                shift_pixels,
+            )
+            ctx.extended_electricity_lines_polylines = self._shift_polyline_entries(
+                cast(
+                    list[dict[str, Any]],
+                    info_layer_data.get(Parameters.ELECTRICITY_LINES_POLYLINES, []),
+                ),
+                shift_pixels,
+            )
+            ctx.extended_electricity_poles_points = self._shift_point_entries(
+                cast(
+                    list[dict[str, Any]],
+                    info_layer_data.get(Parameters.ELECTRICITY_POLES_POINTS, []),
+                ),
+                shift_pixels,
+            )
+            self.logger.debug(
+                "Extended context populated: %d roads, %d electricity lines, %d electricity poles (shift=%d).",
+                len(ctx.extended_roads_polylines),
+                len(ctx.extended_electricity_lines_polylines),
+                len(ctx.extended_electricity_poles_points),
+                shift_pixels,
+            )
+            return
+
         ctx.background_water = cast(
             list[list[tuple[int, int]]], info_layer_data.get(Parameters.WATER, [])
         )
@@ -728,6 +757,67 @@ class Texture(ImageComponent):
             len(ctx.background_water),
             len(ctx.background_water_polylines),
         )
+
+    def _extended_channel_shift_pixels(self) -> int:
+        """Return center-alignment shift from extended to base rotated canvas."""
+        delta_rotated = self.map_rotated_size - self.map.rotated_size
+        if delta_rotated <= 0:
+            return 0
+        return int(round((delta_rotated / 2) * self.map.size_scale))
+
+    def _shift_polyline_entries(
+        self,
+        entries: list[dict[str, Any]],
+        shift_pixels: int,
+    ) -> list[dict[str, Any]]:
+        """Shift polyline entry coordinates by a fixed pixel delta along both axes."""
+        if shift_pixels == 0:
+            return [dict(entry) for entry in entries if isinstance(entry, dict)]
+
+        shifted_entries: list[dict[str, Any]] = []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+
+            points = entry.get(Parameters.POINTS)
+            shifted_points: list[tuple[int, int]] = []
+            if isinstance(points, list):
+                for point in points:
+                    if not isinstance(point, (list, tuple)) or len(point) < 2:
+                        continue
+                    shifted_points.append(
+                        (int(point[0]) - shift_pixels, int(point[1]) - shift_pixels)
+                    )
+
+            shifted_entry = dict(entry)
+            shifted_entry[Parameters.POINTS] = shifted_points
+            shifted_entries.append(shifted_entry)
+        return shifted_entries
+
+    def _shift_point_entries(
+        self,
+        entries: list[dict[str, Any]],
+        shift_pixels: int,
+    ) -> list[dict[str, Any]]:
+        """Shift point entry coordinates by a fixed pixel delta along both axes."""
+        if shift_pixels == 0:
+            return [dict(entry) for entry in entries if isinstance(entry, dict)]
+
+        shifted_entries: list[dict[str, Any]] = []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            point = entry.get(Parameters.POINT)
+            if not isinstance(point, (list, tuple)) or len(point) < 2:
+                continue
+
+            shifted_entry = dict(entry)
+            shifted_entry[Parameters.POINT] = (
+                int(point[0]) - shift_pixels,
+                int(point[1]) - shift_pixels,
+            )
+            shifted_entries.append(shifted_entry)
+        return shifted_entries
 
     def _draw_layer(
         self, layer: Layer, info_layer_data: dict[str, list[Any]], layer_image: np.ndarray

@@ -32,6 +32,11 @@ class MapContext:
     electricity_poles_points: list[dict[str, Any]] = field(default_factory=list)
     water_polylines: list[dict[str, Any]] = field(default_factory=list)
 
+    # Extended-distance variants used to continue linear assets beyond map edge.
+    extended_roads_polylines: list[dict[str, Any]] = field(default_factory=list)
+    extended_electricity_lines_polylines: list[dict[str, Any]] = field(default_factory=list)
+    extended_electricity_poles_points: list[dict[str, Any]] = field(default_factory=list)
+
     # Layer objects from Texture component — used by later components to query layer metadata
     # (e.g. usage, area_type, building_category).  Typed as Any to avoid circular imports.
     texture_layers: list[Any] = field(default_factory=list)

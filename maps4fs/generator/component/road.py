@@ -51,6 +51,7 @@ class Road(MeshComponent):
     def preprocess(self) -> None:
         """Initialize road component state before generation."""
         self.info: dict[str, Any] = {}
+        self._extended_border = int(round(Parameters.EXTENDED_DISTANCE * self.map.size_scale))
 
     def process(self) -> None:
         """Process and generate roads for the map."""
@@ -90,7 +91,9 @@ class Road(MeshComponent):
         Returns:
             list[dict[str, Any]] | None: Raw road records or None when unavailable.
         """
-        road_infos = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
+        road_infos = self.get_infolayer_data(Parameters.EXTENDED, Parameters.ROADS_POLYLINES)
+        if not road_infos:
+            road_infos = self.get_infolayer_data(Parameters.TEXTURES, Parameters.ROADS_POLYLINES)
         if not road_infos:
             return None
         return [info for info in road_infos if isinstance(info, dict)]
@@ -173,7 +176,11 @@ class Road(MeshComponent):
             return None
 
         try:
-            fitted_road = self.fit_object_into_bounds(linestring_points=points, angle=self.rotation)
+            fitted_road = self.fit_object_into_bounds(
+                linestring_points=points,
+                angle=self.rotation,
+                border=-self._extended_border,
+            )
         except ValueError as e:
             self.logger.debug(
                 "Road %s could not be fitted into the map bounds with error: %s",
