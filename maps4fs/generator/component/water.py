@@ -211,6 +211,104 @@ class Water(MeshComponent, ImageComponent):
         flattened_dem[water_mask] = lowered[water_mask].astype(dem_image.dtype)
         return flattened_dem
 
+    @staticmethod
+    def _make_geometry_valid(geometry: object) -> object:
+        """Return a valid geometry, attempting lightweight repairs when needed."""
+        if geometry is None:
+            return geometry
+
+        if hasattr(geometry, "is_empty") and geometry.is_empty:
+            return geometry
+
+        try:
+            if hasattr(geometry, "is_valid") and not geometry.is_valid:
+                if hasattr(shapely, "make_valid"):
+                    geometry = shapely.make_valid(geometry)
+                else:
+                    geometry = geometry.buffer(0)
+        except Exception:
+            return geometry
+
+        return geometry
+
+    @staticmethod
+    def _extract_polygon_parts(geometry: object) -> list[shapely.Polygon]:
+        """Extract non-empty polygon parts from Polygon/MultiPolygon/GeometryCollection."""
+        polygon_cls = shapely.geometry.Polygon
+        multi_polygon_cls = shapely.geometry.MultiPolygon
+        geometry_collection_cls = shapely.geometry.GeometryCollection
+
+        candidates: list[shapely.Polygon] = []
+        if isinstance(geometry, polygon_cls):
+            candidates = [geometry]
+        elif isinstance(geometry, multi_polygon_cls):
+            candidates = [geom for geom in geometry.geoms if isinstance(geom, polygon_cls)]
+        elif isinstance(geometry, geometry_collection_cls):
+            candidates = [geom for geom in geometry.geoms if isinstance(geom, polygon_cls)]
+
+        result: list[shapely.Polygon] = []
+        for polygon in candidates:
+            if polygon.is_empty:
+                continue
+            if not polygon.is_valid:
+                try:
+                    polygon = polygon.buffer(0)
+                except Exception:
+                    continue
+            if polygon.is_empty or polygon.area <= 1e-6:
+                continue
+            result.append(polygon)
+
+        return result
+
+    @staticmethod
+    def _triangulate_polygon_2d(poly_2d: shapely.Polygon) -> tuple[np.ndarray, np.ndarray] | None:
+        """Triangulate polygon and keep only triangles that lie inside the polygon."""
+        triangles = shapely.ops.triangulate(poly_2d)
+        if not triangles:
+            return None
+
+        vertices: list[list[float]] = []
+        faces: list[list[int]] = []
+        vertex_index: dict[tuple[float, float], int] = {}
+        area_ratio_threshold = 0.995
+
+        for triangle in triangles:
+            if triangle.is_empty or triangle.area <= 1e-8:
+                continue
+
+            try:
+                overlap_area = triangle.intersection(poly_2d).area
+            except Exception:
+                continue
+
+            if overlap_area <= 1e-8:
+                continue
+            if overlap_area / triangle.area < area_ratio_threshold:
+                continue
+
+            coords = list(triangle.exterior.coords)[:-1]
+            if len(coords) != 3:
+                continue
+
+            face: list[int] = []
+            for x, y in coords:
+                key = (round(float(x), 6), round(float(y), 6))
+                idx = vertex_index.get(key)
+                if idx is None:
+                    idx = len(vertices)
+                    vertex_index[key] = idx
+                    vertices.append([float(x), float(y)])
+                face.append(idx)
+
+            if len(set(face)) == 3:
+                faces.append(face)
+
+        if not vertices or not faces:
+            return None
+
+        return np.asarray(vertices, dtype=np.float64), np.asarray(faces, dtype=np.int64)
+
     @monitor_performance
     def subtract_water_depth(self) -> None:
         """Subtract water depth from DEM where polygon-water mask is present."""
@@ -353,14 +451,19 @@ class Water(MeshComponent, ImageComponent):
 
         polygons: list[shapely.Polygon] = []
         for polygon_points in water_polygons:
-            if not polygon_points or len(polygon_points) < 2:
+            if not polygon_points or len(polygon_points) < 3:
                 continue
 
             polygon = shapely.Polygon(polygon_points)
-            if polygon.is_empty or not polygon.is_valid:
+            polygon = self._make_geometry_valid(polygon)
+            polygon_parts = self._extract_polygon_parts(polygon)
+            if not polygon_parts:
                 continue
 
-            polygons.append(polygon.buffer(Parameters.WATER_ADD_WIDTH, quad_segs=4))
+            for polygon_part in polygon_parts:
+                buffered = polygon_part.buffer(Parameters.WATER_ADD_WIDTH, quad_segs=4)
+                buffered = self._make_geometry_valid(buffered)
+                polygons.extend(self._extract_polygon_parts(buffered))
 
         fitted_polygons: list[shapely.Polygon] = []
         for polygon in polygons:
@@ -371,7 +474,9 @@ class Water(MeshComponent, ImageComponent):
                     canvas_size=self.background_size,
                     rotated_canvas_size=self.rotated_size,
                 )
-                fitted_polygons.append(shapely.Polygon(fitted_points))
+                fitted_polygon = shapely.Polygon(fitted_points)
+                fitted_polygon = self._make_geometry_valid(fitted_polygon)
+                fitted_polygons.extend(self._extract_polygon_parts(fitted_polygon))
             except Exception as e:
                 self.logger.debug("Could not fit water polygon into bounds: %s", e)
 
@@ -500,18 +605,28 @@ class Water(MeshComponent, ImageComponent):
                 [np.array(ring.coords)[:, :2] for ring in polygon.interiors],
             )
 
-            vertices_2d, faces = trimesh.creation.triangulate_polygon(poly_2d)
+            poly_2d = self._make_geometry_valid(poly_2d)
+            polygon_parts = self._extract_polygon_parts(poly_2d)
+            if not polygon_parts:
+                continue
 
-            vertices_3d: list[list[float]] = []
-            for v in vertices_2d:
-                z = self.get_z_coordinate_from_dem(not_resized_dem, float(v[0]), float(v[1]))
-                vertices_3d.append([float(v[0]), float(v[1]), float(-z)])
-            vertices_3d_np = np.array(vertices_3d)
+            for polygon_part in polygon_parts:
+                triangulated = self._triangulate_polygon_2d(polygon_part)
+                if triangulated is None:
+                    continue
 
-            faces = faces + vertex_offset
-            all_vertices.append(vertices_3d_np)
-            all_faces.append(faces)
-            vertex_offset += len(vertices_3d_np)
+                vertices_2d, faces = triangulated
+
+                vertices_3d: list[list[float]] = []
+                for v in vertices_2d:
+                    z = self.get_z_coordinate_from_dem(not_resized_dem, float(v[0]), float(v[1]))
+                    vertices_3d.append([float(v[0]), float(v[1]), float(-z)])
+                vertices_3d_np = np.array(vertices_3d)
+
+                faces = faces + vertex_offset
+                all_vertices.append(vertices_3d_np)
+                all_faces.append(faces)
+                vertex_offset += len(vertices_3d_np)
 
         if not all_vertices:
             return None
