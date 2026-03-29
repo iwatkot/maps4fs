@@ -116,7 +116,7 @@ class Background(MeshComponent, ImageComponent):
             options=TextureOptions(
                 texture_custom_schema=layers,
                 skip_scaling=True,
-                channel=Parameters.TEXTURE_CHANNEL_EXTENDED,
+                channel=Parameters.TEXTURE_CHANNEL_EXTENDED,  # type: ignore
                 cap_style="round",
             ),
         )
