@@ -33,6 +33,7 @@ class MapContext:
     water_polylines: list[dict[str, Any]] = field(default_factory=list)
 
     # Extended-distance variants used to continue linear assets beyond map edge.
+    extended_buildings: list[Any] = field(default_factory=list)
     extended_roads_polylines: list[dict[str, Any]] = field(default_factory=list)
     extended_electricity_lines_polylines: list[dict[str, Any]] = field(default_factory=list)
     extended_electricity_poles_points: list[dict[str, Any]] = field(default_factory=list)

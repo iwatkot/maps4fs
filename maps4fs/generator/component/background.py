@@ -96,10 +96,12 @@ class Background(MeshComponent, ImageComponent):
         self.process_road_masks()
 
     def generate_extended_linear_features(self) -> None:
-        """Generate map-edge extension data for roads and electricity infolayers."""
+        """Generate map-edge extension data for buildings, roads and electricity infolayers."""
         layers = self._collect_extended_linear_layers()
         if not layers:
-            self.logger.debug("No texture layers available for extended roads/electricity pass.")
+            self.logger.debug(
+                "No texture layers available for extended buildings/roads/electricity pass."
+            )
             return
 
         output_size_multiplier = 1.5 if self.rotation else 1
@@ -122,12 +124,13 @@ class Background(MeshComponent, ImageComponent):
         extended_texture.process()
 
     def _collect_extended_linear_layers(self) -> list[dict[str, Any]]:
-        """Collect schema layers used to build extended roads/electricity infolayers."""
+        """Collect schema layers used to build extended buildings/roads/electricity infolayers."""
         layers_schema = self.map.texture_schema or []
         if not layers_schema:
             return []
 
         eligible_info_layers = {
+            Parameters.BUILDINGS,
             Parameters.ROADS,
             Parameters.ELECTRICITY_LINES,
             Parameters.ELECTRICITY_POLES,
@@ -152,6 +155,8 @@ class Background(MeshComponent, ImageComponent):
             normalized["count"] = 1
             normalized["invisible"] = True
             normalized["extended"] = True
+            if normalized.get("info_layer") == Parameters.BUILDINGS:
+                normalized["save_tags"] = True
             normalized_layers.append(normalized)
         return normalized_layers
 
@@ -909,7 +914,9 @@ class Background(MeshComponent, ImageComponent):
         Returns:
             np.ndarray: The DEM data with the foundations added.
         """
-        buildings = self.get_infolayer_data(Parameters.TEXTURES, Parameters.BUILDINGS)
+        buildings = self.get_infolayer_data(Parameters.EXTENDED, Parameters.BUILDINGS)
+        if not buildings:
+            buildings = self.get_infolayer_data(Parameters.TEXTURES, Parameters.BUILDINGS)
         if not buildings:
             self.logger.warning("Buildings data not found in textures info layer.")
             return dem_image
@@ -917,7 +924,17 @@ class Background(MeshComponent, ImageComponent):
         self.logger.debug("Found %s buildings in textures info layer.", len(buildings))
 
         for building in tqdm(buildings, desc="Creating foundations", unit="building"):
-            mask = self._get_building_mask(building, dem_image.shape, to_full_dem=to_full_dem)
+            building_points = (
+                building.get(Parameters.POINTS) if isinstance(building, dict) else building
+            )
+            if not building_points:
+                continue
+
+            mask = self._get_building_mask(
+                building_points,
+                dem_image.shape,
+                to_full_dem=to_full_dem,
+            )
             if mask is None:
                 continue
 
@@ -939,6 +956,7 @@ class Background(MeshComponent, ImageComponent):
             fitted_building = self.fit_object_into_bounds(
                 polygon_points=building,
                 angle=self.rotation,
+                border=-int(round(Parameters.EXTENDED_DISTANCE * self.map.size_scale)),
             )
         except ValueError as e:
             self.logger.debug("Building could not be fitted into the map bounds: %s", e)

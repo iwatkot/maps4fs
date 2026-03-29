@@ -717,6 +717,10 @@ class Texture(ImageComponent):
 
         if self.options.channel == Parameters.TEXTURE_CHANNEL_EXTENDED:
             shift_pixels = self._extended_channel_shift_pixels()
+            ctx.extended_buildings = self._shift_polygon_entries(
+                cast(list[Any], info_layer_data.get(Parameters.BUILDINGS, [])),
+                shift_pixels,
+            )
             ctx.extended_roads_polylines = self._shift_polyline_entries(
                 cast(list[dict[str, Any]], info_layer_data.get(Parameters.ROADS_POLYLINES, [])),
                 shift_pixels,
@@ -736,7 +740,8 @@ class Texture(ImageComponent):
                 shift_pixels,
             )
             self.logger.debug(
-                "Extended context populated: %d roads, %d electricity lines, %d electricity poles (shift=%d).",
+                "Extended context populated: %d buildings, %d roads, %d electricity lines, %d electricity poles (shift=%d).",
+                len(ctx.extended_buildings),
                 len(ctx.extended_roads_polylines),
                 len(ctx.extended_electricity_lines_polylines),
                 len(ctx.extended_electricity_poles_points),
@@ -791,6 +796,51 @@ class Texture(ImageComponent):
             shifted_entry[Parameters.POINTS] = shifted_points
             shifted_entries.append(shifted_entry)
         return shifted_entries
+
+    def _shift_polygon_entries(
+        self,
+        entries: list[Any],
+        shift_pixels: int,
+    ) -> list[Any]:
+        """Shift polygon entries by a fixed pixel delta along both axes."""
+        if shift_pixels == 0:
+            return [dict(entry) if isinstance(entry, dict) else entry for entry in entries]
+
+        shifted_entries: list[Any] = []
+        for entry in entries:
+            if isinstance(entry, dict):
+                points = entry.get(Parameters.POINTS)
+                if not isinstance(points, list):
+                    continue
+
+                shifted_entry = dict(entry)
+                shifted_entry[Parameters.POINTS] = self._shift_points_list(points, shift_pixels)
+
+                holes = entry.get(Parameters.HOLES)
+                if isinstance(holes, list):
+                    shifted_entry[Parameters.HOLES] = [
+                        self._shift_points_list(hole, shift_pixels)
+                        for hole in holes
+                        if isinstance(hole, list)
+                    ]
+
+                shifted_entries.append(shifted_entry)
+                continue
+
+            if isinstance(entry, list):
+                shifted_entries.append(self._shift_points_list(entry, shift_pixels))
+
+        return shifted_entries
+
+    @staticmethod
+    def _shift_points_list(points: list[Any], shift_pixels: int) -> list[tuple[int, int]]:
+        """Shift one list of 2D points."""
+        shifted_points: list[tuple[int, int]] = []
+        for point in points:
+            if not isinstance(point, (list, tuple)) or len(point) < 2:
+                continue
+            shifted_points.append((int(point[0]) - shift_pixels, int(point[1]) - shift_pixels))
+        return shifted_points
 
     def _shift_point_entries(
         self,
