@@ -3,8 +3,10 @@ around the map."""
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
+import subprocess
 from typing import Any, Sequence
 
 import cv2
@@ -16,6 +18,8 @@ from trimesh import Trimesh
 
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_mesh import MeshComponent
+from maps4fs.generator.component.texture import Texture, TextureOptions
+from maps4fs.generator.constants import Paths
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
 
@@ -115,6 +119,692 @@ class Background(MeshComponent, ImageComponent):
             self.decimate_background_mesh()
             self.texture_background_mesh()
             self.convert_background_mesh_to_i3d()
+            self.generate_background_trees()
+
+    def _read_background_tree_schema(self) -> list[dict[str, Any]]:
+        """Read and validate minimal background tree schema entries.
+
+        Returns:
+            list[dict[str, Any]]: Normalized tree entries containing safe name,
+                resolved texture path, and dimensions.
+        """
+        schema_path = getattr(self.game, "background_schema", "")
+        if not schema_path:
+            return []
+
+        if not os.path.isfile(schema_path):
+            self.logger.debug("Background tree schema not found: %s", schema_path)
+            return []
+
+        try:
+            with open(schema_path, "r", encoding="utf-8") as schema_file:
+                raw_schema = json.load(schema_file)
+        except Exception as e:
+            self.logger.warning("Could not load background tree schema %s: %s", schema_path, e)
+            return []
+
+        if not isinstance(raw_schema, list):
+            self.logger.warning("Background tree schema must be a list: %s", schema_path)
+            return []
+
+        entries: list[dict[str, Any]] = []
+        for idx, raw_entry in enumerate(raw_schema, start=1):
+            if not isinstance(raw_entry, dict):
+                continue
+
+            category = str(raw_entry.get("category", "")).strip().lower()
+            if category != Parameters.BACKGROUND_TREES_CATEGORY:
+                continue
+
+            name = str(raw_entry.get("name", "")).strip()
+            path = str(raw_entry.get("path", "")).strip()
+            if not name or not path:
+                self.logger.warning(
+                    "Skipping background tree entry #%s: missing name/path.",
+                    idx,
+                )
+                continue
+
+            raw_width = raw_entry.get("width")
+            raw_height = raw_entry.get("height")
+            if raw_width is None or raw_height is None:
+                self.logger.warning(
+                    "Skipping background tree '%s': width/height must be numbers.",
+                    name,
+                )
+                continue
+
+            try:
+                width = float(raw_width)
+                height = float(raw_height)
+            except (TypeError, ValueError):
+                self.logger.warning(
+                    "Skipping background tree '%s': width/height must be numbers.",
+                    name,
+                )
+                continue
+
+            if width <= 0 or height <= 0:
+                self.logger.warning(
+                    "Skipping background tree '%s': width/height must be positive.",
+                    name,
+                )
+                continue
+
+            texture_path = self._resolve_background_tree_texture_path(path)
+            if not texture_path:
+                self.logger.warning(
+                    "Skipping background tree '%s': texture file not found for path '%s'.",
+                    name,
+                    path,
+                )
+                continue
+
+            safe_name = "".join(ch if ch.isalnum() or ch in {"_", "-"} else "_" for ch in name)
+            safe_name = safe_name.strip("_").lower() or f"tree_{idx}"
+
+            entries.append(
+                {
+                    "name": name,
+                    "safe_name": safe_name,
+                    "texture_path": texture_path,
+                    "width": width,
+                    "height": height,
+                }
+            )
+
+        return entries
+
+    @staticmethod
+    def _resolve_background_tree_texture_path(path_value: str) -> str | None:
+        """Resolve a schema texture path against templates and map directories.
+
+        Arguments:
+            path_value (str): Relative or absolute path from the schema entry.
+
+        Returns:
+            str | None: Absolute path to existing texture file, otherwise None.
+        """
+        normalized = path_value.replace("/", os.sep).replace("\\", os.sep).strip()
+        if not normalized:
+            return None
+
+        candidates = []
+        if os.path.isabs(normalized):
+            candidates.append(normalized)
+        else:
+            candidates.append(os.path.join(Paths.TEMPLATES_DIR, normalized))
+            candidates.append(os.path.join(os.getcwd(), normalized))
+
+        for candidate in candidates:
+            if os.path.isfile(candidate):
+                return candidate
+        return None
+
+    def _collect_background_forest_layers(self) -> list[dict[str, Any]]:
+        """Collect and normalize forest layers for background mask rasterization.
+
+        Returns:
+            list[dict[str, Any]]: Forest layer definitions suitable for background
+                texture processing.
+        """
+        layers_schema = self.map.texture_schema or []
+        forest_layers = [
+            layer
+            for layer in layers_schema
+            if isinstance(layer, dict) and layer.get("usage") == "forest"
+        ]
+        if not forest_layers:
+            return []
+
+        background_forest_layers = [
+            layer for layer in forest_layers if layer.get("background") is True
+        ]
+        source_layers = background_forest_layers if background_forest_layers else forest_layers
+
+        normalized_layers: list[dict[str, Any]] = []
+        for idx, layer in enumerate(source_layers, start=1):
+            if not layer.get("name"):
+                continue
+            normalized = dict(layer)
+            normalized["name"] = f"{layer['name']}_bgforest_{idx}"
+            normalized["count"] = 1
+            normalized["background"] = True
+            normalized_layers.append(normalized)
+        return normalized_layers
+
+    def _render_background_forest_mask(self) -> np.ndarray | None:
+        """Rasterize OSM forest layers on a background-sized canvas.
+
+        Returns:
+            np.ndarray | None: Merged grayscale forest mask, or None when source
+                layers are unavailable.
+        """
+        background_forest_layers = self._collect_background_forest_layers()
+        if not background_forest_layers:
+            self.logger.warning(
+                "No forest layers found for background trees. "
+                "Set usage='forest' in texture schema (and optionally background=true)."
+            )
+            return None
+
+        background_texture = Texture(
+            self.game,
+            self.map,
+            map_size=self.background_size,
+            map_rotated_size=self.rotated_size,
+            options=TextureOptions(
+                texture_custom_schema=background_forest_layers,
+                skip_scaling=True,
+                channel="background",
+                cap_style="round",
+            ),
+        )
+        background_texture.preprocess()
+        background_texture.process()
+
+        processed_layers = background_texture.get_background_layers()
+        if not processed_layers:
+            self.logger.warning("No processed background forest layers available.")
+            return None
+
+        weights_directory = self.game.weights_dir_path
+        mask: np.ndarray = np.zeros((self.background_size, self.background_size), dtype=np.uint8)
+        for layer in processed_layers:
+            layer_image_path = layer.get_preview_or_path(weights_directory)
+            layer_image = cv2.imread(layer_image_path, cv2.IMREAD_GRAYSCALE)
+            if layer_image is None:
+                continue
+            if layer_image.shape != mask.shape:
+                resized_layer_image = cv2.resize(
+                    layer_image,
+                    (mask.shape[1], mask.shape[0]),
+                    interpolation=cv2.INTER_NEAREST,
+                )
+                mask = cv2.max(mask, np.asarray(resized_layer_image, dtype=np.uint8))
+                continue
+            mask = cv2.max(mask, layer_image)
+
+        return mask
+
+    def _background_tree_candidate_points(
+        self,
+        forest_mask: np.ndarray,
+    ) -> tuple[list[tuple[int, int]], int]:
+        """Sample deterministic sparse points from the background forest mask.
+
+        Arguments:
+            forest_mask (np.ndarray): Grayscale forest mask on the background canvas.
+
+        Returns:
+            tuple[list[tuple[int, int]], int]: Candidate points and sampling step.
+        """
+        height, width = forest_mask.shape[:2]
+        center_x = width // 2
+        center_y = height // 2
+
+        expected_full_size = max(1, self.background_size)
+        scale = min(width, height) / expected_full_size
+
+        step = max(8, int(Parameters.BACKGROUND_TREES_FOREST_STEP * scale))
+        inner_buffer = max(0, int(Parameters.BACKGROUND_TREES_RING_BUFFER * scale))
+        playable_half = max(1, int((self.map_size / 2) * scale))
+
+        points: list[tuple[int, int]] = []
+        for y in range(0, height, step):
+            for x in range(0, width, step):
+                if forest_mask[y, x] == 0:
+                    continue
+
+                dx = abs(x - center_x)
+                dy = abs(y - center_y)
+
+                if dx <= playable_half + inner_buffer and dy <= playable_half + inner_buffer:
+                    continue
+
+                points.append((x, y))
+
+        return points, step
+
+    def _cleanup_previous_background_tree_assets(self) -> None:
+        """Remove previously generated background tree meshes and textures.
+
+        Returns:
+            None
+        """
+        if not os.path.isdir(self.assets_background_directory):
+            return
+
+        for entry in os.scandir(self.assets_background_directory):
+            if not entry.is_file():
+                continue
+
+            filename = entry.name
+            is_tree_mesh = filename.startswith(Parameters.BACKGROUND_TREES_ASSET_PREFIX)
+            is_tree_texture = filename.startswith("bg_") and filename.lower().endswith(".dds")
+            if is_tree_mesh or is_tree_texture:
+                try:
+                    os.remove(entry.path)
+                except OSError:
+                    self.logger.debug(
+                        "Could not remove stale background tree asset: %s", entry.path
+                    )
+
+    def _is_background_ring_point(
+        self,
+        x: int,
+        y: int,
+        shape: tuple[int, int],
+    ) -> bool:
+        """Check whether point is outside playable center on the background canvas.
+
+        Arguments:
+            x (int): X coordinate in mask space.
+            y (int): Y coordinate in mask space.
+            shape (tuple[int, int]): Mask shape as (height, width).
+
+        Returns:
+            bool: True when point belongs to the background ring.
+        """
+        height, width = shape
+        center_x = width // 2
+        center_y = height // 2
+
+        expected_full_size = max(1, self.background_size)
+        scale = min(width, height) / expected_full_size
+        inner_buffer = max(0, int(Parameters.BACKGROUND_TREES_RING_BUFFER * scale))
+        playable_half = max(1, int((self.map_size / 2) * scale))
+
+        dx = abs(x - center_x)
+        dy = abs(y - center_y)
+        return not (dx <= playable_half + inner_buffer and dy <= playable_half + inner_buffer)
+
+    def _randomize_background_tree_points(
+        self,
+        points: list[tuple[int, int]],
+        forest_mask: np.ndarray,
+        jitter_range: int,
+        seed: int,
+    ) -> list[tuple[int, int]]:
+        """Apply deterministic jitter while keeping points in valid forest ring area.
+
+        Arguments:
+            points (list[tuple[int, int]]): Input candidate points.
+            forest_mask (np.ndarray): Forest mask for validity checks.
+            jitter_range (int): Max random offset in pixels for both axes.
+            seed (int): Seed used to keep randomization deterministic.
+
+        Returns:
+            list[tuple[int, int]]: Jittered points constrained to valid locations.
+        """
+        if jitter_range <= 0 or not points:
+            return points
+
+        height, width = forest_mask.shape[:2]
+        rng = np.random.default_rng(seed)
+        randomized: list[tuple[int, int]] = []
+
+        for x, y in points:
+            chosen_x, chosen_y = x, y
+            for _ in range(4):
+                offset_x = int(rng.integers(-jitter_range, jitter_range + 1))
+                offset_y = int(rng.integers(-jitter_range, jitter_range + 1))
+
+                nx = max(0, min(width - 1, x + offset_x))
+                ny = max(0, min(height - 1, y + offset_y))
+
+                if forest_mask[ny, nx] == 0:
+                    continue
+                if not self._is_background_ring_point(nx, ny, (height, width)):
+                    continue
+
+                chosen_x, chosen_y = nx, ny
+                break
+
+            randomized.append((chosen_x, chosen_y))
+
+        return randomized
+
+    @staticmethod
+    def _append_billboard_quad(
+        vertices: list[tuple[float, float, float]],
+        faces: list[tuple[int, int, int]],
+        uvs: list[tuple[float, float]],
+        p0: tuple[float, float, float],
+        p1: tuple[float, float, float],
+        p2: tuple[float, float, float],
+        p3: tuple[float, float, float],
+    ) -> None:
+        """Append one textured billboard quad to mesh buffers.
+
+        Arguments:
+            vertices (list[tuple[float, float, float]]): Vertex buffer to extend.
+            faces (list[tuple[int, int, int]]): Face index buffer to extend.
+            uvs (list[tuple[float, float]]): UV buffer to extend.
+            p0 (tuple[float, float, float]): Bottom-left vertex.
+            p1 (tuple[float, float, float]): Bottom-right vertex.
+            p2 (tuple[float, float, float]): Top-right vertex.
+            p3 (tuple[float, float, float]): Top-left vertex.
+
+        Returns:
+            None
+        """
+        base = len(vertices)
+        vertices.extend([p0, p1, p2, p3])
+        # FS uses top-left texture origin; keep UV V increasing downwards to avoid upside-down billboards.
+        uvs.extend([(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)])
+        faces.append((base, base + 1, base + 2))
+        faces.append((base, base + 2, base + 3))
+
+    @staticmethod
+    def _has_texture_reference(i3d_path: str) -> bool:
+        """Check whether i3d contains texture references for fileId=1.
+
+        Arguments:
+            i3d_path (str): Path to i3d file to inspect.
+
+        Returns:
+            bool: True when both file and texture entries for fileId=1 exist.
+        """
+        if not os.path.isfile(i3d_path):
+            return False
+        try:
+            with open(i3d_path, "r", encoding="utf-8") as i3d_file:
+                content = i3d_file.read()
+        except Exception:
+            return False
+        return ('<File fileId="1"' in content) and ('<Texture fileId="1"' in content)
+
+    def _export_background_tree_i3d(
+        self,
+        mesh: trimesh.Trimesh,
+        output_dir: str,
+        name: str,
+        texture_path: str,
+    ) -> str:
+        """Export background tree mesh and preserve raw payload as fallback.
+
+        Arguments:
+            mesh (trimesh.Trimesh): Generated billboard mesh.
+            output_dir (str): Destination directory for exported files.
+            name (str): Asset base name.
+            texture_path (str): Source texture path.
+
+        Returns:
+            str: Path to binary i3d output, or raw i3d path on conversion failure.
+        """
+        os.makedirs(output_dir, exist_ok=True)
+
+        texture_file = self._prepare_background_tree_texture(texture_path, output_dir)
+        raw_i3d_path = os.path.join(output_dir, f"{name}.i3d")
+        binary_i3d_path = os.path.join(output_dir, f"{name}{Parameters.BINARY_I3D_SUFFIX}")
+
+        self._write_i3d_file(mesh, raw_i3d_path, name, texture_file, is_water=False)
+
+        try:
+            self.to_i3d_binary(raw_i3d_path, binary_i3d_path, remove_raw_i3d=True)
+            self.fix_binary_paths(binary_i3d_path)
+        except Exception:
+            return raw_i3d_path
+
+        if self._has_texture_reference(binary_i3d_path):
+            return binary_i3d_path
+
+        # If converter dropped texture links, keep binary filename but raw XML payload.
+        shutil.copyfile(raw_i3d_path, binary_i3d_path)
+
+        raw_shapes_path = f"{raw_i3d_path}.shapes"
+        binary_shapes_path = f"{binary_i3d_path}.shapes"
+        if os.path.isfile(raw_shapes_path):
+            shutil.copyfile(raw_shapes_path, binary_shapes_path)
+
+        self.logger.warning(
+            "Background tree binary lacked texture reference for %s; "
+            "replaced with raw i3d payload.",
+            name,
+        )
+        return binary_i3d_path
+
+    def _prepare_background_tree_texture(self, texture_path: str, output_dir: str) -> str:
+        """Copy and optionally normalize texture used by background trees.
+
+        Arguments:
+            texture_path (str): Source texture path.
+            output_dir (str): Destination directory for copied/converted texture.
+
+        Returns:
+            str: Destination texture filename used in exported i3d.
+        """
+        source_path = texture_path
+        dest_path = os.path.join(output_dir, os.path.basename(source_path))
+
+        ext = os.path.splitext(source_path)[1].lower()
+        texconv_path = Paths.get_texconv_executable_path()
+
+        if ext == ".dds" and texconv_path is not None:
+            output_dir_abs = os.path.abspath(output_dir)
+            cmd = [
+                texconv_path,
+                "-f",
+                "BC3_UNORM",
+                "-m",
+                "1",
+                "-y",
+                "-o",
+                output_dir_abs,
+                os.path.abspath(source_path),
+            ]
+
+            run_kwargs: dict[str, Any] = {
+                "stdin": subprocess.DEVNULL,
+                "capture_output": True,
+                "text": True,
+            }
+            if os.name == "nt":
+                run_kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+            try:
+                result = subprocess.run(cmd, **run_kwargs)  # pylint: disable=subprocess-run-check
+                if result.returncode == 0:
+                    produced_path = os.path.join(
+                        output_dir_abs,
+                        os.path.splitext(os.path.basename(source_path))[0] + ".dds",
+                    )
+                    if os.path.abspath(produced_path) != os.path.abspath(dest_path):
+                        os.replace(produced_path, dest_path)
+                    return os.path.basename(dest_path)
+
+                self.logger.warning(
+                    "texconv DDS normalization failed for %s (exit %s). "
+                    "Falling back to raw copy. stderr: %s",
+                    source_path,
+                    result.returncode,
+                    result.stderr.strip(),
+                )
+            except Exception as e:
+                self.logger.warning(
+                    "texconv DDS normalization failed for %s: %s. Falling back to raw copy.",
+                    source_path,
+                    e,
+                )
+
+        if os.path.abspath(source_path) != os.path.abspath(dest_path):
+            shutil.copy2(source_path, dest_path)
+        return os.path.basename(dest_path)
+
+    def _build_background_tree_mesh(
+        self,
+        points: list[tuple[int, int]],
+        width_m: float,
+        height_m: float,
+        dem_image: np.ndarray,
+        size_rng: np.random.Generator,
+        size_variation: float = 0.2,
+    ) -> Trimesh:
+        """Build crossed-billboard mesh geometry for tree points.
+
+        Arguments:
+            points (list[tuple[int, int]]): Placement points in DEM pixel space.
+            width_m (float): Base billboard width in meters.
+            height_m (float): Base billboard height in meters.
+            dem_image (np.ndarray): DEM image for base elevation sampling.
+            size_rng (np.random.Generator): RNG used for per-instance size jitter.
+            size_variation (float): Max relative size variation, e.g. 0.2 for +/-20%.
+
+        Returns:
+            Trimesh: Mesh containing crossed quads for all provided points.
+        """
+        if not points:
+            return trimesh.Trimesh()
+
+        vertices: list[tuple[float, float, float]] = []
+        faces: list[tuple[int, int, int]] = []
+        uvs: list[tuple[float, float]] = []
+
+        image_height, image_width = dem_image.shape[:2]
+        center_x = image_width / 2.0
+        center_y = image_height / 2.0
+        for px, py in points:
+            scale_factor = 1.0
+            if size_variation > 0:
+                scale_factor = float(size_rng.uniform(1.0 - size_variation, 1.0 + size_variation))
+
+            tree_width = width_m * scale_factor
+            tree_height = height_m * scale_factor
+            half_width = tree_width / 2.0
+
+            base_y = float(self.get_z_coordinate_from_dem(dem_image, px, py))
+            top_y = base_y + tree_height
+            world_x = float(px - center_x)
+            world_z = float(py - center_y)
+
+            # First quad: facing +Z/-Z directions.
+            self._append_billboard_quad(
+                vertices,
+                faces,
+                uvs,
+                (world_x - half_width, base_y, world_z),
+                (world_x + half_width, base_y, world_z),
+                (world_x + half_width, top_y, world_z),
+                (world_x - half_width, top_y, world_z),
+            )
+
+            # Second quad: rotated 90 degrees, facing +X/-X directions.
+            self._append_billboard_quad(
+                vertices,
+                faces,
+                uvs,
+                (world_x, base_y, world_z - half_width),
+                (world_x, base_y, world_z + half_width),
+                (world_x, top_y, world_z + half_width),
+                (world_x, top_y, world_z - half_width),
+            )
+
+        mesh = trimesh.Trimesh(
+            vertices=np.asarray(vertices, dtype=np.float64),
+            faces=np.asarray(faces, dtype=np.int64),
+            process=False,
+        )
+        mesh.visual = trimesh.visual.texture.TextureVisuals(uv=np.asarray(uvs, dtype=np.float64))
+        return mesh
+
+    @monitor_performance
+    def generate_background_trees(self) -> None:
+        """Generate sparse background tree billboard assets from schema textures.
+
+        Returns:
+            None
+        """
+        tree_entries = self._read_background_tree_schema()
+        if not tree_entries:
+            self.logger.debug("No valid background tree entries found; skipping generation.")
+            return
+
+        self._cleanup_previous_background_tree_assets()
+
+        if not os.path.isfile(self.output_path):
+            self.logger.warning(
+                "Background DEM not found for background trees: %s", self.output_path
+            )
+            return
+
+        dem_image = cv2.imread(self.output_path, cv2.IMREAD_UNCHANGED)
+        if dem_image is None:
+            self.logger.warning(
+                "Could not read background DEM for background trees: %s",
+                self.output_path,
+            )
+            return
+
+        forest_mask = self._render_background_forest_mask()
+        if forest_mask is None:
+            return
+
+        if forest_mask.shape[:2] != dem_image.shape[:2]:
+            forest_mask = cv2.resize(
+                forest_mask,
+                (dem_image.shape[1], dem_image.shape[0]),
+                interpolation=cv2.INTER_NEAREST,
+            )
+
+        candidate_points, step = self._background_tree_candidate_points(forest_mask)
+        if not candidate_points:
+            self.logger.warning("No candidate points for background tree generation.")
+            return
+
+        generated_assets = 0
+        entry_count = len(tree_entries)
+        seed_base = (
+            int(abs(self.coordinates[0]) * 1_000_000)
+            + int(abs(self.coordinates[1]) * 1_000_000)
+            + self.map_size
+        )
+
+        for idx, tree_entry in enumerate(tree_entries):
+            assigned_points = candidate_points[idx::entry_count]
+            if not assigned_points:
+                continue
+
+            jitter_range = max(1, step // 3)
+            assigned_points = self._randomize_background_tree_points(
+                assigned_points,
+                forest_mask,
+                jitter_range=jitter_range,
+                seed=seed_base + (idx + 1) * 7919,
+            )
+
+            size_rng = np.random.default_rng(seed_base + (idx + 1) * 1543)
+
+            tree_mesh = self._build_background_tree_mesh(
+                assigned_points,
+                float(tree_entry["width"]),
+                float(tree_entry["height"]),
+                dem_image,
+                size_rng=size_rng,
+                size_variation=0.2,
+            )
+            if len(tree_mesh.faces) == 0:
+                continue
+
+            asset_name = (
+                f"{Parameters.BACKGROUND_TREES_ASSET_PREFIX}"
+                f"{tree_entry['safe_name']}_{idx + 1:02d}"
+            )
+            i3d_path = self._export_background_tree_i3d(
+                tree_mesh,
+                output_dir=self.assets_background_directory,
+                name=asset_name,
+                texture_path=str(tree_entry["texture_path"]),
+            )
+            self.logger.debug(
+                "Background trees asset generated: %s using %s points (%s).",
+                i3d_path,
+                len(assigned_points),
+                tree_entry["name"],
+            )
+            generated_assets += 1
+
+        self.logger.info("Generated %s background tree assets.", generated_assets)
 
     def not_resized_paths(self) -> list[str]:
         """Returns the list of paths to all not resized DEM files.

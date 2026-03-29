@@ -83,7 +83,7 @@ class Water(MeshComponent, ImageComponent):
 
         background_layers = []
         for layer in layers_schema:
-            if layer.get("background") is True:
+            if layer.get("background") is True and layer.get("area_water") is True:
                 layer_copy = deepcopy(layer)
                 layer_copy["count"] = 1
                 layer_copy["name"] = f"{layer['name']}_background"

@@ -152,6 +152,13 @@ class Parameters:
     # ---- Terrain layer names --------------------------------------------
     DECIMATED_BACKGROUND = "decimated_background"
     BACKGROUND_TERRAIN = "background_terrain"
+    BACKGROUND_TREES = "background_trees"
+    BACKGROUND_TREES_CATEGORY = "trees"
+    BACKGROUND_TREES_ASSET_PREFIX = "background_trees_"
+    BACKGROUND_TREES_GROUP_NAME = "backgroundTrees"
+    BACKGROUND_TREES_FOREST_STEP = 24
+    BACKGROUND_TREES_RING_BUFFER = 0
+    BACKGROUND_TREES_CLIP_DISTANCE = 1200
     POLYGON_WATER = "polygon_water"
     POLYLINE_WATER = "polyline_water"
     HEIGHT_SCALE = "heightScale"

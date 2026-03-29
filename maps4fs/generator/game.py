@@ -209,6 +209,7 @@ class Game:
     _TREE_SCHEMA: str = ""
     _BUILDINGS_SCHEMA: str = ""
     _ELECTRICITY_SCHEMA: str = ""
+    _BACKGROUND_SCHEMA: str = ""
     _MAP_TEMPLATE: str = ""
 
     # Game-specific XML paths and tuning values.
@@ -241,6 +242,9 @@ class Game:
         self.tree_schema: str = os.path.join(templates_dir, self._TREE_SCHEMA)
         self.buildings_schema: str = os.path.join(templates_dir, self._BUILDINGS_SCHEMA)
         self.electricity_schema: str = os.path.join(templates_dir, self._ELECTRICITY_SCHEMA)
+        self.background_schema: str = (
+            os.path.join(templates_dir, self._BACKGROUND_SCHEMA) if self._BACKGROUND_SCHEMA else ""
+        )
 
         # Map-relative paths — populated by set_map_directory()
         self.dem_file_path: str = ""
@@ -323,4 +327,5 @@ class FS25(Game):
     _TREE_SCHEMA = "fs25-tree-schema.json"
     _BUILDINGS_SCHEMA = "fs25-buildings-schema.json"
     _ELECTRICITY_SCHEMA = "fs25-electricity-schema.json"
+    _BACKGROUND_SCHEMA = "fs25-background-schema.json"
     _MAP_TEMPLATE = "fs25-map-template.zip"

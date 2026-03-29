@@ -936,6 +936,17 @@ class Scene(ImageComponent):
             if file.endswith(Parameters.BINARY_I3D_SUFFIX):
                 name = file[: -len(Parameters.BINARY_I3D_SUFFIX)]
                 result[name] = os.path.join(directory, file)
+
+        # Fallback: include raw XML i3d files when no binary with the same stem exists.
+        for file in os.listdir(directory):
+            if not file.endswith(".i3d") or file.endswith(Parameters.BINARY_I3D_SUFFIX):
+                continue
+            if file.endswith(".i3d.shapes"):
+                continue
+            stem = file[: -len(".i3d")]
+            if stem in result:
+                continue
+            result[stem] = os.path.join(directory, file)
         return result
 
     def _find_nested_binary_i3d_in_directory(self, directory: str) -> dict[str, str]:
@@ -978,6 +989,7 @@ class Scene(ImageComponent):
             self.logger.warning("Required nodes (Files, Scene) not found in I3D file.")
             return
         i3d_dir = os.path.dirname(self.xml_path)
+        background_trees_group_node: ET.Element | None = None
 
         for asset_name, asset_path in assets_directories.items():
             binary_i3d_path = self._resolve_binary_asset_path(asset_path)
@@ -993,9 +1005,18 @@ class Scene(ImageComponent):
             binary_rel_path = os.path.relpath(binary_i3d_path, i3d_dir).replace("\\", "/")
             self.logger.debug("Relative path for the binary I3D file: %s.", binary_rel_path)
 
+            parent_node = scene_node
+            if asset_name.startswith(Parameters.BACKGROUND_TREES_ASSET_PREFIX):
+                if background_trees_group_node is None:
+                    background_trees_group_node, node_id = self._ensure_background_trees_group(
+                        scene_node,
+                        node_id,
+                    )
+                parent_node = background_trees_group_node
+
             self._append_mesh_reference(
                 files_node,
-                scene_node,
+                parent_node,
                 asset_name,
                 binary_rel_path,
                 file_id,
@@ -1020,9 +1041,18 @@ class Scene(ImageComponent):
         roads_assets_directory = os.path.join(assets_directory, Parameters.ROADS_DIRECTORY)
         water_assets_directory = os.path.join(assets_directory, Parameters.WATER_ASSET_DIRNAME)
 
-        assets_directories: dict[str, str] = {
-            Parameters.BACKGROUND_TERRAIN: background_assets_directory
-        }
+        assets_directories: dict[str, str] = {}
+
+        if os.path.isdir(background_assets_directory):
+            background_binaries = self._find_flat_binary_i3d_in_directory(
+                background_assets_directory
+            )
+            if background_binaries:
+                assets_directories.update(background_binaries)
+            else:
+                # Fallback for legacy runs where only one background binary is expected.
+                assets_directories[Parameters.BACKGROUND_TERRAIN] = background_assets_directory
+
         if os.path.isdir(water_assets_directory):
             assets_directories.update(
                 self._find_flat_binary_i3d_in_directory(water_assets_directory)
@@ -1072,6 +1102,31 @@ class Scene(ImageComponent):
             )
         )
 
+    def _ensure_background_trees_group(
+        self,
+        scene_node: ET.Element,
+        node_id: int,
+    ) -> tuple[ET.Element, int]:
+        """Create and append the background trees transform group in scene.
+
+        Arguments:
+            scene_node (ET.Element): Scene node where group should be appended.
+            node_id (int): Current node ID counter.
+
+        Returns:
+            tuple[ET.Element, int]: Created group node and next node ID value.
+        """
+        group_node = XmlDocument.create_element(
+            self.game.config.i3d_transform_group_tag,
+            {
+                self.game.config.i3d_attr_name: Parameters.BACKGROUND_TREES_GROUP_NAME,
+                self.game.config.i3d_attr_translation: Parameters.DEFAULT_TRANSLATION,
+                self.game.config.i3d_attr_node_id: str(node_id),
+            },
+        )
+        scene_node.append(group_node)
+        return group_node, node_id + 1
+
     def _postprocess_i3d(self, binary_i3d_path: str, asset_name: str) -> None:
         """Post-processes the I3D file after all modifications are done.
 
@@ -1082,6 +1137,9 @@ class Scene(ImageComponent):
         if asset_name == Parameters.BACKGROUND_TERRAIN:
             self.logger.debug("Post-processing background terrain mesh.")
             self._postprocess_background_terrain(binary_i3d_path)
+        elif asset_name.startswith(Parameters.BACKGROUND_TREES_ASSET_PREFIX):
+            self.logger.debug("Post-processing background trees mesh for asset: %s.", asset_name)
+            self._postprocess_background_trees(binary_i3d_path)
         elif asset_name in (
             Parameters.POLYGON_WATER,
             Parameters.POLYLINE_WATER,
@@ -1109,6 +1167,10 @@ class Scene(ImageComponent):
             if position_data is not None:
                 elevation = float(position_data.get(Parameters.MESH_CENTROID_Y, 0.0))
             self._set_mesh_translation(binary_i3d_path, f"0 {elevation} 0", asset_name)
+            return
+
+        # Background tree billboards are authored directly in map-space coordinates.
+        if asset_name.startswith(Parameters.BACKGROUND_TREES_ASSET_PREFIX):
             return
 
         if not position_data:
@@ -1174,6 +1236,33 @@ class Scene(ImageComponent):
 
         if shape_node is not None:
             shape_node.set(self.game.config.i3d_attr_receive_shadows, Parameters.I3D_TRUE)
+
+        doc.save()
+
+    def _postprocess_background_trees(self, binary_i3d_path: str) -> None:
+        """Post-process generated background tree billboard meshes.
+
+        Arguments:
+            binary_i3d_path (str): Path to generated background tree i3d file.
+
+        Returns:
+            None
+        """
+        doc = XmlDocument(binary_i3d_path)
+        root = doc.root
+
+        material_node = root.find(self.game.config.i3d_material_xpath)
+        if material_node is not None:
+            material_node.attrib.pop(self.game.config.i3d_attr_specular_color, None)
+
+        shape_node = root.find(self.game.config.i3d_shape_xpath)
+        if shape_node is not None:
+            shape_node.set(self.game.config.i3d_attr_casts_shadows, Parameters.I3D_TRUE)
+            shape_node.set(self.game.config.i3d_attr_receive_shadows, Parameters.I3D_TRUE)
+            shape_node.set(self.game.config.i3d_attr_static, Parameters.I3D_TRUE)
+            shape_node.set("collision", Parameters.I3D_FALSE)
+            shape_node.set("doubleSided", Parameters.I3D_TRUE)
+            shape_node.set("clipDistance", str(Parameters.BACKGROUND_TREES_CLIP_DISTANCE))
 
         doc.save()
 
