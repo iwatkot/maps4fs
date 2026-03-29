@@ -1127,6 +1127,13 @@ class Scene(ImageComponent):
         scene_node.append(group_node)
         return group_node, node_id + 1
 
+    @staticmethod
+    def _is_background_terrain_asset(asset_name: str) -> bool:
+        """Return True when asset is the base terrain or one of split terrain chunks."""
+        return asset_name == Parameters.BACKGROUND_TERRAIN or asset_name.startswith(
+            Parameters.BACKGROUND_TERRAIN_PART_PREFIX
+        )
+
     def _postprocess_i3d(self, binary_i3d_path: str, asset_name: str) -> None:
         """Post-processes the I3D file after all modifications are done.
 
@@ -1134,7 +1141,7 @@ class Scene(ImageComponent):
             binary_i3d_path (str): The path to the binary I3D file that was inserted.
             asset_name (str): The name of the asset corresponding to the binary I3D file.
         """
-        if asset_name == Parameters.BACKGROUND_TERRAIN:
+        if self._is_background_terrain_asset(asset_name):
             self.logger.debug("Post-processing background terrain mesh.")
             self._postprocess_background_terrain(binary_i3d_path)
         elif asset_name.startswith(Parameters.BACKGROUND_TREES_ASSET_PREFIX):
@@ -1162,7 +1169,7 @@ class Scene(ImageComponent):
         position_data = self.map.context.get_mesh_position(asset_name)
 
         # Background terrain only needs elevation offset.
-        if asset_name == Parameters.BACKGROUND_TERRAIN:
+        if self._is_background_terrain_asset(asset_name):
             elevation = 0.0
             if position_data is not None:
                 elevation = float(position_data.get(Parameters.MESH_CENTROID_Y, 0.0))
@@ -1229,6 +1236,11 @@ class Scene(ImageComponent):
 
         material_node = root.find(self.game.config.i3d_bg_terrain_material_xpath)
         shape_node = root.find(self.game.config.i3d_bg_terrain_shape_xpath)
+
+        if material_node is None:
+            material_node = root.find(self.game.config.i3d_material_xpath)
+        if shape_node is None:
+            shape_node = root.find(self.game.config.i3d_shape_xpath)
 
         if material_node is not None:
             if self.game.config.i3d_attr_specular_color in material_node.attrib:

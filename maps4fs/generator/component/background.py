@@ -804,7 +804,7 @@ class Background(MeshComponent, ImageComponent):
             )
             generated_assets += 1
 
-        self.logger.info("Generated %s background tree assets.", generated_assets)
+        self.logger.debug("Generated %s background tree assets.", generated_assets)
 
     def not_resized_paths(self) -> list[str]:
         """Returns the list of paths to all not resized DEM files.
@@ -983,7 +983,7 @@ class Background(MeshComponent, ImageComponent):
         }
         for threshold, factor in thresholds.items():
             if map_size <= threshold:
-                return factor
+                return min(1.0, factor * Parameters.BACKGROUND_TERRAIN_PARTS)
         raise ValueError(
             "Map size is too large for decimation, perform manual decimation in Blender."
         )
@@ -1008,6 +1008,58 @@ class Background(MeshComponent, ImageComponent):
             if map_size <= threshold:
                 return resolution
         return Parameters.MAXIMUM_BACKGROUND_TEXTURE_SIZE
+
+    @staticmethod
+    def _background_terrain_chunk_name(chunk_index: int) -> str:
+        """Build deterministic chunk name for split background terrain mesh."""
+        return f"{Parameters.BACKGROUND_TERRAIN_PART_PREFIX}{chunk_index + 1:02d}"
+
+    def _cleanup_previous_background_terrain_assets(self) -> None:
+        """Remove stale background terrain i3d assets before writing new chunks."""
+        if not os.path.isdir(self.assets_background_directory):
+            return
+
+        for entry in os.scandir(self.assets_background_directory):
+            if not entry.is_file():
+                continue
+            if not entry.name.startswith(Parameters.BACKGROUND_TERRAIN):
+                continue
+            try:
+                os.remove(entry.path)
+            except OSError:
+                self.logger.debug("Could not remove stale background terrain asset: %s", entry.path)
+
+    def _split_background_terrain_mesh(self, mesh: Trimesh) -> list[tuple[str, Trimesh]]:
+        """Split textured background mesh into four aligned center-based quadrants."""
+        if len(mesh.faces) == 0 or len(mesh.vertices) == 0:
+            return []
+
+        vertices = np.asarray(mesh.vertices)
+        faces = np.asarray(mesh.faces)
+        face_centroids = vertices[faces].mean(axis=1)
+
+        x_coords = face_centroids[:, 0]
+        z_coords = face_centroids[:, 2]
+        quadrant_masks = [
+            (x_coords <= 0) & (z_coords <= 0),
+            (x_coords > 0) & (z_coords <= 0),
+            (x_coords <= 0) & (z_coords > 0),
+            (x_coords > 0) & (z_coords > 0),
+        ]
+
+        chunks: list[tuple[str, Trimesh]] = []
+        for quadrant_index, mask in enumerate(quadrant_masks):
+            face_indices = np.flatnonzero(mask)
+            if len(face_indices) == 0:
+                continue
+
+            chunk_mesh = mesh.submesh([face_indices], append=True, repair=False)
+            if chunk_mesh is None or len(chunk_mesh.faces) == 0:
+                continue
+
+            chunks.append((self._background_terrain_chunk_name(quadrant_index), chunk_mesh))
+
+        return chunks
 
     @monitor_performance
     def decimate_background_mesh(self) -> None:
@@ -1154,6 +1206,8 @@ class Background(MeshComponent, ImageComponent):
             self.logger.error("Could not load textured background mesh: %s", e)
             return False
 
+        self._cleanup_previous_background_terrain_assets()
+
         # Compute terrain max elevation and save for GE positioning.
         # The mesh is built with z_vertex = (pixel - max_pixel) * z_factor (inverted),
         # so T_y = max_pixel * z_factor maps every vertex back to its real elevation.
@@ -1162,26 +1216,53 @@ class Background(MeshComponent, ImageComponent):
             if background_dem is not None:
                 z_factor = self.get_z_scaling_factor(ignore_height_scale_multiplier=True)
                 max_elevation = float(np.max(background_dem) * z_factor)
-                self.map.context.set_mesh_position(
+                for asset_name in [
                     Parameters.BACKGROUND_TERRAIN,
-                    mesh_centroid_y=max_elevation,
-                )
+                    *[
+                        self._background_terrain_chunk_name(chunk_index)
+                        for chunk_index in range(Parameters.BACKGROUND_TERRAIN_PARTS)
+                    ],
+                ]:
+                    self.map.context.set_mesh_position(
+                        asset_name,
+                        mesh_centroid_y=max_elevation,
+                    )
                 self.logger.debug("Background terrain T_y (max elevation): %.4f m", max_elevation)
         except Exception as e:
             self.logger.warning("Could not save background terrain elevation: %s", e)
 
+        terrain_chunks = self._split_background_terrain_mesh(mesh)
+        if not terrain_chunks:
+            self.logger.warning(
+                "No terrain chunks created from textured background mesh; "
+                "falling back to single terrain mesh export."
+            )
+            terrain_chunks = [(Parameters.BACKGROUND_TERRAIN, mesh)]
+        elif len(terrain_chunks) < Parameters.BACKGROUND_TERRAIN_PARTS:
+            self.logger.warning(
+                "Generated %s/%s background terrain chunks.",
+                len(terrain_chunks),
+                Parameters.BACKGROUND_TERRAIN_PARTS,
+            )
+
         try:
-            i3d_background_terrain = self.mesh_to_i3d(
-                mesh,
-                output_dir=self.assets_background_directory,
-                name=Parameters.BACKGROUND_TERRAIN,
-                texture_path=self.assets.resized_background_texture,
-                water_mesh=False,
-            )
-            self.logger.debug(
-                "Background mesh converted to i3d successfully: %s", i3d_background_terrain
-            )
-            self.assets.background_terrain_i3d = i3d_background_terrain
+            i3d_background_terrains: list[str] = []
+            for chunk_name, chunk_mesh in terrain_chunks:
+                i3d_background_terrain = self.mesh_to_i3d(
+                    chunk_mesh,
+                    output_dir=self.assets_background_directory,
+                    name=chunk_name,
+                    texture_path=self.assets.resized_background_texture,
+                    water_mesh=False,
+                )
+                i3d_background_terrains.append(i3d_background_terrain)
+                self.logger.debug(
+                    "Background mesh chunk converted to i3d successfully: %s",
+                    i3d_background_terrain,
+                )
+
+            self.assets.background_terrain_parts_i3d = i3d_background_terrains
+            self.assets.background_terrain_i3d = i3d_background_terrains[0]
             return True
         except Exception as e:
             self.logger.error("Could not convert background mesh to i3d: %s", e)
