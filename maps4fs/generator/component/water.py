@@ -208,6 +208,52 @@ class Water(MeshComponent, ImageComponent):
         flattened_dem[water_mask] = lowered[water_mask].astype(dem_image.dtype)
         return flattened_dem
 
+    @classmethod
+    def _build_water_depth_factor(
+        cls,
+        water_mask: np.ndarray,
+        transition_scale: int,
+        blur_kernel: int,
+    ) -> np.ndarray:
+        """Build smooth depth factor map from shoreline (0) to deep water (approaches 1)."""
+        if not np.any(water_mask):
+            return np.zeros(water_mask.shape, dtype=np.float32)
+
+        mask_u8 = water_mask.astype(np.uint8)
+        inside_distance = cv2.distanceTransform(mask_u8, cv2.DIST_L2, 5).astype(np.float32)
+
+        scale = max(1.0, float(transition_scale))
+        # Exponential profile gives smooth banks and rounded bottoms.
+        factor = 1.0 - np.exp(-inside_distance / scale)
+        factor = np.clip(factor, 0.0, 1.0)
+
+        kernel_size = cls._normalize_kernel_size(blur_kernel)
+        if kernel_size > 1:
+            factor = cv2.GaussianBlur(factor, (kernel_size, kernel_size), sigmaX=0, sigmaY=0)
+
+        factor[~water_mask] = 0.0
+        return factor
+
+    @staticmethod
+    def _blend_dem_to_target(
+        source_dem: np.ndarray,
+        target_dem: np.ndarray,
+        factor: np.ndarray,
+        mask: np.ndarray,
+    ) -> np.ndarray:
+        """Blend source DEM towards target DEM by per-pixel factor inside the given mask."""
+        result = source_dem.astype(np.float32)
+        source_float = source_dem.astype(np.float32)
+        target_float = target_dem.astype(np.float32)
+
+        result[mask] = source_float[mask] * (1.0 - factor[mask]) + target_float[mask] * factor[mask]
+
+        if np.issubdtype(source_dem.dtype, np.integer):
+            dtype_info = np.iinfo(source_dem.dtype)
+            result = np.clip(result, dtype_info.min, dtype_info.max)
+
+        return result.astype(source_dem.dtype)
+
     @staticmethod
     def _make_geometry_valid(geometry: object) -> object:
         """Return a valid geometry, attempting lightweight repairs when needed."""
@@ -332,6 +378,13 @@ class Water(MeshComponent, ImageComponent):
             self.logger.warning("DEM or water mask could not be read, skipping subtraction.")
             return
 
+        water_mask = water_mask_image == 255
+        if not np.any(water_mask):
+            self.logger.warning("No water pixels found in water mask image.")
+            return
+
+        source_dem = dem_image.copy()
+
         z_scaling_factor: float = (
             self.map.context.mesh_z_scaling_factor
             if self.map.context.mesh_z_scaling_factor is not None
@@ -340,42 +393,40 @@ class Water(MeshComponent, ImageComponent):
         subtract_by = int(self.map.dem_settings.water_depth * z_scaling_factor)
         flatten_applied = False
 
+        transition_scale = max(2, int(self.map.background_settings.water_blurriness))
+        blur_kernel = max(3, transition_scale // 2)
+        depth_factor = self._build_water_depth_factor(
+            water_mask,
+            transition_scale=transition_scale,
+            blur_kernel=blur_kernel,
+        )
+
+        target_dem = source_dem.copy()
+
         if self.map.background_settings.flatten_water:
             try:
-                water_mask = self._build_water_mask(
-                    water_mask_image,
-                    mask_by=255,
-                    erode_kernel=3,
-                    erode_iter=1,
+                target_dem = self.build_flattened_water_dem(
+                    source_dem,
+                    water_mask,
+                    subtract_by=subtract_by,
+                    blur_radius=self.map.background_settings.water_blurriness,
                 )
-                if not np.any(water_mask):
-                    self.logger.warning("No water pixels found in water mask image.")
-                else:
-                    dem_image = self.build_flattened_water_dem(
-                        dem_image,
-                        water_mask,
-                        subtract_by=subtract_by,
-                        blur_radius=self.map.background_settings.water_blurriness,
-                    )
-                    flatten_applied = True
+                flatten_applied = True
             except Exception as e:
                 self.logger.warning("Error occurred while flattening water: %s", e)
 
         if not flatten_applied:
-            dem_image = self.subtract_by_mask(
-                dem_image,
-                water_mask_image,
-                subtract_by=subtract_by,
-                erode_kernel=3,
-                erode_iter=1,
-            )
+            lowered = source_dem.astype(np.float32) - float(subtract_by)
+            if np.issubdtype(source_dem.dtype, np.integer):
+                dtype_info = np.iinfo(source_dem.dtype)
+                lowered = np.clip(lowered, dtype_info.min, dtype_info.max)
+            target_dem[water_mask] = lowered[water_mask].astype(source_dem.dtype)
 
-        dem_image = self.blur_edges_by_mask(
-            dem_image,
-            water_mask_image,
-            smaller_kernel=3,
-            iterations=5,
-            bigger_kernel=5,
+        dem_image = self._blend_dem_to_target(
+            source_dem,
+            target_dem,
+            depth_factor,
+            water_mask,
         )
 
         if flatten_applied:
