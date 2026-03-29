@@ -52,7 +52,7 @@ class Water(MeshComponent, ImageComponent):
         self.map.context.water_mask_path = self.water_mask_path
         self.map.context.dem_not_subtracted_path = self.not_substracted_path
 
-        self.flatten_water_to: int | None = None
+        self.flattened_water_dem: np.ndarray | None = None
 
     @monitor_performance
     def process(self) -> None:
@@ -128,6 +128,89 @@ class Water(MeshComponent, ImageComponent):
         cv2.imwrite(self.water_mask_path, background_image)
         self.logger.debug("Water mask created: %s", self.water_mask_path)
 
+    @staticmethod
+    def _normalize_kernel_size(kernel_size: int, minimum: int = 3) -> int:
+        """Return a valid odd kernel size for Gaussian blur."""
+        try:
+            kernel_size = int(kernel_size)
+        except (TypeError, ValueError):
+            kernel_size = minimum
+
+        kernel_size = max(kernel_size, minimum)
+        if kernel_size % 2 == 0:
+            kernel_size += 1
+        return kernel_size
+
+    @staticmethod
+    def _build_water_mask(
+        image_mask: np.ndarray,
+        mask_by: int = 255,
+        erode_kernel: int | None = 3,
+        erode_iter: int | None = 1,
+    ) -> np.ndarray:
+        """Build and optionally erode boolean water mask."""
+        mask = image_mask == mask_by
+        if erode_kernel and erode_iter:
+            mask = cv2.erode(
+                mask.astype(np.uint8),
+                np.ones((erode_kernel, erode_kernel), np.uint8),
+                iterations=erode_iter,
+            ).astype(bool)
+        return mask
+
+    @classmethod
+    def _smooth_dem_by_mask(
+        cls,
+        dem_image: np.ndarray,
+        water_mask: np.ndarray,
+        blur_radius: int,
+    ) -> np.ndarray:
+        """Smooth DEM over water mask while preserving broad elevation trends."""
+        dem_float = dem_image.astype(np.float32)
+        if not np.any(water_mask):
+            return dem_float
+
+        kernel_size = cls._normalize_kernel_size(blur_radius)
+        mask_float = water_mask.astype(np.float32)
+
+        weighted_dem = cv2.GaussianBlur(
+            dem_float * mask_float,
+            (kernel_size, kernel_size),
+            sigmaX=0,
+            sigmaY=0,
+        )
+        weights = cv2.GaussianBlur(
+            mask_float,
+            (kernel_size, kernel_size),
+            sigmaX=0,
+            sigmaY=0,
+        )
+
+        smoothed = dem_float.copy()
+        valid_weights = weights > 1e-6
+        smoothed[valid_weights] = weighted_dem[valid_weights] / weights[valid_weights]
+        return smoothed
+
+    @classmethod
+    def build_flattened_water_dem(
+        cls,
+        dem_image: np.ndarray,
+        water_mask: np.ndarray,
+        subtract_by: int,
+        blur_radius: int,
+    ) -> np.ndarray:
+        """Return a DEM with smoothed, depth-shifted elevations inside water mask."""
+        smoothed_dem = cls._smooth_dem_by_mask(dem_image, water_mask, blur_radius)
+        lowered = smoothed_dem - float(subtract_by)
+
+        if np.issubdtype(dem_image.dtype, np.integer):
+            dtype_info = np.iinfo(dem_image.dtype)
+            lowered = np.clip(lowered, dtype_info.min, dtype_info.max)
+
+        flattened_dem = dem_image.copy()
+        flattened_dem[water_mask] = lowered[water_mask].astype(dem_image.dtype)
+        return flattened_dem
+
     @monitor_performance
     def subtract_water_depth(self) -> None:
         """Subtract water depth from DEM where polygon-water mask is present."""
@@ -146,26 +229,39 @@ class Water(MeshComponent, ImageComponent):
             if self.map.context.mesh_z_scaling_factor is not None
             else 257
         )
-        flatten_to = None
         subtract_by = int(self.map.dem_settings.water_depth * z_scaling_factor)
+        flatten_applied = False
 
         if self.map.background_settings.flatten_water:
             try:
-                if not np.any(water_mask_image == 255):
+                water_mask = self._build_water_mask(
+                    water_mask_image,
+                    mask_by=255,
+                    erode_kernel=3,
+                    erode_iter=1,
+                )
+                if not np.any(water_mask):
                     self.logger.warning("No water pixels found in water mask image.")
-                    return
-                mask = water_mask_image == 255
-                flatten_to = int(np.mean(dem_image[mask]) - subtract_by)
-                self.flatten_water_to = flatten_to
+                else:
+                    dem_image = self.build_flattened_water_dem(
+                        dem_image,
+                        water_mask,
+                        subtract_by=subtract_by,
+                        blur_radius=self.map.background_settings.water_blurriness,
+                    )
+                    flatten_applied = True
             except Exception as e:
                 self.logger.warning("Error occurred while flattening water: %s", e)
 
-        dem_image = self.subtract_by_mask(
-            dem_image,
-            water_mask_image,
-            subtract_by=subtract_by,
-            flatten_to=flatten_to,
-        )
+        if not flatten_applied:
+            dem_image = self.subtract_by_mask(
+                dem_image,
+                water_mask_image,
+                subtract_by=subtract_by,
+                erode_kernel=3,
+                erode_iter=1,
+            )
+
         dem_image = self.blur_edges_by_mask(
             dem_image,
             water_mask_image,
@@ -173,6 +269,11 @@ class Water(MeshComponent, ImageComponent):
             iterations=5,
             bigger_kernel=5,
         )
+
+        if flatten_applied:
+            self.flattened_water_dem = dem_image.copy()
+        else:
+            self.flattened_water_dem = None
 
         cv2.imwrite(self.output_path, dem_image)
         self.logger.debug("Water depth subtracted from DEM data: %s", self.output_path)
@@ -278,7 +379,10 @@ class Water(MeshComponent, ImageComponent):
             self.logger.warning("No valid polygon water features generated.")
             return
 
-        mesh = self.mesh_from_3d_polygons(fitted_polygons, single_z_value=self.flatten_water_to)
+        dem_override = (
+            self.flattened_water_dem if self.map.background_settings.flatten_water else None
+        )
+        mesh = self.mesh_from_3d_polygons(fitted_polygons, dem_override=dem_override)
         if mesh is None:
             self.logger.warning("No mesh could be created from polygon water features.")
             return
@@ -369,17 +473,24 @@ class Water(MeshComponent, ImageComponent):
         )
 
     def mesh_from_3d_polygons(
-        self, polygons: list[shapely.Polygon], single_z_value: int | None = None
+        self,
+        polygons: list[shapely.Polygon],
+        dem_override: np.ndarray | None = None,
     ) -> Trimesh | None:
         """Create one mesh from fitted water polygons."""
         all_vertices: list[np.ndarray] = []
         all_faces: list[np.ndarray] = []
         vertex_offset = 0
 
-        not_resized_dem = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
-        if not_resized_dem is None:
-            self.logger.warning("Could not read non-subtracted DEM: %s", self.not_substracted_path)
-            return None
+        if dem_override is not None:
+            not_resized_dem = dem_override
+        else:
+            not_resized_dem = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
+            if not_resized_dem is None:
+                self.logger.warning(
+                    "Could not read non-subtracted DEM: %s", self.not_substracted_path
+                )
+                return None
 
         for polygon in polygons:
             exterior_coords = np.array(polygon.exterior.coords)
@@ -393,18 +504,8 @@ class Water(MeshComponent, ImageComponent):
 
             vertices_3d: list[list[float]] = []
             for v in vertices_2d:
-                dists = np.linalg.norm(exterior_2d - v[:2], axis=1)
-                idx = np.argmin(dists)
-                if single_z_value is None:
-                    z = self.get_z_coordinate_from_dem(
-                        not_resized_dem,
-                        exterior_coords[idx, 0],
-                        exterior_coords[idx, 1],
-                    )
-                    z = -z
-                else:
-                    z = single_z_value
-                vertices_3d.append([float(v[0]), float(v[1]), float(z)])
+                z = self.get_z_coordinate_from_dem(not_resized_dem, float(v[0]), float(v[1]))
+                vertices_3d.append([float(v[0]), float(v[1]), float(-z)])
             vertices_3d_np = np.array(vertices_3d)
 
             faces = faces + vertex_offset
