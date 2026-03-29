@@ -13,7 +13,6 @@ from trimesh import Trimesh
 
 from maps4fs.generator.component.base.component_image import ImageComponent
 from maps4fs.generator.component.base.component_mesh import (
-    LineSurfaceEntry,
     MeshComponent,
 )
 from maps4fs.generator.component.texture import Texture, TextureOptions
@@ -309,6 +308,19 @@ class Water(MeshComponent, ImageComponent):
 
         return np.asarray(vertices, dtype=np.float64), np.asarray(faces, dtype=np.int64)
 
+    @staticmethod
+    def _dedupe_linestring_points(
+        points: list[tuple[int, int]] | list[tuple[float, float]],
+    ) -> list[tuple[float, float]]:
+        """Remove consecutive duplicate points from a linestring point sequence."""
+        deduped: list[tuple[float, float]] = []
+        for x, y in points:
+            current = (float(x), float(y))
+            if deduped and deduped[-1] == current:
+                continue
+            deduped.append(current)
+        return deduped
+
     @monitor_performance
     def subtract_water_depth(self) -> None:
         """Subtract water depth from DEM where polygon-water mask is present."""
@@ -508,7 +520,7 @@ class Water(MeshComponent, ImageComponent):
             self.logger.warning("Water polylines data not found in background info layer.")
             return
 
-        water_entries: list[LineSurfaceEntry] = []
+        water_polygons: list[shapely.Polygon] = []
         for water_id, water_info in enumerate(water_infos, start=1):
             if not isinstance(water_info, dict):
                 continue
@@ -525,20 +537,43 @@ class Water(MeshComponent, ImageComponent):
                     canvas_size=self.background_size,
                     rotated_canvas_size=self.rotated_size,
                 )
+                fitted_water = self._dedupe_linestring_points(fitted_water)
+                if len(fitted_water) < 2:
+                    continue
+
                 linestring = shapely.LineString(fitted_water)
+                if linestring.is_empty or linestring.length <= 1e-6:
+                    continue
             except ValueError as e:
                 self.logger.debug("Water %s could not be fitted/converted: %s", water_id, e)
                 continue
 
-            width += Parameters.POLYLINE_WATER_WIDTH_EXTENSION
-            water_entries.append(LineSurfaceEntry(linestring=linestring, width=width))
+            try:
+                half_width = float(width) + float(Parameters.POLYLINE_WATER_WIDTH_EXTENSION)
+                if half_width <= 0:
+                    continue
 
-        if not water_entries:
+                buffered = linestring.buffer(
+                    half_width,
+                    cap_style="flat",
+                    join_style="round",
+                    quad_segs=4,
+                )
+            except Exception as e:
+                self.logger.debug("Could not buffer water polyline %s: %s", water_id, e)
+                continue
+
+            buffered = self._make_geometry_valid(buffered)
+            polygon_parts = self._extract_polygon_parts(buffered)
+            if not polygon_parts:
+                self.logger.debug("Buffered water polyline %s yielded no polygon parts.", water_id)
+                continue
+
+            water_polygons.extend(polygon_parts)
+
+        if not water_polygons:
             self.logger.warning("No valid water polylines found in background info layer.")
             return
-
-        interpolated = self.smart_interpolation(water_entries)
-        split_entries = self.split_long_line_surfaces(interpolated)
 
         obj_output_path = os.path.join(
             self.water_directory, Parameters.POLYLINE_WATER_MESH_FILENAME
@@ -549,9 +584,16 @@ class Water(MeshComponent, ImageComponent):
             self.logger.error("Could not read DEM image for polyline water generation.")
             return
 
-        self.create_textured_linestrings_mesh(
-            split_entries, obj_output_path, dem_override=dem_image
-        )
+        polyline_dem_override = dem_image
+        if self.map.background_settings.flatten_water and self.flattened_water_dem is not None:
+            polyline_dem_override = self.flattened_water_dem
+
+        mesh = self.mesh_from_3d_polygons(water_polygons, dem_override=polyline_dem_override)
+        if mesh is None:
+            self.logger.warning("No mesh could be created from polyline water features.")
+            return
+
+        mesh.export(obj_output_path)
 
         mesh = trimesh.load_mesh(obj_output_path, force="mesh", process=False)
         rotation_matrix = trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0])
