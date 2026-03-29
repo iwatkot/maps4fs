@@ -93,8 +93,12 @@ You can control the automated generation through these settings:
 
 ### Background Settings
 - **Generate Water**: Enable/disable water plane generation
-- **Water Blurriness**: Controls surface smoothness (higher = flatter)
-- **Flatten Water**: Sets uniform water level across the map
+- **Water Blurriness**: Controls shoreline transition smoothing (higher = softer/wider transitions)
+- **Flatten Water**: Smooths/stabilizes water bottoms while preserving overall elevation trends (recommended)
+
+### DEM Settings
+- **Water Depth**: Controls how deep water channels/lakes are carved
+- **Water Bank Steepness** (`1`-`5`): Controls shoreline profile shape (`1` smoother, `5` steeper)
 
 ## 🎮 Game Compatibility
 
@@ -128,13 +132,13 @@ The automated process includes several optimizations:
 
 ### Water level too high/low?
 - Adjust water position in Giants Editor
-- Check **Flatten Water** setting for uniform levels
+- Adjust **Water Depth** and **Water Bank Steepness** in generation settings for terrain carving shape
 
 ## 💡 Tips
 
 - **Multiple Water Bodies**: The automated process handles multiple separate water areas
 - **Custom Shapes**: Water follows the actual shape from your map data
-- **Quality Settings**: Use **Water Blurriness** to control surface detail
+- **Quality Settings**: Tune **Water Blurriness** + **Water Bank Steepness** together for best shoreline profile
 - **Performance**: Generated water planes are optimized for in-game performance
 
 ## 🔄 Upgrading from Manual Process
