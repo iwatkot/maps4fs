@@ -191,14 +191,14 @@ class Bootstrap:
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
                 _logger.info("Downloading maps4fsdata repository as ZIP archive...")
-                zip_url = "https://github.com/iwatkot/maps4fsdata/archive/refs/heads/shared.zip"
+                zip_url = "https://github.com/iwatkot/maps4fsdata/archive/refs/heads/main.zip"
                 zip_data = Bootstrap._fetch(zip_url)
 
                 _logger.info("Extracting repository archive...")
                 with zipfile.ZipFile(io.BytesIO(zip_data)) as zip_ref:
                     zip_ref.extractall(temp_dir)
 
-                repo_dir = os.path.join(temp_dir, "maps4fsdata-shared")
+                repo_dir = os.path.join(temp_dir, "maps4fsdata-main")
                 if not os.path.exists(repo_dir):
                     raise FileNotFoundError(f"Expected repository directory not found: {repo_dir}")
 
