@@ -17,6 +17,7 @@
 * [Texture Schema](texture_schema.md)
 * [Tree Schema](tree_schema.md)
 * [Buildings Schema](buildings_schema.md)
+* [Electricity](electricity.md)
 * [GRLE Schema](grle_schema.md)
 * [Generation Info](generation_info.md)
 

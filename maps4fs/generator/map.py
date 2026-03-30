@@ -50,6 +50,7 @@ class Map:
         texture_custom_schema: list[dict] | None = None,
         tree_custom_schema: list[dict] | None = None,
         buildings_custom_schema: list[dict] | None = None,
+        electricity_custom_schema: list[dict] | None = None,
         custom_template_path: str | None = None,
         custom_background_path: str | None = None,
         **kwargs,
@@ -98,6 +99,7 @@ class Map:
         self.texture_custom_schema = texture_custom_schema
         self.tree_custom_schema = tree_custom_schema
         self.buildings_custom_schema = buildings_custom_schema
+        self.electricity_custom_schema = electricity_custom_schema
 
         # Persist settings to disk.
         self.main_settings_path = os.path.join(self.map_directory, "main_settings.json")
@@ -167,6 +169,7 @@ class Map:
             "texture_custom_schema.json": self.texture_custom_schema,
             "tree_custom_schema.json": self.tree_custom_schema,
             "buildings_custom_schema.json": self.buildings_custom_schema,
+            "electricity_custom_schema.json": self.electricity_custom_schema,
         }
         for filename, data in json_files.items():
             self._dump_json(filename, self.map_directory, data)

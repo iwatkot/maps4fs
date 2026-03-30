@@ -36,7 +36,10 @@ class Layer:
     indoor: bool = False
     merge_into: str | None = None
     building_category: str | None = None
+    electricity_category: str | None = None
+    electricity_radius: float | None = None
     external: bool = False
+    extended: bool = False
     road_texture: str | None = None
     save_tags: bool = False
 

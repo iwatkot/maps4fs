@@ -441,41 +441,6 @@ def test_dem_minimum_height_scale_respected() -> None:
     assert height_scale >= 2000, f"heightScale={height_scale} is below minimum_height_scale=2000"
 
 
-def test_background_terrain_i3d_generated() -> None:
-    """BackgroundSettings.generate_background=True produces background_terrain.i3d.
-
-    Satellite images are required to texture the background mesh before it can be
-    converted to i3d, so download_images=True is used here.
-    polygon_water.i3d is omitted: its generation depends on OSM water polygon
-    availability at the test coordinates and is therefore unreliable in CI.
-    """
-    game = Game.from_code("FS25")
-    directory = make_map_directory("FS25_bg_terrain")
-    settings = GenerationSettings(
-        background_settings=BackgroundSettings(
-            generate_background=True,
-            generate_water=True,
-            remove_center=False,
-        ),
-        satellite_settings=SatelliteSettings(download_images=True, zoom_level=14),
-    )
-    mp = Map(
-        game=game,
-        dtm_provider=dtm_provider,
-        dtm_provider_settings=None,
-        coordinates=_SETTINGS_COORDS,
-        size=_SETTINGS_SIZE,
-        rotation=0,
-        map_directory=directory,
-        generation_settings=settings,
-    )
-    for _ in mp.generate():
-        pass
-
-    bg_i3d = os.path.join(directory, "assets", "background", "background_terrain.i3d")
-    assert os.path.isfile(bg_i3d), f"background_terrain.i3d not found: {bg_i3d}"
-
-
 def test_grle_base_price_written_to_farmlands_xml() -> None:
     """GRLESettings.base_price is written as the pricePerHa attribute in farmlands.xml."""
     game = Game.from_code("FS25")

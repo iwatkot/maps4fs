@@ -32,7 +32,7 @@ class TextureOptions:
 
     texture_custom_schema: list[dict[str, Any]] | None = None
     skip_scaling: bool = False
-    channel: Literal["textures", "background"] = "textures"
+    channel: Literal["textures", "background", "extended"] = "textures"
     cap_style: str = "round"
 
 
@@ -679,9 +679,7 @@ class Texture(ImageComponent):
         """Publish drawn info-layer data into map context."""
         ctx = self.map.context
         if self.options.channel == Parameters.TEXTURE_CHANNEL_TEXTURES:
-            ctx.fields = cast(
-                list[list[tuple[int, int]]], info_layer_data.get(Parameters.FIELDS, [])
-            )
+            ctx.fields = cast(list[Any], info_layer_data.get(Parameters.FIELDS, []))
             ctx.buildings = cast(
                 list[list[tuple[int, int]]], info_layer_data.get(Parameters.BUILDINGS, [])
             )
@@ -695,15 +693,59 @@ class Texture(ImageComponent):
             ctx.roads_polylines = cast(
                 list[dict[str, Any]], info_layer_data.get(Parameters.ROADS_POLYLINES, [])
             )
+            ctx.electricity_lines_polylines = cast(
+                list[dict[str, Any]],
+                info_layer_data.get(Parameters.ELECTRICITY_LINES_POLYLINES, []),
+            )
+            ctx.electricity_poles_points = cast(
+                list[dict[str, Any]],
+                info_layer_data.get(Parameters.ELECTRICITY_POLES_POINTS, []),
+            )
             ctx.water_polylines = cast(
                 list[dict[str, Any]], info_layer_data.get(Parameters.WATER_POLYLINES, [])
             )
             self.logger.debug(
-                "Map context populated: %d fields, %d buildings, %d roads, %d water polylines.",
+                "Map context populated: %d fields, %d buildings, %d roads, %d electricity lines, %d electricity poles, %d water polylines.",
                 len(ctx.fields),
                 len(ctx.buildings),
                 len(ctx.roads_polylines),
+                len(ctx.electricity_lines_polylines),
+                len(ctx.electricity_poles_points),
                 len(ctx.water_polylines),
+            )
+            return
+
+        if self.options.channel == Parameters.TEXTURE_CHANNEL_EXTENDED:
+            shift_pixels = self._extended_channel_shift_pixels()
+            ctx.extended_buildings = self._shift_polygon_entries(
+                cast(list[Any], info_layer_data.get(Parameters.BUILDINGS, [])),
+                shift_pixels,
+            )
+            ctx.extended_roads_polylines = self._shift_polyline_entries(
+                cast(list[dict[str, Any]], info_layer_data.get(Parameters.ROADS_POLYLINES, [])),
+                shift_pixels,
+            )
+            ctx.extended_electricity_lines_polylines = self._shift_polyline_entries(
+                cast(
+                    list[dict[str, Any]],
+                    info_layer_data.get(Parameters.ELECTRICITY_LINES_POLYLINES, []),
+                ),
+                shift_pixels,
+            )
+            ctx.extended_electricity_poles_points = self._shift_point_entries(
+                cast(
+                    list[dict[str, Any]],
+                    info_layer_data.get(Parameters.ELECTRICITY_POLES_POINTS, []),
+                ),
+                shift_pixels,
+            )
+            self.logger.debug(
+                "Extended context populated: %d buildings, %d roads, %d electricity lines, %d electricity poles (shift=%d).",
+                len(ctx.extended_buildings),
+                len(ctx.extended_roads_polylines),
+                len(ctx.extended_electricity_lines_polylines),
+                len(ctx.extended_electricity_poles_points),
+                shift_pixels,
             )
             return
 
@@ -718,6 +760,112 @@ class Texture(ImageComponent):
             len(ctx.background_water),
             len(ctx.background_water_polylines),
         )
+
+    def _extended_channel_shift_pixels(self) -> int:
+        """Return center-alignment shift from extended to base rotated canvas."""
+        delta_rotated = self.map_rotated_size - self.map.rotated_size
+        if delta_rotated <= 0:
+            return 0
+        return int(round((delta_rotated / 2) * self.map.size_scale))
+
+    def _shift_polyline_entries(
+        self,
+        entries: list[dict[str, Any]],
+        shift_pixels: int,
+    ) -> list[dict[str, Any]]:
+        """Shift polyline entry coordinates by a fixed pixel delta along both axes."""
+        if shift_pixels == 0:
+            return [dict(entry) for entry in entries if isinstance(entry, dict)]
+
+        shifted_entries: list[dict[str, Any]] = []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+
+            points = entry.get(Parameters.POINTS)
+            shifted_points: list[tuple[int, int]] = []
+            if isinstance(points, list):
+                for point in points:
+                    if not isinstance(point, (list, tuple)) or len(point) < 2:
+                        continue
+                    shifted_points.append(
+                        (int(point[0]) - shift_pixels, int(point[1]) - shift_pixels)
+                    )
+
+            shifted_entry = dict(entry)
+            shifted_entry[Parameters.POINTS] = shifted_points
+            shifted_entries.append(shifted_entry)
+        return shifted_entries
+
+    def _shift_polygon_entries(
+        self,
+        entries: list[Any],
+        shift_pixels: int,
+    ) -> list[Any]:
+        """Shift polygon entries by a fixed pixel delta along both axes."""
+        if shift_pixels == 0:
+            return [dict(entry) if isinstance(entry, dict) else entry for entry in entries]
+
+        shifted_entries: list[Any] = []
+        for entry in entries:
+            if isinstance(entry, dict):
+                points = entry.get(Parameters.POINTS)
+                if not isinstance(points, list):
+                    continue
+
+                shifted_entry = dict(entry)
+                shifted_entry[Parameters.POINTS] = self._shift_points_list(points, shift_pixels)
+
+                holes = entry.get(Parameters.HOLES)
+                if isinstance(holes, list):
+                    shifted_entry[Parameters.HOLES] = [
+                        self._shift_points_list(hole, shift_pixels)
+                        for hole in holes
+                        if isinstance(hole, list)
+                    ]
+
+                shifted_entries.append(shifted_entry)
+                continue
+
+            if isinstance(entry, list):
+                shifted_entries.append(self._shift_points_list(entry, shift_pixels))
+
+        return shifted_entries
+
+    @staticmethod
+    def _shift_points_list(points: list[Any], shift_pixels: int) -> list[tuple[int, int]]:
+        """Shift one list of 2D points."""
+        shifted_points: list[tuple[int, int]] = []
+        for point in points:
+            if not isinstance(point, (list, tuple)) or len(point) < 2:
+                continue
+            shifted_points.append((int(point[0]) - shift_pixels, int(point[1]) - shift_pixels))
+        return shifted_points
+
+    def _shift_point_entries(
+        self,
+        entries: list[dict[str, Any]],
+        shift_pixels: int,
+    ) -> list[dict[str, Any]]:
+        """Shift point entry coordinates by a fixed pixel delta along both axes."""
+        if shift_pixels == 0:
+            return [dict(entry) for entry in entries if isinstance(entry, dict)]
+
+        shifted_entries: list[dict[str, Any]] = []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            point = entry.get(Parameters.POINT)
+            if not isinstance(point, (list, tuple)) or len(point) < 2:
+                continue
+
+            shifted_entry = dict(entry)
+            shifted_entry[Parameters.POINT] = (
+                int(point[0]) - shift_pixels,
+                int(point[1]) - shift_pixels,
+            )
+            shifted_entries.append(shifted_entry)
+        return shifted_entries
 
     def _draw_layer(
         self, layer: Layer, info_layer_data: dict[str, list[Any]], layer_image: np.ndarray
@@ -737,14 +885,18 @@ class Texture(ImageComponent):
             raise RuntimeError("OSM pipeline is not initialized. Call process() first.")
 
         is_fields = layer.info_layer == Parameters.FIELDS
-        for polygon, osm_tags, geom_type in self.osm_pipeline.polygons(
+        for polygon, holes, osm_tags, geom_type in self.osm_pipeline.polygons(
             tags, layer.width, is_fields
         ):
             if not len(polygon) > 2:
                 self.logger.debug("Skipping polygon with less than 3 points.")
                 continue
-            self._append_info_layer_entry(layer, polygon, osm_tags, geom_type, info_layer_data)
-            self._fill_layer_polygon(layer, layer_image, polygon)
+            self._append_info_layer_entry(
+                layer, polygon, holes, osm_tags, geom_type, info_layer_data
+            )
+            self._fill_layer_polygon(layer, layer_image, polygon, holes)
+
+        self._add_points(layer, tags, info_layer_data, layer_image)
 
     def _resolve_layer_tags(self, layer: Layer) -> dict[str, str | list[str] | bool] | None:
         """Resolve OSM tags for a layer, honoring precise-tags setting."""
@@ -760,6 +912,7 @@ class Texture(ImageComponent):
         self,
         layer: Layer,
         polygon: np.ndarray,
+        holes: list[np.ndarray],
         osm_tags: dict[str, Any],
         geom_type: str,
         info_layer_data: dict[str, list[Any]],
@@ -773,8 +926,18 @@ class Texture(ImageComponent):
             return
 
         scaled_points = self.np_array_to_scaled_points(polygon, self.map.size_scale)
+        scaled_holes = [self.np_array_to_scaled_points(hole, self.map.size_scale) for hole in holes]
         entry: Any
-        if layer.save_tags:
+        if layer.info_layer == Parameters.FIELDS:
+            entry = {
+                Parameters.POINTS: scaled_points,
+                Parameters.IS_FIELD: True,
+            }
+            if scaled_holes:
+                entry[Parameters.HOLES] = scaled_holes
+            if layer.save_tags:
+                entry[Parameters.TAGS] = osm_tags
+        elif layer.save_tags:
             entry = {Parameters.POINTS: scaled_points, Parameters.TAGS: osm_tags}
         else:
             entry = scaled_points
@@ -782,13 +945,19 @@ class Texture(ImageComponent):
         info_layer_data[layer.info_layer].append(entry)
 
     def _fill_layer_polygon(
-        self, layer: Layer, layer_image: np.ndarray, polygon: np.ndarray
+        self,
+        layer: Layer,
+        layer_image: np.ndarray,
+        polygon: np.ndarray,
+        holes: list[np.ndarray],
     ) -> None:
         """Fill one polygon into layer image if layer is visible."""
         if layer.invisible:
             return
         try:
             cv2.fillPoly(layer_image, [polygon], color=255)
+            if holes:
+                cv2.fillPoly(layer_image, holes, color=0)
         except Exception as e:
             self.logger.warning("Error drawing polygon: %s.", repr(e))
 
@@ -799,24 +968,62 @@ class Texture(ImageComponent):
             layer (Layer): Layer with textures and tags.
             info_layer_data (dict[list[list[int]]]): Dictionary to store info layer data.
         """
-        linestring_infolayers = [Parameters.ROADS, Parameters.WATER]
+        linestring_infolayers = [
+            Parameters.ROADS,
+            Parameters.WATER,
+            Parameters.ELECTRICITY_LINES,
+        ]
 
         if layer.info_layer in linestring_infolayers:
             if self.osm_pipeline is None:
                 raise RuntimeError("OSM pipeline is not initialized. Call process() first.")
 
-            if layer.tags is None:
+            tags = self._resolve_layer_tags(layer)
+            if tags is None:
                 return
 
-            for linestring, _ in self.osm_pipeline.linestrings(layer.tags):
+            for linestring, osm_tags in self.osm_pipeline.linestrings(tags):
                 linestring = self.scale_point_tuples(linestring, self.map.size_scale)
                 linestring_entry = {
                     Parameters.POINTS: linestring,
-                    Parameters.TAGS: str(layer.tags),
+                    Parameters.TAGS: osm_tags if layer.save_tags else str(tags),
                     Parameters.WIDTH: layer.width,
                     Parameters.ROAD_TEXTURE: layer.road_texture,
+                    Parameters.ELECTRICITY_CATEGORY: layer.electricity_category,
+                    Parameters.ELECTRICITY_RADIUS: layer.electricity_radius,
                 }
                 info_layer_data[f"{layer.info_layer}_polylines"].append(linestring_entry)
+
+    def _add_points(
+        self,
+        layer: Layer,
+        tags: dict[str, str | list[str] | bool],
+        info_layer_data: dict[str, list[Any]],
+        layer_image: np.ndarray,
+    ) -> None:
+        """Adds point features to info layer data and optionally draws them."""
+        if not layer.info_layer:
+            return
+
+        if self.osm_pipeline is None:
+            raise RuntimeError("OSM pipeline is not initialized. Call process() first.")
+
+        for point, osm_tags in self.osm_pipeline.points(tags):
+            scaled_point = self.scale_point_tuples([point], self.map.size_scale)[0]
+            point_entry = {
+                Parameters.POINT: scaled_point,
+                Parameters.TAGS: osm_tags if layer.save_tags else str(tags),
+            }
+            info_layer_data[f"{layer.info_layer}_points"].append(point_entry)
+
+            if layer.invisible:
+                continue
+
+            radius = max(1, int(layer.width or 1))
+            try:
+                cv2.circle(layer_image, point, radius=radius, color=255, thickness=-1)
+            except Exception as e:
+                self.logger.warning("Error drawing point: %s.", repr(e))
 
     @monitor_performance
     def dissolve(self) -> None:

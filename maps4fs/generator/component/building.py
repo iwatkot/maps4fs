@@ -295,6 +295,7 @@ class Building(MeshComponent):
     def preprocess(self) -> None:
         """Preprocess and prepare buildings schema and buildings map image."""
         self.info: dict[str, Any] = {}
+        self._extended_border = int(round(Parameters.EXTENDED_DISTANCE * self.map.size_scale))
         if not self._is_generation_enabled():
             return
         if not self._load_buildings_schema():
@@ -456,7 +457,7 @@ class Building(MeshComponent):
         loaded_inputs = self._load_processing_inputs()
         if loaded_inputs is None:
             return
-        buildings_map_image, buildings, not_resized_dem = loaded_inputs
+        buildings_map_image, buildings, not_resized_dem, full_dem = loaded_inputs
 
         prepared_document = self._prepare_i3d_targets()
         if prepared_document is None:
@@ -467,6 +468,7 @@ class Building(MeshComponent):
             buildings,
             buildings_map_image,
             not_resized_dem,
+            full_dem,
             files_section,
             buildings_group,
         )
@@ -484,6 +486,7 @@ class Building(MeshComponent):
         buildings: list[dict[str, Any]],
         buildings_map_image: np.ndarray,
         not_resized_dem: np.ndarray,
+        full_dem: np.ndarray | None,
         files_section: ET.Element,
         buildings_group: ET.Element,
     ) -> int:
@@ -498,6 +501,7 @@ class Building(MeshComponent):
                 building_data,
                 buildings_map_image,
                 not_resized_dem,
+                full_dem,
                 files_section,
                 buildings_group,
                 used_building_files,
@@ -514,6 +518,7 @@ class Building(MeshComponent):
         building_data: dict[str, Any],
         buildings_map_image: np.ndarray,
         not_resized_dem: np.ndarray,
+        full_dem: np.ndarray | None,
         files_section: ET.Element,
         buildings_group: ET.Element,
         used_building_files: dict[str, int],
@@ -525,6 +530,7 @@ class Building(MeshComponent):
             building_data,
             buildings_map_image,
             not_resized_dem,
+            full_dem,
         )
         if placement is None:
             return False, file_id_counter, node_id_counter
@@ -571,7 +577,7 @@ class Building(MeshComponent):
 
     def _load_processing_inputs(
         self,
-    ) -> tuple[np.ndarray, list[dict[str, Any]], np.ndarray] | None:
+    ) -> tuple[np.ndarray, list[dict[str, Any]], np.ndarray, np.ndarray | None] | None:
         """Load and validate all required inputs before building placement starts."""
         if not hasattr(self, "buildings_map_path") or not os.path.isfile(self.buildings_map_path):
             self.logger.warning(
@@ -592,7 +598,9 @@ class Building(MeshComponent):
 
         self.logger.debug("Buildings map categories file found, processing...")
 
-        buildings = self.get_infolayer_data(Parameters.TEXTURES, Parameters.BUILDINGS)
+        buildings = self.get_infolayer_data(Parameters.EXTENDED, Parameters.BUILDINGS)
+        if not buildings:
+            buildings = self.get_infolayer_data(Parameters.TEXTURES, Parameters.BUILDINGS)
         if not buildings:
             self.logger.warning("Buildings data not found in textures info layer.")
             return None
@@ -602,8 +610,17 @@ class Building(MeshComponent):
             self.logger.warning("Not resized DEM not found.")
             return None
 
+        full_dem = self._load_full_dem_image()
+
         self.logger.debug("Found %d building entries to process.", len(buildings))
-        return buildings_map_image, buildings, not_resized_dem
+        return buildings_map_image, buildings, not_resized_dem, full_dem
+
+    def _load_full_dem_image(self) -> np.ndarray | None:
+        """Load full DEM image used to sample heights outside playable map bounds."""
+        full_dem_path = self.map.context.dem_path
+        if not full_dem_path or not os.path.isfile(full_dem_path):
+            return None
+        return cv2.imread(full_dem_path, cv2.IMREAD_UNCHANGED)
 
     def _prepare_i3d_targets(self) -> tuple[XmlDocument, ET.Element, ET.Element] | None:
         """Open map I3D XML and return document sections required for building placement."""
@@ -625,6 +642,7 @@ class Building(MeshComponent):
         building_data: dict[str, Any],
         buildings_map_image: np.ndarray,
         not_resized_dem: np.ndarray,
+        full_dem: np.ndarray | None,
     ) -> BuildingPlacement | None:
         """Build placement candidate from source polygon, tags, category map and DEM."""
         building = building_data.get(Parameters.POINTS)
@@ -635,7 +653,9 @@ class Building(MeshComponent):
 
         try:
             fitted_building = self.fit_object_into_bounds(
-                polygon_points=building, angle=self.rotation
+                polygon_points=building,
+                angle=self.rotation,
+                border=-self._extended_border,
             )
         except ValueError as e:
             self.logger.debug(
@@ -646,8 +666,6 @@ class Building(MeshComponent):
 
         center_point = np.mean(fitted_building, axis=0).astype(int)
         x, y = map(int, center_point)
-        x = int(np.clip(x, 0, buildings_map_image.shape[1] - 1))
-        y = int(np.clip(y, 0, buildings_map_image.shape[0] - 1))
         self.logger.debug("Center point of building polygon: (%d, %d)", x, y)
 
         category = self._resolve_building_category(building_osm_tags, buildings_map_image, x, y)
@@ -662,17 +680,7 @@ class Building(MeshComponent):
         )
 
         x_center, y_center = self.top_left_coordinates_to_center((x, y))
-        try:
-            z = self.get_z_coordinate_from_dem(not_resized_dem, x, y)
-        except Exception as e:
-            self.logger.warning(
-                "Failed to get Z coordinate from DEM at (%d, %d) with error: %s. Using default height %d.",
-                x,
-                y,
-                e,
-                Parameters.DEFAULT_HEIGHT,
-            )
-            z = Parameters.DEFAULT_HEIGHT
+        z = self._resolve_building_height(not_resized_dem, full_dem, x, y)
 
         self.logger.debug(
             "World coordinates for building: x=%.3f, y=%.3f, z=%.3f",
@@ -693,6 +701,43 @@ class Building(MeshComponent):
             z=z,
         )
 
+    def _resolve_building_height(
+        self,
+        not_resized_dem: np.ndarray,
+        full_dem: np.ndarray | None,
+        x: int,
+        y: int,
+    ) -> float:
+        """Resolve ground elevation from full DEM when available, fallback to map DEM."""
+        try:
+            if full_dem is not None:
+                full_x, full_y = self._to_full_dem_coordinates(full_dem, not_resized_dem, x, y)
+                return self.get_z_coordinate_from_dem(full_dem, full_x, full_y)
+            return self.get_z_coordinate_from_dem(not_resized_dem, x, y)
+        except Exception as e:
+            self.logger.warning(
+                "Failed to get Z coordinate from DEM at (%d, %d) with error: %s. Using default height %d.",
+                x,
+                y,
+                e,
+                Parameters.DEFAULT_HEIGHT,
+            )
+            return Parameters.DEFAULT_HEIGHT
+
+    @staticmethod
+    def _to_full_dem_coordinates(
+        full_dem: np.ndarray,
+        not_resized_dem: np.ndarray,
+        x: int,
+        y: int,
+    ) -> tuple[int, int]:
+        """Convert map-space pixel coordinates into full-DEM pixel coordinates."""
+        full_h, full_w = full_dem.shape[:2]
+        map_h, map_w = not_resized_dem.shape[:2]
+        offset_x = max(0, (full_w - map_w) // 2)
+        offset_y = max(0, (full_h - map_h) // 2)
+        return x + offset_x, y + offset_y
+
     def _resolve_building_category(
         self,
         building_osm_tags: dict[str, Any] | None,
@@ -710,6 +755,15 @@ class Building(MeshComponent):
             )
             if category:
                 return category
+
+        height, width = buildings_map_image.shape[:2]
+        if x < 0 or y < 0 or x >= width or y >= height:
+            self.logger.debug(
+                "Building center (%d, %d) is outside playable category map; using default category.",
+                x,
+                y,
+            )
+            return Parameters.DEFAULT_BUILDING_CATEGORY
 
         pixel_value = int(buildings_map_image[y, x])
         self.logger.debug("Pixel value at center point: %s", pixel_value)

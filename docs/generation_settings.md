@@ -26,11 +26,22 @@ DEM ceiling value is used to add padding in the DEM above the highest elevation 
 
 ### Water Depth
 **Units:** Meters
-Water depth value will be subtracted from the DEM image, making the water deeper. The pixel value used for this is calculated based on the heightScale value for your map.
+Water depth controls how much the generator deepens terrain in water areas. The value is converted to DEM pixel units using your map `heightScale`, then applied with a shoreline-to-center depth profile (instead of a hard vertical cut).
 
 ![Water Depth Example](https://github.com/user-attachments/assets/22b99071-3169-4c02-9425-1e9fec0e27ec)
 
-⚠️ **Note:** This image represents the difference when using low quality DEM data where there's no data about the water depth. If you're using high quality DEM data, you don't need to use this setting, or it will break the terrain.
+✅ **Recommended:** This setting is useful with **all** DTM providers, including high-quality DEM sources. Start with conservative values and increase gradually.
+
+### Water Bank Steepness
+**Units:** Integer value (`1` to `5`)
+Controls how quickly depth transitions from shoreline to deep water:
+- `1` = smooth, wide banks
+- `3` = balanced profile (default)
+- `5` = steep, step-like banks
+
+Use this together with **Water Depth**:
+- Increase **Water Depth** to make channels/lakes deeper.
+- Increase **Water Bank Steepness** to make sides steeper without changing the nominal depth target.
 
 ### Add Foundations
 If enabled, the terrain under buildings will be flattened to their average height.
@@ -63,7 +74,7 @@ If enabled, the water plane files will be generated. You can turn it off if you 
 
 ### Water Blurriness
 **Units:** Integer value
-Used to reduce the roughness of the water planes. The higher the value, the more flat the surface of the water planes will be. However, too high values can lead to the water planes mesh not matching the terrain.
+Controls smoothing for water-related terrain shaping and generated water surfaces. Higher values produce wider, softer shoreline transitions; lower values produce tighter, sharper transitions.
 
 ![Water Blurriness Example](https://i.postimg.cc/2jn8zgpP/water-blurriness.png)
 
@@ -75,7 +86,9 @@ If enabled, the terrain under roads will be flattened. Do not use this option wi
 ⚠️ **Note:** This image represents the difference when using low quality DEM data with resolution of 30 meters per pixel. If you're using high quality DEM data, do not use this feature, as it may lead to unexpected results.
 
 ### Flatten Water
-If enabled, the water bottom will be set to a shared average height across generated water areas. This option is suitable for maps with water surfaces that don't differ too much in height. Do not use this option if your map terrain contains big hills or mountains, as it may lead to worse results.
+If enabled, water bottoms are smoothed and normalized while preserving broad elevation trends across each water area. This helps stabilize noisy or uneven bathymetry and improves generated polygon/polyline water mesh quality.
+
+✅ **Recommended:** Use this option in most workflows and with all DTM providers (including HQ providers), especially when water bottoms contain artifacts or sharp spikes.
 
 ### Remove Center
 If enabled, the playable region (map terrain) will be removed from the background terrain. By default, it's set to True.
@@ -142,6 +155,25 @@ If enabled, the tool will add trees to the map in areas defined as forests in th
 - Create custom regional identifiers for fictional areas
 
 ⚠️ **Limits**: Maximum 3 characters (letters or numbers). Longer strings will be truncated.
+
+### Displacement Layer Max Height
+**Units:** Height value in meters
+**Range:** `0.0` to `1.0`
+This value updates the `maxHeight` attribute of the `DisplacementLayer` in `map.i3d`. In practice, it controls how strong the terrain ground deformation can be. Higher values allow deeper visible ground deformation, including more pronounced tractor tracks.
+
+**Default:** `0.2`
+
+**When to increase it**:
+- You want stronger ground deformation
+- You want deeper visible vehicle tracks
+
+**When to keep it low**:
+- You want more stable in-game ground deformation
+- You want to avoid exaggerated or unrealistic track depth
+
+⚠️ **Note:** Higher values can look impressive in screenshots, but they usually do not behave as well during actual gameplay. Use them carefully.
+
+⚠️ **Technical Note:** This setting only changes the I3D displacement layer limit. It does not rescale the DEM itself.
 
 ### Forest Density
 **Units:** Meters between trees
@@ -235,6 +267,7 @@ Maps4FS can export your complete settings configuration as `generation_settings.
         "water_blurriness": 20
     },
     "I3DSettings": {
+        "displacement_layer_max_height": 0.2,
         "forest_density": 8,
         "tree_limit": 50000
     }

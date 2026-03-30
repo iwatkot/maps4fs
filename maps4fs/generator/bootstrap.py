@@ -151,6 +151,19 @@ class Bootstrap:
                                 zipf.write(file_path, arcname)
             _logger.debug("Finished processing directory: %s", fs_dir_name)
 
+        # Handle any top-level directories non-conforming to "fs*" pattern (e.g. "common").
+        other_dirs = [
+            d
+            for d in os.listdir(repo_dir)
+            if os.path.isdir(os.path.join(repo_dir, d)) and not d.startswith("fs")
+        ]
+        for other_dir_name in other_dirs:
+            # Copy directories as-is without zipping, since they likely contain shared assets.
+            other_dir_path = os.path.join(repo_dir, other_dir_name)
+            _logger.debug("Copying non-fs directory %s to templates directory", other_dir_name)
+            template_dir_path = os.path.join(output_dir, other_dir_name)
+            shutil.copytree(other_dir_path, template_dir_path, dirs_exist_ok=True)
+
     @staticmethod
     def ensure_templates() -> None:
         """Ensure templates directory exists and is populated.

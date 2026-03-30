@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, cast
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from maps4fs.generator.bootstrap import Bootstrap
 from maps4fs.generator.constants import Parameters
@@ -36,6 +36,8 @@ class DEMSettings(SettingsModel):
         plateau (int): plateau height.
         ceiling (int): ceiling height.
         water_depth (int): water depth.
+        water_bank_steepness (int): shoreline steepness profile level for water depth
+            transition (1=smoothest, 5=steepest).
     """
 
     adjust_terrain_to_ground_level: bool = True
@@ -46,6 +48,7 @@ class DEMSettings(SettingsModel):
     water_depth: int = 0
     blur_radius: int = 3
     add_foundations: bool = False
+    water_bank_steepness: int = Field(default=3, ge=1, le=5)
 
 
 class BackgroundSettings(SettingsModel):
@@ -58,8 +61,8 @@ class BackgroundSettings(SettingsModel):
         remove_center (bool): remove the center of the background terrain.
             It will be used to remove the center of the map where the player starts.
         flatten_roads (bool): if True, roads will be flattened in the DEM data.
-        flatten_water (bool): if True, the bottom of the water resources will be flattened
-            to the average height of the water resources.
+        flatten_water (bool): if True, smooth and flatten water bottoms while preserving
+            broad elevation changes across the water area.
     """
 
     generate_background: bool = False
@@ -109,6 +112,8 @@ class I3DSettings(SettingsModel):
         add_reversed_splines (bool): if True, reversed splines will be added to the map.
         field_splines (bool): if True, splines will be added to the fields.
         license_plate_prefix (str): prefix for the license plates.
+        displacement_layer_max_height (float): displacement layer maximum height value written
+            to map.i3d.
     """
 
     add_trees: bool = True
@@ -123,6 +128,7 @@ class I3DSettings(SettingsModel):
     license_plate_prefix: str = "M4S"
 
     self_clear: bool = False
+    displacement_layer_max_height: float = Field(default=0.2, ge=0.0, le=1.0)
 
 
 class TextureSettings(SettingsModel):

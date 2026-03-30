@@ -19,8 +19,8 @@ class MapContext:
     """
 
     # ---- Populated by Texture component ----
-    # Polygon point lists (pixel coordinates on the scaled canvas)
-    fields: list[list[tuple[int, int]]] = field(default_factory=list)
+    # Polygon records for fields (either plain point lists or dicts with holes metadata).
+    fields: list[Any] = field(default_factory=list)
     buildings: list[list[tuple[int, int]]] = field(default_factory=list)
     farmyards: list[list[tuple[int, int]]] = field(default_factory=list)
     forest: list[list[tuple[int, int]]] = field(default_factory=list)
@@ -28,7 +28,15 @@ class MapContext:
 
     # Polyline dicts: {"points": [...], "tags": "...", "width": N, "road_texture": "..."}
     roads_polylines: list[dict[str, Any]] = field(default_factory=list)
+    electricity_lines_polylines: list[dict[str, Any]] = field(default_factory=list)
+    electricity_poles_points: list[dict[str, Any]] = field(default_factory=list)
     water_polylines: list[dict[str, Any]] = field(default_factory=list)
+
+    # Extended-distance variants used to continue linear assets beyond map edge.
+    extended_buildings: list[Any] = field(default_factory=list)
+    extended_roads_polylines: list[dict[str, Any]] = field(default_factory=list)
+    extended_electricity_lines_polylines: list[dict[str, Any]] = field(default_factory=list)
+    extended_electricity_poles_points: list[dict[str, Any]] = field(default_factory=list)
 
     # Layer objects from Texture component — used by later components to query layer metadata
     # (e.g. usage, area_type, building_category).  Typed as Any to avoid circular imports.

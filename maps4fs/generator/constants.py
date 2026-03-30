@@ -19,6 +19,7 @@ class Paths:
 
     # ---- Directory roots ------------------------------------------------
     TEMPLATES_DIR = os.path.join(os.getcwd(), "templates")
+    SHARED_DIR = os.path.join(TEMPLATES_DIR, "shared")
     EXECUTABLES_DIR = os.path.join(os.getcwd(), "executables")
     DEFAULTS_DIR = os.path.join(os.getcwd(), "defaults")
     LOCALE_DIR = os.path.join(os.getcwd(), "locale")
@@ -61,8 +62,8 @@ class Paths:
     @staticmethod
     def get_map_bounds_file_paths() -> tuple[str, str] | None:
         """Return paths to map_bounds.i3d and map_bounds.i3d.shapes, or None if missing."""
-        i3d_path = os.path.join(Paths.TEMPLATES_DIR, f"{Paths.MAP_BOUNDS_FILENAME}.i3d")
-        shapes_path = os.path.join(Paths.TEMPLATES_DIR, f"{Paths.MAP_BOUNDS_FILENAME}.i3d.shapes")
+        i3d_path = os.path.join(Paths.SHARED_DIR, f"{Paths.MAP_BOUNDS_FILENAME}.i3d")
+        shapes_path = os.path.join(Paths.SHARED_DIR, f"{Paths.MAP_BOUNDS_FILENAME}.i3d.shapes")
         if all(os.path.isfile(p) for p in (i3d_path, shapes_path)):
             return i3d_path, shapes_path
         return None
@@ -100,22 +101,33 @@ class Parameters:
     BUILDINGS = "buildings"
     TEXTURES = "textures"
     BACKGROUND = "background"
+    EXTENDED = "extended"
     FOREST = "forest"
     ROADS = "roads"
     ROADS_POLYLINES = "roads_polylines"
+    ELECTRICITY_LINES = "electricity_lines"
+    ELECTRICITY_LINES_POLYLINES = "electricity_lines_polylines"
+    ELECTRICITY_POLES = "electricity_poles"
+    ELECTRICITY_POLES_POINTS = "electricity_poles_points"
     WATER_POLYLINES = "water_polylines"
     WATER = "water"
     FARMYARDS = "farmyards"
 
+    POINT = "point"
     POINTS = "points"
+    HOLES = "holes"
     TAGS = "tags"
+    IS_FIELD = "is_field"
     WIDTH = "width"
     ROAD_TEXTURE = "road_texture"
+    ELECTRICITY_CATEGORY = "electricity_category"
+    ELECTRICITY_RADIUS = "electricity_radius"
     DRAIN = "drain"
 
     # ---- Texture channels / runtime keys -------------------------------
     TEXTURE_CHANNEL_TEXTURES = "textures"
     TEXTURE_CHANNEL_BACKGROUND = "background"
+    TEXTURE_CHANNEL_EXTENDED = "extended"
     OSM_REQUESTS_TIMEOUT = 10
     OSM_PREFETCH_WORKERS = 3
 
@@ -137,11 +149,22 @@ class Parameters:
 
     # ---- Map geometry ---------------------------------------------------
     BACKGROUND_DISTANCE = 2048
+    EXTENDED_DISTANCE = 512
     RESIZE_FACTOR = 8
 
     # ---- Terrain layer names --------------------------------------------
     DECIMATED_BACKGROUND = "decimated_background"
     BACKGROUND_TERRAIN = "background_terrain"
+    BACKGROUND_TERRAIN_PARTS = 4
+    BACKGROUND_TERRAIN_PART_PREFIX = "background_terrain_part_"
+    BACKGROUND_TERRAIN_GROUP_NAME = "backgroundTerrain"
+    BACKGROUND_TREES = "background_trees"
+    BACKGROUND_TREES_CATEGORY = "trees"
+    BACKGROUND_TREES_ASSET_PREFIX = "background_trees_"
+    BACKGROUND_TREES_GROUP_NAME = "backgroundTrees"
+    BACKGROUND_TREES_FOREST_STEP = 24
+    BACKGROUND_TREES_RING_BUFFER = 0
+    BACKGROUND_TREES_CLIP_DISTANCE = 1200
     POLYGON_WATER = "polygon_water"
     POLYLINE_WATER = "polyline_water"
     HEIGHT_SCALE = "heightScale"
@@ -303,8 +326,21 @@ class Parameters:
 
     # ---- Road Z-offset --------------------------------------------------
     PATCH_Z_OFFSET = -0.001
+    ROAD_MESH_DEFAULT_Z_OFFSET = 0.05
     ROAD_INTERSECTION_TOLERANCE = 1.0
     ROAD_PATCH_SEGMENT_PADDING = 2
+    ROAD_SURFACE_MIN_WIDTH = 0.5
+    ROAD_TEXTURE_SOURCE_MIN_WIDTH = 1.0
+    ROAD_TRIANGULATION_MIN_AREA = 1e-5
+    ROAD_TRIANGLE_FALLBACK_SOURCE_COUNT = 6
+    ROAD_TRIANGLE_DIRECTION_BASE_SCORE = 0.5
+    ROAD_TRIANGLE_DIRECTION_WEIGHT = 0.75
+    ROAD_NETWORK_SAMPLING_MIN = 2.0
+    ROAD_NETWORK_SAMPLING_MAX = 8.0
+    ROAD_POINT_KEY_PRECISION = 1000
+    ROAD_TANGENT_EPSILON_MAX = 1.0
+    ROAD_TANGENT_EPSILON_RATIO = 0.01
+    ROAD_TANGENT_EPSILON_MIN = 0.01
     ROAD_TEXTURE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".dds")
     ROAD_MESH_FILENAME_PREFIX = "roads_"
     ASSETS_DIRECTORY = "assets"
@@ -376,6 +412,7 @@ class Parameters:
     MESH_CENTROID_Z = "mesh_centroid_z"
 
     BINARY_I3D_SUFFIX = "_binary.i3d"
+    REMOVE_RAW_I3D_AFTER_BINARY_CONVERSION = True
     BACKGROUND_ASSET_DIRNAME = "background"
     WATER_ASSET_DIRNAME = "water"
     MAP_BOUNDS_DIRNAME = "map_bounds"
@@ -418,6 +455,12 @@ class Parameters:
     BUILDINGS_DIRECTORY = "buildings"
     BUILDING_CATEGORIES_FILENAME = "building_categories.png"
     DEFAULT_BUILDING_CATEGORY = "residential"
+
+    # ---- Electricity constants ------------------------------------------
+    ELECTRICITY_GROUP_NAME = "electricity"
+    ELECTRICITY_STARTING_NODE_ID = 210000
+    ELECTRICITY_STARTING_FILE_ID = 170000
+    DEFAULT_ELECTRICITY_CATEGORY = "default"
 
     AREA_TYPES = {
         "residential": 10,

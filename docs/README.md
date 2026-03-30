@@ -21,6 +21,7 @@ Farming Simulator 22 support was fully removed starting from Maps4FS 3.0.0 and M
 🛤️ **Road Splines** - Create detailed 3D path networks for vehicles
 🏘️ **Smart Building Placement** - Automatically place buildings in appropriate areas
 🌲 **Procedural Elements** - Automatically place trees, foliage, and objects
+⚡ **Electricity Networks** - Generate powerlines, poles, towers, and road-facing street lights
 🗺️ **Overview Maps** - Generate in-game minimap displays
 🏡 **Familiar Landscapes** - Bring recognizable locations into the game
 
@@ -55,6 +56,7 @@ Most users love to explore these areas first:
 - **[DEM (Elevation)](dem.md)** - Make mountains, valleys, and rolling hills feel real
 - **[Fields & Farmlands](fields.md)** - Design the heart of your farming operation
 - **[Textures](textures.md)** - Give your map authentic visual character
+- **[Electricity](electricity.md)** - Configure powerlines and street lights with schema-driven placement
 - **[Background Terrain](background_terrain.md)** - Create stunning distant landscapes
 
 ## Get Inspired

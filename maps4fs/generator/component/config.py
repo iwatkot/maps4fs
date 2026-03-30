@@ -337,11 +337,8 @@ class Config(ImageComponent):
             # 1. Update licensePlatesPL.xml with license plate prefix.
             self._update_license_plates_xml(license_plates_directory, license_plates_prefix)
 
-            # 2. Update licensePlatesPL.i3d texture reference depending on EU format.
-            self._update_license_plates_i3d(license_plates_directory, eu_format)
-
-            # 3. Generate texture with country code.
-            self._generate_license_plate_texture(
+            # 2. Generate texture with country code and convert it to DDS.
+            texture_filename = self._generate_license_plate_texture(
                 license_plates_directory,
                 country_code,
                 eu_format,
@@ -350,6 +347,9 @@ class Config(ImageComponent):
                 Parameters.COUNTRY_CODE_RIGHT,
                 Parameters.COUNTRY_CODE_BOTTOM,
             )
+
+            # 3. Update licensePlatesPL.i3d texture reference to the generated DDS.
+            self._update_license_plates_i3d(license_plates_directory, texture_filename)
 
             self.logger.debug("License plates updated successfully")
         except Exception as e:
@@ -465,12 +465,16 @@ class Config(ImageComponent):
             "Updated licensePlatesPL.xml with license plate prefix: %s", license_plate_prefix
         )
 
-    def _update_license_plates_i3d(self, license_plates_directory: str, eu_format: bool) -> None:
+    def _update_license_plates_i3d(
+        self,
+        license_plates_directory: str,
+        texture_filename: str,
+    ) -> None:
         """Update licensePlatesPL.i3d texture reference.
 
         Arguments:
             license_plates_directory (str): Directory where license plates i3d is located.
-            eu_format (bool): Whether to use EU format texture.
+            texture_filename (str): Texture filename to reference from the I3D.
 
         Raises:
             FileNotFoundError: If the license plates i3d file is not found.
@@ -493,17 +497,12 @@ class Config(ImageComponent):
         if file_element is None:
             raise ValueError("Could not find File element with fileId='12'")
 
-        # 3. Update filename to point to local map directory (relative path).
-        if eu_format:
-            filename = self.game.config.lp_i3d_eu_texture_filename
-        else:
-            filename = self.game.config.lp_i3d_default_texture_filename
-
-        file_element.set("filename", filename)
+        # 3. Update filename to point to the converted local DDS texture.
+        file_element.set("filename", texture_filename)
 
         # 4. Save the updated i3d XML.
         doc.save()
-        self.logger.debug("Updated licensePlatesPL.i3d texture reference to: %s", filename)
+        self.logger.debug("Updated licensePlatesPL.i3d texture reference to: %s", texture_filename)
 
     @monitor_performance
     def _generate_license_plate_texture(
@@ -515,8 +514,8 @@ class Config(ImageComponent):
         top: int,
         right: int,
         bottom: int,
-    ) -> None:
-        """Generate license plate texture with country code.
+    ) -> str:
+        """Generate license plate texture with country code and convert it to DDS.
 
         Arguments:
             license_plates_directory (str): Directory where license plates textures are located.
@@ -530,6 +529,9 @@ class Config(ImageComponent):
         Raises:
             FileNotFoundError: If the base texture file is not found.
             ValueError: If there is an error generating the texture.
+
+        Returns:
+            str: DDS texture filename referenced by the license plate I3D.
         """
         # 1. Define the path to the base texture depending on EU format.
         if eu_format:
@@ -677,6 +679,25 @@ class Config(ImageComponent):
             country_code,
             texture_path,
         )
+
+        dds_texture_filename = self._get_dds_texture_filename(texture_filename)
+        dds_texture_path = os.path.join(license_plates_directory, dds_texture_filename)
+        self.convert_png_to_dds(texture_path, dds_texture_path)
+        self.logger.debug("Converted license plate texture to DDS: %s", dds_texture_path)
+        return dds_texture_filename
+
+    @staticmethod
+    def _get_dds_texture_filename(texture_filename: str) -> str:
+        """Return the DDS filename for a given texture filename.
+
+        Arguments:
+            texture_filename (str): Source texture filename.
+
+        Returns:
+            str: Same stem with a DDS extension.
+        """
+        texture_stem, _ = os.path.splitext(texture_filename)
+        return f"{texture_stem}.dds"
 
     def fit_text_in_rotated_box(
         self,

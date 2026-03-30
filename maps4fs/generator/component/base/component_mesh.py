@@ -546,15 +546,23 @@ class MeshComponent(Component):
             mtl_file.write("illum 1\n")
             mtl_file.write(f"map_Kd {texture_filename}\n")
 
-    def to_i3d_binary(self, raw_i3d_path: str, binary_i3d_path: str, **kwargs) -> None:
+    def to_i3d_binary(
+        self,
+        raw_i3d_path: str,
+        binary_i3d_path: str,
+        remove_raw_i3d: bool = Parameters.REMOVE_RAW_I3D_AFTER_BINARY_CONVERSION,
+        **kwargs,
+    ) -> None:
         """Convert the raw XML i3d file to the Giants binary i3d format using the i3dConverter.exe tool.
 
         Generates a raw XML i3d file first, then converts it to the Giants binary i3d
         format in-place by running: i3dConverter.exe -in <file> -out <file>
 
         Arguments:
-            raw_i3d_path (str): Path to the raw XML i3d file
-            binary_i3d_path (str): Path to save the converted binary i3d file
+            raw_i3d_path (str): Path to the raw XML i3d file.
+            binary_i3d_path (str): Path to save the converted binary i3d file.
+            remove_raw_i3d (bool): Whether to remove the raw XML I3D after a successful
+                conversion when the raw and binary paths differ.
 
         Raises:
             RuntimeError: If the converter executable is not found or returns a non-zero exit code.
@@ -586,6 +594,11 @@ class MeshComponent(Component):
                 f"i3dConverter.exe failed (exit code {result.returncode}). "
                 f"stdout: {result.stdout.strip()} | stderr: {result.stderr.strip()}"
             )
+
+        raw_abs_path = os.path.abspath(raw_i3d_path)
+        binary_abs_path = os.path.abspath(binary_i3d_path)
+        if remove_raw_i3d and raw_abs_path != binary_abs_path and os.path.isfile(raw_i3d_path):
+            os.remove(raw_i3d_path)
 
     def mesh_to_i3d(
         self,
@@ -1003,7 +1016,10 @@ class MeshComponent(Component):
         dem_image: np.ndarray,
     ) -> tuple[list[tuple[float, float, float]], list[tuple[float, float]]]:
         """Build one linestring strip as paired left/right vertices plus UVs."""
-        coords = list(linestring.coords)
+        coords = self._densify_linestring_coords(
+            linestring,
+            target_segment_length=Parameters.SEGMENT_LENGTH,
+        )
         if len(coords) < 2:
             return [], []
 
@@ -1034,6 +1050,28 @@ class MeshComponent(Component):
             strip_uvs.extend([(0.0, v_coord_raw), (1.0, v_coord_raw)])
 
         return strip_vertices, strip_uvs
+
+    def _densify_linestring_coords(
+        self,
+        linestring: shapely.LineString,
+        target_segment_length: float,
+    ) -> list[tuple[float, float]]:
+        """Sample points along a linestring at near-constant spacing."""
+        coords = list(linestring.coords)
+        if len(coords) < 2:
+            return coords
+
+        road_length = float(linestring.length)
+        if road_length <= target_segment_length:
+            return [(float(x), float(y)) for x, y in coords]
+
+        # Dense centerline sampling preserves local DEM bumps on long straight roads.
+        num_steps = max(1, int(np.ceil(road_length / target_segment_length)))
+        distances = np.linspace(0.0, road_length, num_steps + 1)
+        return [
+            (float(linestring.interpolate(distance).x), float(linestring.interpolate(distance).y))
+            for distance in distances
+        ]
 
     def _perpendicular_direction(
         self,

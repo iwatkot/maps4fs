@@ -444,10 +444,16 @@ class Component:
         ("textures", "fields"): "fields",
         ("textures", "buildings"): "buildings",
         ("textures", "roads_polylines"): "roads_polylines",
+        ("textures", "electricity_lines_polylines"): "electricity_lines_polylines",
+        ("textures", "electricity_poles_points"): "electricity_poles_points",
         ("textures", "water_polylines"): "water_polylines",
         ("textures", "farmyards"): "farmyards",
         ("textures", "forest"): "forest",
         ("textures", "water"): "water",
+        ("extended", "buildings"): "extended_buildings",
+        ("extended", "roads_polylines"): "extended_roads_polylines",
+        ("extended", "electricity_lines_polylines"): "extended_electricity_lines_polylines",
+        ("extended", "electricity_poles_points"): "extended_electricity_poles_points",
         ("background", "water"): "background_water",
         ("background", "water_polylines"): "background_water_polylines",
     }
@@ -526,13 +532,13 @@ class Component:
         """
         return self.map_size if self.map.output_size is None else self.map.output_size
 
-    def get_z_coordinate_from_dem(self, not_resized_dem: np.ndarray, x: int, y: int) -> float:
+    def get_z_coordinate_from_dem(self, not_resized_dem: np.ndarray, x: float, y: float) -> float:
         """Gets the Z coordinate from the DEM image for the given coordinates.
 
         Arguments:
             not_resized_dem (np.ndarray): The not resized DEM image.
-            x (int): The x coordinate.
-            y (int): The y coordinate.
+            x (float): The x coordinate.
+            y (float): The y coordinate.
 
         Returns:
             float: The Z coordinate.

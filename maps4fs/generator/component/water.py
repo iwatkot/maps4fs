@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from copy import deepcopy
+from typing import Any, cast
 
 import cv2
 import numpy as np
@@ -12,10 +13,7 @@ import trimesh
 from trimesh import Trimesh
 
 from maps4fs.generator.component.base.component_image import ImageComponent
-from maps4fs.generator.component.base.component_mesh import (
-    LineSurfaceEntry,
-    MeshComponent,
-)
+from maps4fs.generator.component.base.component_mesh import MeshComponent
 from maps4fs.generator.component.texture import Texture, TextureOptions
 from maps4fs.generator.monitor import monitor_performance
 from maps4fs.generator.settings import Parameters
@@ -52,7 +50,7 @@ class Water(MeshComponent, ImageComponent):
         self.map.context.water_mask_path = self.water_mask_path
         self.map.context.dem_not_subtracted_path = self.not_substracted_path
 
-        self.flatten_water_to: int | None = None
+        self.flattened_water_dem: np.ndarray | None = None
 
     @monitor_performance
     def process(self) -> None:
@@ -85,7 +83,7 @@ class Water(MeshComponent, ImageComponent):
 
         background_layers = []
         for layer in layers_schema:
-            if layer.get("background") is True:
+            if layer.get("background") is True and layer.get("area_water") is True:
                 layer_copy = deepcopy(layer)
                 layer_copy["count"] = 1
                 layer_copy["name"] = f"{layer['name']}_background"
@@ -128,6 +126,366 @@ class Water(MeshComponent, ImageComponent):
         cv2.imwrite(self.water_mask_path, background_image)
         self.logger.debug("Water mask created: %s", self.water_mask_path)
 
+    @staticmethod
+    def _normalize_kernel_size(kernel_size: int, minimum: int = 3) -> int:
+        """Return a valid odd kernel size for Gaussian blur.
+
+        Arguments:
+            kernel_size (int): Requested kernel size.
+            minimum (int, optional): Minimum allowed kernel size.
+
+        Returns:
+            int: Odd kernel size greater than or equal to ``minimum``.
+        """
+        try:
+            kernel_size = int(kernel_size)
+        except (TypeError, ValueError):
+            kernel_size = minimum
+
+        kernel_size = max(kernel_size, minimum)
+        if kernel_size % 2 == 0:
+            kernel_size += 1
+        return kernel_size
+
+    @staticmethod
+    def _build_water_mask(
+        image_mask: np.ndarray,
+        mask_by: int = 255,
+        erode_kernel: int | None = 3,
+        erode_iter: int | None = 1,
+    ) -> np.ndarray:
+        """Build and optionally erode boolean water mask.
+
+        Arguments:
+            image_mask (np.ndarray): Source mask image.
+            mask_by (int, optional): Pixel value identifying water.
+            erode_kernel (int | None, optional): Optional erosion kernel size.
+            erode_iter (int | None, optional): Optional erosion iteration count.
+
+        Returns:
+            np.ndarray: Boolean mask where True indicates water area.
+        """
+        mask = image_mask == mask_by
+        if erode_kernel and erode_iter:
+            mask = cv2.erode(
+                mask.astype(np.uint8),
+                np.ones((erode_kernel, erode_kernel), np.uint8),
+                iterations=erode_iter,
+            ).astype(bool)
+        return mask
+
+    @classmethod
+    def _smooth_dem_by_mask(
+        cls,
+        dem_image: np.ndarray,
+        water_mask: np.ndarray,
+        blur_radius: int,
+    ) -> np.ndarray:
+        """Smooth DEM over water mask while preserving broad elevation trends.
+
+        Arguments:
+            dem_image (np.ndarray): DEM image to smooth.
+            water_mask (np.ndarray): Boolean water mask.
+            blur_radius (int): Gaussian blur radius.
+
+        Returns:
+            np.ndarray: Float DEM with masked smoothing applied.
+        """
+        dem_float = dem_image.astype(np.float32)
+        if not np.any(water_mask):
+            return dem_float
+
+        kernel_size = cls._normalize_kernel_size(blur_radius)
+        mask_float = water_mask.astype(np.float32)
+
+        weighted_dem = cv2.GaussianBlur(
+            dem_float * mask_float,
+            (kernel_size, kernel_size),
+            sigmaX=0,
+            sigmaY=0,
+        )
+        weights = cv2.GaussianBlur(
+            mask_float,
+            (kernel_size, kernel_size),
+            sigmaX=0,
+            sigmaY=0,
+        )
+
+        smoothed = dem_float.copy()
+        valid_weights = weights > 1e-6
+        smoothed[valid_weights] = weighted_dem[valid_weights] / weights[valid_weights]
+        return smoothed
+
+    @classmethod
+    def build_flattened_water_dem(
+        cls,
+        dem_image: np.ndarray,
+        water_mask: np.ndarray,
+        subtract_by: int,
+        blur_radius: int,
+    ) -> np.ndarray:
+        """Return a DEM with smoothed, depth-shifted elevations inside water mask.
+
+        Arguments:
+            dem_image (np.ndarray): Input DEM image.
+            water_mask (np.ndarray): Boolean water mask.
+            subtract_by (int): Depth offset to subtract in DEM units.
+            blur_radius (int): Blur radius used before depth shift.
+
+        Returns:
+            np.ndarray: DEM with flattened/depth-shifted water bottom.
+        """
+        smoothed_dem = cls._smooth_dem_by_mask(dem_image, water_mask, blur_radius)
+        lowered = smoothed_dem - float(subtract_by)
+
+        if np.issubdtype(dem_image.dtype, np.integer):
+            dtype_info = np.iinfo(cast(Any, dem_image.dtype))
+            lowered = np.clip(lowered, dtype_info.min, dtype_info.max)
+
+        flattened_dem = dem_image.copy()
+        flattened_dem[water_mask] = lowered[water_mask].astype(dem_image.dtype)
+        return flattened_dem
+
+    @classmethod
+    def _build_water_depth_factor(
+        cls,
+        water_mask: np.ndarray,
+        transition_scale: int,
+        blur_kernel: int,
+        steepness_level: int,
+    ) -> np.ndarray:
+        """Build smooth depth factor map from shoreline (0) to deep water (approaches 1).
+
+        Arguments:
+            water_mask (np.ndarray): Boolean water mask.
+            transition_scale (int): Base transition width in pixels.
+            blur_kernel (int): Kernel size used to smooth factor map.
+            steepness_level (int): User steepness level in range [1, 5].
+
+        Returns:
+            np.ndarray: Float factor map in range [0, 1].
+        """
+        if not np.any(water_mask):
+            return np.zeros(water_mask.shape, dtype=np.float32)
+
+        mask_u8 = water_mask.astype(np.uint8)
+        inside_distance = cv2.distanceTransform(mask_u8, cv2.DIST_L2, 5).astype(np.float32)
+
+        level = int(np.clip(steepness_level, 1, 5))
+        scale_multiplier_map = {
+            1: 1.8,
+            2: 1.35,
+            3: 1.0,
+            4: 0.65,
+            5: 0.35,
+        }
+        scale = max(1.0, float(transition_scale) * scale_multiplier_map.get(level, 1.0))
+
+        # Exponential profile gives smooth banks and rounded bottoms.
+        factor = 1.0 - np.exp(-inside_distance / scale)
+        factor = np.clip(factor, 0.0, 1.0)
+
+        # Normalize depth factor inside water so narrow channels can still reach configured depth.
+        valid = water_mask & (factor > 0)
+        if np.any(valid):
+            reference = float(np.percentile(factor[valid], 95))
+            if reference > 1e-6:
+                factor[valid] = np.clip(factor[valid] / reference, 0.0, 1.0)
+
+        # User-friendly steepness control using an S-curve remap.
+        steepness_map = {
+            1: 0.7,
+            2: 0.9,
+            3: 1.0,
+            4: 1.45,
+            5: 2.2,
+        }
+        curve_power = steepness_map.get(level, 1.0)
+        eps = 1e-6
+        x = np.clip(factor, eps, 1.0 - eps)
+        shaped = np.power(x, curve_power)
+        inv_shaped = np.power(1.0 - x, curve_power)
+        factor = shaped / (shaped + inv_shaped)
+        factor = np.clip(factor, 0.0, 1.0)
+
+        kernel_size = cls._normalize_kernel_size(blur_kernel)
+        if kernel_size > 1:
+            factor = cv2.GaussianBlur(factor, (kernel_size, kernel_size), sigmaX=0, sigmaY=0)
+
+        factor[~water_mask] = 0.0
+        return factor
+
+    @staticmethod
+    def _blend_dem_to_target(
+        source_dem: np.ndarray,
+        target_dem: np.ndarray,
+        factor: np.ndarray,
+        mask: np.ndarray,
+    ) -> np.ndarray:
+        """Blend source DEM towards target DEM by per-pixel factor inside the given mask.
+
+        Arguments:
+            source_dem (np.ndarray): Original DEM image.
+            target_dem (np.ndarray): Target DEM image after full depth adjustment.
+            factor (np.ndarray): Blend factor per pixel in range [0, 1].
+            mask (np.ndarray): Boolean mask where blending is applied.
+
+        Returns:
+            np.ndarray: Blended DEM with source dtype preserved.
+        """
+        result = source_dem.astype(np.float32)
+        source_float = source_dem.astype(np.float32)
+        target_float = target_dem.astype(np.float32)
+
+        result[mask] = source_float[mask] * (1.0 - factor[mask]) + target_float[mask] * factor[mask]
+
+        if np.issubdtype(source_dem.dtype, np.integer):
+            dtype_info = np.iinfo(cast(Any, source_dem.dtype))
+            result = np.clip(result, dtype_info.min, dtype_info.max)
+
+        return result.astype(source_dem.dtype)
+
+    @staticmethod
+    def _make_geometry_valid(geometry: object) -> object:
+        """Return a valid geometry, attempting lightweight repairs when needed.
+
+        Arguments:
+            geometry (object): Shapely geometry-like object.
+
+        Returns:
+            object: Repaired geometry when possible, otherwise original geometry.
+        """
+        if geometry is None:
+            return geometry
+
+        if hasattr(geometry, "is_empty") and geometry.is_empty:
+            return geometry
+
+        try:
+            if hasattr(geometry, "is_valid") and not geometry.is_valid:
+                if hasattr(shapely, "make_valid"):
+                    geometry = shapely.make_valid(geometry)
+                else:
+                    buffer_method = getattr(geometry, "buffer", None)
+                    if callable(buffer_method):
+                        geometry = buffer_method(0)
+        except Exception:
+            return geometry
+
+        return geometry
+
+    @staticmethod
+    def _extract_polygon_parts(geometry: object) -> list[shapely.Polygon]:
+        """Extract non-empty polygon parts from Polygon/MultiPolygon/GeometryCollection.
+
+        Arguments:
+            geometry (object): Shapely geometry-like object.
+
+        Returns:
+            list[shapely.Polygon]: Valid non-empty polygon parts.
+        """
+        polygon_cls = shapely.geometry.Polygon
+        multi_polygon_cls = shapely.geometry.MultiPolygon
+        geometry_collection_cls = shapely.geometry.GeometryCollection
+
+        candidates: list[shapely.Polygon] = []
+        if isinstance(geometry, polygon_cls):
+            candidates = [geometry]
+        elif isinstance(geometry, multi_polygon_cls):
+            candidates = [geom for geom in geometry.geoms if isinstance(geom, polygon_cls)]
+        elif isinstance(geometry, geometry_collection_cls):
+            candidates = [geom for geom in geometry.geoms if isinstance(geom, polygon_cls)]
+
+        result: list[shapely.Polygon] = []
+        for polygon in candidates:
+            if polygon.is_empty:
+                continue
+            if not polygon.is_valid:
+                try:
+                    polygon = polygon.buffer(0)
+                except Exception:
+                    continue
+            if polygon.is_empty or polygon.area <= 1e-6:
+                continue
+            result.append(polygon)
+
+        return result
+
+    @staticmethod
+    def _triangulate_polygon_2d(poly_2d: shapely.Polygon) -> tuple[np.ndarray, np.ndarray] | None:
+        """Triangulate polygon and keep only triangles that lie inside the polygon.
+
+        Arguments:
+            poly_2d (shapely.Polygon): Polygon to triangulate.
+
+        Returns:
+            tuple[np.ndarray, np.ndarray] | None: Vertices and faces arrays, or None if empty.
+        """
+        triangles = shapely.ops.triangulate(poly_2d)
+        if not triangles:
+            return None
+
+        vertices: list[list[float]] = []
+        faces: list[list[int]] = []
+        vertex_index: dict[tuple[float, float], int] = {}
+        area_ratio_threshold = 0.995
+
+        for triangle in triangles:
+            if triangle.is_empty or triangle.area <= 1e-8:
+                continue
+
+            try:
+                overlap_area = triangle.intersection(poly_2d).area
+            except Exception:
+                continue
+
+            if overlap_area <= 1e-8:
+                continue
+            if overlap_area / triangle.area < area_ratio_threshold:
+                continue
+
+            coords = list(triangle.exterior.coords)[:-1]
+            if len(coords) != 3:
+                continue
+
+            face: list[int] = []
+            for x, y in coords:
+                key = (round(float(x), 6), round(float(y), 6))
+                idx = vertex_index.get(key)
+                if idx is None:
+                    idx = len(vertices)
+                    vertex_index[key] = idx
+                    vertices.append([float(x), float(y)])
+                face.append(idx)
+
+            if len(set(face)) == 3:
+                faces.append(face)
+
+        if not vertices or not faces:
+            return None
+
+        return np.asarray(vertices, dtype=np.float64), np.asarray(faces, dtype=np.int64)
+
+    @staticmethod
+    def _dedupe_linestring_points(
+        points: list[tuple[int, int]] | list[tuple[float, float]],
+    ) -> list[tuple[float, float]]:
+        """Remove consecutive duplicate points from a linestring point sequence.
+
+        Arguments:
+            points (list[tuple[int, int]] | list[tuple[float, float]]): Input point sequence.
+
+        Returns:
+            list[tuple[float, float]]: Point sequence without consecutive duplicates.
+        """
+        deduped: list[tuple[float, float]] = []
+        for x, y in points:
+            current = (float(x), float(y))
+            if deduped and deduped[-1] == current:
+                continue
+            deduped.append(current)
+        return deduped
+
     @monitor_performance
     def subtract_water_depth(self) -> None:
         """Subtract water depth from DEM where polygon-water mask is present."""
@@ -141,38 +499,73 @@ class Water(MeshComponent, ImageComponent):
             self.logger.warning("DEM or water mask could not be read, skipping subtraction.")
             return
 
+        water_mask = water_mask_image == 255
+        if not np.any(water_mask):
+            self.logger.warning("No water pixels found in water mask image.")
+            return
+
+        source_dem = dem_image.copy()
+
         z_scaling_factor: float = (
             self.map.context.mesh_z_scaling_factor
             if self.map.context.mesh_z_scaling_factor is not None
             else 257
         )
-        flatten_to = None
         subtract_by = int(self.map.dem_settings.water_depth * z_scaling_factor)
+        flatten_applied = False
+
+        transition_scale = max(2, int(self.map.background_settings.water_blurriness))
+        steepness_level = getattr(self.map.dem_settings, "water_bank_steepness", 3)
+
+        blur_multiplier_map = {
+            1: 1.6,
+            2: 1.3,
+            3: 1.0,
+            4: 0.75,
+            5: 0.5,
+        }
+        blur_multiplier = blur_multiplier_map.get(int(np.clip(steepness_level, 1, 5)), 1.0)
+        blur_kernel = max(1, int((transition_scale // 2) * blur_multiplier))
+
+        depth_factor = self._build_water_depth_factor(
+            water_mask,
+            transition_scale=transition_scale,
+            blur_kernel=blur_kernel,
+            steepness_level=steepness_level,
+        )
+
+        target_dem = source_dem.copy()
 
         if self.map.background_settings.flatten_water:
             try:
-                if not np.any(water_mask_image == 255):
-                    self.logger.warning("No water pixels found in water mask image.")
-                    return
-                mask = water_mask_image == 255
-                flatten_to = int(np.mean(dem_image[mask]) - subtract_by)
-                self.flatten_water_to = flatten_to
+                target_dem = self.build_flattened_water_dem(
+                    source_dem,
+                    water_mask,
+                    subtract_by=subtract_by,
+                    blur_radius=self.map.background_settings.water_blurriness,
+                )
+                flatten_applied = True
             except Exception as e:
                 self.logger.warning("Error occurred while flattening water: %s", e)
 
-        dem_image = self.subtract_by_mask(
-            dem_image,
-            water_mask_image,
-            subtract_by=subtract_by,
-            flatten_to=flatten_to,
+        if not flatten_applied:
+            lowered = source_dem.astype(np.float32) - float(subtract_by)
+            if np.issubdtype(source_dem.dtype, np.integer):
+                dtype_info = np.iinfo(cast(Any, source_dem.dtype))
+                lowered = np.clip(lowered, dtype_info.min, dtype_info.max)
+            target_dem[water_mask] = lowered[water_mask].astype(source_dem.dtype)
+
+        dem_image = self._blend_dem_to_target(
+            source_dem,
+            target_dem,
+            depth_factor,
+            water_mask,
         )
-        dem_image = self.blur_edges_by_mask(
-            dem_image,
-            water_mask_image,
-            smaller_kernel=3,
-            iterations=5,
-            bigger_kernel=5,
-        )
+
+        if flatten_applied:
+            self.flattened_water_dem = dem_image.copy()
+        else:
+            self.flattened_water_dem = None
 
         cv2.imwrite(self.output_path, dem_image)
         self.logger.debug("Water depth subtracted from DEM data: %s", self.output_path)
@@ -252,14 +645,19 @@ class Water(MeshComponent, ImageComponent):
 
         polygons: list[shapely.Polygon] = []
         for polygon_points in water_polygons:
-            if not polygon_points or len(polygon_points) < 2:
+            if not polygon_points or len(polygon_points) < 3:
                 continue
 
             polygon = shapely.Polygon(polygon_points)
-            if polygon.is_empty or not polygon.is_valid:
+            polygon = self._make_geometry_valid(polygon)
+            polygon_parts = self._extract_polygon_parts(polygon)
+            if not polygon_parts:
                 continue
 
-            polygons.append(polygon.buffer(Parameters.WATER_ADD_WIDTH, quad_segs=4))
+            for polygon_part in polygon_parts:
+                buffered = polygon_part.buffer(Parameters.WATER_ADD_WIDTH, quad_segs=4)
+                buffered = self._make_geometry_valid(buffered)
+                polygons.extend(self._extract_polygon_parts(buffered))
 
         fitted_polygons: list[shapely.Polygon] = []
         for polygon in polygons:
@@ -270,7 +668,9 @@ class Water(MeshComponent, ImageComponent):
                     canvas_size=self.background_size,
                     rotated_canvas_size=self.rotated_size,
                 )
-                fitted_polygons.append(shapely.Polygon(fitted_points))
+                fitted_polygon = shapely.Polygon(fitted_points)
+                fitted_polygon = self._make_geometry_valid(fitted_polygon)
+                fitted_polygons.extend(self._extract_polygon_parts(fitted_polygon))
             except Exception as e:
                 self.logger.debug("Could not fit water polygon into bounds: %s", e)
 
@@ -278,7 +678,10 @@ class Water(MeshComponent, ImageComponent):
             self.logger.warning("No valid polygon water features generated.")
             return
 
-        mesh = self.mesh_from_3d_polygons(fitted_polygons, single_z_value=self.flatten_water_to)
+        dem_override = (
+            self.flattened_water_dem if self.map.background_settings.flatten_water else None
+        )
+        mesh = self.mesh_from_3d_polygons(fitted_polygons, dem_override=dem_override)
         if mesh is None:
             self.logger.warning("No mesh could be created from polygon water features.")
             return
@@ -299,7 +702,7 @@ class Water(MeshComponent, ImageComponent):
             self.logger.warning("Water polylines data not found in background info layer.")
             return
 
-        water_entries: list[LineSurfaceEntry] = []
+        water_polygons: list[shapely.Polygon] = []
         for water_id, water_info in enumerate(water_infos, start=1):
             if not isinstance(water_info, dict):
                 continue
@@ -310,26 +713,49 @@ class Water(MeshComponent, ImageComponent):
                 continue
 
             try:
-                fitted_water = self.fit_object_into_bounds(
+                fitted_water_raw = self.fit_object_into_bounds(
                     linestring_points=points,
                     angle=self.rotation,
                     canvas_size=self.background_size,
                     rotated_canvas_size=self.rotated_size,
                 )
+                fitted_water = self._dedupe_linestring_points(fitted_water_raw)
+                if len(fitted_water) < 2:
+                    continue
+
                 linestring = shapely.LineString(fitted_water)
+                if linestring.is_empty or linestring.length <= 1e-6:
+                    continue
             except ValueError as e:
                 self.logger.debug("Water %s could not be fitted/converted: %s", water_id, e)
                 continue
 
-            width += Parameters.POLYLINE_WATER_WIDTH_EXTENSION
-            water_entries.append(LineSurfaceEntry(linestring=linestring, width=width))
+            try:
+                half_width = float(width) + float(Parameters.POLYLINE_WATER_WIDTH_EXTENSION)
+                if half_width <= 0:
+                    continue
 
-        if not water_entries:
+                buffered = linestring.buffer(
+                    half_width,
+                    cap_style="flat",
+                    join_style="round",
+                    quad_segs=4,
+                )
+            except Exception as e:
+                self.logger.debug("Could not buffer water polyline %s: %s", water_id, e)
+                continue
+
+            buffered = self._make_geometry_valid(buffered)
+            polygon_parts = self._extract_polygon_parts(buffered)
+            if not polygon_parts:
+                self.logger.debug("Buffered water polyline %s yielded no polygon parts.", water_id)
+                continue
+
+            water_polygons.extend(polygon_parts)
+
+        if not water_polygons:
             self.logger.warning("No valid water polylines found in background info layer.")
             return
-
-        interpolated = self.smart_interpolation(water_entries)
-        split_entries = self.split_long_line_surfaces(interpolated)
 
         obj_output_path = os.path.join(
             self.water_directory, Parameters.POLYLINE_WATER_MESH_FILENAME
@@ -340,9 +766,18 @@ class Water(MeshComponent, ImageComponent):
             self.logger.error("Could not read DEM image for polyline water generation.")
             return
 
-        self.create_textured_linestrings_mesh(
-            split_entries, obj_output_path, dem_override=dem_image
-        )
+        polyline_dem_override = dem_image
+        if self.map.background_settings.flatten_water and self.flattened_water_dem is not None:
+            polyline_dem_override = self.flattened_water_dem
+
+        mesh = self.mesh_from_3d_polygons(water_polygons, dem_override=polyline_dem_override)
+        if mesh is None:
+            self.logger.warning("No mesh could be created from polyline water features.")
+            return
+
+        mesh = self.invert_faces(mesh)
+
+        mesh.export(obj_output_path)
 
         mesh = trimesh.load_mesh(obj_output_path, force="mesh", process=False)
         rotation_matrix = trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0])
@@ -369,16 +804,27 @@ class Water(MeshComponent, ImageComponent):
         )
 
     def mesh_from_3d_polygons(
-        self, polygons: list[shapely.Polygon], single_z_value: int | None = None
+        self,
+        polygons: list[shapely.Polygon],
+        dem_override: np.ndarray | None = None,
     ) -> Trimesh | None:
         """Create one mesh from fitted water polygons."""
         all_vertices: list[np.ndarray] = []
         all_faces: list[np.ndarray] = []
         vertex_offset = 0
+        not_resized_dem: np.ndarray | None
 
-        not_resized_dem = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
+        if dem_override is not None:
+            not_resized_dem = dem_override
+        else:
+            not_resized_dem = cv2.imread(self.not_substracted_path, cv2.IMREAD_UNCHANGED)
+            if not_resized_dem is None:
+                self.logger.warning(
+                    "Could not read non-subtracted DEM: %s", self.not_substracted_path
+                )
+                return None
+
         if not_resized_dem is None:
-            self.logger.warning("Could not read non-subtracted DEM: %s", self.not_substracted_path)
             return None
 
         for polygon in polygons:
@@ -389,28 +835,28 @@ class Water(MeshComponent, ImageComponent):
                 [np.array(ring.coords)[:, :2] for ring in polygon.interiors],
             )
 
-            vertices_2d, faces = trimesh.creation.triangulate_polygon(poly_2d)
+            poly_2d = self._make_geometry_valid(poly_2d)
+            polygon_parts = self._extract_polygon_parts(poly_2d)
+            if not polygon_parts:
+                continue
 
-            vertices_3d: list[list[float]] = []
-            for v in vertices_2d:
-                dists = np.linalg.norm(exterior_2d - v[:2], axis=1)
-                idx = np.argmin(dists)
-                if single_z_value is None:
-                    z = self.get_z_coordinate_from_dem(
-                        not_resized_dem,
-                        exterior_coords[idx, 0],
-                        exterior_coords[idx, 1],
-                    )
-                    z = -z
-                else:
-                    z = single_z_value
-                vertices_3d.append([float(v[0]), float(v[1]), float(z)])
-            vertices_3d_np = np.array(vertices_3d)
+            for polygon_part in polygon_parts:
+                triangulated = self._triangulate_polygon_2d(polygon_part)
+                if triangulated is None:
+                    continue
 
-            faces = faces + vertex_offset
-            all_vertices.append(vertices_3d_np)
-            all_faces.append(faces)
-            vertex_offset += len(vertices_3d_np)
+                vertices_2d, faces = triangulated
+
+                vertices_3d: list[list[float]] = []
+                for v in vertices_2d:
+                    z = self.get_z_coordinate_from_dem(not_resized_dem, float(v[0]), float(v[1]))
+                    vertices_3d.append([float(v[0]), float(v[1]), float(-z)])
+                vertices_3d_np = np.array(vertices_3d)
+
+                faces = faces + vertex_offset
+                all_vertices.append(vertices_3d_np)
+                all_faces.append(faces)
+                vertex_offset += len(vertices_3d_np)
 
         if not all_vertices:
             return None

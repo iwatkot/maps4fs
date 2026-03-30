@@ -1,0 +1,37 @@
+name: LOC Badge
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  loc-badge:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install badge dependencies
+        run: sudo apt-get update && sudo apt-get install -y cloc jq
+
+      - name: Generate scoped LOC badge data
+        run: |
+          cloc maps4fs --json --quiet > cloc.json
+          code_lines=$(jq '.Python.code // .SUM.code // 0' cloc.json)
+          mkdir -p badge
+          jq -n \
+            --arg message "$code_lines" \
+            '{schemaVersion: 1, label: "lines", message: $message, color: "blue"}' \
+            > badge/loc.json
+
+      - name: Publish badge JSON
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./badge
+          force_orphan: true
