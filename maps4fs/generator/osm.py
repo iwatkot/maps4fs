@@ -12,7 +12,13 @@ from xml.etree import ElementTree as ET
 import osmnx as ox
 from osmnx._errors import InsufficientResponseError
 from pyproj import Transformer
-from shapely.geometry import GeometryCollection, LineString, MultiPolygon, Point, Polygon
+from shapely.geometry import (
+    GeometryCollection,
+    LineString,
+    MultiPolygon,
+    Point,
+    Polygon,
+)
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import transform, unary_union
 from shapely.validation import make_valid
@@ -41,7 +47,7 @@ _LINEAR_TAGS = {
 _CUT_LINEAR_TAGS = {"highway", "railway", "waterway", "barrier", "power", "aerialway"}
 
 _POINT_HOLE_RADII: dict[tuple[str, str], float] = {
-    ("power", "tower"): 4.0,
+    ("power", "tower"): 8.0,
     ("power", "portal"): 4.0,
     ("power", "pole"): 1.5,
     ("power", "catenary_mast"): 1.5,
@@ -339,7 +345,15 @@ def preprocess(
 
 
 def _parse_nodes(root: ET.Element) -> dict[int, tuple[float, float]]:
-    """Read all node coordinates from OSM XML."""
+    """Read all node coordinates from OSM XML.
+
+    Arguments:
+        root (ET.Element): Root OSM XML element.
+
+    Returns:
+        dict[int, tuple[float, float]]: Mapping of node ids to
+            ``(longitude, latitude)`` coordinates.
+    """
     nodes: dict[int, tuple[float, float]] = {}
     for element in root.findall("node"):
         element_id = element.get("id")
@@ -355,7 +369,14 @@ def _parse_nodes(root: ET.Element) -> dict[int, tuple[float, float]]:
 
 
 def _parse_ways(root: ET.Element) -> dict[int, _WayData]:
-    """Read all ways from OSM XML."""
+    """Read all ways from OSM XML.
+
+    Arguments:
+        root (ET.Element): Root OSM XML element.
+
+    Returns:
+        dict[int, _WayData]: Mapping of way ids to parsed way data.
+    """
     ways: dict[int, _WayData] = {}
     for way_element in root.findall("way"):
         way_id = way_element.get("id")
@@ -378,7 +399,15 @@ def _parse_ways(root: ET.Element) -> dict[int, _WayData]:
 
 
 def _parse_relations(root: ET.Element) -> dict[int, _RelationData]:
-    """Read all relations from OSM XML."""
+    """Read all relations from OSM XML.
+
+    Arguments:
+        root (ET.Element): Root OSM XML element.
+
+    Returns:
+        dict[int, _RelationData]: Mapping of relation ids to parsed
+            relation data.
+    """
     relations: dict[int, _RelationData] = {}
     for relation_element in root.findall("relation"):
         relation_id = relation_element.get("id")
@@ -407,7 +436,15 @@ def _parse_relations(root: ET.Element) -> dict[int, _RelationData]:
 
 
 def _extract_tags(element: ET.Element) -> dict[str, str]:
-    """Extract OSM tag dictionary from an element."""
+    """Extract the tag dictionary from an OSM XML element.
+
+    Arguments:
+        element (ET.Element): XML element that may contain ``tag``
+            children.
+
+    Returns:
+        dict[str, str]: Mapping of tag keys to tag values.
+    """
     tags: dict[str, str] = {}
     for tag in element.findall("tag"):
         key = tag.get("k")
@@ -418,7 +455,15 @@ def _extract_tags(element: ET.Element) -> dict[str, str]:
 
 
 def _count_relation_way_usage(relations: dict[int, _RelationData]) -> dict[int, int]:
-    """Count how many relations reference each way id."""
+    """Count how many relations reference each way id.
+
+    Arguments:
+        relations (dict[int, _RelationData]): Parsed relation data by
+            relation id.
+
+    Returns:
+        dict[int, int]: Mapping of way ids to relation reference count.
+    """
     usage: dict[int, int] = {}
     for relation in relations.values():
         for member_type, member_ref, _ in relation.members:
@@ -433,7 +478,19 @@ def _target_merge_key(
     target_tags: dict[str, OSMTagValue],
     merge_tags: bool,
 ) -> tuple[tuple[str, str], ...]:
-    """Build a merge key from the actual matched tag values."""
+    """Build the merge key for a matched target feature.
+
+    Arguments:
+        feature_tags (dict[str, str]): Actual tags from the matched OSM
+            feature.
+        target_tags (dict[str, OSMTagValue]): Requested target tag filter.
+        merge_tags (bool): Whether list-valued target tags should be
+            normalized to their first configured value.
+
+    Returns:
+        tuple[tuple[str, str], ...]: Normalized merge key used to group
+            compatible target polygons.
+    """
     return tuple(
         (
             key,
@@ -453,7 +510,18 @@ def _normalized_target_tag_value(
     expected_value: OSMTagValue,
     merge_tags: bool,
 ) -> str:
-    """Return the canonical merge/output value for a matched target tag."""
+    """Return the canonical value for a matched target tag.
+
+    Arguments:
+        actual_value (str): Tag value found on the source feature.
+        expected_value (OSMTagValue): Requested value from the target
+            filter.
+        merge_tags (bool): Whether compatible values should collapse to
+            the first configured target value.
+
+    Returns:
+        str: Canonical value used for merge grouping and output tags.
+    """
     if not merge_tags:
         return actual_value
     if isinstance(expected_value, list) and expected_value and actual_value in expected_value:
@@ -462,14 +530,33 @@ def _normalized_target_tag_value(
 
 
 def _output_feature_tags(feature_tags: dict[str, str]) -> dict[str, str]:
-    """Return the source tags that should be preserved on rewritten output."""
+    """Return source tags that should survive rewritten output.
+
+    Arguments:
+        feature_tags (dict[str, str]): Source feature tags.
+
+    Returns:
+        dict[str, str]: Output tag mapping with relation-only helper tags
+            removed.
+    """
     return {key: value for key, value in feature_tags.items() if key != "type"}
 
 
 def _common_output_tags(
     tag_sets: list[dict[str, str]], merge_key: tuple[tuple[str, str], ...]
 ) -> dict[str, str]:
-    """Return tags common to the group, forcing the merge-key tags to survive."""
+    """Return stable output tags for a processed polygon group.
+
+    Arguments:
+        tag_sets (list[dict[str, str]]): Source tag dictionaries from all
+            polygons in the merge group.
+        merge_key (tuple[tuple[str, str], ...]): Normalized tags that must
+            be preserved on the merged output.
+
+    Returns:
+        dict[str, str]: Tag mapping common across the group with merge-key
+            values forced to remain.
+    """
     if not tag_sets:
         return dict(merge_key)
 
@@ -485,7 +572,15 @@ def _common_output_tags(
 
 
 def _matches_tags(feature_tags: dict[str, str], target_tags: dict[str, OSMTagValue]) -> bool:
-    """Return True when feature tags satisfy the provided filter."""
+    """Return whether feature tags satisfy a target filter.
+
+    Arguments:
+        feature_tags (dict[str, str]): Tags from the source OSM feature.
+        target_tags (dict[str, OSMTagValue]): Tag filter to evaluate.
+
+    Returns:
+        bool: True when the feature matches the requested filter.
+    """
     for key, expected_value in target_tags.items():
         actual_value = feature_tags.get(key)
         if actual_value is None:
@@ -506,7 +601,14 @@ def _matches_tags(feature_tags: dict[str, str], target_tags: dict[str, OSMTagVal
 
 
 def _is_area_way(way: _WayData) -> bool:
-    """Heuristically classify whether a way is an area polygon."""
+    """Heuristically classify whether a way should be treated as an area.
+
+    Arguments:
+        way (_WayData): Parsed OSM way.
+
+    Returns:
+        bool: True when the way should be treated as a polygon.
+    """
     if len(way.node_refs) < 4 or way.node_refs[0] != way.node_refs[-1]:
         return False
 
@@ -520,7 +622,16 @@ def _is_area_way(way: _WayData) -> bool:
 
 
 def _way_to_polygon(way: _WayData, nodes: dict[int, tuple[float, float]]) -> Polygon | None:
-    """Build a polygon from a way when possible."""
+    """Build a polygon from an OSM way when possible.
+
+    Arguments:
+        way (_WayData): Parsed OSM way.
+        nodes (dict[int, tuple[float, float]]): Node coordinate mapping.
+
+    Returns:
+        Polygon | None: Polygon geometry for the way, or None when the
+            way cannot be converted into a valid area.
+    """
     if not _is_area_way(way):
         return None
     coordinates = [nodes[node_id] for node_id in way.node_refs if node_id in nodes]
@@ -543,8 +654,14 @@ def _relation_to_polygons(
 ) -> tuple[list[Polygon], set[int]]:
     """Build polygons from a multipolygon relation.
 
+    Arguments:
+        relation (_RelationData): Parsed OSM relation.
+        ways (dict[int, _WayData]): Parsed OSM ways by id.
+        nodes (dict[int, tuple[float, float]]): Node coordinate mapping.
+
     Returns:
-        tuple[list[Polygon], set[int]]: Relation polygons and all way ids referenced by the relation.
+        tuple[list[Polygon], set[int]]: Polygon geometry extracted from the
+            relation and the set of referenced member way ids.
     """
     if relation.tags.get("type") != "multipolygon":
         return [], set()
@@ -590,7 +707,23 @@ def _collect_target_polygons(
     relation_way_usage: dict[int, int],
     merge_tags: bool,
 ) -> tuple[set[int], set[int], set[int], list[_TargetPolygonData]]:
-    """Collect all target polygons plus element ids that should be replaced."""
+    """Collect target polygons and the source elements they replace.
+
+    Arguments:
+        tags (dict[str, OSMTagValue]): Target polygon tag filter.
+        nodes (dict[int, tuple[float, float]]): Node coordinate mapping.
+        ways (dict[int, _WayData]): Parsed OSM ways by id.
+        relations (dict[int, _RelationData]): Parsed OSM relations by id.
+        relation_way_usage (dict[int, int]): Count of how many relations use
+            each way.
+        merge_tags (bool): Whether compatible target tag values should be
+            normalized before grouping.
+
+    Returns:
+        tuple[set[int], set[int], set[int], list[_TargetPolygonData]]:
+            Target way ids, target relation ids, orphaned relation-member way
+            ids to remove, and collected target polygons.
+    """
     target_way_ids: set[int] = set()
     target_relation_ids: set[int] = set()
     target_member_way_ids: set[int] = set()
@@ -630,8 +763,8 @@ def _collect_target_polygons(
         )
 
         for member_way_id in member_way_ids:
-            way = ways.get(member_way_id)
-            if not way or way.tags:
+            member_way = ways.get(member_way_id)
+            if not member_way or member_way.tags:
                 continue
             if relation_way_usage.get(member_way_id, 0) == 1:
                 target_member_way_ids.add(member_way_id)
@@ -647,7 +780,20 @@ def _collect_hole_polygons(
     excluded_way_ids: set[int],
     excluded_relation_ids: set[int],
 ) -> list[Polygon]:
-    """Collect area polygons that should be subtracted from target polygons."""
+    """Collect non-target area polygons that should carve holes.
+
+    Arguments:
+        tags (dict[str, OSMTagValue]): Target polygon tag filter.
+        nodes (dict[int, tuple[float, float]]): Node coordinate mapping.
+        ways (dict[int, _WayData]): Parsed OSM ways by id.
+        relations (dict[int, _RelationData]): Parsed OSM relations by id.
+        excluded_way_ids (set[int]): Way ids that belong to target polygons.
+        excluded_relation_ids (set[int]): Relation ids that belong to target
+            polygons.
+
+    Returns:
+        list[Polygon]: Area polygons that should be subtracted from targets.
+    """
     hole_polygons: list[Polygon] = []
 
     for way_id, way in ways.items():
@@ -677,7 +823,17 @@ def _collect_point_holes(
     tags: dict[str, OSMTagValue],
     nodes: dict[int, tuple[float, float]],
 ) -> list[_PointHoleData]:
-    """Collect point obstacles that should carve circular holes in target polygons."""
+    """Collect point obstacles that should carve circular holes.
+
+    Arguments:
+        root (ET.Element): Root OSM XML element.
+        tags (dict[str, OSMTagValue]): Target polygon tag filter.
+        nodes (dict[int, tuple[float, float]]): Node coordinate mapping.
+
+    Returns:
+        list[_PointHoleData]: Tagged point obstacles with projected hole
+            radii.
+    """
     point_holes: list[_PointHoleData] = []
 
     for node_element in root.findall("node"):
@@ -714,7 +870,14 @@ def _collect_point_holes(
 
 
 def _point_hole_radius(tags: dict[str, str]) -> float:
-    """Return the projected-meter hole radius for tagged point obstacles."""
+    """Return the hole radius for a tagged point obstacle.
+
+    Arguments:
+        tags (dict[str, str]): Tags from a point feature.
+
+    Returns:
+        float: Hole radius in projected meters.
+    """
     best_radius = 0.0
     for key, value in tags.items():
         best_radius = max(best_radius, _POINT_HOLE_RADII.get((key, value), 0.0))
@@ -727,7 +890,19 @@ def _collect_splitter_lines(
     excluded_way_ids: set[int],
     exclude_cut_tags: dict[str, OSMTagValue] | None,
 ) -> list[_SplitterData]:
-    """Collect linear objects that may split target polygons."""
+    """Collect linear objects that may split target polygons.
+
+    Arguments:
+        nodes (dict[int, tuple[float, float]]): Node coordinate mapping.
+        ways (dict[int, _WayData]): Parsed OSM ways by id.
+        excluded_way_ids (set[int]): Way ids that should never be treated as
+            splitters.
+        exclude_cut_tags (dict[str, OSMTagValue] | None): Optional tag filter
+            for linear features that must not cut polygons.
+
+    Returns:
+        list[_SplitterData]: Linear features eligible to cut target polygons.
+    """
     lines: list[_SplitterData] = []
 
     for way_id, way in ways.items():
@@ -771,7 +946,30 @@ def _preprocess_polygons(
     min_part_area: float,
     min_part_width: float,
 ) -> list[Polygon]:
-    """Apply split/merge/hole cleanup, then smooth, inset and remove artifacts."""
+    """Apply projected geometry cleanup to one polygon group.
+
+    Arguments:
+        target_polygons (list[Polygon]): Source polygons for one merge group.
+        hole_polygons (list[Polygon]): Area polygons that should be
+            subtracted from the targets.
+        point_holes (list[_PointHoleData]): Point obstacles that should carve
+            circular holes.
+        splitter_lines (list[_SplitterData]): Linear features that may split
+            the targets.
+        smooth_strength (float): Corner-rounding strength in the [0, 1]
+            range.
+        merge_distance (float): Optional gap-closing merge distance in
+            projected meters.
+        split_width (float): Default splitter half-width in projected meters.
+        shrink_distance (float): Final inward offset in projected meters.
+        narrow_connection_width (float): Width threshold in projected meters
+            for breaking thin bridges.
+        min_part_area (float): Minimum fragment area in square meters.
+        min_part_width (float): Minimum effective fragment width in meters.
+
+    Returns:
+        list[Polygon]: Cleaned output polygons in geographic coordinates.
+    """
     if not target_polygons:
         return []
 
@@ -857,7 +1055,16 @@ def _preprocess_polygons(
 
 
 def _merge_connected_polygons(polygons: list[Polygon], merge_distance: float) -> BaseGeometry:
-    """Merge touching polygons and optionally close tiny gaps when requested."""
+    """Merge touching polygons and optionally bridge tiny gaps.
+
+    Arguments:
+        polygons (list[Polygon]): Polygon geometries in projected meters.
+        merge_distance (float): Optional gap-closing distance in projected
+            meters.
+
+    Returns:
+        BaseGeometry: Merged polygonal geometry.
+    """
     merged = make_valid(unary_union(polygons))
     if merge_distance <= 0:
         return merged
@@ -887,7 +1094,31 @@ def _preprocess_target_polygon_groups(
     min_part_area: float,
     min_part_width: float,
 ) -> list[_ProcessedPolygonData]:
-    """Process targets per matched tag group so tags and merges stay correct."""
+    """Process target polygons per normalized tag group.
+
+    Arguments:
+        target_polygons (list[_TargetPolygonData]): Target polygons paired
+            with output tag metadata.
+        hole_polygons (list[Polygon]): Area polygons that should carve holes.
+        point_holes (list[_PointHoleData]): Point obstacles that should carve
+            holes.
+        splitter_lines (list[_SplitterData]): Linear features that may split
+            polygons.
+        smooth_strength (float): Corner-rounding strength in the [0, 1]
+            range.
+        merge_distance (float): Optional gap-closing merge distance in
+            projected meters.
+        split_width (float): Default splitter half-width in projected meters.
+        shrink_distance (float): Final inward offset in projected meters.
+        narrow_connection_width (float): Width threshold in projected meters
+            for breaking thin bridges.
+        min_part_area (float): Minimum fragment area in square meters.
+        min_part_width (float): Minimum effective fragment width in meters.
+
+    Returns:
+        list[_ProcessedPolygonData]: Processed polygons paired with their
+            surviving output tags.
+    """
     if not target_polygons:
         return []
 
@@ -940,7 +1171,15 @@ def _smooth_polygons(
     polygons: list[Polygon],
     strength: float,
 ) -> list[Polygon]:
-    """Smooth polygons by rounding corners without densifying straight edges."""
+    """Round polygon corners without densifying straight edges.
+
+    Arguments:
+        polygons (list[Polygon]): Projected polygon geometries.
+        strength (float): Corner-rounding strength in the [0, 1] range.
+
+    Returns:
+        list[Polygon]: Smoothed polygon geometries.
+    """
     bounded_strength = max(0.0, min(1.0, strength))
     if bounded_strength <= 0:
         return polygons
@@ -971,7 +1210,16 @@ def _split_polygons_at_narrow_connections(
     polygons: list[Polygon],
     connection_width: float,
 ) -> list[Polygon]:
-    """Split polygons where a very narrow bridge is the only connection."""
+    """Split polygons where a narrow bridge is the only connection.
+
+    Arguments:
+        polygons (list[Polygon]): Projected polygon geometries.
+        connection_width (float): Width threshold in projected meters.
+
+    Returns:
+        list[Polygon]: Original polygons or the split lobes when a narrow
+            connector is detected.
+    """
     if connection_width <= 0 or not polygons:
         return polygons
 
@@ -998,7 +1246,16 @@ def _split_polygon_at_narrow_connection(
     polygon: Polygon,
     connection_width: float,
 ) -> list[Polygon]:
-    """Break a polygon into lobes when a thin connector falls below the threshold."""
+    """Break one polygon into lobes when a thin connector is detected.
+
+    Arguments:
+        polygon (Polygon): Projected polygon geometry.
+        connection_width (float): Width threshold in projected meters.
+
+    Returns:
+        list[Polygon]: Split polygon lobes, or the original polygon when no
+            narrow connector is found.
+    """
     if polygon.is_empty or connection_width <= 0:
         return [polygon]
 
@@ -1044,7 +1301,16 @@ def _split_polygon_at_narrow_connection(
 
 
 def _inset_polygons(polygons: list[Polygon], shrink_distance: float) -> list[Polygon]:
-    """Apply a small inward offset while keeping tiny polygons from disappearing."""
+    """Apply a small inward offset while preserving meaningful polygons.
+
+    Arguments:
+        polygons (list[Polygon]): Projected polygon geometries.
+        shrink_distance (float): Inward offset distance in projected meters.
+
+    Returns:
+        list[Polygon]: Inset polygons, with originals retained when the inset
+            would collapse the geometry.
+    """
     if shrink_distance <= 0 or not polygons:
         return polygons
 
@@ -1070,7 +1336,16 @@ def _cleanup_cut_artifacts(
     min_part_area: float,
     min_part_width: float,
 ) -> list[Polygon]:
-    """Remove tiny detached fragments and narrow slivers in projected meters."""
+    """Remove tiny detached fragments and narrow slivers.
+
+    Arguments:
+        polygons (list[Polygon]): Projected polygon geometries.
+        min_part_area (float): Minimum fragment area in square meters.
+        min_part_width (float): Minimum effective width in projected meters.
+
+    Returns:
+        list[Polygon]: Cleaned polygon fragments that satisfy the thresholds.
+    """
     if not polygons:
         return []
 
@@ -1110,7 +1385,19 @@ def _smooth_polygon(
     min_corner_deviation: float,
     segment_count: int,
 ) -> Polygon:
-    """Smooth a single polygon ring-by-ring by rounding only actual corners."""
+    """Smooth one polygon ring-by-ring by rounding actual corners.
+
+    Arguments:
+        polygon (Polygon): Projected polygon geometry.
+        radius (float): Maximum rounding radius in projected meters.
+        min_corner_deviation (float): Minimum angular deviation in radians
+            required before a corner is rounded.
+        segment_count (int): Base number of segments used to interpolate the
+            rounded corner arc.
+
+    Returns:
+        Polygon: Smoothed polygon geometry.
+    """
     if polygon.is_empty:
         return polygon
 
@@ -1144,7 +1431,19 @@ def _smooth_ring(
     min_corner_deviation: float,
     segment_count: int,
 ) -> list[tuple[float, float]]:
-    """Round only meaningful corners while leaving straight edges untouched."""
+    """Round meaningful corners on a ring while leaving straight edges alone.
+
+    Arguments:
+        coordinates (list[tuple[float, float]]): Closed ring coordinates in
+            projected meters.
+        radius (float): Maximum rounding radius in projected meters.
+        min_corner_deviation (float): Minimum angular deviation in radians
+            required before a corner is rounded.
+        segment_count (int): Base number of interpolation segments per corner.
+
+    Returns:
+        list[tuple[float, float]]: Smoothed closed ring coordinates.
+    """
     if len(coordinates) < 4 or radius <= 0:
         return coordinates
 
@@ -1241,7 +1540,18 @@ def _quadratic_bezier_points(
     end_point: tuple[float, float],
     segment_count: int,
 ) -> list[tuple[float, float]]:
-    """Create interpolated points for a rounded corner curve."""
+    """Create interpolated points for a rounded corner curve.
+
+    Arguments:
+        start_point (tuple[float, float]): Curve start coordinate.
+        control_point (tuple[float, float]): Quadratic Bezier control point.
+        end_point (tuple[float, float]): Curve end coordinate.
+        segment_count (int): Number of interpolation segments.
+
+    Returns:
+        list[tuple[float, float]]: Interpolated curve coordinates including
+            the start and end points.
+    """
     point_count = max(2, segment_count)
     curve_points: list[tuple[float, float]] = []
     for index in range(point_count + 1):
@@ -1262,7 +1572,16 @@ def _quadratic_bezier_points(
 
 
 def _build_local_transformers(reference_geometry: BaseGeometry) -> tuple[Transformer, Transformer]:
-    """Build forward/backward transformers for a local UTM zone."""
+    """Build forward and backward transformers for a local UTM zone.
+
+    Arguments:
+        reference_geometry (BaseGeometry): Geometry used to choose the local
+            projected CRS.
+
+    Returns:
+        tuple[Transformer, Transformer]: Forward and backward CRS
+            transformers.
+    """
     centroid = reference_geometry.centroid
     epsg_code = _utm_epsg_for_coordinate(centroid.x, centroid.y)
     forward = Transformer.from_crs("EPSG:4326", f"EPSG:{epsg_code}", always_xy=True)
@@ -1271,18 +1590,42 @@ def _build_local_transformers(reference_geometry: BaseGeometry) -> tuple[Transfo
 
 
 def _utm_epsg_for_coordinate(longitude: float, latitude: float) -> int:
-    """Return the UTM EPSG code for a lon/lat coordinate."""
+    """Return the UTM EPSG code for a geographic coordinate.
+
+    Arguments:
+        longitude (float): Longitude in degrees.
+        latitude (float): Latitude in degrees.
+
+    Returns:
+        int: EPSG code for the local UTM zone.
+    """
     zone = min(max(int((longitude + 180.0) // 6.0) + 1, 1), 60)
     return (32600 if latitude >= 0 else 32700) + zone
 
 
 def _transform_geometry(geometry: BaseGeometry, transformer: Transformer) -> BaseGeometry:
-    """Transform geometry coordinates using the provided CRS transformer."""
+    """Transform geometry coordinates using a CRS transformer.
+
+    Arguments:
+        geometry (BaseGeometry): Geometry to transform.
+        transformer (Transformer): Coordinate transformer to apply.
+
+    Returns:
+        BaseGeometry: Transformed geometry.
+    """
     return transform(transformer.transform, geometry)
 
 
 def _transform_polygons(polygons: list[Polygon], transformer: Transformer) -> list[Polygon]:
-    """Transform polygon coordinates and flatten valid polygonal output."""
+    """Transform polygons and flatten the resulting polygonal geometry.
+
+    Arguments:
+        polygons (list[Polygon]): Polygon geometries to transform.
+        transformer (Transformer): Coordinate transformer to apply.
+
+    Returns:
+        list[Polygon]: Valid transformed polygons.
+    """
     transformed_polygons: list[Polygon] = []
     for polygon in polygons:
         transformed = make_valid(_transform_geometry(polygon, transformer))
@@ -1291,11 +1634,20 @@ def _transform_polygons(polygons: list[Polygon], transformer: Transformer) -> li
 
 
 def _splitter_buffer_width(tags: dict[str, str], default_split_width: float) -> float:
-    """Return a road-aware splitter half-width in projected meters."""
+    """Return a feature-aware splitter half-width in projected meters.
+
+    Arguments:
+        tags (dict[str, str]): Tags from the linear splitter feature.
+        default_split_width (float): Default half-width in projected meters.
+
+    Returns:
+        float: Splitter half-width in projected meters.
+    """
     if default_split_width <= 0:
         return 0.0
 
     highway_value = tags.get("highway")
+    width = default_split_width
     if highway_value:
         highway_widths = {
             "path": 1.5,
@@ -1312,23 +1664,30 @@ def _splitter_buffer_width(tags: dict[str, str], default_split_width: float) -> 
             "trunk": 7.0,
             "motorway": 8.0,
         }
-        return max(default_split_width, highway_widths.get(highway_value, 4.0))
+        width = max(width, highway_widths.get(highway_value, 4.0))
+    elif "railway" in tags:
+        width = max(width, 5.0)
+    elif "waterway" in tags:
+        width = max(width, 3.0)
+    elif "barrier" in tags:
+        width = max(width, 1.5)
+    elif "aerialway" in tags:
+        width = max(width, 1.5)
+    elif "power" in tags:
+        width = max(width, 2.0)
 
-    if "railway" in tags:
-        return max(default_split_width, 5.0)
-    if "waterway" in tags:
-        return max(default_split_width, 3.0)
-    if "barrier" in tags:
-        return max(default_split_width, 1.5)
-    if "aerialway" in tags:
-        return max(default_split_width, 1.5)
-    if "power" in tags:
-        return max(default_split_width, 2.0)
-    return default_split_width
+    return width
 
 
 def _geometry_to_polygons(geometry: BaseGeometry) -> list[Polygon]:
-    """Extract polygons from arbitrary geometry output."""
+    """Extract polygon members from arbitrary geometry output.
+
+    Arguments:
+        geometry (BaseGeometry): Geometry that may contain polygonal parts.
+
+    Returns:
+        list[Polygon]: Polygon members extracted from the input geometry.
+    """
     if geometry.is_empty:
         return []
     if isinstance(geometry, Polygon):
@@ -1350,7 +1709,18 @@ def _remove_target_elements(
     ways: dict[int, _WayData],
     relations: dict[int, _RelationData],
 ) -> int:
-    """Remove target polygons from XML tree before appending processed geometry."""
+    """Remove replaced target elements from the XML tree.
+
+    Arguments:
+        root (ET.Element): Root OSM XML element.
+        target_way_ids (set[int]): Way ids to remove.
+        target_relation_ids (set[int]): Relation ids to remove.
+        ways (dict[int, _WayData]): Parsed OSM ways by id.
+        relations (dict[int, _RelationData]): Parsed OSM relations by id.
+
+    Returns:
+        int: Number of removed way and relation elements.
+    """
     removed_elements = 0
 
     for way_id in target_way_ids:
@@ -1371,11 +1741,30 @@ def _remove_target_elements(
 
 
 def _append_polygons(root: ET.Element, polygons: list[_ProcessedPolygonData]) -> tuple[int, int]:
-    """Append polygons as OSM ways/relations and return creation counters."""
-    node_ids = [int(node.get("id")) for node in root.findall("node") if node.get("id")]
-    way_ids = [int(way.get("id")) for way in root.findall("way") if way.get("id")]
+    """Append processed polygons as OSM ways and relations.
+
+    Arguments:
+        root (ET.Element): Root OSM XML element.
+        polygons (list[_ProcessedPolygonData]): Processed polygons paired with
+            output tags.
+
+    Returns:
+        tuple[int, int]: Number of created ways and created relations.
+    """
+    node_ids = [
+        int(existing_node_id)
+        for node in root.findall("node")
+        if (existing_node_id := node.get("id")) is not None
+    ]
+    way_ids = [
+        int(existing_way_id)
+        for way in root.findall("way")
+        if (existing_way_id := way.get("id")) is not None
+    ]
     relation_ids = [
-        int(relation.get("id")) for relation in root.findall("relation") if relation.get("id")
+        int(existing_relation_id)
+        for relation in root.findall("relation")
+        if (existing_relation_id := relation.get("id")) is not None
     ]
 
     next_node_id = max([0, *node_ids]) + 1
@@ -1387,6 +1776,14 @@ def _append_polygons(root: ET.Element, polygons: list[_ProcessedPolygonData]) ->
     created_relations = 0
 
     def append_node(coordinate: tuple[float, float]) -> int:
+        """Append or reuse a node for one coordinate.
+
+        Arguments:
+            coordinate (tuple[float, float]): ``(longitude, latitude)`` pair.
+
+        Returns:
+            int: Node id for the rounded coordinate.
+        """
         nonlocal next_node_id
         rounded = (round(coordinate[0], 10), round(coordinate[1], 10))
         cached = node_cache.get(rounded)
@@ -1407,6 +1804,17 @@ def _append_polygons(root: ET.Element, polygons: list[_ProcessedPolygonData]) ->
     def append_way(
         coordinates: list[tuple[float, float]], way_tags: dict[str, str] | None = None
     ) -> int:
+        """Append one OSM way built from coordinates and optional tags.
+
+        Arguments:
+            coordinates (list[tuple[float, float]]): Way coordinates in
+                geographic order.
+            way_tags (dict[str, str] | None): Optional tags to attach to the
+                way element.
+
+        Returns:
+            int: Newly created way id.
+        """
         nonlocal next_way_id, created_ways
         way_id = next_way_id
         next_way_id += 1
@@ -1473,7 +1881,11 @@ def _append_polygons(root: ET.Element, polygons: list[_ProcessedPolygonData]) ->
 
 
 def _ensure_primitive_versions(root: ET.Element) -> None:
-    """Ensure all OSM primitives have a version attribute for JOSM compatibility."""
+    """Ensure all OSM primitives have a version attribute.
+
+    Arguments:
+        root (ET.Element): Root OSM XML element.
+    """
     for primitive_name in ("node", "way", "relation"):
         for element in root.findall(primitive_name):
             if not element.get("version"):
