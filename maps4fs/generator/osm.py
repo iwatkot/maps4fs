@@ -172,6 +172,10 @@ def preprocess(
     merge_distance: float = 0.0,
     split_width: float = 4.0,
     merge_tags: bool = True,
+    shrink_distance: float = 0.75,
+    narrow_connection_width: float = 3.0,
+    min_part_area: float = 40.0,
+    min_part_width: float = 2.0,
 ) -> dict[str, int]:
     """Preprocess matching OSM polygons and save a normalized output file.
 
@@ -179,7 +183,10 @@ def preprocess(
     1. Split polygons where linear objects (for example roads) pass through them.
     2. Merge touching polygon fragments that remain on the same side of those cuts.
     3. Carve holes where non-matching area objects are inside.
-    4. Smooth resulting geometry boundaries.
+    4. Break very narrow bridge connections into separate polygons.
+    5. Smooth resulting geometry boundaries.
+    6. Apply a small inward offset so the final polygon sits inside the source.
+    7. Drop tiny detached fragments and narrow leftover slivers.
 
     Arguments:
         input_file_path (str): Path to source OSM XML.
@@ -197,6 +204,16 @@ def preprocess(
             to their first configured value before grouping and output tagging.
             For example, {"landuse": ["farmland", "meadow"]} rewrites matched
             meadows as farmland so they can be merged into one output landuse.
+        shrink_distance (float): Final inward offset in meters applied after
+            smoothing so polygons sit slightly inside the original boundary.
+        narrow_connection_width (float): Width threshold in meters for breaking
+            very narrow polygon bridges into separate polygons. Set to 0 to
+            disable this pass.
+        min_part_area (float): Minimum area in square meters for keeping a
+            resulting polygon fragment after cut/split cleanup.
+        min_part_width (float): Minimum effective width in meters for keeping
+            narrow leftover polygon slivers after cut/split cleanup. Set to 0
+            to disable width-based cleanup.
 
     Returns:
         dict[str, int]: Processing statistics.
@@ -268,6 +285,10 @@ def preprocess(
         smooth_strength=smooth_strength,
         merge_distance=merge_distance,
         split_width=split_width,
+        shrink_distance=shrink_distance,
+        narrow_connection_width=narrow_connection_width,
+        min_part_area=min_part_area,
+        min_part_width=min_part_width,
     )
 
     removed_elements = _remove_target_elements(
@@ -675,8 +696,12 @@ def _preprocess_polygons(
     smooth_strength: float,
     merge_distance: float,
     split_width: float,
+    shrink_distance: float,
+    narrow_connection_width: float,
+    min_part_area: float,
+    min_part_width: float,
 ) -> list[Polygon]:
-    """Apply split, merge, hole carving and smoothing to target polygons."""
+    """Apply split/merge/hole cleanup, then smooth, inset and remove artifacts."""
     if not target_polygons:
         return []
 
@@ -727,9 +752,19 @@ def _preprocess_polygons(
     if not merged_polygons:
         return []
 
-    smoothed_polygons = _smooth_polygons(merged_polygons, smooth_strength)
+    split_polygons = _split_polygons_at_narrow_connections(
+        merged_polygons,
+        narrow_connection_width,
+    )
+    smoothed_polygons = _smooth_polygons(split_polygons, smooth_strength)
+    inset_polygons = _inset_polygons(smoothed_polygons, shrink_distance)
+    cleaned_polygons = _cleanup_cut_artifacts(
+        inset_polygons,
+        min_part_area,
+        min_part_width,
+    )
     polygons: list[Polygon] = []
-    for polygon in smoothed_polygons:
+    for polygon in cleaned_polygons:
         transformed_polygon = make_valid(_transform_geometry(polygon, backward_transformer))
         polygons.extend(_geometry_to_polygons(transformed_polygon))
     if not polygons:
@@ -766,6 +801,10 @@ def _preprocess_target_polygon_groups(
     smooth_strength: float,
     merge_distance: float,
     split_width: float,
+    shrink_distance: float,
+    narrow_connection_width: float,
+    min_part_area: float,
+    min_part_width: float,
 ) -> list[_ProcessedPolygonData]:
     """Process targets per matched tag group so tags and merges stay correct."""
     if not target_polygons:
@@ -795,6 +834,10 @@ def _preprocess_target_polygon_groups(
             smooth_strength=smooth_strength,
             merge_distance=merge_distance,
             split_width=split_width,
+            shrink_distance=shrink_distance,
+            narrow_connection_width=narrow_connection_width,
+            min_part_area=min_part_area,
+            min_part_width=min_part_width,
         )
         if not group_output_polygons:
             continue
@@ -822,9 +865,9 @@ def _smooth_polygons(
     if not polygons:
         return []
 
-    base_radius = 6.0 + (18.0 * bounded_strength)
+    base_radius = 8.0 + (22.0 * bounded_strength)
     min_corner_deviation = math.radians(12.0 - (6.0 * bounded_strength))
-    segment_count = 4 + int(6.0 * bounded_strength)
+    segment_count = 5 + int(7.0 * bounded_strength)
 
     smoothed_polygons: list[Polygon] = []
     for polygon in polygons:
@@ -840,6 +883,143 @@ def _smooth_polygons(
         return polygons
 
     return smoothed_polygons
+
+
+def _split_polygons_at_narrow_connections(
+    polygons: list[Polygon],
+    connection_width: float,
+) -> list[Polygon]:
+    """Split polygons where a very narrow bridge is the only connection."""
+    if connection_width <= 0 or not polygons:
+        return polygons
+
+    working_polygons = list(polygons)
+    for _ in range(3):
+        next_polygons: list[Polygon] = []
+        split_any = False
+        for polygon in working_polygons:
+            split_polygons = _split_polygon_at_narrow_connection(
+                polygon,
+                connection_width,
+            )
+            if len(split_polygons) > 1:
+                split_any = True
+            next_polygons.extend(split_polygons)
+        working_polygons = next_polygons
+        if not split_any:
+            break
+
+    return working_polygons
+
+
+def _split_polygon_at_narrow_connection(
+    polygon: Polygon,
+    connection_width: float,
+) -> list[Polygon]:
+    """Break a polygon into lobes when a thin connector falls below the threshold."""
+    if polygon.is_empty or connection_width <= 0:
+        return [polygon]
+
+    erosion_distance = connection_width / 2.0
+    if erosion_distance <= 0:
+        return [polygon]
+
+    eroded_geometry = make_valid(polygon.buffer(-erosion_distance, join_style=1, cap_style=1))
+    eroded_polygons = _geometry_to_polygons(eroded_geometry)
+    if len(eroded_polygons) < 2:
+        return [polygon]
+
+    min_seed_area = max((erosion_distance * erosion_distance) * 2.0, polygon.area * 0.01)
+    seed_polygons = [seed for seed in eroded_polygons if seed.area > min_seed_area]
+    if len(seed_polygons) < 2:
+        return [polygon]
+
+    seed_polygons.sort(key=lambda seed: seed.area, reverse=True)
+    assigned_geometries: list[BaseGeometry] = []
+    split_polygons: list[Polygon] = []
+    min_output_area = max(erosion_distance * erosion_distance, polygon.area * 0.005)
+
+    for seed_polygon in seed_polygons:
+        expanded_seed = make_valid(seed_polygon.buffer(erosion_distance, join_style=1, cap_style=1))
+        candidate_geometry = make_valid(expanded_seed.intersection(polygon))
+        if candidate_geometry.is_empty:
+            continue
+        if assigned_geometries:
+            candidate_geometry = make_valid(
+                candidate_geometry.difference(unary_union(assigned_geometries))
+            )
+        candidate_polygons = [
+            candidate_polygon
+            for candidate_polygon in _geometry_to_polygons(candidate_geometry)
+            if candidate_polygon.area > min_output_area
+        ]
+        if not candidate_polygons:
+            continue
+        split_polygons.extend(candidate_polygons)
+        assigned_geometries.extend(candidate_polygons)
+
+    return split_polygons if len(split_polygons) >= 2 else [polygon]
+
+
+def _inset_polygons(polygons: list[Polygon], shrink_distance: float) -> list[Polygon]:
+    """Apply a small inward offset while keeping tiny polygons from disappearing."""
+    if shrink_distance <= 0 or not polygons:
+        return polygons
+
+    inset_polygons: list[Polygon] = []
+    for polygon in polygons:
+        inset_geometry = make_valid(polygon.buffer(-shrink_distance, join_style=1, cap_style=1))
+        min_output_area = max((shrink_distance * shrink_distance) * 0.25, polygon.area * 0.001)
+        inset_parts = [
+            inset_polygon
+            for inset_polygon in _geometry_to_polygons(inset_geometry)
+            if inset_polygon.area > min_output_area
+        ]
+        if inset_parts:
+            inset_polygons.extend(inset_parts)
+            continue
+        inset_polygons.append(polygon)
+
+    return inset_polygons
+
+
+def _cleanup_cut_artifacts(
+    polygons: list[Polygon],
+    min_part_area: float,
+    min_part_width: float,
+) -> list[Polygon]:
+    """Remove tiny detached fragments and narrow slivers in projected meters."""
+    if not polygons:
+        return []
+
+    effective_min_area = max(0.0, min_part_area)
+    opening_radius = max(0.0, min_part_width / 2.0)
+    if effective_min_area <= 0 and opening_radius <= 0:
+        return polygons
+
+    cleaned_polygons: list[Polygon] = []
+    for polygon in polygons:
+        candidate_geometry: BaseGeometry = polygon
+        if opening_radius > 0:
+            candidate_geometry = make_valid(
+                polygon.buffer(-opening_radius, join_style=1, cap_style=1).buffer(
+                    opening_radius,
+                    join_style=1,
+                    cap_style=1,
+                )
+            )
+            if candidate_geometry.is_empty:
+                continue
+            candidate_geometry = make_valid(candidate_geometry.intersection(polygon))
+
+        for candidate_polygon in _geometry_to_polygons(candidate_geometry):
+            if candidate_polygon.is_empty:
+                continue
+            if effective_min_area > 0 and candidate_polygon.area < effective_min_area:
+                continue
+            cleaned_polygons.append(candidate_polygon)
+
+    return cleaned_polygons
 
 
 def _smooth_polygon(
