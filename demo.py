@@ -26,13 +26,13 @@ game_code = "fs25"
 game = mfs.Game.from_code(game_code)
 
 # 2️⃣ Choose the DTM Provider and define it's settings.
-dtm_provider = mfs.dtm.SRTM30Provider
+dtm_provider = mfs.dtm.BavariaProvider
 
 # 3️⃣ Define the coordinates of the central point of the map, size and rotation.
-lat, lon = 45.2858, 20.219
+lat, lon = 47.97989, 10.791866
 coordinates = (lat, lon)
-size = 4096
-rotation = 25
+size = 2048
+rotation = 4
 
 # 4️⃣ Define the output directory.
 map_directory = "map_directory"
@@ -41,40 +41,46 @@ if os.path.isdir(map_directory):
 os.makedirs(map_directory, exist_ok=True)
 
 # 5️⃣ Optional: use a custom OSM file.
-osm_file = "custom_osm.osm"
+osm_file = "waalhaupten2.osm"
 
 # 6️⃣ Optional: advanced settings. You can use the default settings, but
 # it's recommended to change them according to your needs.
 dem_settings = mfs.settings.DEMSettings(
-    multiplier=1, blur_radius=35, plateau=15, water_depth=10, add_foundations=True
+    multiplier=1,
+    blur_radius=7,
+    plateau=15,
+    water_depth=10,
+    add_foundations=True,
+    water_bank_steepness=5,
 )
 background_settings = mfs.settings.BackgroundSettings(
     generate_background=True,
     generate_water=True,
     remove_center=True,
     flatten_roads=True,
-    flatten_water=True,
+    flatten_water=False,
 )
 grle_settings = mfs.settings.GRLESettings(
     add_grass=True,
-    farmland_margin=8,
+    farmland_margin=3,
     random_plants=True,
     add_farmyards=True,
     base_grass="meadow",
 )
 i3d_settings = mfs.settings.I3DSettings(
     forest_density=8,
-    add_trees=True,
-    tree_limit=50000,
-    trees_relative_shift=5,
+    # add_trees=True,
+    tree_limit=20000,
+    trees_relative_shift=1,
     license_plate_prefix="NS",
+    displacement_layer_max_height=1.0,
 )
 texture_settings = mfs.settings.TextureSettings(
     dissolve=True,
-    fields_padding=10,
+    fields_padding=2,
     skip_drains=True,
 )
-satellite_settings = mfs.settings.SatelliteSettings(download_images=True, zoom_level=16)
+satellite_settings = mfs.settings.SatelliteSettings(download_images=True, zoom_level=18)
 
 buildings_settings = mfs.settings.BuildingSettings(
     generate_buildings=True, region="all", tolerance_factor=30
