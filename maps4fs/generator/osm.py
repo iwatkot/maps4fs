@@ -171,6 +171,7 @@ def preprocess(
     smooth_strength: float = 0.3,
     merge_distance: float = 0.0,
     split_width: float = 4.0,
+    merge_tags: bool = True,
 ) -> dict[str, int]:
     """Preprocess matching OSM polygons and save a normalized output file.
 
@@ -192,6 +193,10 @@ def preprocess(
             Defaults to 0 so only touching or overlapping polygons merge.
         split_width (float): Default splitter half-width in meters, applied in
             a local projected coordinate system.
+        merge_tags (bool): When True, list-valued target filters are normalized
+            to their first configured value before grouping and output tagging.
+            For example, {"landuse": ["farmland", "meadow"]} rewrites matched
+            meadows as farmland so they can be merged into one output landuse.
 
     Returns:
         dict[str, int]: Processing statistics.
@@ -226,6 +231,7 @@ def preprocess(
             ways=ways,
             relations=relations,
             relation_way_usage=relation_way_usage,
+            merge_tags=merge_tags,
         )
     )
     if not target_polygons:
@@ -382,14 +388,36 @@ def _count_relation_way_usage(relations: dict[int, _RelationData]) -> dict[int, 
 
 
 def _target_merge_key(
-    feature_tags: dict[str, str], target_tags: dict[str, OSMTagValue]
+    feature_tags: dict[str, str],
+    target_tags: dict[str, OSMTagValue],
+    merge_tags: bool,
 ) -> tuple[tuple[str, str], ...]:
     """Build a merge key from the actual matched tag values."""
     return tuple(
-        (key, feature_tags[key])
+        (
+            key,
+            _normalized_target_tag_value(
+                actual_value=feature_tags[key],
+                expected_value=target_tags[key],
+                merge_tags=merge_tags,
+            ),
+        )
         for key in target_tags
         if key in feature_tags and feature_tags[key] is not None
     )
+
+
+def _normalized_target_tag_value(
+    actual_value: str,
+    expected_value: OSMTagValue,
+    merge_tags: bool,
+) -> str:
+    """Return the canonical merge/output value for a matched target tag."""
+    if not merge_tags:
+        return actual_value
+    if isinstance(expected_value, list) and expected_value and actual_value in expected_value:
+        return expected_value[0]
+    return actual_value
 
 
 def _output_feature_tags(feature_tags: dict[str, str]) -> dict[str, str]:
@@ -519,6 +547,7 @@ def _collect_target_polygons(
     ways: dict[int, _WayData],
     relations: dict[int, _RelationData],
     relation_way_usage: dict[int, int],
+    merge_tags: bool,
 ) -> tuple[set[int], set[int], set[int], list[_TargetPolygonData]]:
     """Collect all target polygons plus element ids that should be replaced."""
     target_way_ids: set[int] = set()
@@ -537,7 +566,7 @@ def _collect_target_polygons(
             _TargetPolygonData(
                 geometry=polygon,
                 tags=_output_feature_tags(way.tags),
-                merge_key=_target_merge_key(way.tags, tags),
+                merge_key=_target_merge_key(way.tags, tags, merge_tags),
             )
         )
 
@@ -549,7 +578,7 @@ def _collect_target_polygons(
             continue
         target_relation_ids.add(relation_id)
         relation_output_tags = _output_feature_tags(relation.tags)
-        relation_merge_key = _target_merge_key(relation.tags, tags)
+        relation_merge_key = _target_merge_key(relation.tags, tags, merge_tags)
         target_polygons.extend(
             _TargetPolygonData(
                 geometry=polygon,
@@ -926,10 +955,14 @@ def _smooth_ring(
 
     deduped_points: list[tuple[float, float]] = []
     for rounded_point in rounded_points:
-        if deduped_points and math.isclose(deduped_points[-1][0], rounded_point[0], abs_tol=1e-6) and math.isclose(
-            deduped_points[-1][1],
-            rounded_point[1],
-            abs_tol=1e-6,
+        if (
+            deduped_points
+            and math.isclose(deduped_points[-1][0], rounded_point[0], abs_tol=1e-6)
+            and math.isclose(
+                deduped_points[-1][1],
+                rounded_point[1],
+                abs_tol=1e-6,
+            )
         ):
             continue
         deduped_points.append(rounded_point)
@@ -1075,9 +1108,7 @@ def _remove_target_elements(
     return removed_elements
 
 
-def _append_polygons(
-    root: ET.Element, polygons: list[_ProcessedPolygonData]
-) -> tuple[int, int]:
+def _append_polygons(root: ET.Element, polygons: list[_ProcessedPolygonData]) -> tuple[int, int]:
     """Append polygons as OSM ways/relations and return creation counters."""
     node_ids = [int(node.get("id")) for node in root.findall("node") if node.get("id")]
     way_ids = [int(way.get("id")) for way in root.findall("way") if way.get("id")]
