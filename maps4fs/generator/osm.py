@@ -12,7 +12,7 @@ from xml.etree import ElementTree as ET
 import osmnx as ox
 from osmnx._errors import InsufficientResponseError
 from pyproj import Transformer
-from shapely.geometry import GeometryCollection, LineString, MultiPolygon, Polygon
+from shapely.geometry import GeometryCollection, LineString, MultiPolygon, Point, Polygon
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import transform, unary_union
 from shapely.validation import make_valid
@@ -40,6 +40,15 @@ _LINEAR_TAGS = {
 
 _CUT_LINEAR_TAGS = {"highway", "railway", "waterway", "barrier", "power", "aerialway"}
 
+_POINT_HOLE_RADII: dict[tuple[str, str], float] = {
+    ("power", "tower"): 4.0,
+    ("power", "portal"): 4.0,
+    ("power", "pole"): 1.5,
+    ("power", "catenary_mast"): 1.5,
+    ("man_made", "tower"): 4.0,
+    ("man_made", "mast"): 3.0,
+}
+
 
 @dataclass
 class _WayData:
@@ -64,6 +73,15 @@ class _SplitterData:
     """Internal representation of a linear feature used to cut polygons."""
 
     geometry: LineString
+    tags: dict[str, str]
+
+
+@dataclass(frozen=True)
+class _PointHoleData:
+    """Internal representation of a point obstacle that should carve a hole."""
+
+    geometry: Point
+    radius: float
     tags: dict[str, str]
 
 
@@ -271,6 +289,7 @@ def preprocess(
         excluded_way_ids=target_way_ids | target_member_way_ids,
         excluded_relation_ids=target_relation_ids,
     )
+    point_holes = _collect_point_holes(root=root, tags=tags, nodes=nodes)
     splitter_lines = _collect_splitter_lines(
         nodes=nodes,
         ways=ways,
@@ -281,6 +300,7 @@ def preprocess(
     processed_polygons = _preprocess_target_polygon_groups(
         target_polygons=target_polygons,
         hole_polygons=hole_polygons,
+        point_holes=point_holes,
         splitter_lines=splitter_lines,
         smooth_strength=smooth_strength,
         merge_distance=merge_distance,
@@ -311,7 +331,7 @@ def preprocess(
         "target_input_polygons": len(target_polygons),
         "target_output_polygons": len(processed_polygons),
         "splitter_lines": len(splitter_lines),
-        "hole_polygons": len(hole_polygons),
+        "hole_polygons": len(hole_polygons) + len(point_holes),
         "removed_elements": removed_elements,
         "created_ways": created_ways,
         "created_relations": created_relations,
@@ -652,6 +672,55 @@ def _collect_hole_polygons(
     return hole_polygons
 
 
+def _collect_point_holes(
+    root: ET.Element,
+    tags: dict[str, OSMTagValue],
+    nodes: dict[int, tuple[float, float]],
+) -> list[_PointHoleData]:
+    """Collect point obstacles that should carve circular holes in target polygons."""
+    point_holes: list[_PointHoleData] = []
+
+    for node_element in root.findall("node"):
+        node_id = node_element.get("id")
+        if not node_id:
+            continue
+
+        try:
+            parsed_node_id = int(node_id)
+        except ValueError:
+            continue
+
+        coordinate = nodes.get(parsed_node_id)
+        if coordinate is None:
+            continue
+
+        node_tags = _extract_tags(node_element)
+        if not node_tags or _matches_tags(node_tags, tags):
+            continue
+
+        hole_radius = _point_hole_radius(node_tags)
+        if hole_radius <= 0:
+            continue
+
+        point_holes.append(
+            _PointHoleData(
+                geometry=Point(coordinate),
+                radius=hole_radius,
+                tags=node_tags,
+            )
+        )
+
+    return point_holes
+
+
+def _point_hole_radius(tags: dict[str, str]) -> float:
+    """Return the projected-meter hole radius for tagged point obstacles."""
+    best_radius = 0.0
+    for key, value in tags.items():
+        best_radius = max(best_radius, _POINT_HOLE_RADII.get((key, value), 0.0))
+    return best_radius
+
+
 def _collect_splitter_lines(
     nodes: dict[int, tuple[float, float]],
     ways: dict[int, _WayData],
@@ -692,6 +761,7 @@ def _collect_splitter_lines(
 def _preprocess_polygons(
     target_polygons: list[Polygon],
     hole_polygons: list[Polygon],
+    point_holes: list[_PointHoleData],
     splitter_lines: list[_SplitterData],
     smooth_strength: float,
     merge_distance: float,
@@ -738,15 +808,25 @@ def _preprocess_polygons(
 
     merged = _merge_connected_polygons(working_polygons, post_split_merge_distance)
 
+    hole_geometries: list[BaseGeometry] = []
     if hole_polygons:
-        projected_holes = [
+        hole_geometries.extend(
             polygon
             for polygon in _transform_polygons(hole_polygons, forward_transformer)
             if polygon.intersects(merged)
-        ]
-        if projected_holes:
-            hole_mask = make_valid(unary_union(projected_holes))
-            merged = make_valid(merged.difference(hole_mask))
+        )
+    if point_holes:
+        for point_hole in point_holes:
+            projected_point = _transform_geometry(point_hole.geometry, forward_transformer)
+            if projected_point.is_empty:
+                continue
+            buffered_point = projected_point.buffer(point_hole.radius)
+            if buffered_point.is_empty or not buffered_point.intersects(merged):
+                continue
+            hole_geometries.append(buffered_point)
+    if hole_geometries:
+        hole_mask = make_valid(unary_union(hole_geometries))
+        merged = make_valid(merged.difference(hole_mask))
 
     merged_polygons = _geometry_to_polygons(merged)
     if not merged_polygons:
@@ -797,6 +877,7 @@ def _merge_connected_polygons(polygons: list[Polygon], merge_distance: float) ->
 def _preprocess_target_polygon_groups(
     target_polygons: list[_TargetPolygonData],
     hole_polygons: list[Polygon],
+    point_holes: list[_PointHoleData],
     splitter_lines: list[_SplitterData],
     smooth_strength: float,
     merge_distance: float,
@@ -830,6 +911,7 @@ def _preprocess_target_polygon_groups(
         group_output_polygons = _preprocess_polygons(
             target_polygons=group_geometries[merge_key],
             hole_polygons=group_holes,
+            point_holes=point_holes,
             splitter_lines=splitter_lines,
             smooth_strength=smooth_strength,
             merge_distance=merge_distance,
