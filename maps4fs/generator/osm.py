@@ -68,6 +68,9 @@ _POINT_HOLE_RADII: dict[tuple[str, str], float] = {
 _OSM_API_MAP_URL = "https://api.openstreetmap.org/api/0.6/map"
 _OSM_TILE_MAX_DEPTH = 10
 _OSM_TILE_MIN_SPAN = 1e-6
+_M4FS_OVERLAY_TAG_KEY = "m4fs:overlay"
+_M4FS_OVERLAY_TAG_VALUE = "bounds"
+_M4FS_BOUNDS_KIND_TAG_KEY = "m4fs:bounds"
 
 
 class _OSMTooManyNodesError(RuntimeError):
@@ -778,6 +781,82 @@ def prune_osm_file(
         "kept_ways": kept_ways,
         "kept_relations": kept_relations,
         "removed_elements": removed_elements,
+    }
+
+
+def append_bounds_overlays(
+    osm_file_path: str,
+    center_coordinates: tuple[float, float],
+    *,
+    map_size: float,
+    background_size: float,
+    rotation: float = 0.0,
+) -> dict[str, int | float]:
+    """Append or refresh synthetic maps4fs bounds overlays in an OSM XML file.
+
+    Arguments:
+        osm_file_path (str): Path to the OSM XML file to update.
+        center_coordinates (tuple[float, float]): Map center in ``(lat, lon)`` order.
+        map_size (float): Side length of the playable square in meters.
+        background_size (float): Side length of the outer background square in meters.
+        rotation (float): Counter-clockwise rotation angle in degrees applied to both boxes.
+
+    Returns:
+        dict[str, int | float]: Overlay update statistics.
+    """
+    if not os.path.isfile(osm_file_path):
+        raise FileNotFoundError(f"OSM file {osm_file_path} does not exist.")
+    if map_size <= 0 or background_size <= 0:
+        raise ValueError("Overlay sizes must be positive.")
+
+    tree = ET.parse(osm_file_path)
+    root = tree.getroot()
+
+    removed_relations, removed_ways = _remove_maps4fs_bounds_overlays(root)
+    removed_nodes = _remove_orphan_untagged_nodes(root)
+
+    overlays = [
+        _ProcessedPolygonData(
+            geometry=Polygon(
+                _rotated_rectangle_coordinates(
+                    center_coordinates=center_coordinates,
+                    width=background_size,
+                    height=background_size,
+                    rotation=rotation,
+                )
+            ),
+            tags=_maps4fs_bounds_tags("background"),
+        ),
+        _ProcessedPolygonData(
+            geometry=Polygon(
+                _rotated_rectangle_coordinates(
+                    center_coordinates=center_coordinates,
+                    width=map_size,
+                    height=map_size,
+                    rotation=rotation,
+                )
+            ),
+            tags=_maps4fs_bounds_tags("playable"),
+        ),
+    ]
+
+    created_ways, created_relations = _append_polygons(
+        root=root,
+        polygons=overlays,
+        prefer_negative_ids=True,
+    )
+    _ensure_primitive_versions(root)
+
+    tree.write(osm_file_path, encoding="utf-8", xml_declaration=True)
+    return {
+        "created_ways": created_ways,
+        "created_relations": created_relations,
+        "removed_ways": removed_ways,
+        "removed_relations": removed_relations,
+        "removed_orphan_nodes": removed_nodes,
+        "map_size": map_size,
+        "background_size": background_size,
+        "rotation": rotation,
     }
 
 
@@ -2723,13 +2802,20 @@ def _remove_target_elements(
     return removed_elements
 
 
-def _append_polygons(root: ET.Element, polygons: list[_ProcessedPolygonData]) -> tuple[int, int]:
+def _append_polygons(
+    root: ET.Element,
+    polygons: list[_ProcessedPolygonData],
+    *,
+    prefer_negative_ids: bool = False,
+) -> tuple[int, int]:
     """Append processed polygons as OSM ways and relations.
 
     Arguments:
         root (ET.Element): Root OSM XML element.
         polygons (list[_ProcessedPolygonData]): Processed polygons paired with
             output tags.
+        prefer_negative_ids (bool): If True, allocate new primitive ids from the
+            negative range so generated helper geometry cannot collide with downloaded ids.
 
     Returns:
         tuple[int, int]: Number of created ways and created relations.
@@ -2750,9 +2836,10 @@ def _append_polygons(root: ET.Element, polygons: list[_ProcessedPolygonData]) ->
         if (existing_relation_id := relation.get("id")) is not None
     ]
 
-    next_node_id = max([0, *node_ids]) + 1
-    next_way_id = max([0, *way_ids]) + 1
-    next_relation_id = max([0, *relation_ids]) + 1
+    next_node_id = _initial_primitive_id(node_ids, prefer_negative=prefer_negative_ids)
+    next_way_id = _initial_primitive_id(way_ids, prefer_negative=prefer_negative_ids)
+    next_relation_id = _initial_primitive_id(relation_ids, prefer_negative=prefer_negative_ids)
+    id_step = -1 if prefer_negative_ids else 1
 
     node_cache: dict[tuple[float, float], int] = {}
     created_ways = 0
@@ -2774,7 +2861,7 @@ def _append_polygons(root: ET.Element, polygons: list[_ProcessedPolygonData]) ->
             return cached
 
         node_id = next_node_id
-        next_node_id += 1
+        next_node_id += id_step
         node_cache[rounded] = node_id
 
         node_element = ET.SubElement(root, "node")
@@ -2800,7 +2887,7 @@ def _append_polygons(root: ET.Element, polygons: list[_ProcessedPolygonData]) ->
         """
         nonlocal next_way_id, created_ways
         way_id = next_way_id
-        next_way_id += 1
+        next_way_id += id_step
         created_ways += 1
 
         way_element = ET.SubElement(root, "way")
@@ -2833,7 +2920,7 @@ def _append_polygons(root: ET.Element, polygons: list[_ProcessedPolygonData]) ->
         inner_way_ids = [append_way(interior) for interior in interior_coordinates if interior]
 
         relation_id = next_relation_id
-        next_relation_id += 1
+        next_relation_id += id_step
         created_relations += 1
 
         relation_element = ET.SubElement(root, "relation")
@@ -2861,6 +2948,85 @@ def _append_polygons(root: ET.Element, polygons: list[_ProcessedPolygonData]) ->
             tag_element.set("v", value)
 
     return created_ways, created_relations
+
+
+def _initial_primitive_id(existing_ids: list[int], *, prefer_negative: bool = False) -> int:
+    """Return the next OSM primitive id in the requested direction."""
+    if prefer_negative:
+        return min([0, *existing_ids]) - 1
+    return max([0, *existing_ids]) + 1
+
+
+def _remove_maps4fs_bounds_overlays(root: ET.Element) -> tuple[int, int]:
+    """Remove previously generated maps4fs bounds overlay ways and relations."""
+    removed_relations = 0
+    removed_ways = 0
+
+    for relation_element in list(root.findall("relation")):
+        tags = _extract_tags(relation_element)
+        if tags.get(_M4FS_OVERLAY_TAG_KEY) != _M4FS_OVERLAY_TAG_VALUE:
+            continue
+        root.remove(relation_element)
+        removed_relations += 1
+
+    for way_element in list(root.findall("way")):
+        tags = _extract_tags(way_element)
+        if tags.get(_M4FS_OVERLAY_TAG_KEY) != _M4FS_OVERLAY_TAG_VALUE:
+            continue
+        root.remove(way_element)
+        removed_ways += 1
+
+    return removed_relations, removed_ways
+
+
+def _maps4fs_bounds_tags(bounds_kind: str) -> dict[str, str]:
+    """Return tags for one synthetic maps4fs bounds overlay."""
+    return {
+        "boundary": "administrative",
+        "admin_level": "10",
+        "name": f"maps4fs {bounds_kind} bounds",
+        "source": "maps4fs",
+        _M4FS_OVERLAY_TAG_KEY: _M4FS_OVERLAY_TAG_VALUE,
+        _M4FS_BOUNDS_KIND_TAG_KEY: bounds_kind,
+    }
+
+
+def _rotated_rectangle_coordinates(
+    center_coordinates: tuple[float, float],
+    *,
+    width: float,
+    height: float,
+    rotation: float,
+) -> list[tuple[float, float]]:
+    """Return a closed rotated rectangle ring in geographic coordinates."""
+    latitude, longitude = center_coordinates
+    reference_point = Point(longitude, latitude)
+    forward, backward = _build_local_transformers(reference_point)
+    center_x, center_y = forward.transform(longitude, latitude)
+
+    half_width = width / 2.0
+    half_height = height / 2.0
+    angle_radians = math.radians(rotation)
+    cosine = math.cos(angle_radians)
+    sine = math.sin(angle_radians)
+    local_corners = [
+        (-half_width, -half_height),
+        (half_width, -half_height),
+        (half_width, half_height),
+        (-half_width, half_height),
+    ]
+
+    coordinates: list[tuple[float, float]] = []
+    for x_offset, y_offset in [*local_corners, local_corners[0]]:
+        rotated_x = (x_offset * cosine) - (y_offset * sine)
+        rotated_y = (x_offset * sine) + (y_offset * cosine)
+        longitude_value, latitude_value = backward.transform(
+            center_x + rotated_x,
+            center_y + rotated_y,
+        )
+        coordinates.append((longitude_value, latitude_value))
+
+    return coordinates
 
 
 def _remove_orphan_untagged_nodes(root: ET.Element) -> int:

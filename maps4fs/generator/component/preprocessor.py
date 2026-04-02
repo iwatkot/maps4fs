@@ -9,7 +9,11 @@ from typing import Any
 
 from maps4fs.generator.component.base.component import Component
 from maps4fs.generator.component.layer import Layer
-from maps4fs.generator.osm import check_and_fix_osm, download_osm_map_by_bbox
+from maps4fs.generator.osm import (
+    append_bounds_overlays,
+    check_and_fix_osm,
+    download_osm_map_by_bbox,
+)
 from maps4fs.generator.osm import preprocess as preprocess_osm_file
 from maps4fs.generator.osm import prune_osm_file
 from maps4fs.generator.settings import Parameters
@@ -42,6 +46,7 @@ class Preprocessor(Component):
         self.download_error: str | None = None
         self.preprocessing_reports: list[dict[str, Any]] = []
         self.pruning_report: dict[str, Any] | None = None
+        self.bounds_overlay_report: dict[str, Any] | None = None
         self.has_explicit_extended_layers = any(layer.extended for layer in self.layers)
         self.download_map_size = self.map_size + Parameters.BACKGROUND_DISTANCE * 2
         download_size_multiplier = 1.5 if self.rotation else 1.0
@@ -67,6 +72,7 @@ class Preprocessor(Component):
         try:
             self._apply_usage_preprocessing(working_osm_path)
             self._prune_local_osm(working_osm_path)
+            self._append_bounds_overlays(working_osm_path)
             check_and_fix_osm(working_osm_path)
         except Exception as exc:
             shutil.copyfile(backup_path, working_osm_path)
@@ -311,6 +317,28 @@ class Preprocessor(Component):
                 exc,
             )
 
+    def _append_bounds_overlays(self, working_osm_path: str) -> None:
+        """Append synthetic playable and background bounds overlays to the local OSM file."""
+        try:
+            self.bounds_overlay_report = append_bounds_overlays(
+                working_osm_path,
+                self.coordinates,
+                map_size=self.map_size,
+                background_size=self.download_map_size,
+                rotation=-self.rotation,
+            )
+            self.logger.info(
+                "Added %d bounds overlays to local OSM file %s.",
+                self.bounds_overlay_report.get("created_ways", 0),
+                working_osm_path,
+            )
+        except Exception as exc:
+            self.bounds_overlay_report = {"error": str(exc)}
+            self.logger.warning(
+                "Failed to append bounds overlays to the local OSM file. Continuing without them: %s",
+                exc,
+            )
+
     def _smooth_strength_from_radius(self, radius: float) -> float:
         """Convert the user-facing smooth radius to the internal strength scale."""
         if radius <= 0:
@@ -422,4 +450,5 @@ class Preprocessor(Component):
             "download_rotated_size": self.download_rotated_size,
             "osm_preprocessing": self.preprocessing_reports,
             "osm_pruning": self.pruning_report,
+            "osm_bounds_overlays": self.bounds_overlay_report,
         }
