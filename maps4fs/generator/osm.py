@@ -704,11 +704,11 @@ def prune_osm_file(
 
     while pending_relation_ids:
         relation_id = pending_relation_ids.pop()
-        relation = relations.get(relation_id)
-        if relation is None:
+        retained_relation = relations.get(relation_id)
+        if retained_relation is None:
             continue
 
-        for member_type, member_ref, _ in relation.members:
+        for member_type, member_ref, _ in retained_relation.members:
             if member_type == "node":
                 retained_node_ids.add(member_ref)
             elif member_type == "way":
@@ -719,10 +719,10 @@ def prune_osm_file(
                     pending_relation_ids.append(member_ref)
 
     for way_id in retained_way_ids:
-        way = ways.get(way_id)
-        if way is None:
+        retained_way = ways.get(way_id)
+        if retained_way is None:
             continue
-        retained_node_ids.update(way.node_refs)
+        retained_node_ids.update(retained_way.node_refs)
 
     removed_elements = 0
     kept_nodes = 0

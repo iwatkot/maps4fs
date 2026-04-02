@@ -10,6 +10,7 @@ from typing import Any
 from maps4fs.generator.component.base.component import Component
 from maps4fs.generator.component.layer import Layer
 from maps4fs.generator.osm import (
+    OSMTagFilter,
     append_bounds_overlays,
     check_and_fix_osm,
     download_osm_map_by_bbox,
@@ -23,7 +24,7 @@ class Preprocessor(Component):
     """Prepare local inputs for later generation components."""
 
     custom_osm_filename = "custom_osm.osm"
-    exclude_cut_tags = {"power": ["line", "minor_line"]}
+    exclude_cut_tags: OSMTagFilter = {"power": ["line", "minor_line"]}
     merge_distance = 0.35
     split_width = 4.0
     prune_margin = 64
@@ -150,7 +151,7 @@ class Preprocessor(Component):
         except Exception as exc:
             self.download_error = str(exc)
             self.map.custom_osm = None
-            self.map._update_main_settings({"custom_osm": False})
+            self.map.update_main_settings({"custom_osm": False})
             self.logger.warning(
                 "Failed to download raw OSM data, proceeding with the default OSM source: %s",
                 exc,
@@ -159,7 +160,7 @@ class Preprocessor(Component):
 
         self.download_succeeded = True
         self.map.custom_osm = local_path
-        self.map._update_main_settings({"custom_osm": True})
+        self.map.update_main_settings({"custom_osm": True})
         self.logger.info("Saved downloaded OSM data to %s.", local_path)
         return local_path
 
@@ -180,14 +181,14 @@ class Preprocessor(Component):
             Parameters.FOREST: self.map.preprocessor_settings.forests,
         }
 
-    def _usage_tag_filters(self, usage: str) -> list[dict[str, str | list[str] | bool]]:
+    def _usage_tag_filters(self, usage: str) -> list[OSMTagFilter]:
         """Return OR-combined preprocess filters for the requested usage.
 
         Texture schema tag dictionaries are OR-combined by OSMnx across keys. The OSM
         preprocessing path expects each filter to be AND-combined within one dictionary, so we
         expand a layer like {"natural": [...], "landuse": "forest"} into two filters.
         """
-        filters: list[dict[str, str | list[str] | bool]] = []
+        filters: list[OSMTagFilter] = []
         seen: set[str] = set()
 
         for layer in self.layers:
@@ -230,21 +231,19 @@ class Preprocessor(Component):
         return None
 
     @staticmethod
-    def _expand_osmnx_filter(
-        filter_tags: dict[str, str | list[str] | bool] | None,
-    ) -> list[dict[str, str | list[str] | bool]]:
+    def _expand_osmnx_filter(filter_tags: OSMTagFilter | None) -> list[OSMTagFilter]:
         """Expand one OSMnx tag dict into one-key OR filters."""
         if not filter_tags:
             return []
         return [{key: value} for key, value in filter_tags.items()]
 
-    def _layer_prune_filters(self, layer: Layer) -> list[dict[str, str | list[str] | bool]]:
+    def _layer_prune_filters(self, layer: Layer) -> list[OSMTagFilter]:
         """Return conservative prune filters for one layer.
 
         Keep both base tags and precise tags, and preserve OSMnx OR semantics by splitting each
         tag dictionary into separate one-key filters.
         """
-        filters: list[dict[str, str | list[str] | bool]] = []
+        filters: list[OSMTagFilter] = []
         seen: set[str] = set()
 
         for filter_tags in (layer.tags, layer.precise_tags):
@@ -269,11 +268,11 @@ class Preprocessor(Component):
 
     def _runtime_prune_rules(
         self,
-    ) -> list[tuple[dict[str, str | list[str] | bool], tuple[float, float, float, float]]]:
+    ) -> list[tuple[OSMTagFilter, tuple[float, float, float, float] | None]]:
         """Return deduplicated runtime filters with the widest required spatial scope."""
         rules_by_key: dict[
             str,
-            tuple[int, dict[str, str | list[str] | bool], tuple[float, float, float, float]],
+            tuple[int, OSMTagFilter, tuple[float, float, float, float] | None],
         ] = {}
 
         for layer in self.layers:

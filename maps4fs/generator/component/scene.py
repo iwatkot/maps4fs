@@ -867,7 +867,7 @@ class Scene(ImageComponent):
         if not np.any(mask):
             return
 
-        component_count, labels, _stats, centroids = cv2.connectedComponentsWithStats(
+        _, labels, _stats, centroids = cv2.connectedComponentsWithStats(
             mask.astype(np.uint8),
             connectivity=8,
         )
@@ -883,7 +883,11 @@ class Scene(ImageComponent):
         required_points: list[tuple[int, int]] = []
         optional_points: list[tuple[int, int]] = []
 
-        for label in sorted(component_points, key=lambda current_label: len(component_points[current_label]), reverse=True):
+        for label in sorted(
+            component_points,
+            key=lambda current_label: len(component_points[current_label]),
+            reverse=True,
+        ):
             points = component_points[label]
             if not points:
                 continue
@@ -912,15 +916,13 @@ class Scene(ImageComponent):
                 else:
                     stride = len(optional_points) / remaining_budget
                     extra_points = [
-                        optional_points[int(index * stride)]
-                        for index in range(remaining_budget)
+                        optional_points[int(index * stride)] for index in range(remaining_budget)
                     ]
                     selected_points = [*required_points, *extra_points]
         else:
             selected_points = [*required_points, *optional_points]
 
-        for point in selected_points:
-            yield point
+        yield from selected_points
 
     @staticmethod
     def _nearest_component_point_to_centroid(

@@ -333,6 +333,15 @@ class Map:
         except Exception as e:
             self.logger.warning("Error sending statistics after generation: %s", e)
 
+    def update_main_settings(self, data: dict[str, Any]) -> None:
+        """Public wrapper for updating persisted main settings.
+
+        Arguments:
+            data (dict[str, Any]): Partial settings payload to merge into the
+                persisted main settings JSON file.
+        """
+        self._update_main_settings(data)
+
     def _update_main_settings(self, data: dict[str, Any]) -> None:
         """Update main settings with provided data.
         If the main settings file exists, it will be updated with the new data.
