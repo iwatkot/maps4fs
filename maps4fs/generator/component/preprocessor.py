@@ -9,6 +9,7 @@ from typing import Any
 
 from maps4fs.generator.component.base.component import Component
 from maps4fs.generator.component.layer import Layer
+from maps4fs.generator.osm import check_and_fix_osm
 from maps4fs.generator.osm import download_osm_map_by_bbox
 from maps4fs.generator.osm import preprocess as preprocess_osm_file
 from maps4fs.generator.osm import prune_osm_file
@@ -62,8 +63,21 @@ class Preprocessor(Component):
                 )
             return
 
-        self._apply_usage_preprocessing(working_osm_path)
-        self._prune_local_osm(working_osm_path)
+        backup_path = f"{working_osm_path}.preprocessor-backup"
+        shutil.copyfile(working_osm_path, backup_path)
+        try:
+            self._apply_usage_preprocessing(working_osm_path)
+            self._prune_local_osm(working_osm_path)
+            check_and_fix_osm(working_osm_path)
+        except Exception as exc:
+            shutil.copyfile(backup_path, working_osm_path)
+            self.logger.warning(
+                "Failed to finalize local OSM preprocessing. Restored the previous local OSM file: %s",
+                exc,
+            )
+        finally:
+            if os.path.isfile(backup_path):
+                os.remove(backup_path)
 
     def _load_layers(self) -> list[Layer]:
         """Load texture layers from schema without instantiating Texture."""
@@ -358,6 +372,8 @@ class Preprocessor(Component):
                     working_osm_path,
                     usage_filters,
                     process_bbox=process_bbox,
+                    validate_input=False,
+                    validate_output=False,
                     exclude_cut_tags=self.exclude_cut_tags,
                     smooth_strength=smooth_strength,
                     merge_distance=merge_distance,

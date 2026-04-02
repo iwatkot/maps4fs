@@ -427,6 +427,8 @@ def preprocess(
     output_file_path: str,
     tags: OSMTagFilters,
     process_bbox: tuple[float, float, float, float] | None = None,
+    validate_input: bool = True,
+    validate_output: bool = True,
     exclude_cut_tags: dict[str, OSMTagValue] | None = None,
     smooth_strength: float = 0.3,
     merge_distance: float = 0.0,
@@ -459,6 +461,10 @@ def preprocess(
             OSMnx order ``(left, bottom, right, top)``. When provided, only target
             polygons intersecting that bbox are rewritten and only nearby holes and
             splitter features are considered.
+        validate_input (bool): When True, run the full repository-standard OSM
+            validation/repair flow before geometry edits.
+        validate_output (bool): When True, run the full OSMnx-backed output validation
+            after writing the processed file.
         exclude_cut_tags (dict[str, OSMTagValue] | None): Tag filter for linear
             objects that must not split polygons.
         smooth_strength (float): Boundary smoothing strength in the [0, 1] range.
@@ -502,7 +508,8 @@ def preprocess(
         shutil.copyfile(input_file_path, output_file_path)
 
     # Run repository-standard validation/repair flow before geometry edits.
-    check_and_fix_osm(output_file_path)
+    if validate_input:
+        check_and_fix_osm(output_file_path)
 
     tree = ET.parse(output_file_path)
     root = tree.getroot()
@@ -591,7 +598,7 @@ def preprocess(
     _ensure_primitive_versions(root)
 
     tree.write(output_file_path, encoding="utf-8", xml_declaration=True)
-    if not check_osm_file(output_file_path):
+    if validate_output and not check_osm_file(output_file_path):
         raise ValueError(f"Processed OSM file {output_file_path} is invalid.")
 
     return {
@@ -1701,14 +1708,29 @@ def _preprocess_polygons(
         return []
 
     target_union = unary_union(target_polygons)
+    target_bounds = target_union.bounds
     forward_transformer, backward_transformer = _build_local_transformers(target_union)
 
     projected_targets = _transform_polygons(target_polygons, forward_transformer)
     working_geometry = make_valid(unary_union(projected_targets))
 
-    if splitter_lines and split_width > 0:
+    relevant_splitter_lines = [
+        splitter
+        for splitter in splitter_lines
+        if _bounds_intersect_bbox(splitter.geometry.bounds, target_bounds)
+    ]
+    relevant_hole_polygons = [
+        polygon for polygon in hole_polygons if _bounds_intersect_bbox(polygon.bounds, target_bounds)
+    ]
+    relevant_point_holes = [
+        point_hole
+        for point_hole in point_holes
+        if _bounds_intersect_bbox(point_hole.geometry.bounds, target_bounds)
+    ]
+
+    if relevant_splitter_lines and split_width > 0:
         split_buffers: list[BaseGeometry] = []
-        for splitter in splitter_lines:
+        for splitter in relevant_splitter_lines:
             projected_line = make_valid(_transform_geometry(splitter.geometry, forward_transformer))
             if projected_line.is_empty or not projected_line.intersects(working_geometry):
                 continue
@@ -1733,21 +1755,21 @@ def _preprocess_polygons(
         return []
 
     post_split_merge_distance = merge_distance
-    if splitter_lines and split_width > 0:
+    if relevant_splitter_lines and split_width > 0:
         # Keep post-cut merging conservative so roads are not bridged back together.
         post_split_merge_distance = min(merge_distance, max(0.25, split_width * 0.2))
 
     merged = _merge_connected_polygons(working_polygons, post_split_merge_distance)
 
     hole_geometries: list[BaseGeometry] = []
-    if hole_polygons:
+    if relevant_hole_polygons:
         hole_geometries.extend(
             polygon
-            for polygon in _transform_polygons(hole_polygons, forward_transformer)
+            for polygon in _transform_polygons(relevant_hole_polygons, forward_transformer)
             if polygon.intersects(merged)
         )
-    if point_holes:
-        for point_hole in point_holes:
+    if relevant_point_holes:
+        for point_hole in relevant_point_holes:
             projected_point = _transform_geometry(point_hole.geometry, forward_transformer)
             if projected_point.is_empty:
                 continue
