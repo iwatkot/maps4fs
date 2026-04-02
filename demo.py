@@ -41,7 +41,7 @@ if os.path.isdir(map_directory):
 os.makedirs(map_directory, exist_ok=True)
 
 # 5️⃣ Optional: use a custom OSM file.
-osm_file = "waalhaupten2.osm"
+# osm_file = "waalhaupten2.osm"
 
 # 6️⃣ Optional: advanced settings. You can use the default settings, but
 # it's recommended to change them according to your needs.
@@ -69,7 +69,7 @@ grle_settings = mfs.settings.GRLESettings(
 )
 i3d_settings = mfs.settings.I3DSettings(
     forest_density=8,
-    # add_trees=True,
+    add_trees=True,
     tree_limit=20000,
     trees_relative_shift=1,
     license_plate_prefix="NS",
@@ -84,6 +84,21 @@ satellite_settings = mfs.settings.SatelliteSettings(download_images=True, zoom_l
 
 buildings_settings = mfs.settings.BuildingSettings(
     generate_buildings=True, region="all", tolerance_factor=30
+)
+
+preprocessor_settings_usage = mfs.settings.PreprocessorSettings.UsagePreprocessSettings(
+    enabled=True,
+    smooth_edges=True,
+    split=True,
+    merge=True,
+    collapse=True,
+    add_holes=True,
+)
+
+preprocessor_settings = mfs.settings.PreprocessorSettings(
+    download_osm=True,
+    fields=preprocessor_settings_usage,
+    forests=preprocessor_settings_usage,
 )
 
 # 7️⃣ Optional: define custom tree and textures schemas.
@@ -102,6 +117,7 @@ generation_settings = mfs.GenerationSettings(
     texture_settings=texture_settings,
     satellite_settings=satellite_settings,
     building_settings=buildings_settings,
+    preprocessor_settings=preprocessor_settings,
 )
 
 # 8️⃣ Create an instance of the Map class with specified settings.
@@ -113,7 +129,7 @@ mp = mfs.Map(
     size,
     rotation,
     map_directory,
-    custom_osm=osm_file,
+    # custom_osm=osm_file,
     generation_settings=generation_settings,
     # texture_custom_schema=texture_custom_schema,
     # tree_custom_schema=tree_custom_schema,
