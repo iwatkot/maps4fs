@@ -174,9 +174,38 @@ class BuildingSettings(SettingsModel):
     tolerance_factor: int = 30
 
 
+class PreprocessorSettings(SettingsModel):
+    """Represents the advanced settings for the preprocessor component.
+
+    Attributes:
+        download_osm (bool): download raw OSM XML for the map bbox to a local file and
+            route later OSM-consuming components through the custom OSM pipeline.
+        fields (UsagePreprocessSettings): preprocessing options for layers with
+            ``usage == \"field\"``.
+        forests (UsagePreprocessSettings): preprocessing options for layers with
+            ``usage == \"forest\"``.
+    """
+
+    class UsagePreprocessSettings(SettingsModel):
+        """Preprocessing options for one usage group."""
+
+        enabled: bool = False
+        smooth_edges: bool = True
+        split: bool = True
+        merge: bool = False
+        collapse: bool = False
+        add_holes: bool = True
+        smooth_radius: float = Field(default=14.6, ge=0.0, le=30.0)
+
+    download_osm: bool = False
+    fields: UsagePreprocessSettings = UsagePreprocessSettings()
+    forests: UsagePreprocessSettings = UsagePreprocessSettings()
+
+
 class GenerationSettings(BaseModel):
     """Represents the settings for the map generation process."""
 
+    preprocessor_settings: PreprocessorSettings = PreprocessorSettings()
     dem_settings: DEMSettings = DEMSettings()
     background_settings: BackgroundSettings = BackgroundSettings()
     grle_settings: GRLESettings = GRLESettings()
@@ -192,6 +221,7 @@ class GenerationSettings(BaseModel):
             dict[str, Any]: JSON representation of the GenerationSettings.
         """
         return {
+            "PreprocessorSettings": self.preprocessor_settings.model_dump(),
             "DEMSettings": self.dem_settings.model_dump(),
             "BackgroundSettings": self.background_settings.model_dump(),
             "GRLESettings": self.grle_settings.model_dump(),
@@ -221,6 +251,9 @@ class GenerationSettings(BaseModel):
             return data.get(key, {}) if safe else data[key]
 
         return cls(
+            preprocessor_settings=PreprocessorSettings(
+                **_get("PreprocessorSettings", "preprocessor_settings")
+            ),
             dem_settings=DEMSettings(**_get("DEMSettings", "dem_settings")),
             background_settings=BackgroundSettings(
                 **_get("BackgroundSettings", "background_settings")

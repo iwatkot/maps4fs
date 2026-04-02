@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import gzip
 import math
 import os
 import shutil
 from dataclasses import dataclass
 from typing import TypeAlias
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 from xml.etree import ElementTree as ET
 
 import osmnx as ox
@@ -25,8 +29,10 @@ from shapely.validation import make_valid
 
 # Representative tags — if the file is fundamentally broken it will fail on any of these.
 OSMTagValue: TypeAlias = bool | str | list[str]
+OSMTagFilter: TypeAlias = dict[str, OSMTagValue]
+OSMTagFilters: TypeAlias = OSMTagFilter | list[OSMTagFilter]
 
-_CHECK_TAGS: list[dict[str, OSMTagValue]] = [
+_CHECK_TAGS: list[OSMTagFilter] = [
     {"highway": True},
     {"building": True},
     {"landuse": True},
@@ -98,6 +104,7 @@ class _TargetPolygonData:
     geometry: Polygon
     tags: dict[str, str]
     merge_key: tuple[tuple[str, str], ...]
+    target_keys: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -187,15 +194,97 @@ def check_and_fix_osm(
     return None
 
 
+def _normalize_target_filters(tags: OSMTagFilters) -> list[OSMTagFilter]:
+    """Return a normalized non-empty list of target filters."""
+    if isinstance(tags, dict):
+        if not tags:
+            raise ValueError("At least one tag must be provided for preprocessing.")
+        return [tags]
+
+    normalized_filters = [
+        tag_filter for tag_filter in tags if isinstance(tag_filter, dict) and tag_filter
+    ]
+    if not normalized_filters:
+        raise ValueError("At least one tag must be provided for preprocessing.")
+    return normalized_filters
+
+
+def download_osm_map_by_bbox(
+    bbox: tuple[float, float, float, float],
+    output_file_path: str,
+    *,
+    timeout: int,
+    user_agent: str = "maps4fs OSM downloader",
+) -> str:
+    """Download raw OSM XML for a bounding box via the main OSM API.
+
+    Arguments:
+        bbox (tuple[float, float, float, float]): Bounding box in OSMnx order
+            ``(left, bottom, right, top)``.
+        output_file_path (str): Path where the downloaded ``.osm`` file will be written.
+        timeout (int): HTTP request timeout in seconds.
+        user_agent (str): User-Agent header value.
+
+    Returns:
+        str: The written file path.
+
+    Raises:
+        ValueError: If bbox coordinates are invalid or the response is not OSM XML.
+        RuntimeError: If the HTTP request fails.
+    """
+    left, bottom, right, top = bbox
+    if left >= right or bottom >= top:
+        raise ValueError(f"Invalid bbox for OSM download: {bbox!r}")
+
+    output_directory = os.path.dirname(output_file_path)
+    if output_directory:
+        os.makedirs(output_directory, exist_ok=True)
+
+    query = urlencode({"bbox": f"{left:.7f},{bottom:.7f},{right:.7f},{top:.7f}"})
+    request = Request(
+        f"https://api.openstreetmap.org/api/0.6/map?{query}",
+        headers={
+            "Accept": "application/xml",
+            "Accept-Encoding": "gzip",
+            "User-Agent": user_agent,
+        },
+    )
+
+    try:
+        with urlopen(request, timeout=timeout) as response:
+            payload = response.read()
+            if response.headers.get("Content-Encoding", "").lower() == "gzip":
+                payload = gzip.decompress(payload)
+    except HTTPError as exc:
+        details = exc.read().decode("utf-8", errors="replace").strip()
+        message = f"Failed to download OSM data: HTTP {exc.code}"
+        if details:
+            message = f"{message}: {details}"
+        raise RuntimeError(message) from exc
+    except URLError as exc:
+        raise RuntimeError(f"Failed to download OSM data: {exc.reason}") from exc
+
+    if b"<osm" not in payload:
+        raise ValueError("Downloaded response is not valid OSM XML.")
+
+    with open(output_file_path, "wb") as file:
+        file.write(payload)
+
+    check_and_fix_osm(output_file_path)
+    return output_file_path
+
+
 def preprocess(
     input_file_path: str,
     output_file_path: str,
-    tags: dict[str, OSMTagValue],
+    tags: OSMTagFilters,
     exclude_cut_tags: dict[str, OSMTagValue] | None = None,
     smooth_strength: float = 0.3,
     merge_distance: float = 0.0,
     split_width: float = 4.0,
     merge_tags: bool = True,
+    collapse_tags: dict[str, str] | None = None,
+    add_holes: bool = True,
     shrink_distance: float = 0.75,
     narrow_connection_width: float = 3.0,
     min_part_area: float = 40.0,
@@ -215,7 +304,8 @@ def preprocess(
     Arguments:
         input_file_path (str): Path to source OSM XML.
         output_file_path (str): Path to processed OSM XML.
-        tags (dict[str, OSMTagValue]): Tag filter for target polygons.
+        tags (OSMTagFilters): One tag filter or a list of OR-combined target filters
+            for target polygons.
         exclude_cut_tags (dict[str, OSMTagValue] | None): Tag filter for linear
             objects that must not split polygons.
         smooth_strength (float): Boundary smoothing strength in the [0, 1] range.
@@ -228,6 +318,11 @@ def preprocess(
             to their first configured value before grouping and output tagging.
             For example, {"landuse": ["farmland", "meadow"]} rewrites matched
             meadows as farmland so they can be merged into one output landuse.
+        collapse_tags (dict[str, str] | None): Optional canonical output tags for all
+            matched target polygons. When provided, any matched target keys are removed
+            from the output and replaced by these canonical tags.
+        add_holes (bool): If True, carve holes from inner area polygons and supported
+            point obstacles.
         shrink_distance (float): Final inward offset in meters applied after
             smoothing so polygons sit slightly inside the original boundary.
         narrow_connection_width (float): Width threshold in meters for breaking
@@ -242,8 +337,7 @@ def preprocess(
     Returns:
         dict[str, int]: Processing statistics.
     """
-    if not tags:
-        raise ValueError("At least one tag must be provided for preprocessing.")
+    target_filters = _normalize_target_filters(tags)
     if not os.path.isfile(input_file_path):
         raise FileNotFoundError(f"Input OSM file {input_file_path} does not exist.")
 
@@ -267,12 +361,13 @@ def preprocess(
 
     target_way_ids, target_relation_ids, target_member_way_ids, target_polygons = (
         _collect_target_polygons(
-            tags=tags,
+            tags=target_filters,
             nodes=nodes,
             ways=ways,
             relations=relations,
             relation_way_usage=relation_way_usage,
             merge_tags=merge_tags,
+            collapse_tags=collapse_tags,
         )
     )
     if not target_polygons:
@@ -287,15 +382,19 @@ def preprocess(
             "created_relations": 0,
         }
 
-    hole_polygons = _collect_hole_polygons(
-        tags=tags,
-        nodes=nodes,
-        ways=ways,
-        relations=relations,
-        excluded_way_ids=target_way_ids | target_member_way_ids,
-        excluded_relation_ids=target_relation_ids,
-    )
-    point_holes = _collect_point_holes(root=root, tags=tags, nodes=nodes)
+    if add_holes:
+        hole_polygons = _collect_hole_polygons(
+            tags=target_filters,
+            nodes=nodes,
+            ways=ways,
+            relations=relations,
+            excluded_way_ids=target_way_ids | target_member_way_ids,
+            excluded_relation_ids=target_relation_ids,
+        )
+        point_holes = _collect_point_holes(root=root, tags=target_filters, nodes=nodes)
+    else:
+        hole_polygons = []
+        point_holes = []
     splitter_lines = _collect_splitter_lines(
         nodes=nodes,
         ways=ways,
@@ -543,7 +642,9 @@ def _output_feature_tags(feature_tags: dict[str, str]) -> dict[str, str]:
 
 
 def _common_output_tags(
-    tag_sets: list[dict[str, str]], merge_key: tuple[tuple[str, str], ...]
+    tag_sets: list[dict[str, str]],
+    merge_key: tuple[tuple[str, str], ...],
+    remove_keys: set[str] | None = None,
 ) -> dict[str, str]:
     """Return stable output tags for a processed polygon group.
 
@@ -552,6 +653,8 @@ def _common_output_tags(
             polygons in the merge group.
         merge_key (tuple[tuple[str, str], ...]): Normalized tags that must
             be preserved on the merged output.
+        remove_keys (set[str] | None): Tag keys to strip from the common source tags
+            before merge-key tags are applied.
 
     Returns:
         dict[str, str]: Tag mapping common across the group with merge-key
@@ -564,6 +667,11 @@ def _common_output_tags(
     for tag_set in tag_sets[1:]:
         common_tags = {
             key: value for key, value in common_tags.items() if tag_set.get(key) == value
+        }
+
+    if remove_keys:
+        common_tags = {
+            key: value for key, value in common_tags.items() if key not in remove_keys
         }
 
     for key, value in merge_key:
@@ -598,6 +706,17 @@ def _matches_tags(feature_tags: dict[str, str], target_tags: dict[str, OSMTagVal
         if actual_value not in expected_value:
             return False
     return True
+
+
+def _matching_target_filter(
+    feature_tags: dict[str, str],
+    target_filters: list[OSMTagFilter],
+) -> OSMTagFilter | None:
+    """Return the first target filter matched by a feature."""
+    for target_filter in target_filters:
+        if _matches_tags(feature_tags, target_filter):
+            return target_filter
+    return None
 
 
 def _is_area_way(way: _WayData) -> bool:
@@ -700,17 +819,18 @@ def _relation_to_polygons(
 
 
 def _collect_target_polygons(
-    tags: dict[str, OSMTagValue],
+    tags: list[OSMTagFilter],
     nodes: dict[int, tuple[float, float]],
     ways: dict[int, _WayData],
     relations: dict[int, _RelationData],
     relation_way_usage: dict[int, int],
     merge_tags: bool,
+    collapse_tags: dict[str, str] | None,
 ) -> tuple[set[int], set[int], set[int], list[_TargetPolygonData]]:
     """Collect target polygons and the source elements they replace.
 
     Arguments:
-        tags (dict[str, OSMTagValue]): Target polygon tag filter.
+        tags (list[OSMTagFilter]): OR-combined target polygon tag filters.
         nodes (dict[int, tuple[float, float]]): Node coordinate mapping.
         ways (dict[int, _WayData]): Parsed OSM ways by id.
         relations (dict[int, _RelationData]): Parsed OSM relations by id.
@@ -718,6 +838,8 @@ def _collect_target_polygons(
             each way.
         merge_tags (bool): Whether compatible target tag values should be
             normalized before grouping.
+        collapse_tags (dict[str, str] | None): Optional canonical tags that replace
+            matched target keys on output.
 
     Returns:
         tuple[set[int], set[int], set[int], list[_TargetPolygonData]]:
@@ -730,34 +852,50 @@ def _collect_target_polygons(
     target_polygons: list[_TargetPolygonData] = []
 
     for way_id, way in ways.items():
-        if not way.tags or not _matches_tags(way.tags, tags):
+        if not way.tags:
+            continue
+        matching_filter = _matching_target_filter(way.tags, tags)
+        if matching_filter is None:
             continue
         polygon = _way_to_polygon(way, nodes)
         if polygon is None:
             continue
         target_way_ids.add(way_id)
+        target_keys = tuple(matching_filter.keys())
         target_polygons.append(
             _TargetPolygonData(
                 geometry=polygon,
                 tags=_output_feature_tags(way.tags),
-                merge_key=_target_merge_key(way.tags, tags, merge_tags),
+                merge_key=(
+                    tuple(collapse_tags.items())
+                    if collapse_tags is not None
+                    else _target_merge_key(way.tags, matching_filter, merge_tags)
+                ),
+                target_keys=target_keys,
             )
         )
 
     for relation_id, relation in relations.items():
-        if not _matches_tags(relation.tags, tags):
+        matching_filter = _matching_target_filter(relation.tags, tags)
+        if matching_filter is None:
             continue
         relation_polygons, member_way_ids = _relation_to_polygons(relation, ways, nodes)
         if not relation_polygons:
             continue
         target_relation_ids.add(relation_id)
         relation_output_tags = _output_feature_tags(relation.tags)
-        relation_merge_key = _target_merge_key(relation.tags, tags, merge_tags)
+        relation_merge_key = (
+            tuple(collapse_tags.items())
+            if collapse_tags is not None
+            else _target_merge_key(relation.tags, matching_filter, merge_tags)
+        )
+        relation_target_keys = tuple(matching_filter.keys())
         target_polygons.extend(
             _TargetPolygonData(
                 geometry=polygon,
                 tags=relation_output_tags,
                 merge_key=relation_merge_key,
+                target_keys=relation_target_keys,
             )
             for polygon in relation_polygons
         )
@@ -773,7 +911,7 @@ def _collect_target_polygons(
 
 
 def _collect_hole_polygons(
-    tags: dict[str, OSMTagValue],
+    tags: list[OSMTagFilter],
     nodes: dict[int, tuple[float, float]],
     ways: dict[int, _WayData],
     relations: dict[int, _RelationData],
@@ -783,7 +921,7 @@ def _collect_hole_polygons(
     """Collect non-target area polygons that should carve holes.
 
     Arguments:
-        tags (dict[str, OSMTagValue]): Target polygon tag filter.
+        tags (list[OSMTagFilter]): OR-combined target polygon tag filters.
         nodes (dict[int, tuple[float, float]]): Node coordinate mapping.
         ways (dict[int, _WayData]): Parsed OSM ways by id.
         relations (dict[int, _RelationData]): Parsed OSM relations by id.
@@ -799,7 +937,7 @@ def _collect_hole_polygons(
     for way_id, way in ways.items():
         if way_id in excluded_way_ids or not way.tags:
             continue
-        if _matches_tags(way.tags, tags):
+        if _matching_target_filter(way.tags, tags) is not None:
             continue
         polygon = _way_to_polygon(way, nodes)
         if polygon is not None:
@@ -810,7 +948,7 @@ def _collect_hole_polygons(
             continue
         if relation.tags.get("type") != "multipolygon":
             continue
-        if _matches_tags(relation.tags, tags):
+        if _matching_target_filter(relation.tags, tags) is not None:
             continue
         relation_polygons, _ = _relation_to_polygons(relation, ways, nodes)
         hole_polygons.extend(relation_polygons)
@@ -820,14 +958,14 @@ def _collect_hole_polygons(
 
 def _collect_point_holes(
     root: ET.Element,
-    tags: dict[str, OSMTagValue],
+    tags: list[OSMTagFilter],
     nodes: dict[int, tuple[float, float]],
 ) -> list[_PointHoleData]:
     """Collect point obstacles that should carve circular holes.
 
     Arguments:
         root (ET.Element): Root OSM XML element.
-        tags (dict[str, OSMTagValue]): Target polygon tag filter.
+        tags (list[OSMTagFilter]): OR-combined target polygon tag filters.
         nodes (dict[int, tuple[float, float]]): Node coordinate mapping.
 
     Returns:
@@ -851,7 +989,7 @@ def _collect_point_holes(
             continue
 
         node_tags = _extract_tags(node_element)
-        if not node_tags or _matches_tags(node_tags, tags):
+        if not node_tags or _matching_target_filter(node_tags, tags) is not None:
             continue
 
         hole_radius = _point_hole_radius(node_tags)
@@ -1139,6 +1277,10 @@ def _preprocess_target_polygon_groups(
                 continue
             group_holes.extend(other_geometries)
 
+        group_target_keys = {
+            key for target_polygon in group_targets for key in target_polygon.target_keys
+        }
+
         group_output_polygons = _preprocess_polygons(
             target_polygons=group_geometries[merge_key],
             hole_polygons=group_holes,
@@ -1158,6 +1300,7 @@ def _preprocess_target_polygon_groups(
         group_tags = _common_output_tags(
             [target_polygon.tags for target_polygon in group_targets],
             merge_key,
+            remove_keys=group_target_keys,
         )
         processed_polygons.extend(
             _ProcessedPolygonData(geometry=polygon, tags=group_tags)
@@ -1187,8 +1330,8 @@ def _smooth_polygons(
         return []
 
     base_radius = 8.0 + (22.0 * bounded_strength)
-    min_corner_deviation = math.radians(12.0 - (6.0 * bounded_strength))
-    segment_count = 5 + int(7.0 * bounded_strength)
+    min_corner_deviation = math.radians(10.0 - (6.0 * bounded_strength))
+    segment_count = 6 + int(8.0 * bounded_strength)
 
     smoothed_polygons: list[Polygon] = []
     for polygon in polygons:
@@ -1447,27 +1590,35 @@ def _smooth_ring(
     if len(coordinates) < 4 or radius <= 0:
         return coordinates
 
-    points = coordinates[:-1]
+    control_coordinates = _build_smoothing_control_ring(coordinates, radius)
+    points = control_coordinates[:-1]
     if len(points) < 3:
         return coordinates
 
     rounded_points: list[tuple[float, float]] = []
     rounded_corner_count = 0
-    for index, point in enumerate(points):
-        previous_point = points[index - 1]
-        next_point = points[(index + 1) % len(points)]
+    alignment_tolerance = max(math.radians(35.0), min_corner_deviation * 3.0)
+    max_corner_search_distance = max(radius / 0.45, radius * 1.5)
+    probe_distance = max(radius, 2.0)
 
-        to_previous = (previous_point[0] - point[0], previous_point[1] - point[1])
-        to_next = (next_point[0] - point[0], next_point[1] - point[1])
-        previous_length = math.hypot(*to_previous)
-        next_length = math.hypot(*to_next)
-        if previous_length <= 1e-6 or next_length <= 1e-6:
+    for index, point in enumerate(points):
+        previous_probe = _point_along_ring_side(points, index, -1, probe_distance)
+        next_probe = _point_along_ring_side(points, index, 1, probe_distance)
+
+        to_previous_probe = (
+            previous_probe[0] - point[0],
+            previous_probe[1] - point[1],
+        )
+        to_next_probe = (next_probe[0] - point[0], next_probe[1] - point[1])
+        previous_probe_length = math.hypot(*to_previous_probe)
+        next_probe_length = math.hypot(*to_next_probe)
+        if previous_probe_length <= 1e-6 or next_probe_length <= 1e-6:
             if not rounded_points or rounded_points[-1] != point:
                 rounded_points.append(point)
             continue
 
-        cosine = ((to_previous[0] * to_next[0]) + (to_previous[1] * to_next[1])) / (
-            previous_length * next_length
+        cosine = ((to_previous_probe[0] * to_next_probe[0]) + (to_previous_probe[1] * to_next_probe[1])) / (
+            previous_probe_length * next_probe_length
         )
         cosine = max(-1.0, min(1.0, cosine))
         angle = math.acos(cosine)
@@ -1477,23 +1628,47 @@ def _smooth_ring(
                 rounded_points.append(point)
             continue
 
+        previous_run_length = _available_ring_side_length(
+            points,
+            index,
+            -1,
+            (
+                to_previous_probe[0] / previous_probe_length,
+                to_previous_probe[1] / previous_probe_length,
+            ),
+            alignment_tolerance,
+            max_corner_search_distance,
+        )
+        next_run_length = _available_ring_side_length(
+            points,
+            index,
+            1,
+            (to_next_probe[0] / next_probe_length, to_next_probe[1] / next_probe_length),
+            alignment_tolerance,
+            max_corner_search_distance,
+        )
+
         local_radius = min(
             radius * min(1.0, deviation / (math.pi / 2.0)),
-            previous_length * 0.4,
-            next_length * 0.4,
+            previous_run_length * 0.45,
+            next_run_length * 0.45,
         )
         if local_radius <= 0.25:
             if not rounded_points or rounded_points[-1] != point:
                 rounded_points.append(point)
             continue
 
-        start_point = (
-            point[0] + ((to_previous[0] / previous_length) * local_radius),
-            point[1] + ((to_previous[1] / previous_length) * local_radius),
+        start_point = _point_along_ring_side(
+            points,
+            index,
+            -1,
+            local_radius,
         )
-        end_point = (
-            point[0] + ((to_next[0] / next_length) * local_radius),
-            point[1] + ((to_next[1] / next_length) * local_radius),
+        end_point = _point_along_ring_side(
+            points,
+            index,
+            1,
+            local_radius,
         )
 
         corner_segments = max(
@@ -1532,6 +1707,156 @@ def _smooth_ring(
         return coordinates
 
     return [*deduped_points, deduped_points[0]]
+
+
+def _build_smoothing_control_ring(
+    coordinates: list[tuple[float, float]],
+    radius: float,
+) -> list[tuple[float, float]]:
+    """Return a simplified control ring for stable corner detection.
+
+    The geometric cleanup steps can introduce many tiny segments around what is still
+    visually one corner. This helper lightly simplifies the ring only for smoothing so the
+    radius is applied to the effective corner rather than to each micro-segment.
+
+    Arguments:
+        coordinates (list[tuple[float, float]]): Closed ring coordinates.
+        radius (float): Requested corner radius in projected meters.
+
+    Returns:
+        list[tuple[float, float]]: Closed control ring coordinates.
+    """
+    simplify_tolerance = max(0.75, radius * 0.18)
+    control_line = LineString(coordinates).simplify(simplify_tolerance, preserve_topology=False)
+    control_coordinates = list(control_line.coords)
+    if not control_coordinates:
+        return coordinates
+    if control_coordinates[0] != control_coordinates[-1]:
+        control_coordinates.append(control_coordinates[0])
+
+    deduped_coordinates: list[tuple[float, float]] = []
+    for coordinate in control_coordinates:
+        if (
+            deduped_coordinates
+            and math.isclose(deduped_coordinates[-1][0], coordinate[0], abs_tol=1e-6)
+            and math.isclose(deduped_coordinates[-1][1], coordinate[1], abs_tol=1e-6)
+        ):
+            continue
+        deduped_coordinates.append(coordinate)
+
+    return deduped_coordinates if len(deduped_coordinates) >= 4 else coordinates
+
+
+def _available_ring_side_length(
+    points: list[tuple[float, float]],
+    corner_index: int,
+    step: int,
+    reference_direction: tuple[float, float],
+    alignment_tolerance: float,
+    max_distance: float,
+) -> float:
+    """Measure usable path length on one side of a corner.
+
+    The walk stops once the ring bends too far away from the initial edge direction.
+
+    Arguments:
+        points (list[tuple[float, float]]): Open ring point sequence.
+        corner_index (int): Index of the corner point.
+        step (int): Ring traversal direction, either -1 or 1.
+        reference_direction (tuple[float, float]): Unit direction vector for the
+            first segment leaving the corner on this side.
+        alignment_tolerance (float): Maximum angular drift in radians allowed while
+            extending the side length.
+        max_distance (float): Hard cap on the measured distance.
+
+    Returns:
+        float: Usable path length along the requested side.
+    """
+    total_length = 0.0
+    current_index = corner_index
+
+    for _ in range(len(points) - 1):
+        next_index = (current_index + step) % len(points)
+        segment = (
+            points[next_index][0] - points[current_index][0],
+            points[next_index][1] - points[current_index][1],
+        )
+        segment_length = math.hypot(*segment)
+        if segment_length <= 1e-6:
+            current_index = next_index
+            continue
+
+        segment_direction = (segment[0] / segment_length, segment[1] / segment_length)
+        if _angle_between_unit_vectors(segment_direction, reference_direction) > alignment_tolerance:
+            break
+
+        total_length += segment_length
+        if total_length >= max_distance:
+            return max_distance
+
+        current_index = next_index
+
+    return total_length
+
+
+def _point_along_ring_side(
+    points: list[tuple[float, float]],
+    corner_index: int,
+    step: int,
+    distance: float,
+) -> tuple[float, float]:
+    """Return a point at a path distance from the corner along one ring side.
+
+    Arguments:
+        points (list[tuple[float, float]]): Open ring point sequence.
+        corner_index (int): Index of the corner point.
+        step (int): Ring traversal direction, either -1 or 1.
+        distance (float): Path distance to travel from the corner.
+
+    Returns:
+        tuple[float, float]: Coordinate located on the ring path.
+    """
+    if distance <= 0:
+        return points[corner_index]
+
+    remaining_distance = distance
+    current_index = corner_index
+    current_point = points[corner_index]
+
+    for _ in range(len(points) - 1):
+        next_index = (current_index + step) % len(points)
+        next_point = points[next_index]
+        segment = (
+            next_point[0] - current_point[0],
+            next_point[1] - current_point[1],
+        )
+        segment_length = math.hypot(*segment)
+        if segment_length <= 1e-6:
+            current_index = next_index
+            current_point = next_point
+            continue
+
+        if remaining_distance <= segment_length:
+            ratio = remaining_distance / segment_length
+            return (
+                current_point[0] + (segment[0] * ratio),
+                current_point[1] + (segment[1] * ratio),
+            )
+
+        remaining_distance -= segment_length
+        current_index = next_index
+        current_point = next_point
+
+    return current_point
+
+
+def _angle_between_unit_vectors(
+    first: tuple[float, float],
+    second: tuple[float, float],
+) -> float:
+    """Return the angle between two unit vectors in radians."""
+    cosine = max(-1.0, min(1.0, (first[0] * second[0]) + (first[1] * second[1])))
+    return math.acos(cosine)
 
 
 def _quadratic_bezier_points(

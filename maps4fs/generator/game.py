@@ -23,6 +23,7 @@ from maps4fs.generator.component.config import Config
 from maps4fs.generator.component.dem import DEM
 from maps4fs.generator.component.electricity import Electricity
 from maps4fs.generator.component.grle import GRLE
+from maps4fs.generator.component.preprocessor import Preprocessor
 from maps4fs.generator.component.road import Road
 from maps4fs.generator.component.satellite import Satellite
 from maps4fs.generator.component.scene import Scene
@@ -174,6 +175,7 @@ class Game:
     # Order matters — some components depend on earlier ones.
     # Subclasses may override to use a different component list.
     components: list[type[Any]] = [
+        Preprocessor,
         Satellite,
         Texture,
         DEM,

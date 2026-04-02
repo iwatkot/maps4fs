@@ -9,6 +9,7 @@ from maps4fs.generator.component.dem import DEM
 from maps4fs.generator.component.electricity import Electricity
 from maps4fs.generator.component.grle import GRLE
 from maps4fs.generator.component.layer import Layer
+from maps4fs.generator.component.preprocessor import Preprocessor
 from maps4fs.generator.component.satellite import Satellite
 from maps4fs.generator.component.scene import Scene
 from maps4fs.generator.component.soil import Soil

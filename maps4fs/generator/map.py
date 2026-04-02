@@ -76,6 +76,7 @@ class Map:
         os.makedirs(self.map_directory, exist_ok=True)
 
         # Domain-specific settings unpacked for convenient component access.
+        self.preprocessor_settings = generation_settings.preprocessor_settings
         self.dem_settings = generation_settings.dem_settings
         self.background_settings = generation_settings.background_settings
         self.grle_settings = generation_settings.grle_settings
