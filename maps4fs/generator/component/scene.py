@@ -774,7 +774,11 @@ class Scene(ImageComponent):
                 / 100
             )
 
-            for x, y in self.non_empty_pixels(forest_image, step=step):
+            for x, y in self.non_empty_pixels(
+                forest_image,
+                step=step,
+                limit=self.map.i3d_settings.tree_limit,
+            ):
                 shifted_x, shifted_y = self.randomize_coordinates((x, y), shift)
 
                 shifted_x, shifted_y = int(shifted_x), int(shifted_y)
@@ -837,25 +841,101 @@ class Scene(ImageComponent):
 
     @staticmethod
     def non_empty_pixels(
-        image: np.ndarray, step: int = 1
+        image: np.ndarray, step: int = 1, limit: int | None = None
     ) -> Generator[tuple[int, int], None, None]:
         """Receives numpy array, which represents single-channeled image of uint8 type.
-        Yield coordinates of non-empty pixels (pixels with value greater than 0), sampling about 1/step of them.
+        Yield coordinates of non-empty pixels using component-aware sampling.
+
+        Sampling is performed per connected component rather than globally so small forest
+        islands, isolated tree pixels, and thin tree rows do not disappear just because they
+        happen to fall between large-component samples.
 
         Arguments:
             image (np.ndarray): The image to get non-empty pixels from.
             step (int, optional): The step to sample non-empty pixels. Defaults to 1.
+            limit (int | None, optional): Optional hard cap on yielded coordinates.
 
         Yields:
             tuple[int, int]: The coordinates of non-empty pixels.
         """
-        count = 0
-        for y, row in enumerate(image):
-            for x, value in enumerate(row):
-                if value > 0:
-                    if count % step == 0:
-                        yield x, y
-                    count += 1
+        effective_step = max(1, step)
+        if image.ndim > 2:
+            mask = np.any(image > 0, axis=2)
+        else:
+            mask = image > 0
+
+        if not np.any(mask):
+            return
+
+        component_count, labels, _stats, centroids = cv2.connectedComponentsWithStats(
+            mask.astype(np.uint8),
+            connectivity=8,
+        )
+
+        component_points: dict[int, list[tuple[int, int]]] = {}
+        non_zero_y, non_zero_x = np.nonzero(mask)
+        for y, x in zip(non_zero_y.tolist(), non_zero_x.tolist()):
+            label = int(labels[y, x])
+            if label == 0:
+                continue
+            component_points.setdefault(label, []).append((x, y))
+
+        required_points: list[tuple[int, int]] = []
+        optional_points: list[tuple[int, int]] = []
+
+        for label in sorted(component_points, key=lambda current_label: len(component_points[current_label]), reverse=True):
+            points = component_points[label]
+            if not points:
+                continue
+
+            representative_point = Scene._nearest_component_point_to_centroid(
+                points,
+                tuple(centroids[label]),
+            )
+            required_points.append(representative_point)
+
+            if len(points) <= effective_step:
+                continue
+
+            for index, point in enumerate(points):
+                if index % effective_step != 0 or point == representative_point:
+                    continue
+                optional_points.append(point)
+
+        if limit is not None and limit > 0:
+            if len(required_points) >= limit:
+                selected_points = required_points[:limit]
+            else:
+                remaining_budget = limit - len(required_points)
+                if len(optional_points) <= remaining_budget:
+                    selected_points = [*required_points, *optional_points]
+                else:
+                    stride = len(optional_points) / remaining_budget
+                    extra_points = [
+                        optional_points[int(index * stride)]
+                        for index in range(remaining_budget)
+                    ]
+                    selected_points = [*required_points, *extra_points]
+        else:
+            selected_points = [*required_points, *optional_points]
+
+        for point in selected_points:
+            yield point
+
+    @staticmethod
+    def _nearest_component_point_to_centroid(
+        points: list[tuple[int, int]],
+        centroid: tuple[float, float],
+    ) -> tuple[int, int]:
+        """Return the existing component pixel closest to the connected-component centroid."""
+        if len(points) == 1:
+            return points[0]
+
+        centroid_x, centroid_y = centroid
+        return min(
+            points,
+            key=lambda point: ((point[0] - centroid_x) ** 2) + ((point[1] - centroid_y) ** 2),
+        )
 
     @staticmethod
     def non_empty_pixels_count(image: np.ndarray) -> int:
@@ -889,7 +969,7 @@ class Scene(ImageComponent):
         if limit <= 0 or available_tree_count <= limit:
             recommended_step = 1
         else:
-            recommended_step = int(available_tree_count / limit)
+            recommended_step = (available_tree_count + limit - 1) // limit
 
         self.forest_info["step_by_limit"] = recommended_step
 
