@@ -429,6 +429,7 @@ def preprocess(
         relations=relations,
     )
     created_ways, created_relations = _append_polygons(root=root, polygons=processed_polygons)
+    _remove_orphan_untagged_nodes(root)
 
     # JOSM expects a version on every persisted primitive.
     _ensure_primitive_versions(root)
@@ -2350,6 +2351,59 @@ def _append_polygons(root: ET.Element, polygons: list[_ProcessedPolygonData]) ->
             tag_element.set("v", value)
 
     return created_ways, created_relations
+
+
+def _remove_orphan_untagged_nodes(root: ET.Element) -> int:
+    """Remove nodes that have no tags and are not referenced by any way or relation.
+
+    Arguments:
+        root (ET.Element): Root OSM XML element.
+
+    Returns:
+        int: Number of removed orphan nodes.
+    """
+    referenced_node_ids: set[int] = set()
+
+    for way_element in root.findall("way"):
+        for nd_element in way_element.findall("nd"):
+            ref_value = nd_element.get("ref")
+            if ref_value is None:
+                continue
+            try:
+                referenced_node_ids.add(int(ref_value))
+            except ValueError:
+                continue
+
+    for relation_element in root.findall("relation"):
+        for member_element in relation_element.findall("member"):
+            if member_element.get("type") != "node":
+                continue
+            ref_value = member_element.get("ref")
+            if ref_value is None:
+                continue
+            try:
+                referenced_node_ids.add(int(ref_value))
+            except ValueError:
+                continue
+
+    removed_nodes = 0
+    for node_element in list(root.findall("node")):
+        node_id = node_element.get("id")
+        if node_id is None:
+            continue
+        try:
+            parsed_node_id = int(node_id)
+        except ValueError:
+            continue
+        if parsed_node_id in referenced_node_ids:
+            continue
+        if node_element.findall("tag"):
+            continue
+
+        root.remove(node_element)
+        removed_nodes += 1
+
+    return removed_nodes
 
 
 def _ensure_primitive_versions(root: ET.Element) -> None:
