@@ -187,7 +187,18 @@ class PreprocessorSettings(SettingsModel):
     """
 
     class UsagePreprocessSettings(SettingsModel):
-        """Preprocessing options for one usage group."""
+        """Preprocessing options for one usage group.
+
+        Attributes:
+            enabled (bool): enable preprocessing for this usage group.
+            smooth_edges (bool): smooth polygon corners after split/hole processing.
+            split (bool): cut polygons by configured linear features.
+            merge (bool): merge touching fragments after cuts when safe.
+            collapse (bool): rewrite matching tags to a canonical usage tag.
+            add_holes (bool): subtract non-target areas and supported point obstacles.
+            padding (float): final inward padding applied after smoothing and before cleanup.
+            smooth_radius (float): user-facing smoothing radius control.
+        """
 
         enabled: bool = False
         smooth_edges: bool = True
@@ -195,6 +206,7 @@ class PreprocessorSettings(SettingsModel):
         merge: bool = False
         collapse: bool = False
         add_holes: bool = True
+        padding: float = Field(default=2.0, ge=0.0)
         smooth_radius: float = Field(default=14.6, ge=0.0, le=30.0)
 
     download_osm: bool = False

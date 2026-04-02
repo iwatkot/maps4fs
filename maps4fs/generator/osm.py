@@ -53,6 +53,9 @@ _LINEAR_TAGS = {
 _CUT_LINEAR_TAGS = {"highway", "railway", "waterway", "barrier", "power", "aerialway"}
 
 _POINT_HOLE_RADII: dict[tuple[str, str], float] = {
+    ("natural", "tree"): 3.0,
+    ("natural", "rock"): 2.0,
+    ("amenity", "hunting_stand"): 1.5,
     ("power", "tower"): 8.0,
     ("power", "portal"): 4.0,
     ("power", "pole"): 1.5,
@@ -325,8 +328,8 @@ def preprocess(
             from the output and replaced by these canonical tags.
         add_holes (bool): If True, carve holes from inner area polygons and supported
             point obstacles.
-        shrink_distance (float): Final inward offset in meters applied after
-            smoothing so polygons sit slightly inside the original boundary.
+        shrink_distance (float): Final inward padding in meters applied after
+            smoothing so polygons sit inside the original boundary.
         narrow_connection_width (float): Width threshold in meters for breaking
             very narrow polygon bridges into separate polygons. Set to 0 to
             disable this pass.
@@ -1128,7 +1131,7 @@ def _collect_splitter_lines(
             continue
         if _is_area_way(way):
             continue
-        if not any(tag in _CUT_LINEAR_TAGS for tag in way.tags):
+        if not _is_splitter_feature(way.tags):
             continue
 
         available_node_refs = [node_id for node_id in way.node_refs if node_id in nodes]
@@ -1161,6 +1164,13 @@ def _collect_splitter_lines(
         )
 
     return lines
+
+
+def _is_splitter_feature(tags: dict[str, str]) -> bool:
+    """Return whether a tagged linear feature should cut target polygons."""
+    if any(tag in _CUT_LINEAR_TAGS for tag in tags):
+        return True
+    return tags.get("natural") == "tree_row"
 
 
 def _preprocess_polygons(
@@ -2071,6 +2081,9 @@ def _splitter_buffer_width(tags: dict[str, str], default_split_width: float) -> 
     """
     if default_split_width <= 0:
         return 0.0
+
+    if tags.get("natural") == "tree_row":
+        return 1.0
 
     highway_value = tags.get("highway")
     width = default_split_width

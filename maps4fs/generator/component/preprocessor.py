@@ -188,6 +188,7 @@ class Preprocessor(Component):
                     usage_settings.merge,
                     usage_settings.collapse,
                     usage_settings.add_holes,
+                    usage_settings.padding > 0,
                 ]
             ):
                 self.logger.debug(
@@ -204,6 +205,7 @@ class Preprocessor(Component):
             split_width = self.split_width if usage_settings.split else 0.0
             merge_distance = self.merge_distance if usage_settings.merge else 0.0
             collapse_tags = self._usage_collapse_tags(usage) if usage_settings.collapse else None
+            padding = usage_settings.padding
 
             self.logger.info(
                 "Preprocessing OSM usage %s with %d schema-derived filters.",
@@ -222,12 +224,14 @@ class Preprocessor(Component):
                     merge_tags=False,
                     collapse_tags=collapse_tags,
                     add_holes=usage_settings.add_holes,
+                    shrink_distance=padding,
                 )
                 self.preprocessing_reports.append(
                     {
                         "usage": usage,
                         "filters": usage_filters,
                         "collapse_tags": collapse_tags,
+                        "padding": padding,
                         "stats": stats,
                     }
                 )
@@ -242,6 +246,7 @@ class Preprocessor(Component):
                         "usage": usage,
                         "filters": usage_filters,
                         "collapse_tags": collapse_tags,
+                        "padding": padding,
                         "error": str(exc),
                     }
                 )
