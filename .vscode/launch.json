@@ -13,17 +13,6 @@
       }
     },
     {
-      "name": "demo_osm.py",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${workspaceFolder}/demo_osm.py",
-      "console": "integratedTerminal",
-      "justMyCode": true,
-      "env": {
-        "PYTHONPATH": "${workspaceFolder}"
-      }
-    },
-    {
       "name": "GRLE to PNG Converter",
       "type": "debugpy",
       "request": "launch",
