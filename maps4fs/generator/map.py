@@ -76,6 +76,7 @@ class Map:
         os.makedirs(self.map_directory, exist_ok=True)
 
         # Domain-specific settings unpacked for convenient component access.
+        self.preprocessor_settings = generation_settings.preprocessor_settings
         self.dem_settings = generation_settings.dem_settings
         self.background_settings = generation_settings.background_settings
         self.grle_settings = generation_settings.grle_settings
@@ -331,6 +332,15 @@ class Map:
             self.logger.info("Statistics sent successfully after generation.")
         except Exception as e:
             self.logger.warning("Error sending statistics after generation: %s", e)
+
+    def update_main_settings(self, data: dict[str, Any]) -> None:
+        """Public wrapper for updating persisted main settings.
+
+        Arguments:
+            data (dict[str, Any]): Partial settings payload to merge into the
+                persisted main settings JSON file.
+        """
+        self._update_main_settings(data)
 
     def _update_main_settings(self, data: dict[str, Any]) -> None:
         """Update main settings with provided data.

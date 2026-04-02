@@ -174,9 +174,53 @@ class BuildingSettings(SettingsModel):
     tolerance_factor: int = 30
 
 
+class PreprocessorSettings(SettingsModel):
+    """Represents the advanced settings for the preprocessor component.
+
+    Attributes:
+        download_osm (bool): legacy compatibility flag retained in saved settings.
+            When no custom OSM path is provided, the preprocessor attempts to
+            download raw OSM XML automatically, routes later OSM-consuming
+            components through that local custom OSM pipeline, and falls back
+            gracefully to the default OSM source if the download fails.
+        fields (UsagePreprocessSettings): preprocessing options for layers with
+            ``usage == \"field\"``.
+        forests (UsagePreprocessSettings): preprocessing options for layers with
+            ``usage == \"forest\"``.
+    """
+
+    class UsagePreprocessSettings(SettingsModel):
+        """Preprocessing options for one usage group.
+
+        Attributes:
+            enabled (bool): enable preprocessing for this usage group.
+            smooth_edges (bool): smooth polygon corners after split/hole processing.
+            split (bool): cut polygons by configured linear features.
+            merge (bool): merge touching fragments after cuts when safe.
+            collapse (bool): rewrite matching tags to a canonical usage tag.
+            add_holes (bool): subtract non-target areas and supported point obstacles.
+            padding (float): final inward padding applied after smoothing and before cleanup.
+            smooth_radius (float): user-facing smoothing radius control.
+        """
+
+        enabled: bool = False
+        smooth_edges: bool = True
+        split: bool = True
+        merge: bool = False
+        collapse: bool = False
+        add_holes: bool = True
+        padding: float = Field(default=2.0, ge=0.0)
+        smooth_radius: float = Field(default=14.6, ge=0.0, le=30.0)
+
+    download_osm: bool = True
+    fields: UsagePreprocessSettings = UsagePreprocessSettings()
+    forests: UsagePreprocessSettings = UsagePreprocessSettings()
+
+
 class GenerationSettings(BaseModel):
     """Represents the settings for the map generation process."""
 
+    preprocessor_settings: PreprocessorSettings = PreprocessorSettings()
     dem_settings: DEMSettings = DEMSettings()
     background_settings: BackgroundSettings = BackgroundSettings()
     grle_settings: GRLESettings = GRLESettings()
@@ -192,6 +236,7 @@ class GenerationSettings(BaseModel):
             dict[str, Any]: JSON representation of the GenerationSettings.
         """
         return {
+            "PreprocessorSettings": self.preprocessor_settings.model_dump(),
             "DEMSettings": self.dem_settings.model_dump(),
             "BackgroundSettings": self.background_settings.model_dump(),
             "GRLESettings": self.grle_settings.model_dump(),
@@ -221,6 +266,9 @@ class GenerationSettings(BaseModel):
             return data.get(key, {}) if safe else data[key]
 
         return cls(
+            preprocessor_settings=PreprocessorSettings(
+                **_get("PreprocessorSettings", "preprocessor_settings")
+            ),
             dem_settings=DEMSettings(**_get("DEMSettings", "dem_settings")),
             background_settings=BackgroundSettings(
                 **_get("BackgroundSettings", "background_settings")
