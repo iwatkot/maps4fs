@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 import gzip
 import math
 import os
 import shutil
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import TypeAlias
 from urllib.error import HTTPError, URLError
@@ -383,9 +383,11 @@ def _merge_osm_roots(
         "osm",
         {
             "version": roots[0].get("version", "0.6") if roots else "0.6",
-            "generator": roots[0].get("generator", "maps4fs OSM downloader")
-            if roots
-            else "maps4fs OSM downloader",
+            "generator": (
+                roots[0].get("generator", "maps4fs OSM downloader")
+                if roots
+                else "maps4fs OSM downloader"
+            ),
         },
     )
 
@@ -424,6 +426,7 @@ def preprocess(
     input_file_path: str,
     output_file_path: str,
     tags: OSMTagFilters,
+    process_bbox: tuple[float, float, float, float] | None = None,
     exclude_cut_tags: dict[str, OSMTagValue] | None = None,
     smooth_strength: float = 0.3,
     merge_distance: float = 0.0,
@@ -452,6 +455,10 @@ def preprocess(
         output_file_path (str): Path to processed OSM XML.
         tags (OSMTagFilters): One tag filter or a list of OR-combined target filters
             for target polygons.
+        process_bbox (tuple[float, float, float, float] | None): Optional bbox in
+            OSMnx order ``(left, bottom, right, top)``. When provided, only target
+            polygons intersecting that bbox are rewritten and only nearby holes and
+            splitter features are considered.
         exclude_cut_tags (dict[str, OSMTagValue] | None): Tag filter for linear
             objects that must not split polygons.
         smooth_strength (float): Boundary smoothing strength in the [0, 1] range.
@@ -514,6 +521,7 @@ def preprocess(
             relation_way_usage=relation_way_usage,
             merge_tags=merge_tags,
             collapse_tags=collapse_tags,
+            process_bbox=process_bbox,
         )
     )
     if not target_polygons:
@@ -536,8 +544,14 @@ def preprocess(
             relations=relations,
             excluded_way_ids=target_way_ids | target_member_way_ids,
             excluded_relation_ids=target_relation_ids,
+            process_bbox=process_bbox,
         )
-        point_holes = _collect_point_holes(root=root, tags=target_filters, nodes=nodes)
+        point_holes = _collect_point_holes(
+            root=root,
+            tags=target_filters,
+            nodes=nodes,
+            process_bbox=process_bbox,
+        )
     else:
         hole_polygons = []
         point_holes = []
@@ -546,6 +560,7 @@ def preprocess(
         ways=ways,
         excluded_way_ids=target_way_ids,
         exclude_cut_tags=exclude_cut_tags,
+        process_bbox=process_bbox,
     )
 
     processed_polygons = _preprocess_target_polygon_groups(
@@ -588,6 +603,265 @@ def preprocess(
         "created_ways": created_ways,
         "created_relations": created_relations,
     }
+
+
+def prune_osm_file(
+    input_file_path: str,
+    output_file_path: str,
+    tags: OSMTagFilters,
+    spatial_filters: list[
+        tuple[OSMTagFilter, tuple[float, float, float, float] | None]
+    ] | None = None,
+) -> dict[str, int]:
+    """Remove OSM primitives that are not needed by the runtime tag set.
+
+    Matching nodes, ways, and relations are retained, along with all dependent member ways,
+    member relations, and referenced nodes required to keep the remaining OSM XML valid.
+
+    Arguments:
+        input_file_path (str): Path to source OSM XML.
+        output_file_path (str): Path to the pruned OSM XML.
+        tags (OSMTagFilters): Tag filters that define which runtime features must remain.
+        spatial_filters (list[tuple[OSMTagFilter, tuple[float, float, float, float] | None]]
+            | None): Optional per-filter bbox retention rules in OSMnx order
+            ``(left, bottom, right, top)``. Features matching a filter are kept only when they
+            intersect that filter's bbox. When omitted, all matching features are kept regardless
+            of location.
+
+    Returns:
+        dict[str, int]: Pruning statistics.
+    """
+    retain_filters = _normalize_target_filters(tags)
+    retain_rules = spatial_filters or [(target_filter, None) for target_filter in retain_filters]
+    if not os.path.isfile(input_file_path):
+        raise FileNotFoundError(f"Input OSM file {input_file_path} does not exist.")
+
+    same_path = os.path.abspath(input_file_path) == os.path.abspath(output_file_path)
+    if not same_path:
+        output_directory = os.path.dirname(output_file_path)
+        if output_directory:
+            os.makedirs(output_directory, exist_ok=True)
+        shutil.copyfile(input_file_path, output_file_path)
+
+    tree = ET.parse(output_file_path)
+    root = tree.getroot()
+    nodes = _parse_nodes(root)
+    ways = _parse_ways(root)
+    relations = _parse_relations(root)
+
+    retained_node_ids: set[int] = set()
+    retained_way_ids: set[int] = set()
+    retained_relation_ids: set[int] = set()
+    pending_relation_ids: list[int] = []
+
+    for node_element in root.findall("node"):
+        node_id = node_element.get("id")
+        if not node_id:
+            continue
+        try:
+            parsed_node_id = int(node_id)
+        except ValueError:
+            continue
+
+        node_tags = _extract_tags(node_element)
+        if node_tags and _matches_spatial_rule_set(
+            node_tags,
+            (coordinate[0], coordinate[1], coordinate[0], coordinate[1])
+            if (coordinate := nodes.get(parsed_node_id)) is not None
+            else None,
+            retain_rules,
+        ):
+            retained_node_ids.add(parsed_node_id)
+
+    for way_id, way in ways.items():
+        if way.tags and _matches_spatial_rule_set(
+            way.tags,
+            _way_bounds(way, nodes),
+            retain_rules,
+        ):
+            retained_way_ids.add(way_id)
+
+    for relation_id, relation in relations.items():
+        if relation.tags and _matches_spatial_rule_set(
+            relation.tags,
+            _relation_bounds(relation, ways, relations, nodes),
+            retain_rules,
+        ):
+            retained_relation_ids.add(relation_id)
+            pending_relation_ids.append(relation_id)
+
+    while pending_relation_ids:
+        relation_id = pending_relation_ids.pop()
+        relation = relations.get(relation_id)
+        if relation is None:
+            continue
+
+        for member_type, member_ref, _ in relation.members:
+            if member_type == "node":
+                retained_node_ids.add(member_ref)
+            elif member_type == "way":
+                retained_way_ids.add(member_ref)
+            elif member_type == "relation" and member_ref not in retained_relation_ids:
+                if member_ref in relations:
+                    retained_relation_ids.add(member_ref)
+                    pending_relation_ids.append(member_ref)
+
+    for way_id in retained_way_ids:
+        way = ways.get(way_id)
+        if way is None:
+            continue
+        retained_node_ids.update(way.node_refs)
+
+    removed_elements = 0
+    kept_nodes = 0
+    kept_ways = 0
+    kept_relations = 0
+
+    for element in list(root):
+        if element.tag == "bounds":
+            continue
+
+        element_id = element.get("id")
+        if element.tag == "node":
+            if element_id is None:
+                continue
+            try:
+                keep = int(element_id) in retained_node_ids
+            except ValueError:
+                continue
+            if keep:
+                kept_nodes += 1
+                continue
+            root.remove(element)
+            removed_elements += 1
+            continue
+
+        if element.tag == "way":
+            if element_id is None:
+                continue
+            try:
+                keep = int(element_id) in retained_way_ids
+            except ValueError:
+                continue
+            if keep:
+                kept_ways += 1
+                continue
+            root.remove(element)
+            removed_elements += 1
+            continue
+
+        if element.tag == "relation":
+            if element_id is None:
+                continue
+            try:
+                keep = int(element_id) in retained_relation_ids
+            except ValueError:
+                continue
+            if keep:
+                kept_relations += 1
+                continue
+            root.remove(element)
+            removed_elements += 1
+
+    tree.write(output_file_path, encoding="utf-8", xml_declaration=True)
+    return {
+        "kept_nodes": kept_nodes,
+        "kept_ways": kept_ways,
+        "kept_relations": kept_relations,
+        "removed_elements": removed_elements,
+    }
+
+
+def _matches_spatial_rule_set(
+    feature_tags: dict[str, str],
+    bounds: tuple[float, float, float, float] | None,
+    retain_rules: list[tuple[OSMTagFilter, tuple[float, float, float, float] | None]],
+) -> bool:
+    """Return whether feature tags match any retention rule and intersect its bbox."""
+    if bounds is None:
+        return False
+
+    for target_filter, bbox in retain_rules:
+        if _matching_target_filter(feature_tags, [target_filter]) is None:
+            continue
+        if _bounds_intersect_bbox(bounds, bbox):
+            return True
+    return False
+
+
+def _way_bounds(
+    way: _WayData,
+    nodes: dict[int, tuple[float, float]],
+) -> tuple[float, float, float, float] | None:
+    """Return the bounds of a way from its referenced coordinates."""
+    coordinates = [nodes[node_id] for node_id in way.node_refs if node_id in nodes]
+    if not coordinates:
+        return None
+
+    xs = [coordinate[0] for coordinate in coordinates]
+    ys = [coordinate[1] for coordinate in coordinates]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def _relation_bounds(
+    relation: _RelationData,
+    ways: dict[int, _WayData],
+    relations: dict[int, _RelationData],
+    nodes: dict[int, tuple[float, float]],
+) -> tuple[float, float, float, float] | None:
+    """Return approximate bounds of a relation from all reachable member coordinates."""
+    xs: list[float] = []
+    ys: list[float] = []
+    relation_id = relation.element.get("id")
+    if relation_id is None:
+        return None
+
+    try:
+        pending_relation_ids = [int(relation_id)]
+    except ValueError:
+        return None
+
+    seen_relation_ids: set[int] = set()
+
+    while pending_relation_ids:
+        current_relation_id = pending_relation_ids.pop()
+        if current_relation_id in seen_relation_ids:
+            continue
+        seen_relation_ids.add(current_relation_id)
+
+        current_relation = relations.get(current_relation_id)
+        if current_relation is None:
+            continue
+
+        for member_type, member_ref, _ in current_relation.members:
+            if member_type == "node":
+                coordinate = nodes.get(member_ref)
+                if coordinate is None:
+                    continue
+                xs.append(coordinate[0])
+                ys.append(coordinate[1])
+                continue
+
+            if member_type == "way":
+                way = ways.get(member_ref)
+                if way is None:
+                    continue
+                way_bounds = _way_bounds(way, nodes)
+                if way_bounds is None:
+                    continue
+                minx, miny, maxx, maxy = way_bounds
+                xs.extend((minx, maxx))
+                ys.extend((miny, maxy))
+                continue
+
+            if member_type == "relation":
+                nested_relation = relations.get(member_ref)
+                if nested_relation is not None:
+                    pending_relation_ids.append(member_ref)
+
+    if not xs or not ys:
+        return None
+    return min(xs), min(ys), max(xs), max(ys)
 
 
 def _parse_nodes(root: ET.Element) -> dict[int, tuple[float, float]]:
@@ -698,6 +972,47 @@ def _extract_tags(element: ET.Element) -> dict[str, str]:
         if key and value is not None:
             tags[key] = value
     return tags
+
+
+def _bounds_intersect_bbox(
+    bounds: tuple[float, float, float, float],
+    bbox: tuple[float, float, float, float] | None,
+) -> bool:
+    """Return whether geometry bounds intersect an optional bbox."""
+    if bbox is None:
+        return True
+
+    minx, miny, maxx, maxy = bounds
+    left, bottom, right, top = bbox
+    return not (maxx < left or right < minx or maxy < bottom or top < miny)
+
+
+def _coordinates_intersect_bbox(
+    coordinates: list[tuple[float, float]],
+    bbox: tuple[float, float, float, float] | None,
+) -> bool:
+    """Return whether a coordinate sequence intersects an optional bbox."""
+    if bbox is None:
+        return True
+    if not coordinates:
+        return False
+
+    xs = [coordinate[0] for coordinate in coordinates]
+    ys = [coordinate[1] for coordinate in coordinates]
+    return _bounds_intersect_bbox((min(xs), min(ys), max(xs), max(ys)), bbox)
+
+
+def _way_intersects_bbox(
+    way: _WayData,
+    nodes: dict[int, tuple[float, float]],
+    bbox: tuple[float, float, float, float] | None,
+) -> bool:
+    """Return whether a way's referenced coordinates intersect an optional bbox."""
+    if bbox is None:
+        return True
+
+    coordinates = [nodes[node_id] for node_id in way.node_refs if node_id in nodes]
+    return _coordinates_intersect_bbox(coordinates, bbox)
 
 
 def _count_relation_way_usage(relations: dict[int, _RelationData]) -> dict[int, int]:
@@ -1046,6 +1361,7 @@ def _collect_target_polygons(
     relation_way_usage: dict[int, int],
     merge_tags: bool,
     collapse_tags: dict[str, str] | None,
+    process_bbox: tuple[float, float, float, float] | None = None,
 ) -> tuple[set[int], set[int], set[int], list[_TargetPolygonData]]:
     """Collect target polygons and the source elements they replace.
 
@@ -1077,8 +1393,12 @@ def _collect_target_polygons(
         matching_filter = _matching_target_filter(way.tags, tags)
         if matching_filter is None:
             continue
+        if not _way_intersects_bbox(way, nodes, process_bbox):
+            continue
         polygon = _way_to_polygon(way, nodes)
         if polygon is None:
+            continue
+        if not _bounds_intersect_bbox(polygon.bounds, process_bbox):
             continue
         target_way_ids.add(way_id)
         target_keys = tuple(matching_filter.keys())
@@ -1100,6 +1420,12 @@ def _collect_target_polygons(
         if matching_filter is None:
             continue
         relation_polygons, member_way_ids = _relation_to_polygons(relation, ways, nodes)
+        if process_bbox is not None:
+            relation_polygons = [
+                polygon
+                for polygon in relation_polygons
+                if _bounds_intersect_bbox(polygon.bounds, process_bbox)
+            ]
         if not relation_polygons:
             continue
         target_relation_ids.add(relation_id)
@@ -1137,6 +1463,7 @@ def _collect_hole_polygons(
     relations: dict[int, _RelationData],
     excluded_way_ids: set[int],
     excluded_relation_ids: set[int],
+    process_bbox: tuple[float, float, float, float] | None = None,
 ) -> list[Polygon]:
     """Collect non-target area polygons that should carve holes.
 
@@ -1159,8 +1486,10 @@ def _collect_hole_polygons(
             continue
         if _matching_target_filter(way.tags, tags) is not None:
             continue
+        if not _way_intersects_bbox(way, nodes, process_bbox):
+            continue
         polygon = _way_to_polygon(way, nodes)
-        if polygon is not None:
+        if polygon is not None and _bounds_intersect_bbox(polygon.bounds, process_bbox):
             hole_polygons.append(polygon)
 
     for relation_id, relation in relations.items():
@@ -1171,6 +1500,12 @@ def _collect_hole_polygons(
         if _matching_target_filter(relation.tags, tags) is not None:
             continue
         relation_polygons, _ = _relation_to_polygons(relation, ways, nodes)
+        if process_bbox is not None:
+            relation_polygons = [
+                polygon
+                for polygon in relation_polygons
+                if _bounds_intersect_bbox(polygon.bounds, process_bbox)
+            ]
         hole_polygons.extend(relation_polygons)
 
     return hole_polygons
@@ -1180,6 +1515,7 @@ def _collect_point_holes(
     root: ET.Element,
     tags: list[OSMTagFilter],
     nodes: dict[int, tuple[float, float]],
+    process_bbox: tuple[float, float, float, float] | None = None,
 ) -> list[_PointHoleData]:
     """Collect point obstacles that should carve circular holes.
 
@@ -1206,6 +1542,8 @@ def _collect_point_holes(
 
         coordinate = nodes.get(parsed_node_id)
         if coordinate is None:
+            continue
+        if not _coordinates_intersect_bbox([coordinate], process_bbox):
             continue
 
         node_tags = _extract_tags(node_element)
@@ -1247,6 +1585,7 @@ def _collect_splitter_lines(
     ways: dict[int, _WayData],
     excluded_way_ids: set[int],
     exclude_cut_tags: dict[str, OSMTagValue] | None,
+    process_bbox: tuple[float, float, float, float] | None = None,
 ) -> list[_SplitterData]:
     """Collect linear objects that may split target polygons.
 
@@ -1275,6 +1614,8 @@ def _collect_splitter_lines(
             continue
         if not _is_splitter_feature(way.tags):
             continue
+        if not _way_intersects_bbox(way, nodes, process_bbox):
+            continue
 
         available_node_refs = [node_id for node_id in way.node_refs if node_id in nodes]
         if len(available_node_refs) < 2:
@@ -1295,6 +1636,8 @@ def _collect_splitter_lines(
     for tags, available_node_refs, coordinates in splitter_candidates:
         line = LineString(coordinates)
         if line.is_empty:
+            continue
+        if not _bounds_intersect_bbox(line.bounds, process_bbox):
             continue
         lines.append(
             _SplitterData(

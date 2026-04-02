@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 from typing import Any
 
 from maps4fs.generator.component.base.component import Component
 from maps4fs.generator.component.layer import Layer
 from maps4fs.generator.osm import download_osm_map_by_bbox
 from maps4fs.generator.osm import preprocess as preprocess_osm_file
+from maps4fs.generator.osm import prune_osm_file
 from maps4fs.generator.settings import Parameters
 
 
@@ -20,8 +22,15 @@ class Preprocessor(Component):
     exclude_cut_tags = {"power": ["line", "minor_line"]}
     merge_distance = 0.35
     split_width = 4.0
+    prune_margin = 64
     _smooth_radius_floor = 8.0
     _smooth_radius_span = 22.0
+    _extended_info_layers = {
+        Parameters.BUILDINGS,
+        Parameters.ROADS,
+        Parameters.ELECTRICITY_LINES,
+        Parameters.ELECTRICITY_POLES,
+    }
 
     def preprocess(self) -> None:
         """Load texture-layer metadata early for schema-driven preprocessing."""
@@ -32,10 +41,15 @@ class Preprocessor(Component):
         self.download_succeeded = False
         self.download_error: str | None = None
         self.preprocessing_reports: list[dict[str, Any]] = []
+        self.pruning_report: dict[str, Any] | None = None
+        self.has_explicit_extended_layers = any(layer.extended for layer in self.layers)
         self.download_map_size = self.map_size + Parameters.BACKGROUND_DISTANCE * 2
         download_size_multiplier = 1.5 if self.rotation else 1.0
         self.download_rotated_size = int(self.download_map_size * download_size_multiplier)
         self.download_bbox = self._download_bbox()
+        self.map_prune_bbox = self._bbox_with_margin(int(self.map_rotated_size / 2))
+        self.extended_prune_bbox = self._extended_bbox_with_margin()
+        self.background_prune_bbox = self._bbox_with_margin(int(self.download_rotated_size / 2))
 
     def process(self) -> None:
         """Prepare local OSM input and optionally preprocess field and forest polygons."""
@@ -49,6 +63,7 @@ class Preprocessor(Component):
             return
 
         self._apply_usage_preprocessing(working_osm_path)
+        self._prune_local_osm(working_osm_path)
 
     def _load_layers(self) -> list[Layer]:
         """Load texture layers from schema without instantiating Texture."""
@@ -73,6 +88,18 @@ class Preprocessor(Component):
         north, south, east, west = self.get_bbox(distance=distance)
         return west, south, east, north
 
+    def _bbox_with_margin(self, distance: int) -> tuple[float, float, float, float]:
+        """Return a bbox grown by a small prune margin."""
+        north, south, east, west = self.get_bbox(distance=distance + self.prune_margin)
+        return west, south, east, north
+
+    def _extended_bbox_with_margin(self) -> tuple[float, float, float, float]:
+        """Return the extended-pass bbox grown by the prune margin."""
+        output_size_multiplier = 1.5 if self.rotation else 1.0
+        extended_size = self.map_size + Parameters.EXTENDED_DISTANCE * 2
+        extended_rotated_size = int(extended_size * output_size_multiplier)
+        return self._bbox_with_margin(int(extended_rotated_size / 2))
+
     def _ensure_local_osm_path(self) -> str | None:
         """Return a local OSM path, downloading it when needed.
 
@@ -81,7 +108,9 @@ class Preprocessor(Component):
         """
         local_path = self._local_custom_osm_path()
         if self.map.custom_osm:
-            if os.path.isfile(local_path):
+            if os.path.abspath(self.map.custom_osm) != os.path.abspath(local_path):
+                if not os.path.isfile(local_path):
+                    shutil.copyfile(self.map.custom_osm, local_path)
                 self.map.custom_osm = local_path
             self.logger.debug("Using local OSM source: %s", self.map.custom_osm)
             return self.map.custom_osm
@@ -173,6 +202,105 @@ class Preprocessor(Component):
 
         return None
 
+    def _usage_process_bbox(self, usage: str) -> tuple[float, float, float, float] | None:
+        """Return the bbox within which the requested usage must be rewritten."""
+        if usage == Parameters.FIELD:
+            return self.new_bbox
+        if usage == Parameters.FOREST:
+            return self.download_bbox
+        return None
+
+    @staticmethod
+    def _expand_osmnx_filter(
+        filter_tags: dict[str, str | list[str] | bool] | None,
+    ) -> list[dict[str, str | list[str] | bool]]:
+        """Expand one OSMnx tag dict into one-key OR filters."""
+        if not filter_tags:
+            return []
+        return [{key: value} for key, value in filter_tags.items()]
+
+    def _layer_prune_filters(self, layer: Layer) -> list[dict[str, str | list[str] | bool]]:
+        """Return conservative prune filters for one layer.
+
+        Keep both base tags and precise tags, and preserve OSMnx OR semantics by splitting each
+        tag dictionary into separate one-key filters.
+        """
+        filters: list[dict[str, str | list[str] | bool]] = []
+        seen: set[str] = set()
+
+        for filter_tags in (layer.tags, layer.precise_tags):
+            for expanded_filter in self._expand_osmnx_filter(filter_tags):
+                filter_key = json.dumps(expanded_filter, sort_keys=True, separators=(",", ":"))
+                if filter_key in seen:
+                    continue
+                seen.add(filter_key)
+                filters.append(expanded_filter)
+
+        return filters
+
+    def _layer_prune_bbox(self, layer: Layer) -> tuple[float, float, float, float]:
+        """Return the spatial retention bbox for one runtime layer."""
+        if layer.background:
+            return self.background_prune_bbox
+        if layer.extended:
+            return self.extended_prune_bbox
+        if not self.has_explicit_extended_layers and layer.info_layer in self._extended_info_layers:
+            return self.extended_prune_bbox
+        return self.map_prune_bbox
+
+    def _runtime_prune_rules(
+        self,
+    ) -> list[tuple[dict[str, str | list[str] | bool], tuple[float, float, float, float]]]:
+        """Return deduplicated runtime filters with the widest required spatial scope."""
+        rules_by_key: dict[
+            str,
+            tuple[int, dict[str, str | list[str] | bool], tuple[float, float, float, float]],
+        ] = {}
+
+        for layer in self.layers:
+            bbox = self._layer_prune_bbox(layer)
+            scope_rank = 3 if layer.background else 2 if bbox == self.extended_prune_bbox else 1
+            for filter_tags in self._layer_prune_filters(layer):
+                filter_key = json.dumps(filter_tags, sort_keys=True, separators=(",", ":"))
+                current_rule = rules_by_key.get(filter_key)
+                if current_rule is None or scope_rank > current_rule[0]:
+                    rules_by_key[filter_key] = (scope_rank, filter_tags, bbox)
+
+        return [
+            (filter_tags, bbox)
+            for _, filter_tags, bbox in rules_by_key.values()
+        ]
+
+    def _prune_local_osm(self, working_osm_path: str) -> None:
+        """Drop OSM primitives that will never be queried by the runtime schema."""
+        runtime_rules = self._runtime_prune_rules()
+        if not runtime_rules:
+            self.logger.debug("Skipping local OSM pruning because no runtime filters were found.")
+            return
+
+        try:
+            self.pruning_report = prune_osm_file(
+                working_osm_path,
+                working_osm_path,
+                [filter_tags for filter_tags, _ in runtime_rules],
+                spatial_filters=runtime_rules,
+            )
+            self.pruning_report["margin"] = self.prune_margin
+            self.pruning_report["rule_count"] = len(runtime_rules)
+            self.logger.info(
+                "Slimmed local OSM file to %d nodes, %d ways and %d relations using %d ROI rules.",
+                self.pruning_report.get("kept_nodes", 0),
+                self.pruning_report.get("kept_ways", 0),
+                self.pruning_report.get("kept_relations", 0),
+                len(runtime_rules),
+            )
+        except Exception as exc:
+            self.pruning_report = {"error": str(exc)}
+            self.logger.warning(
+                "Failed to slim local OSM file. Proceeding with the current local OSM file: %s",
+                exc,
+            )
+
     def _smooth_strength_from_radius(self, radius: float) -> float:
         """Convert the user-facing smooth radius to the internal strength scale."""
         if radius <= 0:
@@ -220,6 +348,7 @@ class Preprocessor(Component):
             merge_distance = self.merge_distance if usage_settings.merge else 0.0
             collapse_tags = self._usage_collapse_tags(usage) if usage_settings.collapse else None
             padding = usage_settings.padding
+            process_bbox = self._usage_process_bbox(usage)
 
             self.logger.info(
                 "Preprocessing OSM usage %s with %d schema-derived filters.",
@@ -231,6 +360,7 @@ class Preprocessor(Component):
                     working_osm_path,
                     working_osm_path,
                     usage_filters,
+                    process_bbox=process_bbox,
                     exclude_cut_tags=self.exclude_cut_tags,
                     smooth_strength=smooth_strength,
                     merge_distance=merge_distance,
@@ -244,6 +374,7 @@ class Preprocessor(Component):
                     {
                         "usage": usage,
                         "filters": usage_filters,
+                        "bbox": process_bbox,
                         "collapse_tags": collapse_tags,
                         "padding": padding,
                         "stats": stats,
@@ -259,6 +390,7 @@ class Preprocessor(Component):
                     {
                         "usage": usage,
                         "filters": usage_filters,
+                        "bbox": process_bbox,
                         "collapse_tags": collapse_tags,
                         "padding": padding,
                         "error": str(exc),
@@ -277,4 +409,5 @@ class Preprocessor(Component):
             "download_map_size": self.download_map_size,
             "download_rotated_size": self.download_rotated_size,
             "osm_preprocessing": self.preprocessing_reports,
+            "osm_pruning": self.pruning_report,
         }
