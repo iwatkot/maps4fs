@@ -27,10 +27,15 @@ class Preprocessor(Component):
         """Load texture-layer metadata early for schema-driven preprocessing."""
         self.layers = self._load_layers()
         self.map.context.texture_layers = self.layers
+        self.auto_download_enabled = self.map.custom_osm is None
         self.download_attempted = False
         self.download_succeeded = False
         self.download_error: str | None = None
         self.preprocessing_reports: list[dict[str, Any]] = []
+        self.download_map_size = self.map_size + Parameters.BACKGROUND_DISTANCE * 2
+        download_size_multiplier = 1.5 if self.rotation else 1.0
+        self.download_rotated_size = int(self.download_map_size * download_size_multiplier)
+        self.download_bbox = self._download_bbox()
 
     def process(self) -> None:
         """Prepare local OSM input and optionally preprocess field and forest polygons."""
@@ -62,8 +67,14 @@ class Preprocessor(Component):
         """Return the working OSM path inside the map directory."""
         return os.path.join(self.map_directory, self.custom_osm_filename)
 
+    def _download_bbox(self) -> tuple[float, float, float, float]:
+        """Return the OSM download bbox covering map, background, and rotation padding."""
+        distance = int(self.download_rotated_size / 2)
+        north, south, east, west = self.get_bbox(distance=distance)
+        return west, south, east, north
+
     def _ensure_local_osm_path(self) -> str | None:
-        """Return a local OSM path, downloading it when configured.
+        """Return a local OSM path, downloading it when needed.
 
         If a user-supplied custom OSM already exists, prefer the copy in the map directory so
         later preprocessing never mutates the user's original file.
@@ -75,20 +86,23 @@ class Preprocessor(Component):
             self.logger.debug("Using local OSM source: %s", self.map.custom_osm)
             return self.map.custom_osm
 
-        if not self.map.preprocessor_settings.download_osm:
-            self.logger.debug("Skipping OSM download because download_osm is disabled.")
-            return None
-
         self.download_attempted = True
-        self.logger.info("Downloading raw OSM data for bbox %s.", self.new_bbox)
+        self.logger.info(
+            "Downloading raw OSM data for bbox %s (map size: %s, rotated size: %s).",
+            self.download_bbox,
+            self.download_map_size,
+            self.download_rotated_size,
+        )
         try:
             download_osm_map_by_bbox(
-                self.new_bbox,
+                self.download_bbox,
                 local_path,
                 timeout=Parameters.OSM_REQUESTS_TIMEOUT,
             )
         except Exception as exc:
             self.download_error = str(exc)
+            self.map.custom_osm = None
+            self.map._update_main_settings({"custom_osm": False})
             self.logger.warning(
                 "Failed to download raw OSM data, proceeding with the default OSM source: %s",
                 exc,
@@ -254,11 +268,13 @@ class Preprocessor(Component):
     def info_sequence(self) -> dict[str, Any]:
         """Return preprocessor runtime settings for generation info."""
         return {
-            "download_osm": self.map.preprocessor_settings.download_osm,
+            "download_osm": self.auto_download_enabled,
             "download_attempted": self.download_attempted,
             "download_succeeded": self.download_succeeded,
             "download_error": self.download_error,
             "custom_osm": self.map.custom_osm,
-            "bbox": self.new_bbox,
+            "bbox": self.download_bbox,
+            "download_map_size": self.download_map_size,
+            "download_rotated_size": self.download_rotated_size,
             "osm_preprocessing": self.preprocessing_reports,
         }

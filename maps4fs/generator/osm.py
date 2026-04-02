@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 import gzip
 import math
 import os
@@ -63,6 +64,14 @@ _POINT_HOLE_RADII: dict[tuple[str, str], float] = {
     ("man_made", "tower"): 4.0,
     ("man_made", "mast"): 3.0,
 }
+
+_OSM_API_MAP_URL = "https://api.openstreetmap.org/api/0.6/map"
+_OSM_TILE_MAX_DEPTH = 10
+_OSM_TILE_MIN_SPAN = 1e-6
+
+
+class _OSMTooManyNodesError(RuntimeError):
+    """Internal signal that the OSM API bbox request exceeded the node limit."""
 
 
 @dataclass
@@ -223,6 +232,10 @@ def download_osm_map_by_bbox(
 ) -> str:
     """Download raw OSM XML for a bounding box via the main OSM API.
 
+    When the API rejects one large bbox because it exceeds the per-request node limit, the bbox
+    is split recursively into smaller tiles and the resulting XML payloads are merged into one
+    output file.
+
     Arguments:
         bbox (tuple[float, float, float, float]): Bounding box in OSMnx order
             ``(left, bottom, right, top)``.
@@ -245,9 +258,66 @@ def download_osm_map_by_bbox(
     if output_directory:
         os.makedirs(output_directory, exist_ok=True)
 
+    root = _download_osm_root_by_bbox(
+        bbox,
+        timeout=timeout,
+        user_agent=user_agent,
+        depth=0,
+    )
+
+    tree = ET.ElementTree(root)
+    tree.write(output_file_path, encoding="utf-8", xml_declaration=True)
+
+    check_and_fix_osm(output_file_path)
+    return output_file_path
+
+
+def _download_osm_root_by_bbox(
+    bbox: tuple[float, float, float, float],
+    *,
+    timeout: int,
+    user_agent: str,
+    depth: int,
+) -> ET.Element:
+    """Download one bbox or recursively merge smaller bbox downloads."""
+    try:
+        payload = _download_osm_payload_by_bbox(
+            bbox,
+            timeout=timeout,
+            user_agent=user_agent,
+        )
+    except _OSMTooManyNodesError as exc:
+        if depth >= _OSM_TILE_MAX_DEPTH or not _can_split_bbox(bbox):
+            raise RuntimeError(
+                "Failed to download OSM data: bbox exceeds the OSM API node limit even after "
+                f"subdivision ({bbox!r})."
+            ) from exc
+
+        child_roots = [
+            _download_osm_root_by_bbox(
+                child_bbox,
+                timeout=timeout,
+                user_agent=user_agent,
+                depth=depth + 1,
+            )
+            for child_bbox in _split_bbox(bbox)
+        ]
+        return _merge_osm_roots(child_roots, bbox)
+
+    return _parse_osm_payload(payload)
+
+
+def _download_osm_payload_by_bbox(
+    bbox: tuple[float, float, float, float],
+    *,
+    timeout: int,
+    user_agent: str,
+) -> bytes:
+    """Download one raw OSM API bbox payload."""
+    left, bottom, right, top = bbox
     query = urlencode({"bbox": f"{left:.7f},{bottom:.7f},{right:.7f},{top:.7f}"})
     request = Request(
-        f"https://api.openstreetmap.org/api/0.6/map?{query}",
+        f"{_OSM_API_MAP_URL}?{query}",
         headers={
             "Accept": "application/xml",
             "Accept-Encoding": "gzip",
@@ -262,6 +332,9 @@ def download_osm_map_by_bbox(
                 payload = gzip.decompress(payload)
     except HTTPError as exc:
         details = exc.read().decode("utf-8", errors="replace").strip()
+        if exc.code == 400 and "too many nodes" in details.lower():
+            raise _OSMTooManyNodesError(details or "Too many nodes in bbox request") from exc
+
         message = f"Failed to download OSM data: HTTP {exc.code}"
         if details:
             message = f"{message}: {details}"
@@ -269,14 +342,82 @@ def download_osm_map_by_bbox(
     except URLError as exc:
         raise RuntimeError(f"Failed to download OSM data: {exc.reason}") from exc
 
+    return payload
+
+
+def _parse_osm_payload(payload: bytes) -> ET.Element:
+    """Parse one downloaded OSM XML payload into its root element."""
     if b"<osm" not in payload:
         raise ValueError("Downloaded response is not valid OSM XML.")
+    return ET.fromstring(payload)
 
-    with open(output_file_path, "wb") as file:
-        file.write(payload)
 
-    check_and_fix_osm(output_file_path)
-    return output_file_path
+def _can_split_bbox(bbox: tuple[float, float, float, float]) -> bool:
+    """Return whether the bbox still has enough span to split safely."""
+    left, bottom, right, top = bbox
+    return (right - left) > _OSM_TILE_MIN_SPAN or (top - bottom) > _OSM_TILE_MIN_SPAN
+
+
+def _split_bbox(
+    bbox: tuple[float, float, float, float],
+) -> tuple[tuple[float, float, float, float], tuple[float, float, float, float]]:
+    """Split a bbox along its longer axis into two smaller bbox requests."""
+    left, bottom, right, top = bbox
+    width = right - left
+    height = top - bottom
+
+    if width >= height and width > _OSM_TILE_MIN_SPAN:
+        middle = (left + right) / 2.0
+        return (left, bottom, middle, top), (middle, bottom, right, top)
+
+    middle = (bottom + top) / 2.0
+    return (left, bottom, right, middle), (left, middle, right, top)
+
+
+def _merge_osm_roots(
+    roots: list[ET.Element],
+    bbox: tuple[float, float, float, float],
+) -> ET.Element:
+    """Merge multiple OSM API tile roots into one deduplicated OSM root."""
+    merged_root = ET.Element(
+        "osm",
+        {
+            "version": roots[0].get("version", "0.6") if roots else "0.6",
+            "generator": roots[0].get("generator", "maps4fs OSM downloader")
+            if roots
+            else "maps4fs OSM downloader",
+        },
+    )
+
+    left, bottom, right, top = bbox
+    bounds = ET.SubElement(merged_root, "bounds")
+    bounds.set("minlat", f"{bottom:.7f}")
+    bounds.set("minlon", f"{left:.7f}")
+    bounds.set("maxlat", f"{top:.7f}")
+    bounds.set("maxlon", f"{right:.7f}")
+
+    merged_primitives: dict[str, dict[str, ET.Element]] = {
+        "node": {},
+        "way": {},
+        "relation": {},
+    }
+    append_order: dict[str, list[str]] = {"node": [], "way": [], "relation": []}
+
+    for root in roots:
+        for child in root:
+            if child.tag not in merged_primitives:
+                continue
+            element_id = child.get("id")
+            if element_id is None or element_id in merged_primitives[child.tag]:
+                continue
+            merged_primitives[child.tag][element_id] = deepcopy(child)
+            append_order[child.tag].append(element_id)
+
+    for primitive_name in ("node", "way", "relation"):
+        for element_id in append_order[primitive_name]:
+            merged_root.append(merged_primitives[primitive_name][element_id])
+
+    return merged_root
 
 
 def preprocess(

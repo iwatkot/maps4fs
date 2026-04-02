@@ -178,8 +178,11 @@ class PreprocessorSettings(SettingsModel):
     """Represents the advanced settings for the preprocessor component.
 
     Attributes:
-        download_osm (bool): download raw OSM XML for the map bbox to a local file and
-            route later OSM-consuming components through the custom OSM pipeline.
+        download_osm (bool): legacy compatibility flag retained in saved settings.
+            When no custom OSM path is provided, the preprocessor attempts to
+            download raw OSM XML automatically, routes later OSM-consuming
+            components through that local custom OSM pipeline, and falls back
+            gracefully to the default OSM source if the download fails.
         fields (UsagePreprocessSettings): preprocessing options for layers with
             ``usage == \"field\"``.
         forests (UsagePreprocessSettings): preprocessing options for layers with
@@ -209,7 +212,7 @@ class PreprocessorSettings(SettingsModel):
         padding: float = Field(default=2.0, ge=0.0)
         smooth_radius: float = Field(default=14.6, ge=0.0, le=30.0)
 
-    download_osm: bool = False
+    download_osm: bool = True
     fields: UsagePreprocessSettings = UsagePreprocessSettings()
     forests: UsagePreprocessSettings = UsagePreprocessSettings()
 

@@ -96,7 +96,6 @@ preprocessor_settings_usage = mfs.settings.PreprocessorSettings.UsagePreprocessS
 )
 
 preprocessor_settings = mfs.settings.PreprocessorSettings(
-    download_osm=True,
     fields=preprocessor_settings_usage,
     forests=preprocessor_settings_usage,
 )
