@@ -266,10 +266,7 @@ class Preprocessor(Component):
                 if current_rule is None or scope_rank > current_rule[0]:
                     rules_by_key[filter_key] = (scope_rank, filter_tags, bbox)
 
-        return [
-            (filter_tags, bbox)
-            for _, filter_tags, bbox in rules_by_key.values()
-        ]
+        return [(filter_tags, bbox) for _, filter_tags, bbox in rules_by_key.values()]
 
     def _prune_local_osm(self, working_osm_path: str) -> None:
         """Drop OSM primitives that will never be queried by the runtime schema."""

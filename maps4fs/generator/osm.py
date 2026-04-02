@@ -609,9 +609,9 @@ def prune_osm_file(
     input_file_path: str,
     output_file_path: str,
     tags: OSMTagFilters,
-    spatial_filters: list[
-        tuple[OSMTagFilter, tuple[float, float, float, float] | None]
-    ] | None = None,
+    spatial_filters: (
+        list[tuple[OSMTagFilter, tuple[float, float, float, float] | None]] | None
+    ) = None,
 ) -> dict[str, int]:
     """Remove OSM primitives that are not needed by the runtime tag set.
 
@@ -666,9 +666,11 @@ def prune_osm_file(
         node_tags = _extract_tags(node_element)
         if node_tags and _matches_spatial_rule_set(
             node_tags,
-            (coordinate[0], coordinate[1], coordinate[0], coordinate[1])
-            if (coordinate := nodes.get(parsed_node_id)) is not None
-            else None,
+            (
+                (coordinate[0], coordinate[1], coordinate[0], coordinate[1])
+                if (coordinate := nodes.get(parsed_node_id)) is not None
+                else None
+            ),
             retain_rules,
         ):
             retained_node_ids.add(parsed_node_id)
