@@ -9,8 +9,7 @@ from typing import Any
 
 from maps4fs.generator.component.base.component import Component
 from maps4fs.generator.component.layer import Layer
-from maps4fs.generator.osm import check_and_fix_osm
-from maps4fs.generator.osm import download_osm_map_by_bbox
+from maps4fs.generator.osm import check_and_fix_osm, download_osm_map_by_bbox
 from maps4fs.generator.osm import preprocess as preprocess_osm_file
 from maps4fs.generator.osm import prune_osm_file
 from maps4fs.generator.settings import Parameters

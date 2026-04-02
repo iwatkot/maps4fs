@@ -1720,7 +1720,9 @@ def _preprocess_polygons(
         if _bounds_intersect_bbox(splitter.geometry.bounds, target_bounds)
     ]
     relevant_hole_polygons = [
-        polygon for polygon in hole_polygons if _bounds_intersect_bbox(polygon.bounds, target_bounds)
+        polygon
+        for polygon in hole_polygons
+        if _bounds_intersect_bbox(polygon.bounds, target_bounds)
     ]
     relevant_point_holes = [
         point_hole
