@@ -86,6 +86,8 @@ class _SplitterData:
 
     geometry: LineString
     tags: dict[str, str]
+    round_start: bool = False
+    round_end: bool = False
 
 
 @dataclass(frozen=True)
@@ -670,9 +672,7 @@ def _common_output_tags(
         }
 
     if remove_keys:
-        common_tags = {
-            key: value for key, value in common_tags.items() if key not in remove_keys
-        }
+        common_tags = {key: value for key, value in common_tags.items() if key not in remove_keys}
 
     for key, value in merge_key:
         common_tags[key] = value
@@ -1041,7 +1041,8 @@ def _collect_splitter_lines(
     Returns:
         list[_SplitterData]: Linear features eligible to cut target polygons.
     """
-    lines: list[_SplitterData] = []
+    splitter_candidates: list[tuple[dict[str, str], list[int], list[tuple[float, float]]]] = []
+    endpoint_counts: dict[int, int] = {}
 
     for way_id, way in ways.items():
         if way_id in excluded_way_ids:
@@ -1054,19 +1055,35 @@ def _collect_splitter_lines(
             continue
         if not any(tag in _CUT_LINEAR_TAGS for tag in way.tags):
             continue
-        if len(way.node_refs) < 2:
+
+        available_node_refs = [node_id for node_id in way.node_refs if node_id in nodes]
+        if len(available_node_refs) < 2:
             continue
 
-        coordinates = [nodes[node_id] for node_id in way.node_refs if node_id in nodes]
-        if len(coordinates) < 2:
-            continue
+        coordinates = [nodes[node_id] for node_id in available_node_refs]
         if len(set(coordinates)) < 2:
             continue
 
+        splitter_candidates.append((way.tags, available_node_refs, coordinates))
+        endpoint_counts[available_node_refs[0]] = endpoint_counts.get(available_node_refs[0], 0) + 1
+        endpoint_counts[available_node_refs[-1]] = (
+            endpoint_counts.get(available_node_refs[-1], 0) + 1
+        )
+
+    lines: list[_SplitterData] = []
+
+    for tags, available_node_refs, coordinates in splitter_candidates:
         line = LineString(coordinates)
         if line.is_empty:
             continue
-        lines.append(_SplitterData(geometry=line, tags=way.tags))
+        lines.append(
+            _SplitterData(
+                geometry=line,
+                tags=tags,
+                round_start=endpoint_counts.get(available_node_refs[0], 0) == 1,
+                round_end=endpoint_counts.get(available_node_refs[-1], 0) == 1,
+            )
+        )
 
     return lines
 
@@ -1127,7 +1144,13 @@ def _preprocess_polygons(
             buffer_width = _splitter_buffer_width(splitter.tags, split_width)
             if buffer_width <= 0:
                 continue
-            split_buffers.append(projected_line.buffer(buffer_width, cap_style=2, join_style=2))
+            split_buffers.append(
+                _buffer_splitter_geometry(
+                    splitter,
+                    projected_line,
+                    buffer_width,
+                )
+            )
 
         if split_buffers:
             split_mask = make_valid(unary_union(split_buffers))
@@ -1617,9 +1640,9 @@ def _smooth_ring(
                 rounded_points.append(point)
             continue
 
-        cosine = ((to_previous_probe[0] * to_next_probe[0]) + (to_previous_probe[1] * to_next_probe[1])) / (
-            previous_probe_length * next_probe_length
-        )
+        cosine = (
+            (to_previous_probe[0] * to_next_probe[0]) + (to_previous_probe[1] * to_next_probe[1])
+        ) / (previous_probe_length * next_probe_length)
         cosine = max(-1.0, min(1.0, cosine))
         angle = math.acos(cosine)
         deviation = math.pi - angle
@@ -1787,7 +1810,10 @@ def _available_ring_side_length(
             continue
 
         segment_direction = (segment[0] / segment_length, segment[1] / segment_length)
-        if _angle_between_unit_vectors(segment_direction, reference_direction) > alignment_tolerance:
+        if (
+            _angle_between_unit_vectors(segment_direction, reference_direction)
+            > alignment_tolerance
+        ):
             break
 
         total_length += segment_length
@@ -2002,6 +2028,39 @@ def _splitter_buffer_width(tags: dict[str, str], default_split_width: float) -> 
         width = max(width, 2.0)
 
     return width
+
+
+def _buffer_splitter_geometry(
+    splitter: _SplitterData,
+    projected_line: LineString,
+    buffer_width: float,
+) -> BaseGeometry:
+    """Return splitter cut geometry with rounded terminal endpoints.
+
+    Continuous roads should keep flat joins at shared way endpoints so field cuts do not bulge at
+    every OSM way break. True dead-end endpoints, however, look artificial with a flat cap, so
+    they receive a local round cap.
+
+    Arguments:
+        splitter (_SplitterData): Splitter metadata, including terminal-end flags.
+        projected_line (LineString): Splitter geometry in projected meters.
+        buffer_width (float): Splitter half-width in projected meters.
+
+    Returns:
+        BaseGeometry: Polygonal cut geometry for the splitter.
+    """
+    base_buffer = projected_line.buffer(buffer_width, cap_style=2, join_style=2)
+    coordinates = list(projected_line.coords)
+    if len(coordinates) < 2:
+        return base_buffer
+
+    cap_geometries: list[BaseGeometry] = [base_buffer]
+    if splitter.round_start:
+        cap_geometries.append(Point(coordinates[0]).buffer(buffer_width))
+    if splitter.round_end:
+        cap_geometries.append(Point(coordinates[-1]).buffer(buffer_width))
+
+    return base_buffer if len(cap_geometries) == 1 else make_valid(unary_union(cap_geometries))
 
 
 def _geometry_to_polygons(geometry: BaseGeometry) -> list[Polygon]:

@@ -8,7 +8,8 @@ from typing import Any
 
 from maps4fs.generator.component.base.component import Component
 from maps4fs.generator.component.layer import Layer
-from maps4fs.generator.osm import download_osm_map_by_bbox, preprocess as preprocess_osm_file
+from maps4fs.generator.osm import download_osm_map_by_bbox
+from maps4fs.generator.osm import preprocess as preprocess_osm_file
 from maps4fs.generator.settings import Parameters
 
 
@@ -175,7 +176,9 @@ class Preprocessor(Component):
 
             usage_filters = self._usage_tag_filters(usage)
             if not usage_filters:
-                self.logger.debug("No texture-schema filters found for preprocessing usage %s.", usage)
+                self.logger.debug(
+                    "No texture-schema filters found for preprocessing usage %s.", usage
+                )
                 continue
 
             if not any(
@@ -200,9 +203,7 @@ class Preprocessor(Component):
             )
             split_width = self.split_width if usage_settings.split else 0.0
             merge_distance = self.merge_distance if usage_settings.merge else 0.0
-            collapse_tags = (
-                self._usage_collapse_tags(usage) if usage_settings.collapse else None
-            )
+            collapse_tags = self._usage_collapse_tags(usage) if usage_settings.collapse else None
 
             self.logger.info(
                 "Preprocessing OSM usage %s with %d schema-derived filters.",
