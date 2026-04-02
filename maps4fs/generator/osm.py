@@ -24,7 +24,7 @@ from shapely.geometry import (
     Polygon,
 )
 from shapely.geometry.base import BaseGeometry
-from shapely.ops import transform, unary_union
+from shapely.ops import polygonize, transform, unary_union
 from shapely.validation import make_valid
 
 # Representative tags — if the file is fundamentally broken it will fail on any of these.
@@ -766,6 +766,75 @@ def _way_to_polygon(way: _WayData, nodes: dict[int, tuple[float, float]]) -> Pol
     return polygon
 
 
+def _way_to_line_string(
+    way: _WayData,
+    nodes: dict[int, tuple[float, float]],
+) -> LineString | None:
+    """Build a line string from an OSM way when possible.
+
+    Arguments:
+        way (_WayData): Parsed OSM way.
+        nodes (dict[int, tuple[float, float]]): Node coordinate mapping.
+
+    Returns:
+        LineString | None: Line geometry for the way, or None when the way cannot be
+            converted into a valid line.
+    """
+    coordinates = [nodes[node_id] for node_id in way.node_refs if node_id in nodes]
+    if len(coordinates) < 2:
+        return None
+    if len(set(coordinates)) < 2:
+        return None
+
+    line = LineString(coordinates)
+    return None if line.is_empty else line
+
+
+def _assemble_relation_member_polygons(
+    member_way_ids: list[int],
+    ways: dict[int, _WayData],
+    nodes: dict[int, tuple[float, float]],
+) -> tuple[list[Polygon], set[int]]:
+    """Assemble polygon geometry from relation member ways.
+
+    OSM multipolygon relations often split one boundary ring across several way members. This
+    helper merges those way lines and polygonizes the result so preprocessing can still operate on
+    relations whose outers or inners are not individually closed ways.
+
+    Arguments:
+        member_way_ids (list[int]): Relation member way ids for one role.
+        ways (dict[int, _WayData]): Parsed OSM ways by id.
+        nodes (dict[int, tuple[float, float]]): Node coordinate mapping.
+
+    Returns:
+        tuple[list[Polygon], set[int]]: Assembled polygons and the subset of member way ids that
+            contributed geometry.
+    """
+    member_lines: list[LineString] = []
+    used_way_ids: set[int] = set()
+
+    for member_way_id in member_way_ids:
+        member_way = ways.get(member_way_id)
+        if not member_way:
+            continue
+        member_line = _way_to_line_string(member_way, nodes)
+        if member_line is None:
+            continue
+        member_lines.append(member_line)
+        used_way_ids.add(member_way_id)
+
+    if not member_lines:
+        return [], set()
+
+    merged_geometry = make_valid(unary_union(member_lines))
+    assembled_polygons = [
+        polygon
+        for polygon in polygonize(merged_geometry)
+        if not polygon.is_empty and polygon.area > 0
+    ]
+    return assembled_polygons, used_way_ids
+
+
 def _relation_to_polygons(
     relation: _RelationData,
     ways: dict[int, _WayData],
@@ -785,24 +854,30 @@ def _relation_to_polygons(
     if relation.tags.get("type") != "multipolygon":
         return [], set()
 
-    outer_polygons: list[Polygon] = []
-    inner_polygons: list[Polygon] = []
+    outer_way_ids: list[int] = []
+    inner_way_ids: list[int] = []
     member_way_ids: set[int] = set()
 
     for member_type, member_ref, role in relation.members:
         if member_type != "way":
             continue
-        member_way = ways.get(member_ref)
-        if not member_way:
-            continue
-        polygon = _way_to_polygon(member_way, nodes)
-        if polygon is None:
-            continue
-        member_way_ids.add(member_ref)
         if role == "inner":
-            inner_polygons.append(polygon)
+            inner_way_ids.append(member_ref)
         else:
-            outer_polygons.append(polygon)
+            outer_way_ids.append(member_ref)
+
+    outer_polygons, outer_member_way_ids = _assemble_relation_member_polygons(
+        outer_way_ids,
+        ways,
+        nodes,
+    )
+    inner_polygons, inner_member_way_ids = _assemble_relation_member_polygons(
+        inner_way_ids,
+        ways,
+        nodes,
+    )
+    member_way_ids.update(outer_member_way_ids)
+    member_way_ids.update(inner_member_way_ids)
 
     if not outer_polygons:
         return [], member_way_ids
