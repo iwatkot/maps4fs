@@ -11,7 +11,7 @@ from typing import Any, Generator
 from pydtmdl import DTMProvider
 from pydtmdl.base.dtm import DTMProviderSettings
 
-from maps4fs.generator.component import Component
+from maps4fs.generator.component import DEM, Component, Preprocessor
 from maps4fs.generator.constants import Paths
 from maps4fs.generator.context import MapContext
 from maps4fs.generator.game import Game
@@ -249,7 +249,7 @@ class Map:
             try:
                 for game_component in self.game.components:
                     component = game_component(self.game, self)
-                    self.components.append(component)
+                    self._register_component(component)
                     yield component.__class__.__name__
                     self._run_component(component)
 
@@ -264,6 +264,64 @@ class Map:
                 "Self-clear is enabled. Clearing map directory: %s", self.map_directory
             )
             self.self_clear(self.map_directory)
+
+    def run_component(self, component_cls: type[Component]) -> Component:
+        """Run a single component outside the full generation pipeline.
+
+        Arguments:
+            component_cls (type[Component]): Component class to instantiate and run.
+
+        Returns:
+            Component: Executed component instance.
+        """
+        if not isinstance(component_cls, type) or not issubclass(component_cls, Component):
+            raise TypeError("component_cls must be a Component subclass.")
+
+        with performance_session() as session_id:
+            self.logger.info("Starting standalone component run: %s.", component_cls.__name__)
+            start = perf_counter()
+            component = component_cls(self.game, self)
+            self._register_component(component)
+            try:
+                self._run_component(component)
+                self.logger.info(
+                    "Standalone component %s completed in %.2f seconds.",
+                    component_cls.__name__,
+                    perf_counter() - start,
+                )
+                return component
+            finally:
+                self._save_metrics(session_id, send_statistics=False)
+
+    def run_preprocessor(self) -> Component:
+        """Run only the OSM preprocessor step.
+
+        Returns:
+            Component: Executed Preprocessor component instance.
+        """
+        return self.run_component(Preprocessor)
+
+    def run_dem(self) -> Component:
+        """Run only the DEM step.
+
+        Returns:
+            Component: Executed DEM component instance.
+        """
+        return self.run_component(DEM)
+
+    def _register_component(self, component: Component) -> None:
+        """Store the latest instance of a component class on the map.
+
+        Arguments:
+            component (Component): The component instance to register.
+
+        Re-running a component should replace the previous instance instead of creating duplicates.
+        """
+        for index, existing_component in enumerate(self.components):
+            if existing_component.__class__ is component.__class__:
+                self.components[index] = component
+                return
+        self.components.append(component)
 
     def _run_component(self, component: Component) -> None:
         """Process a single component and commit its generation info.
@@ -288,11 +346,12 @@ class Map:
             self._update_main_settings({"error": f"{name} error: {repr(e)}"})
             raise
 
-    def _save_metrics(self, session_id: str) -> None:
+    def _save_metrics(self, session_id: str, *, send_statistics: bool = True) -> None:
         """Save logs and performance metrics to JSON files.
 
         Arguments:
             session_id (str): Session ID.
+            send_statistics (bool): Whether to send telemetry after saving local reports.
         """
         try:
             logs_json = self.logger.group_by_level(session_id)
@@ -316,6 +375,9 @@ class Map:
                 _stats.send_performance_report(session_json)
         except Exception as e:
             self.logger.error("Error saving performance report to JSON: %s", e)
+
+        if not send_statistics:
+            return
 
         # Send statistics after generation is complete
         try:
