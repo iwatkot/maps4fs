@@ -50,7 +50,7 @@
 
 ## MapToPlay
 
-⚠️ **Maps4FS is now [MapToPlay](https://maptoplay.com)**: the interactive platform to create maps and mods for games based on real-world data.
+⚠️ **Maps4FS is now [MapToPlay](https://maptoplay.com)**: the interactive platform to create maps and mods for games based on real-world data.  
 ⚠️ **Maps4FS is retired.** There will be no further updates and no support.
 
 🚜 **Farming Simulator 25** - Generate maps for the current supported game version<br>
