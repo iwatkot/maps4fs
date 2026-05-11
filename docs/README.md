@@ -1,6 +1,6 @@
 # Welcome to Maps4FS Documentation
 
-⚠️ Maps4FS is now [MapToPlay](https://maptoplay.com).
+⚠️ Maps4FS is now [MapToPlay](https://maptoplay.com).  
 ⚠️ Maps4FS is retired. There will be no further updates and no support.
 
 **Turn any real-world location into your next Farming Simulator adventure.**
