@@ -17,8 +17,8 @@
 </div>
 
 <div align="center" markdown>
-<a href="https://discord.gg/wemVfUUFRA">
-<img src="https://github.com/iwatkot/maps4fs/releases/download/3.0.2/electricity-16-9-1920.jpg">
+<a href="https://maptoplay.com">
+<img src="https://github.com/iwatkot/maps4fs/releases/download/3.1.2/maps4fs-is-now.png">
 </a>
 
 <p align="center">
@@ -47,6 +47,11 @@
 [![GitHub Repo stars](https://img.shields.io/github/stars/iwatkot/maps4fs)](https://github.com/iwatkot/maps4fs/stargazers)<br>
 
 </div>
+
+## MapToPlay
+
+⚠️ **Maps4FS is now [MapToPlay](https://maptoplay.com)**: the interactive platform to create maps and mods for games based on real-world data.
+⚠️ **Maps4FS is retired.** There will be no further updates and no support.
 
 🚜 **Farming Simulator 25** - Generate maps for the current supported game version<br>
 🧾 **Support Policy** - FS22 support was removed starting from Maps4FS 3.0.0 and Maps4FS Windows 1.0.0<br>
